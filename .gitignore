@@ -9,3 +9,6 @@ dist/
 
 # Logs
 pip-log.txt
+
+# Tests
+.tox/
