@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from requests import Session
 from requests.adapters import HTTPAdapter
+from bajoo.network.request_future import RequestFuture
 
 
 _logger = logging.getLogger(__name__)
@@ -54,7 +55,6 @@ def json_request(verb, url, **params):
                       verb, url, response.status_code)
 
         response.raise_for_status()
-
         session.close()
         return response.json()
 
@@ -74,6 +74,9 @@ def download(verb, url, **params):
     Returns: Future<File>
         A Future object contains the temporary file object
     """
+    shared_data = {
+        'cancelled': False
+    }
 
     def _download():
         session = _prepare_session(url)
@@ -88,11 +91,27 @@ def download(verb, url, **params):
         temp_file = tempfile.SpooledTemporaryFile(
             max_size=524288, suffix=".tmp")
 
-        for chunk in response.iter_content(1024):
-            if chunk:
+        downloaded_bytes = 0
+        chunk_size = 1024
+
+        for chunk in response.iter_content(chunk_size):
+            # the result will be ignore if the flag 'cancelled' is turned on
+            if chunk and not shared_data['cancelled']:
                 temp_file.write(chunk)
+                downloaded_bytes += len(chunk)
+
+        if shared_data['cancelled']:
+            _logger.debug("Download of %s cancelled (%d bytes received)",
+                          url, downloaded_bytes)
+        else:
+            _logger.debug("Downloaded %s bytes from %s",
+                          downloaded_bytes, url)
 
         session.close()
+
+        if shared_data['cancelled']:
+            temp_file.close()
+            return None
 
         # Move the pointer of the file stream to zero
         # and not close it, for it can be read outside.
@@ -100,7 +119,9 @@ def download(verb, url, **params):
         return temp_file
 
     global data_thread_pool
-    return data_thread_pool.submit(_download)
+    future = data_thread_pool.submit(_download)
+
+    return RequestFuture(future, shared_data)
 
 
 def upload(verb, url, source, **params):
@@ -155,6 +176,9 @@ if __name__ == "__main__":
             future_download.result() as tmp_file:
         sample_file.write(tmp_file.read())
 
-    _logger.debug("Downloaded file's size: %d bytes",
-                  os.stat(sample_file_name).st_size)
-    # TODO: Test upload
+    # Test cancel a request, this should throw a CancelledError
+    import time
+    future_download = download('GET', 'http://www.pdf995.com/samples/pdf.pdf')
+    time.sleep(0.5)
+    future_download.cancel()
+    future_download.result()
