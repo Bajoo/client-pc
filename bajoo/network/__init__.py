@@ -65,6 +65,9 @@ def json_request(verb, url, **params):
     Returns: Future<dict>
         A Future object containing the json object from the response
     """
+    shared_data = {
+        'cancelled': False
+    }
 
     def _json_request():
         session = _prepare_session(url)
@@ -75,10 +78,17 @@ def json_request(verb, url, **params):
 
         response.raise_for_status()
         session.close()
-        return response.json()
+
+        return {
+            'code': response.status_code,
+            'headers': response.headers,
+            'content': response.json()
+        }
 
     thread_pool = _get_thread_pool(**params)
-    return thread_pool.submit(_json_request)
+    future = thread_pool.submit(_json_request)
+
+    return RequestFuture(future, shared_data)
 
 
 def download(verb, url, **params):
@@ -136,7 +146,12 @@ def download(verb, url, **params):
         # Move the pointer of the file stream to zero
         # and not close it, for it can be read outside.
         temp_file.seek(0)
-        return temp_file
+
+        return {
+            'code': response.status_code,
+            'headers': response.headers,
+            'content': temp_file
+        }
 
     thread_pool = _get_thread_pool(**params)
     future = thread_pool.submit(_download)
@@ -155,6 +170,9 @@ def upload(verb, url, source, **params):
         params: additional parameters
             - has_priority: (boolean) set request priority (by default True)
     """
+    shared_data = {
+        'cancelled': False
+    }
 
     def _upload():
         session = _prepare_session(url)
@@ -174,8 +192,16 @@ def upload(verb, url, source, **params):
 
             response.raise_for_status()
 
+        return {
+            'code': response.status_code,
+            'headers': response.headers,
+            'content': None
+        }
+
     thread_pool = _get_thread_pool(**params)
-    return thread_pool.submit(_upload)
+    future = thread_pool.submit(_upload)
+
+    return RequestFuture(future, shared_data)
 
 
 if __name__ == "__main__":

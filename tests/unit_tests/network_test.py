@@ -1,7 +1,10 @@
 # -*- coding: utf8 -*-
 
 import random
+
 import pytest
+
+
 try:
     from http.server import HTTPServer, BaseHTTPRequestHandler
 except ImportError:  # Python 2
@@ -55,7 +58,6 @@ class TestNetwork(object):
 
         return httpd
 
-    @pytest.mark.xfail()
     def test_json_request(self, http_server):
         """Make a simple JSON requests with code 200 OK."""
 

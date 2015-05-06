@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from futures import CancelledError
+from concurrent.futures import CancelledError
 
 
 class RequestFuture(object):
@@ -37,11 +37,11 @@ class RequestFuture(object):
     def cancelled(self):
         return self._future.cancelled() or self._shared_data['cancelled']
 
-    def result(self):
+    def result(self, timeout=None):
         """
         Get the request's result.
         """
         if self._shared_data['cancelled']:
             raise CancelledError
 
-        return self._future.result()
+        return self._future.result(timeout)
