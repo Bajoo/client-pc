@@ -34,6 +34,24 @@ def _prepare_session(url):
     return session
 
 
+def _get_thread_pool(**params):
+    """
+    Get the appropriate thread pool corresponding to a priority level.
+
+    Args:
+        has_priority: (boolean) the expected priority level.
+            If set to True, is has priority; False otherwise.
+
+    Returns:
+        the thread pool corresponding to the priority level
+    """
+    global control_thread_pool, data_thread_pool
+    priority = params.get('has_priority', False)
+
+    return control_thread_pool if priority \
+        else data_thread_pool
+
+
 def json_request(verb, url, **params):
     """
     Send a request and get the json from its response.
@@ -42,6 +60,7 @@ def json_request(verb, url, **params):
         verb: (str)
         url: (str)
         params: additional parameters
+            - has_priority: (boolean) set request priority (by default True)
 
     Returns: Future<dict>
         A Future object containing the json object from the response
@@ -58,8 +77,8 @@ def json_request(verb, url, **params):
         session.close()
         return response.json()
 
-    global control_thread_pool
-    return control_thread_pool.submit(_json_request)
+    thread_pool = _get_thread_pool(**params)
+    return thread_pool.submit(_json_request)
 
 
 def download(verb, url, **params):
@@ -70,6 +89,7 @@ def download(verb, url, **params):
         verb: (str)
         url: (str)
         params: additional parameters
+            - has_priority: (boolean) set request priority (by default True)
 
     Returns: Future<File>
         A Future object contains the temporary file object
@@ -118,8 +138,8 @@ def download(verb, url, **params):
         temp_file.seek(0)
         return temp_file
 
-    global data_thread_pool
-    future = data_thread_pool.submit(_download)
+    thread_pool = _get_thread_pool(**params)
+    future = thread_pool.submit(_download)
 
     return RequestFuture(future, shared_data)
 
@@ -133,6 +153,7 @@ def upload(verb, url, source, **params):
         url: (str)
         source: (str/File)
         params: additional parameters
+            - has_priority: (boolean) set request priority (by default True)
     """
 
     def _upload():
@@ -153,8 +174,8 @@ def upload(verb, url, source, **params):
 
             response.raise_for_status()
 
-    global data_thread_pool
-    return data_thread_pool.submit(_upload)
+    thread_pool = _get_thread_pool(**params)
+    return thread_pool.submit(_upload)
 
 
 if __name__ == "__main__":
