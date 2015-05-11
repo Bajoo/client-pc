@@ -122,3 +122,42 @@ class TestNetwork(object):
 
         with pytest.raises(bajoo.network.errors.ConnectTimeoutError):
             f.result()
+
+    def test_download_empty_file(self, http_server):
+        """Download a file of length 0."""
+
+        def handler(self):
+            self.send_response(200)
+            self.send_header('Content-Length', 0)
+            self.end_headers()
+
+        http_server.handler.do_GET = handler
+        f = bajoo.network.download('GET', 'http://localhost:%s/' %
+                                   http_server.server_port)
+        http_server.handle_request()
+        result = f.result(1)
+        assert result.get('code') is 200
+        result_file = result.get('content')
+        assert result_file.read() == b''
+
+    def test_download_small_file(self, http_server):
+        """Download a small file."""
+
+        file_content = b"""Content of a small file
+        Second line.
+        Another line.
+        """
+
+        def handler(self):
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(file_content)
+
+        http_server.handler.do_GET = handler
+        f = bajoo.network.download('GET', 'http://localhost:%s/' %
+                                   http_server.server_port)
+        http_server.handle_request()
+        result = f.result(1)
+        assert result.get('code') is 200
+        result_file = result.get('content')
+        assert result_file.read() == file_content
