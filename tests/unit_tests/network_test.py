@@ -97,3 +97,28 @@ class TestNetwork(object):
         result = f.result(1)
         assert result.get('code') is 204
         assert result.get('content') is None
+
+    @pytest.mark.xfail()
+    def test_request_bad_server(self):
+        """Make a download request to an unavailable server.
+
+        The request should raise an exception.
+        """
+
+        f = bajoo.network.download('GET', 'http://example.not_exists/')
+
+        with pytest.raises(bajoo.network.errors.ConnexionError):
+            f.result()
+
+    @pytest.mark.xfail()
+    def test_request_timeout_server(self, http_server):
+        """Make a download request to a server who does not respond.
+
+        The target server accept the connexion, but don't send any data.
+        The future should throw an exception after the timeout expires.
+        """
+        f = bajoo.network.download('GET', 'http://localhost:%s/' %
+                                   http_server.server_port)
+
+        with pytest.raises(bajoo.network.errors.ConnectTimeoutError):
+            f.result()
