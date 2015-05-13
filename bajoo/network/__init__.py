@@ -79,10 +79,14 @@ def json_request(verb, url, **params):
         response.raise_for_status()
         session.close()
 
+        content = None
+        if response.content:
+            content = response.json()
+
         return {
             'code': response.status_code,
             'headers': response.headers,
-            'content': response.json()
+            'content': content
         }
 
     thread_pool = _get_thread_pool(**params)

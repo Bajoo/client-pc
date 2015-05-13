@@ -77,7 +77,6 @@ class TestNetwork(object):
         assert 'foo' in result.get('content')
         assert result.get('content').get('foo') == 'bar'
 
-    @pytest.mark.xfail()
     def test_json_request_204(self, http_server):
         """Make a JSON requests receiving a "204 No Content" response.
 
