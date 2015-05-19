@@ -23,7 +23,8 @@ _logger = logging.getLogger(__name__)
 # Each entry contains the type expected, and the default value.
 _default_config = {
     # TODO: set default debug_mode to False for stable release
-    'debug_mode': {'type': bool, 'default': True}
+    'debug_mode': {'type': bool, 'default': True},
+    'log_levels': {'type': dict, 'default': {}}
 }
 
 # Actual config parser
@@ -71,6 +72,19 @@ def get(key):
             return _config_parser.getboolean('config', key)
         elif _default_config[key]['type'] is int:
             return _config_parser.getint('config', key)
+        elif _default_config[key]['type'] is dict:
+            # Dict entries are in the form 'key=value;key2=value2'
+            dict_str = _config_parser.get('config', key)
+            result = {}
+            for pair in filter(None, dict_str.split(';')):
+                try:
+                    (k, v) = pair.split('=')
+                    result[k] = v
+                except ValueError:
+                    _logger.warning('Unable to parse pair key=value: "%s"'
+                                    % pair)
+                    pass
+            return result
         else:
             return _config_parser.get('config', key)
     except configparser.NoOptionError:
