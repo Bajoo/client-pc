@@ -15,6 +15,8 @@ try:
 except ImportError:
     import ConfigParser as configparser  # Python2
 import logging
+import os.path
+from . import path as bajoo_path
 
 _logger = logging.getLogger(__name__)
 
@@ -32,8 +34,7 @@ _config_parser = None
 
 
 def _get_config_file_path():
-    # TODO: set the file in a specific bajoo data folder.
-    return 'bajoo.ini'
+    return os.path.join(bajoo_path.get_config_dir(), 'bajoo.ini')
 
 
 def load():

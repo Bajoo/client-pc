@@ -22,6 +22,7 @@ import errno
 import logging
 import os.path
 import sys
+from . import path as bajoo_path
 
 
 def _on_exit():
@@ -57,10 +58,9 @@ def _get_file_handler():
             file creation has failed.
     """
 
-    # TODO: put the file in a specific folder instead of using the current
-    # directory.
     base_name_file = datetime.date.today().strftime('bajoo-%Y.%m.%d')
-    log_path = '%s.log' % base_name_file
+    log_path = os.path.join(bajoo_path.get_log_dir(),
+                            '%s.log' % base_name_file)
     counter = 1
 
     try:
@@ -79,7 +79,8 @@ def _get_file_handler():
                     return logging.FileHandler(log_path, mode='w',
                                                encoding='utf-8')
             counter += 1
-            log_path = '%s (%s).log' % (base_name_file, counter)
+            log_path = os.path.join(bajoo_path.get_log_dir(),
+                                    '%s (%s).log' % (base_name_file, counter))
     except:
         logging.getLogger(__name__).warning('Unable to create the log file',
                                             exc_info=True)

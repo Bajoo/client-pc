@@ -16,6 +16,7 @@ with open('README.rst') as readme_file:
 
 
 requirements = [
+    'appdirs==1.4',
     'requests>=2.6.0',
     'futures>=2.2.0'
 ]
