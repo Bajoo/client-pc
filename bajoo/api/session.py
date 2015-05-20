@@ -120,7 +120,10 @@ class Session(BajooOAuth2Session):
         Returns:
             Future<Session>
         """
-        pass
+        new_session = Session()
+        new_session.fetch_token(IDENTITY_API_URL + '/token', email, password)
+
+        return new_session
 
     @staticmethod
     def load_session(refresh_token):
@@ -130,7 +133,10 @@ class Session(BajooOAuth2Session):
         Returns:
             Future<Session>
         """
-        pass
+        new_session = Session()
+        new_session.refresh_token(IDENTITY_API_URL + '/token', refresh_token)
+
+        return new_session
 
     def get_refresh_token(self):
         """
@@ -139,7 +145,10 @@ class Session(BajooOAuth2Session):
         Returns:
             (str) The refresh token
         """
-        pass
+        if self.token:
+            return self.token.get('refresh_token', None)
+
+        return None
 
     def revoke_refresh_token(self):
         """
