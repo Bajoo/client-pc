@@ -13,6 +13,9 @@ STORAGE_API_URL = 'https://192.168.2.100:8080'
 CLIENT_ID = 'e2676e5d1fff42f7b32308e5eca3c36a'
 CLIENT_SECRET = '<client-secret>'
 
+TOKEN_URL = '/'.join([IDENTITY_API_URL, 'token'])
+REVOKE_TOKEN_URL = '/'.join([IDENTITY_API_URL, 'token', 'revoke'])
+
 
 class BajooOAuth2Session(object):
     """Represent a OAuth2 session for connecting to Bajoo server."""
@@ -46,6 +49,7 @@ class BajooOAuth2Session(object):
         Returns:
             Future<None>
         """
+
         # TODO: the hash password function will be moved to the user class
         hash_password = sha256(password.encode('utf-8')).hexdigest()
 
@@ -57,16 +61,19 @@ class BajooOAuth2Session(object):
             u'grant_type': u'password'
         }
 
-        future = json_request('POST', token_url,
-                              auth=auth, headers=headers, data=data,
-                              # disable temporarily certificate verifying
-                              verify=False)
-        response = future.result()
+        response_future = json_request('POST', token_url,
+                                       auth=auth, headers=headers, data=data,
+                                       # disable temporarily
+                                       # certificate verifying
+                                       verify=False)
 
-        # Analyze response and save the tokens
-        if response and response.get('code') == 200:
-            self.token = response.get('content')
-            _logger.info('Token fetched = %s', self.token)
+        def _on_request_result(response):
+            # Analyze response and save the tokens
+            if response and response.get('code') == 200:
+                self.token = response.get('content')
+                _logger.info('Token fetched = %s', self.token)
+
+        return response_future.then(_on_request_result)
 
     def refresh_token(self, token_url, refresh_token):
         """
@@ -79,23 +86,25 @@ class BajooOAuth2Session(object):
         Returns:
             Future<None>
         """
-        # Send request to token url
         auth, headers = self._prepare_request()
         data = {
             u'refresh_token': refresh_token,
             u'grant_type': u'refresh_token'
         }
 
-        future = json_request('POST', token_url,
-                              auth=auth, headers=headers, data=data,
-                              # disable temporarily certificate verifying
-                              verify=False)
-        response = future.result()
+        request_future = json_request('POST', token_url,
+                                      auth=auth, headers=headers, data=data,
+                                      # disable temporarily
+                                      # certificate verifying
+                                      verify=False)
 
-        # Analyze response and save the tokens
-        if response and response.get('code') == 200:
-            self.token = response.get('content')
-            _logger.info('Token refreshed = %s', self.token)
+        def _on_request_result(response):
+            # Analyze response and save the tokens
+            if response and response.get('code') == 200:
+                self.token = response.get('content')
+                _logger.info('Token refreshed = %s', self.token)
+
+        return request_future.then(_on_request_result)
 
     def is_authorized(self):
         """
@@ -121,9 +130,8 @@ class Session(BajooOAuth2Session):
             Future<Session>
         """
         new_session = Session()
-        new_session.fetch_token(IDENTITY_API_URL + '/token', email, password)
-
-        return new_session
+        return new_session.fetch_token(TOKEN_URL, email, password) \
+            .then(lambda __: new_session)
 
     @staticmethod
     def load_session(refresh_token):
@@ -134,9 +142,8 @@ class Session(BajooOAuth2Session):
             Future<Session>
         """
         new_session = Session()
-        new_session.refresh_token(IDENTITY_API_URL + '/token', refresh_token)
-
-        return new_session
+        return new_session.refresh_token(TOKEN_URL, refresh_token) \
+            .then(lambda __: new_session)
 
     def get_refresh_token(self):
         """
@@ -157,7 +164,23 @@ class Session(BajooOAuth2Session):
         Returns:
             Future<None>
         """
-        pass
+        auth, headers = self._prepare_request()
+        data = {
+            u'token': self.token.get('refresh_token', '')
+        }
+
+        request_future = json_request('POST', REVOKE_TOKEN_URL,
+                                      auth=auth, headers=headers, data=data,
+                                      # disable temporarily
+                                      # certificate verifying
+                                      verify=False)
+
+        def _on_request_result(response):
+            # Analyze response and save the tokens
+            if response and response.get('code') == 200:
+                _logger.debug('Token revoked successfully')
+
+        return request_future.then(_on_request_result)
 
     def disconnect(self):
         """
@@ -166,17 +189,26 @@ class Session(BajooOAuth2Session):
         Returns:
             Future<None>
         """
-        pass
+
+        def _on_token_revoked(result):
+            self.token = None
+
+        return self.revoke_refresh_token().then(_on_token_revoked)
 
 
 if __name__ == '__main__':
     logging.basicConfig()
     _logger.setLevel(logging.DEBUG)
 
-    session = BajooOAuth2Session()
-    session.fetch_token(token_url=IDENTITY_API_URL + '/token',
-                        email='stran+50@bajoo.fr',
-                        password='stran+50@bajoo.fr')
-    _logger.info('Session authorized = %s', session.is_authorized())
-    session.refresh_token(token_url=IDENTITY_API_URL + '/token',
-                          refresh_token=session.token.get('refresh_token', ''))
+    session1 = Session.create_session('stran+51@bajoo.fr',
+                                      'stran+51@bajoo.fr').result()
+    session2 = Session.load_session(session1.get_refresh_token()).result()
+
+    try:
+        # This should throw 404 error
+        session1.disconnect().result()
+    except Exception as e:
+        _logger.error(e)
+
+    # This should function correctly
+    session2.disconnect().result()
