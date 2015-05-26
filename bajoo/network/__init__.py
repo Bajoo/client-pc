@@ -6,7 +6,8 @@ from concurrent.futures import ThreadPoolExecutor
 
 from requests import Session
 from requests.adapters import HTTPAdapter
-from bajoo.network.request_future import RequestFuture
+from ..common.future import patch
+from .request_future import RequestFuture
 
 
 _logger = logging.getLogger(__name__)
@@ -90,7 +91,7 @@ def json_request(verb, url, **params):
         }
 
     thread_pool = _get_thread_pool(**params)
-    future = thread_pool.submit(_json_request)
+    future = patch(thread_pool.submit(_json_request))
 
     return RequestFuture(future, shared_data)
 
@@ -158,7 +159,7 @@ def download(verb, url, **params):
         }
 
     thread_pool = _get_thread_pool(**params)
-    future = thread_pool.submit(_download)
+    future = patch(thread_pool.submit(_download))
 
     return RequestFuture(future, shared_data)
 
@@ -203,7 +204,7 @@ def upload(verb, url, source, **params):
         }
 
     thread_pool = _get_thread_pool(**params)
-    future = thread_pool.submit(_upload)
+    future = patch(thread_pool.submit(_upload))
 
     return RequestFuture(future, shared_data)
 
