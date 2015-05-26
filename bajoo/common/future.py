@@ -1,7 +1,16 @@
 # -*- coding: utf-8 -*-
-"""Helpers to perform more high-level operations on Future instances."""
+"""Helpers to perform more high-level operations on Future instances.
+
+It also provides a new class Future who extends concurrent.futures with all
+the helpers as class methods.
+
+For functions who returns directly a future, the function ``patch()`` can add
+the helpers as class methods of a Future instances. ``patch_dec()`` is the
+decorator version.
+"""
 
 import concurrent.futures
+import types
 
 
 def then(original_future, callback):
@@ -32,7 +41,7 @@ def then(original_future, callback):
     if original_future.cancelled():
         raise concurrent.futures.CancelledError
 
-    new_future = concurrent.futures.Future()
+    new_future = Future()
 
     def _callback(self):
         if not self.cancelled():
@@ -49,6 +58,45 @@ def then(original_future, callback):
     original_future.add_done_callback(_callback)
 
     return new_future
+
+
+class Future(concurrent.futures.Future):
+    """Extended future, containing helpers as class methods."""
+
+    def then(self, callback):
+        return then(self, callback)
+
+
+def patch(future):
+    """Add helpers function as new class methods of a Future instance.
+
+    Args:
+        Future: future to patch
+    Returns:
+        Future: the patched future.
+    """
+    future.then = types.MethodType(then, future)
+    return future
+
+
+def patch_dec(f):
+    """Patch Future instance returned to add helpers class methods.
+
+    Decorator of method who returns a Future object. The returning object will
+    be modified to accept the helpers as new class methods.
+
+    If the function doesn't returns a future, the result is not modified.
+
+    Args:
+        f (callable): function susceptible to returns Future instances.
+    """
+    def wrapper(*args, **kwargs):
+        result = f(*args, **kwargs)
+        if isinstance(result, concurrent.futures.Future):
+            return patch(result)
+        return result
+
+    return wrapper
 
 
 def main():
@@ -68,7 +116,8 @@ def main():
             return arg
 
         future = executor.submit(first_action)
-        last_future = then(then(future, second_action), third_action)
+        patch(future)
+        last_future = future.then(second_action).then(third_action)
         print('Final result: %s' % last_future.result())
 
 if __name__ == "__main__":
