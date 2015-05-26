@@ -8,7 +8,7 @@ from requests import Session
 from requests.adapters import HTTPAdapter
 from ..common.future import patch
 from .request_future import RequestFuture
-from . import errors  # noqa
+from . import errors
 
 
 _logger = logging.getLogger(__name__)
@@ -72,6 +72,7 @@ def json_request(verb, url, **params):
     }
     params = dict(params)
 
+    @errors.handler
     def _json_request():
         session = _prepare_session(url)
         params.setdefault('timeout', 4)
@@ -117,6 +118,7 @@ def download(verb, url, **params):
     }
     params = dict(params)
 
+    @errors.handler
     def _download():
         session = _prepare_session(url)
         params.setdefault('timeout', 4)
@@ -185,6 +187,7 @@ def upload(verb, url, source, **params):
     }
     params = dict(params)
 
+    @errors.handler
     def _upload():
         session = _prepare_session(url)
         params.setdefault('timeout', 4)

@@ -97,7 +97,6 @@ class TestNetwork(object):
         assert result.get('code') is 204
         assert result.get('content') is None
 
-    @pytest.mark.xfail()
     def test_request_bad_server(self):
         """Make a download request to an unavailable server.
 

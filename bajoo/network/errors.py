@@ -1,7 +1,40 @@
 # -*- coding: utf-8 -*-
+"""This module defines all errors which can occur in the network module.
+
+requests exceptions can be converted to bajoo.network errors using the
+``handler`` decorator.
+
+Bajoo errors have a human-readable message, ready to be displayed.
+They are also more verbose when displayed using 'repr()`.
+"""
+
 import logging
+import requests.exceptions
 
 _logger = logging.getLogger(__name__)
+
+
+def handler(func):
+    """Decorator who handles errors of the requests.
+
+    Converts requests.exceptions.* into bajoo.network.errors.
+    """
+
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except requests.exceptions.ConnectionError as error:
+            raise ConnectionError(error)
+        except (requests.exceptions.ConnectTimeout,
+                requests.exceptions.ReadTimeout) as error:
+            raise ConnectTimeoutError(error)
+        except requests.exceptions.HTTPError as error:
+            # TODO: raise the corresponding subclass of HTTPError.
+            raise HTTPError(error)
+        except requests.exceptions.RequestException as error:
+            raise NetworkError(error)
+
+    return wrapper
 
 
 class NetworkError(Exception):
