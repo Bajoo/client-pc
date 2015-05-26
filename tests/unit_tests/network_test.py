@@ -106,7 +106,7 @@ class TestNetwork(object):
 
         f = bajoo.network.download('GET', 'http://example.not_exists/')
 
-        with pytest.raises(bajoo.network.errors.ConnexionError):
+        with pytest.raises(bajoo.network.errors.ConnectionError):
             f.result()
 
     @pytest.mark.xfail()

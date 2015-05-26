@@ -8,6 +8,7 @@ from requests import Session
 from requests.adapters import HTTPAdapter
 from ..common.future import patch
 from .request_future import RequestFuture
+from . import errors  # noqa
 
 
 _logger = logging.getLogger(__name__)
@@ -69,9 +70,11 @@ def json_request(verb, url, **params):
     shared_data = {
         'cancelled': False
     }
+    params = dict(params)
 
     def _json_request():
         session = _prepare_session(url)
+        params.setdefault('timeout', 4)
         response = session.request(method=verb, url=url, **params)
 
         _logger.debug('JSON Request %s %s -> %s',
@@ -112,9 +115,11 @@ def download(verb, url, **params):
     shared_data = {
         'cancelled': False
     }
+    params = dict(params)
 
     def _download():
         session = _prepare_session(url)
+        params.setdefault('timeout', 4)
         response = session.request(method=verb, url=url, stream=True, **params)
 
         _logger.debug("%s downloading from %s -> %s",
@@ -178,9 +183,11 @@ def upload(verb, url, source, **params):
     shared_data = {
         'cancelled': False
     }
+    params = dict(params)
 
     def _upload():
         session = _prepare_session(url)
+        params.setdefault('timeout', 4)
         file = source
 
         if isinstance(file, str):
