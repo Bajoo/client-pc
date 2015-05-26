@@ -1,5 +1,7 @@
 # -*- coding: utf8 -*-
 
+from io import BytesIO
+import pkg_resources
 import random
 
 import pytest
@@ -54,6 +56,7 @@ class TestNetwork(object):
                     raise
 
         httpd.handler = Handler
+        httpd.timeout = 1
         request.addfinalizer(httpd.server_close)
 
         return httpd
@@ -159,3 +162,73 @@ class TestNetwork(object):
         assert result.get('code') is 200
         result_file = result.get('content')
         assert result_file.read() == file_content
+
+    @pytest.mark.xfail()
+    def test_interrupted_requests(self, http_server):
+        """Make a download request to a server who send truncated content.
+
+        The target server announce a 25 bytes response, but returns less than
+        that. It can happens when the HTTP connexion is lost in the middle of a
+        download.
+        The future should raise an exception.
+        """
+
+        def handler(self):
+            self.send_response(200)
+            self.send_header('Content-Length', 25)
+            self.end_headers()
+            self.wfile.write('partial response')
+
+        http_server.handler.do_GET = handler
+        f = bajoo.network.download('GET', 'http://localhost:%s/' %
+                                   http_server.server_port)
+        http_server.handle_request()
+        # TODO: use a more specific error
+        with pytest.raises(bajoo.network.errors.NetworkError):
+            f.result(1)
+
+    def test_upload_empty_file(self, http_server):
+        """Upload an empty file from its path.
+
+        The server must receive an empty file.
+        """
+
+        def handler(self):
+            assert int(self.headers.get('content-length')) is 0
+            self.send_response(204)
+            self.end_headers()
+
+        http_server.handler.do_PUT = handler
+
+        empty_file_path = pkg_resources.resource_filename(
+            __name__, "../resources/empty.txt")
+        f = bajoo.network.upload('PUT', 'http://localhost:%s/' %
+                                 http_server.server_port, empty_file_path)
+        http_server.handle_request()
+        f.result(1)
+
+    def test_upload_small_file(self, http_server):
+        """Upload a small file, using a stream.
+
+        The server must receive the exact file.
+        """
+
+        file_content = b"""Content of the small file
+        ... ... ...
+        Third line.
+        """
+
+        def handler(self):
+            content_length = int(self.headers.get('content-length'))
+            assert content_length is len(file_content)
+            assert self.rfile.read(content_length) == file_content
+            self.send_response(204)
+            self.end_headers()
+
+        http_server.handler.do_PUT = handler
+
+        f = bajoo.network.upload('PUT', 'http://localhost:%s/' %
+                                 http_server.server_port,
+                                 BytesIO(file_content))
+        http_server.handle_request()
+        f.result(1)
