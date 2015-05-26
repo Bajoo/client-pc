@@ -2,7 +2,7 @@
 import logging
 import os
 import tempfile
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, CancelledError
 
 from requests import Session
 from requests.adapters import HTTPAdapter
@@ -232,12 +232,19 @@ if __name__ == "__main__":
 
     future_download = download('GET', 'http://www.pdf995.com/samples/pdf.pdf')
     with open(sample_file_name, "wb") as sample_file, \
-            future_download.result() as tmp_file:
+            future_download.result()['content'] as tmp_file:
         sample_file.write(tmp_file.read())
 
     # Test cancel a request, this should throw a CancelledError
     import time
+
+    print('Start a download ...')
     future_download = download('GET', 'http://www.pdf995.com/samples/pdf.pdf')
     time.sleep(0.5)
+    print('... then cancel it!')
     future_download.cancel()
-    future_download.result()
+    try:
+        result = future_download.result()
+        print('Cancel failed ? result: HTTP %s' % result.get('code'))
+    except CancelledError:
+        print('CanceledError raised, as expected.')
