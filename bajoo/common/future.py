@@ -63,8 +63,38 @@ def then(original_future, callback):
 class Future(concurrent.futures.Future):
     """Extended future, containing helpers as class methods."""
 
+    @staticmethod
+    def resolve(value):
+        """Create a future who resolves the selected value.
+
+        Args:
+            value: result of the future. If it's a future, it's returned as is.
+        Returns:
+            Future: new Future already terminated, containing the value passed
+                in parameter.
+        """
+        if isinstance(value, concurrent.futures.Future):
+            return value
+
+        future = Future()
+        future.set_running_or_notify_cancel()
+        future.set_result(value)
+        return future
+
     def then(self, callback):
         return then(self, callback)
+
+
+def resolve_dec(f):
+    """Decorator who converts the result in a Future object.
+
+    If the function decorated returns a Future, it's transmitted as is.
+    Else, a new Future is created with the returned value as result.
+    """
+    def wrapper(*args, **kwargs):
+        return Future.resolve(f(*args, **kwargs))
+
+    return wrapper
 
 
 def patch(future):
