@@ -190,6 +190,24 @@ class Session(BajooOAuth2Session):
 
         return request_future.then(_on_request_result)
 
+    def send_json_request(self, verb, url_path, **params):
+        """
+        Send a json request to Bajoo API
+
+        Args:
+            verb (str): the verb of the RESTful function
+            url_path (str): part of the url after the host address,
+                e.g. /user, /storage, etc.
+
+        Returns (Future<dict>): the future returned by json_request
+        """
+        headers = {
+            'Authorization': 'Bearer ' + self.token.get('access_token', '')
+        }
+
+        return json_request(verb, IDENTITY_API_URL + url_path,
+                            headers=headers, verify=False, **params)
+
     def disconnect(self):
         """
         Disconnect the session.

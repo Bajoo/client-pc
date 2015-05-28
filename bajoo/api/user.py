@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import logging
+from hashlib import sha256
 
 from ..common.future import resolve_dec
+
 
 _logger = logging.getLogger(__name__)
 
@@ -24,7 +26,7 @@ class User(object):
             Future<User>
         """
         if not session:
-            raise ValueError("Missing session object")
+            raise ValueError("Empty or null session")
 
         # Refresh token if necessary
         if not session.is_authorized():
@@ -33,6 +35,11 @@ class User(object):
         else:
             # Valid session, so return user
             return User(session=session)
+
+    @staticmethod
+    def hash_password(password):
+        """Convert a password to a hash usable by the Bajoo API"""
+        return sha256(password.encode('utf-8')).hexdigest()
 
     def get_quota(self):
         """
@@ -51,7 +58,14 @@ class User(object):
         Returns:
             Future<None>
         """
-        raise NotImplemented
+        hashed_old_password = self.hash_password(old_password)
+        hashed_new_password = self.hash_password(new_password)
+        data = {'password': hashed_old_password,
+                'new_password': hashed_new_password}
+
+        # TODO: analyze result & handle error
+        return self._session.send_json_request(
+            'PATCH', '/user', data=data)
 
     def delete_account(self, password):
         """
@@ -101,7 +115,18 @@ if __name__ == '__main__':
 
     from .session import Session
 
-    session1 = Session.create_session('stran+test_api@bajoo.fr',
-                                      'stran+test_api@bajoo.fr').result()
-    user1 = User.load(session1).result()
-    _logger.debug(user1._session.token)
+    # Load session & change password
+    session = Session.create_session('stran+test_api@bajoo.fr',
+                                     'stran+test_api@bajoo.fr').result()
+    user = User.load(session).result()
+    _logger.debug(user.change_password('stran+test_api@bajoo.fr',
+                                       'stran+test_api_1@bajoo.fr')
+                  .result())
+
+    # Reset the old password
+    session = Session.create_session('stran+test_api@bajoo.fr',
+                                     'stran+test_api_1@bajoo.fr').result()
+    user = User.load(session).result()
+    _logger.debug(user.change_password('stran+test_api_1@bajoo.fr',
+                                       'stran+test_api@bajoo.fr')
+                  .result())
