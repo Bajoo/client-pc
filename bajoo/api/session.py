@@ -75,17 +75,25 @@ class BajooOAuth2Session(object):
 
         return response_future.then(_on_request_result)
 
-    def refresh_token(self, token_url, refresh_token):
+    def refresh_token(self, token_url=None, refresh_token=None):
         """
         Fetch a new token using the refresh_token.
 
         Args:
-            token_url (str): the url to which the request will be sent
-            refresh_token (str): the existing refresh token
+            token_url (str, optional): the url to which the request will be
+                sent. TOKEN_URL by default.
+            refresh_token (str, optional): the existing refresh token.
+                If not provided, the current token.refresh_token will be used.
 
         Returns:
             Future<None>
         """
+        token_url = token_url or TOKEN_URL
+        refresh_token = refresh_token or self.token.get('refresh_token', None)
+
+        if not refresh_token:
+            raise ValueError("Missing refresh token")
+
         auth, headers = self._prepare_request()
         data = {
             u'refresh_token': refresh_token,
@@ -190,7 +198,7 @@ class Session(BajooOAuth2Session):
             Future<None>
         """
 
-        def _on_token_revoked(result):
+        def _on_token_revoked(_result):
             self.token = None
 
         return self.revoke_refresh_token().then(_on_token_revoked)
@@ -200,8 +208,8 @@ if __name__ == '__main__':
     logging.basicConfig()
     _logger.setLevel(logging.DEBUG)
 
-    session1 = Session.create_session('stran+51@bajoo.fr',
-                                      'stran+51@bajoo.fr').result()
+    session1 = Session.create_session('stran+test_api@bajoo.fr',
+                                      'stran+test_api@bajoo.fr').result()
     session2 = Session.load_session(session1.get_refresh_token()).result()
 
     try:
