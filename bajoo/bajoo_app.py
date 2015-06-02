@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 
+import logging
 import wx
+
+from .common.path import get_data_dir
+
+_logger = logging.getLogger(__name__)
 
 
 class BajooApp(wx.App):
@@ -26,9 +31,37 @@ class BajooApp(wx.App):
         # Don't redirect the stdout in a windows.
         wx.App.__init__(self, redirect=False)
 
-    # TODO: Ensure there is only one instance of Bajoo started
+    def _ensures_single_instance_running(self):
+        """Check that only one instance of Bajoo is running per user.
+
+        If another instance is running, an explicative box is displayed.
+
+        Returns:
+            boolean: True if no other instance is actually running;
+                False otherwise.
+        """
+
+        # Using GetUserId() allow two different users to have
+        # theirs own Bajoo instance.
+        app_name = "Bajoo-%s" % wx.GetUserId()
+
+        # Note: the checker must be owned by ``self``, to stay alive until the
+        # end of the program.
+        self._checker = wx.SingleInstanceChecker(app_name, path=get_data_dir())
+        if self._checker.IsAnotherRunning():
+            _logger.info('Prevents the user to start a second Bajoo instance.')
+
+            wx.MessageBox("Another instance of Bajoo is actually running.\n"
+                          "You can't open Bajoo twice.",
+                          caption="Bajoo already started")
+            return False
+        return True
 
     def OnInit(self):
+
+        if not self._ensures_single_instance_running():
+            return False
+
         frame = wx.Frame(None, wx.ID_ANY, "Hello World")
         frame.Show(True)
         self.SetTopWindow(frame)
