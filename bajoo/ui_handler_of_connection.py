@@ -1,0 +1,135 @@
+# -*- coding: utf-8 -*-
+
+import abc
+
+
+class UserInterrupt(Exception):
+    """Exception raised when the user closes the user interface.
+
+    When this exception is raised, the interface is no longer active, and the
+    caller should wait the return of the user, using ``wait_user_resume``.
+    """
+    pass
+
+
+class UserQuit(Exception):
+    """Exception raised when the user quit Bajoo during an input operation."""
+    pass
+
+
+class UIHandlerOfConnection(object):
+    """Abstract class representing user interactions before the connexion.
+
+    It's the interface between the connect_or_register process and the user.
+
+    It will be used to ask the user all information needed by the connection
+    process, using these asynchronous methods. The result will be wrapped in
+    Future instances.
+    If an unexpected event occurs (exceptions, but also user events like
+    window closing), the methods should raise an exception.
+    """
+
+    __metaclass__ = abc.ABCMeta
+
+    @abc.abstractmethod
+    def get_register_or_connection_credentials(self, last_username=None,
+                                               errors=None):
+        """Ask user for credentials to connect or register him.
+
+        Args:
+            last_username (str, optional): last used username, if any.
+            errors (str, optional): If set, error message of the previous
+                tentative.
+        Returns:
+            Future<(str, str, str)>: the first return value is either
+                'registration' or 'connection'. the second value contains the
+                user name (or email). The third value is the password.
+
+        Raises:
+            UserQuit: the user quit the application. The caller should
+                terminate.
+            UserInterrupt: the user has interrupted the operation (by example
+                by closing the window). The caller should wait the user wants
+                to resume the operation.
+        """
+        pass
+
+    @abc.abstractmethod
+    def wait_activation(self):
+        """Ask the user to activate his account, and wait his confirmation.
+
+        The future resolves when it's done.
+
+        Note that the future resolve when the user *tells* his account is
+        validated, but this may be not the case.
+
+        Returns:
+            Future<None>: resolves when the user indicates he has validated
+                his account.
+
+        Raises:
+            UserQuit: the user quit the application. The caller should
+                terminate.
+            UserInterrupt: the user has interrupted the operation (by example
+                by closing the window). The caller should wait the user wants
+                to resume the operation.
+        """
+        pass
+
+    @abc.abstractmethod
+    def ask_for_settings(self, folder_setting=True, key_setting=True):
+        """Ask to user to precise some important settings.
+
+        The caller may ask for two settings independently: the Bajoo root
+        folder path, or the passphrase for generating a new GPG user key, or
+        both. The caller specifies which setting he wants, using arguments.
+
+        Note: At least one of ``folder_setting`` or ``key_setting`` must be
+        True.
+
+        Args:
+            folder_setting (boolean): If True, this method asks the Bajoo root
+                folder path.
+            key_setting (boolean): If True, this method asks for the passphrase
+                of the GPG user key.
+        returns:
+            Future<str, str>: the first return value contains the folder path,
+                and the second contains the passphrase for the GPG user key.
+                If only one element is asked, the other can be None. If the
+                user don't want any passphrase, it should be None.
+
+        Raises:
+            UserQuit: the user quit the application. The caller should
+                terminate.
+            UserInterrupt: the user has interrupted the operation (by example
+                by closing the window). The caller should wait the user wants
+                to resume the operation.
+        """
+        pass
+
+    @abc.abstractmethod
+    def wait_user_resume(self):
+        """Wait the user resumes the (suspended) connection operation.
+
+        This method should be called after that another method has raised an
+        UserInterrupt exception.
+
+        Returns:
+            Future<None>: resolves when the interface is active again.
+        Raises:
+            UserQuit: the user quit the application. The caller should
+                terminate.
+        """
+        pass
+
+    @abc.abstractmethod
+    def inform_user_is_connected(self):
+        """Indicate that the user has been connected.
+
+        This method is called by the ``connect_and_register`` process when the
+        connection is effective. The UI handler should inform the user, and
+        close itself after that.
+
+        No other method will be called after this one; The process is over.
+        """
+        pass

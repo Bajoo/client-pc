@@ -4,6 +4,7 @@ import logging
 import wx
 
 from .common.path import get_data_dir
+from .connection_registration_process import connect_or_register
 
 _logger = logging.getLogger(__name__)
 
@@ -68,7 +69,10 @@ class BajooApp(wx.App):
 
         # TODO: Create the TrayIcon
 
-        # TODO: RefreshToken
-        # ... TODO: then start sync.
-
         return True
+
+    def OnEventLoopEnter(self):
+        """Start the event loop, and the connection process."""
+        # TODO: pass correct argument
+        connect_or_register(None)
+        # TODO: .then(StartSyncProcess)
