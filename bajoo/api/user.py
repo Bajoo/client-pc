@@ -9,6 +9,13 @@ _logger = logging.getLogger(__name__)
 
 
 class User(object):
+    """
+    This class represent a Bajoo user, which treats the requests relating
+    to the user account.
+    """
+    KEY_URL_FORMAT = '/v1/keys/%s.key'
+    PUBLIC_KEY_URL_FORMAT = '/v1/keys/%s.key.pub'
+
     def __init__(self, name="", session=None):
         self.name = name
         self._session = session
@@ -47,6 +54,20 @@ class User(object):
         """
         raise NotImplemented
 
+    def get_user_info(self):
+        """
+        Get user's public profile.
+        """
+
+        def _on_request_result(response):
+            content = response.get('content', {})
+            self.name = content.get('email', '')
+
+            return content
+
+        return self._session.send_api_request('GET', '/user') \
+            .then(_on_request_result)
+
     def change_password(self, old_password, new_password):
         """
         Change current user password
@@ -64,7 +85,7 @@ class User(object):
                 'new_password': hashed_new_password}
 
         # TODO: analyze result & handle error
-        return self._session.send_json_request(
+        return self._session.send_api_request(
             'PATCH', '/user', data=data)
 
     def delete_account(self, password):
@@ -79,9 +100,25 @@ class User(object):
         """
         raise NotImplemented
 
+    def _get_key_url(self):
+        return User.KEY_URL_FORMAT % self.name
+
+    def _get_public_key_url(self):
+        return User.PUBLIC_KEY_URL_FORMAT % self.name
+
     def get_public_key(self):
-        """Get the user's public key string"""
-        raise NotImplemented
+        """Get the user's public key string.
+
+        Returns (Future<str>): the public key string.
+        """
+
+        def _on_download_finished(response):
+            tmp_file = response.get('content', None)
+            return tmp_file.read() if tmp_file else None
+
+        return self._session \
+            .download_storage_file('GET', self._get_public_key_url()) \
+            .then(_on_download_finished)
 
     def create_encryption_key(self, passphrase):
         """
@@ -117,16 +154,24 @@ if __name__ == '__main__':
 
     # Load session & change password
     session = Session.create_session('stran+test_api@bajoo.fr',
-                                     'stran+test_api@bajoo.fr').result()
+    'stran+test_api@bajoo.fr').result()
     user = User.load(session).result()
     _logger.debug(user.change_password('stran+test_api@bajoo.fr',
-                                       'stran+test_api_1@bajoo.fr')
-                  .result())
+    'stran+test_api_1@bajoo.fr')
+    .result())
 
     # Reset the old password
     session = Session.create_session('stran+test_api@bajoo.fr',
                                      'stran+test_api_1@bajoo.fr').result()
     user = User.load(session).result()
     _logger.debug(user.change_password('stran+test_api_1@bajoo.fr',
-                                       'stran+test_api@bajoo.fr')
-                  .result())
+                                       'stran+test_api@bajoo.fr').result())
+
+    # Load session and get user's information
+    user_future = Session \
+        .create_session('stran+test_api_5@bajoo.fr',
+                        'stran+test_api_5@bajoo.fr') \
+        .then(User.load)
+    user = user_future.result()
+    _logger.debug("User info = %s", user.get_user_info().result())
+    _logger.debug(user.get_public_key().result())

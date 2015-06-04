@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor, CancelledError
 
 from requests import Session
 from requests.adapters import HTTPAdapter
+
 from ..common.future import patch
 from .request_future import RequestFuture
 from . import errors

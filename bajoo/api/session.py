@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import logging
-from hashlib import sha256
 
-from ..network import json_request
+from ..network import json_request, download
+from .user import User
 
 
 _logger = logging.getLogger(__name__)
@@ -50,14 +50,11 @@ class BajooOAuth2Session(object):
             Future<None>
         """
 
-        # TODO: the hash password function will be moved to the user class
-        hash_password = sha256(password.encode('utf-8')).hexdigest()
-
         # Send request to token url
         auth, headers = self._prepare_request()
         data = {
             u'username': email,
-            u'password': hash_password,
+            u'password': User.hash_password(password),
             u'grant_type': u'password'
         }
 
@@ -190,7 +187,7 @@ class Session(BajooOAuth2Session):
 
         return request_future.then(_on_request_result)
 
-    def send_json_request(self, verb, url_path, **params):
+    def send_api_request(self, verb, url_path, **params):
         """
         Send a json request to Bajoo API
 
@@ -207,6 +204,24 @@ class Session(BajooOAuth2Session):
 
         return json_request(verb, IDENTITY_API_URL + url_path,
                             headers=headers, verify=False, **params)
+
+    def download_storage_file(self, verb, url_path, **params):
+        """
+        Send a download request to Swift API
+
+        Args:
+            verb (str): the verb of the RESTful function
+            url_path (str): part of the url after the host address,
+                e.g. /keys, /storages, etc.
+
+        Returns (Future<TemporaryFile>): the future returned by network.download
+        """
+        headers = {
+            'Authorization': 'Bearer ' + self.token.get('access_token', '')
+        }
+
+        return download(verb, STORAGE_API_URL + url_path,
+                        headers=headers, verify=False, **params)
 
     def disconnect(self):
         """
