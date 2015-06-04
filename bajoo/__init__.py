@@ -17,7 +17,7 @@ def main():
     log.set_logs_level(config.get('log_levels'))
 
     app = BajooApp()
-    app.MainLoop()
+    app.run()
 
 
 if __name__ == "__main__":

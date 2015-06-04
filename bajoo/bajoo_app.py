@@ -5,6 +5,7 @@ import wx
 
 from .common.path import get_data_dir
 from .connection_registration_process import connect_or_register
+from .gui.home_window import HomeWindow
 
 _logger = logging.getLogger(__name__)
 
@@ -26,11 +27,21 @@ class BajooApp(wx.App):
 
     Call ``app.MainLoop()`` will start the event loop. The graphics elements
     will be displayed and the connexion process will start.
+
+    Attributes:
+        _checker (wx.SingleInstanceChecker): Mutex used to avoid starting bajoo
+            twice at the same time.
+        _home_window (HomeWindow): if exists, the main window in not connected
+            mode. This attribute is used to gives it the focus when the user
+            interacts with the tray icon.
     """
 
     def __init__(self):
         # Don't redirect the stdout in a windows.
         wx.App.__init__(self, redirect=False)
+
+        self._checker = None
+        self._home_window = None
 
     def _ensures_single_instance_running(self):
         """Check that only one instance of Bajoo is running per user.
@@ -58,6 +69,33 @@ class BajooApp(wx.App):
             return False
         return True
 
+    def create_home_window(self):
+        """Create a new HomeWindow instance and return it.
+
+        The HomeWindow is the main Window in not connected mode. This method is
+        used by the ``connect_and_register`` process as UI handler generator.
+        The home window returned is an implementation of
+        ``UIHandlerOfConnection``.
+
+        Note that the window is created, but not displayed. It's up to the user
+        to display it, by using one of the UI handler methods.
+        """
+        if self._home_window is not None:
+            _logger.error(
+                'Creation of a new HomeWindow(), but there is already one!\n'
+                'This is not supposed to happen.')
+
+        self._home_window = HomeWindow()
+
+        # clean variable when destroyed.
+        def _clean_home_window(_evt):
+            self.Unbind(wx.EVT_WINDOW_DESTROY, source=self._home_window)
+            self._home_window = None
+        self.Bind(wx.EVT_WINDOW_DESTROY, _clean_home_window,
+                  source=self._home_window)
+
+        return self._home_window
+
     def OnInit(self):
 
         if not self._ensures_single_instance_running():
@@ -71,8 +109,15 @@ class BajooApp(wx.App):
 
         return True
 
-    def OnEventLoopEnter(self):
+    # Note (Kevin): OnEventLoopEnter(), from wx.App, is inconsistent. run()
+    # is used instead.
+    # See https://groups.google.com/forum/#!topic/wxpython-users/GArZiXVZrrA
+    def run(self):
         """Start the event loop, and the connection process."""
-        # TODO: pass correct argument
-        connect_or_register(None)
+        _logger.debug('run BajooApp')
+
+        connect_or_register(self.create_home_window)
         # TODO: .then(StartSyncProcess)
+
+        _logger.debug('Start main loop')
+        self.MainLoop()
