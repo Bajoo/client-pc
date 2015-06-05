@@ -13,28 +13,37 @@ import concurrent.futures
 import types
 
 
-def then(original_future, callback):
+def then(original_future, on_success=None, on_error=None):
     """Chain a callback to a Future instance.
 
-    Execute the callback function right after the future has been resolved.
+    Execute the callback functions right after the future has been resolved.
     The final result will be returned as a Future (and so allowing to chain
     many operations).
+    If the original future raises an exception and on_error is set, on_error()
+    will be called. The value returned b on_error() will be the new result.
 
-    If the original future is cancelled or raises an exception, then the new
-    future (resulting of this call) will do the same.
+    If the original future is raises an exception and there is no on_error
+    callback, then the new future (resulting of this call) will do the same.
+
 
     If the first future is cancelled, all chained futures will also be
     cancelled.
     Note that the inverse is not true: cancelling the new future will only
     prevent the callback from being executed, and not the original action.
 
+    If a callback function returns another Future, the result of this generated
+    future will be used. It allows to pass Future factory, and so chain futures
+    together.
+
     Args:
         original_future: future who will be chained.
-        callback (callable): This callback will receive the result of the
-            original future as argument.
+        on_success (callable, optional): This callback will receive the result
+            of the original future as argument.
+        on_on_error (callable, optional): This callback will receive the
+            exception raised by the original future as argument.
     Returns:
         Future<?>: a new future who represents the value returned by the
-            callback.
+            callbacks.
     Raises:
         CancelledError: if the original future is already cancelled.
     """
@@ -44,16 +53,34 @@ def then(original_future, callback):
     new_future = Future()
 
     def _callback(self):
-        if not self.cancelled():
-            new_future.set_running_or_notify_cancel()
-            try:
-                new_result = callback(self.result())
-                new_future.set_result(new_result)
-            except Exception as e:
-                new_future.set_exception(e)
-        else:
+        if self.cancelled():
             new_future.cancel()
-            new_future.set_running_or_notify_cancel()
+            return new_future.set_running_or_notify_cancel()
+
+        new_future.set_running_or_notify_cancel()
+
+        try:
+            result = self.result()
+            if not on_success:
+                new_future.set_result(result)
+                return
+            callback = on_success
+        except Exception as e:  # initial future has failed.
+            if not on_error:
+                new_future.set_exception(e)
+                return
+            result = e
+            callback = on_error
+
+        try:
+            new_result = callback(result)
+            if isinstance(new_result, concurrent.futures.Future):
+                new_result.then(new_future.set_result,
+                                new_future.set_exception)
+            else:
+                new_future.set_result(new_result)
+        except Exception as e:
+            new_future.set_exception(e)
 
     original_future.add_done_callback(_callback)
 
@@ -81,8 +108,8 @@ class Future(concurrent.futures.Future):
         future.set_result(value)
         return future
 
-    def then(self, callback):
-        return then(self, callback)
+    def then(self, on_success=None, on_error=None):
+        return then(self, on_success, on_error)
 
 
 def resolve_dec(f):

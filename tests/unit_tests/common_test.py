@@ -119,6 +119,86 @@ class TestFuture(object):
             with pytest.raises(CancelledError):
                 then(future, _callback)
 
+    def test_then_with_future_factory(self):
+        """Chain a Future factory, using then()"""
+
+        def factory(value):
+            return Future.resolve(value * value)
+
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(lambda: 6)
+            result = then(future, factory).result()
+            assert result is 36
+
+    def test_then_with_error_callback_on_success_future(self):
+        """Chain a promise with both success and error callbacks.
+        Only the success callback should be called.
+        """
+        def on_success(value):
+            return value * 3
+
+        def on_error(err):
+            raise Exception('This should never be called!')
+
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(lambda: 654)
+            future2 = then(future, on_success, on_error)
+            assert future2.result() == 1962
+
+    def test_then_with_error_callback_on_failing_future(self):
+        """Chain a promise with both success and error callbacks.
+
+        Only the error callback should be called.
+        The resulting future will (successfully) resolve with the value
+        returned by the error callback.
+        """
+        class MyException(Exception):
+            pass
+
+        def task():
+            raise MyException()
+
+        def on_success(value):
+            raise Exception('This should never be called!')
+
+        def on_error(err):
+            assert type(err) is MyException
+            return 38
+
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(task)
+            future2 = then(future, on_success, on_error)
+            assert future2.result() is 38
+
+    def test_then_with_error_callback_only_on_success_future(self):
+        """Chain a successful promise with only the error callback.
+        """
+        def on_error(err):
+            raise Exception('This should never be called!')
+
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(lambda: 185)
+            future2 = then(future, None, on_error)
+            assert future2.result() is 185
+
+    def test_then_with_error_callback_only_on_failing_future(self):
+        """Chain a failing promise with only the error callback.
+        """
+        class MyException(Exception):
+            pass
+
+        def task():
+            raise MyException()
+
+        def on_error(err):
+            assert type(err) is MyException
+            return 8
+
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(task)
+            future2 = then(future, None, on_error)
+            assert future2.result() is 8
+
     def test_patched_future(self):
         """Patch the future and chain the future with a callback."""
 
