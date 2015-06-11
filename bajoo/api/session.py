@@ -8,7 +8,7 @@ from .user import User
 _logger = logging.getLogger(__name__)
 
 IDENTITY_API_URL = 'https://192.168.2.100'
-STORAGE_API_URL = 'https://192.168.2.100:8080'
+STORAGE_API_URL = 'https://192.168.2.100:8080/v1'
 
 CLIENT_ID = 'e2676e5d1fff42f7b32308e5eca3c36a'
 CLIENT_SECRET = '<client-secret>'
@@ -187,6 +187,30 @@ class Session(BajooOAuth2Session):
 
         return request_future.then(_on_request_result)
 
+    def _send_bajoo_request(self, request_type, verb, url_path, **params):
+        """
+        Send a json request to Bajoo server.
+        The url will be resolved according to the `request_type`
+
+        Args:
+            request_type: 'API' or 'STORAGE', by default `url_path`
+            verb (str): the verb of the RESTful function
+            url_path (str): part of the url after the host address,
+                e.g. /user, /storage, etc.
+
+        Returns (Future<dict>): the future returned by json_request
+        """
+        headers = {
+            'Authorization': 'Bearer ' + self.token.get('access_token', '')
+        }
+
+        url = {
+            'API': IDENTITY_API_URL + url_path,
+            'STORAGE': STORAGE_API_URL + url_path
+        }.get(request_type, url_path)
+
+        return json_request(verb, url, headers=headers, verify=False, **params)
+
     def send_api_request(self, verb, url_path, **params):
         """
         Send a json request to Bajoo API
@@ -198,12 +222,20 @@ class Session(BajooOAuth2Session):
 
         Returns (Future<dict>): the future returned by json_request
         """
-        headers = {
-            'Authorization': 'Bearer ' + self.token.get('access_token', '')
-        }
+        return self._send_bajoo_request('API', verb, url_path, **params)
 
-        return json_request(verb, IDENTITY_API_URL + url_path,
-                            headers=headers, verify=False, **params)
+    def send_storage_request(self, verb, url_path, **params):
+        """
+        Send a json request to Swift API
+
+        Args:
+            verb (str): the verb of the RESTful function
+            url_path (str): part of the url after the host address,
+                e.g. /user, /storage, etc.
+
+        Returns (Future<dict>): the future returned by json_request
+        """
+        return self._send_bajoo_request('STORAGE', verb, url_path, **params)
 
     def download_storage_file(self, verb, url_path, **params):
         """
@@ -212,7 +244,7 @@ class Session(BajooOAuth2Session):
         Args:
             verb (str): the verb of the RESTful function
             url_path (str): part of the url after the host address,
-                e.g. /keys, /storages, etc.
+                e.g. /keys/test@bajoo.fr.key, /storages/sample.txt, etc.
 
         Returns (Future<TemporaryFile>): the future returned by network.download
         """

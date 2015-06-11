@@ -13,8 +13,8 @@ class User(object):
     This class represent a Bajoo user, which treats the requests relating
     to the user account.
     """
-    KEY_URL_FORMAT = '/v1/keys/%s.key'
-    PUBLIC_KEY_URL_FORMAT = '/v1/keys/%s.key.pub'
+    KEY_URL_FORMAT = '/keys/%s.key'
+    PUBLIC_KEY_URL_FORMAT = '/keys/%s.key.pub'
 
     def __init__(self, name="", session=None):
         self.name = name
@@ -120,7 +120,15 @@ class User(object):
             .download_storage_file('GET', self._get_public_key_url()) \
             .then(_on_download_finished)
 
-    def create_encryption_key(self, passphrase):
+    def _upload_private_key(self, key_content):
+        return self._session.send_storage_request(
+            'PUT', self._get_key_url(), data=key_content)
+
+    def _upload_public_key(self, key_content):
+        return self._session.send_storage_request(
+            'PUT', self._get_public_key_url(), data=key_content)
+
+    def create_encryption_key(self, passphrase=''):
         """
         Create a new GPG key file and upload to server.
 
@@ -130,7 +138,18 @@ class User(object):
         Returns:
             Future<None>
         """
-        raise NotImplemented
+        # TODO: use encryption.AsyncKey.create() to create the new key
+        # TODO: then AsyncKey.export() to obtain the key file
+        priv_key, pub_key = 'PRIVATE_KEY_CONTENT', 'PUBLIC_KEY_CONTENT'
+
+        def _on_private_key_uploaded(result):
+            return {
+                'private_key_result': result,
+                'pub_key_result': self._upload_public_key(pub_key).result()
+            }
+
+        return self._upload_private_key(priv_key) \
+            .then(_on_private_key_uploaded)
 
     def reset_encryption_key(self, passphrase):
         """
@@ -154,11 +173,11 @@ if __name__ == '__main__':
 
     # Load session & change password
     session = Session.create_session('stran+test_api@bajoo.fr',
-    'stran+test_api@bajoo.fr').result()
+                                     'stran+test_api@bajoo.fr').result()
     user = User.load(session).result()
     _logger.debug(user.change_password('stran+test_api@bajoo.fr',
-    'stran+test_api_1@bajoo.fr')
-    .result())
+                                       'stran+test_api_1@bajoo.fr')
+                  .result())
 
     # Reset the old password
     session = Session.create_session('stran+test_api@bajoo.fr',
@@ -174,4 +193,5 @@ if __name__ == '__main__':
         .then(User.load)
     user = user_future.result()
     _logger.debug("User info = %s", user.get_user_info().result())
+    _logger.debug(user.create_encryption_key().result())
     _logger.debug(user.get_public_key().result())
