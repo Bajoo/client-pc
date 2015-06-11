@@ -98,7 +98,13 @@ class User(object):
         Returns:
             Future<None>
         """
-        raise NotImplemented
+
+        def _send_delete_request(_result=None):
+            return self._session.send_api_request(
+                'DELETE', '/user',
+                data={'password': self.hash_password(password)}).result()
+
+        self._remove_encryption_key().then(_send_delete_request)
 
     def _get_key_url(self):
         return User.KEY_URL_FORMAT % self.name
@@ -128,6 +134,14 @@ class User(object):
         return self._session.send_storage_request(
             'PUT', self._get_public_key_url(), data=key_content)
 
+    def _remove_private_key(self):
+        return self._session.send_storage_request(
+            'DELETE', self._get_key_url())
+
+    def _remove_public_key(self):
+        return self._session.send_storage_request(
+            'DELETE', self._get_public_key_url())
+
     def create_encryption_key(self, passphrase=''):
         """
         Create a new GPG key file and upload to server.
@@ -136,7 +150,7 @@ class User(object):
             passphrase: the passphrase used to create the new GPG key.
 
         Returns:
-            Future<None>
+            Future<dict>
         """
         # TODO: use encryption.AsyncKey.create() to create the new key
         # TODO: then AsyncKey.export() to obtain the key file
@@ -151,7 +165,24 @@ class User(object):
         return self._upload_private_key(priv_key) \
             .then(_on_private_key_uploaded)
 
-    def reset_encryption_key(self, passphrase):
+    def _remove_encryption_key(self):
+        """
+        Remove the remote private & public key file.
+
+        Returns:
+            Future<dict>
+        """
+
+        def _on_private_key_removed(result):
+            return {
+                'private_key_result': result,
+                'pub_key_result': self._remove_public_key().result()
+            }
+
+        return self._remove_private_key() \
+            .then(_on_private_key_removed)
+
+    def reset_encryption_key(self, passphrase=''):
         """
         Remove the current GPG key file & create a new one,
         then upload to server.
@@ -162,7 +193,8 @@ class User(object):
         Returns:
             Future<None>
         """
-        raise NotImplemented
+        # TODO: remove local key file
+        self.create_encryption_key(passphrase)
 
 
 if __name__ == '__main__':
@@ -195,3 +227,7 @@ if __name__ == '__main__':
     _logger.debug("User info = %s", user.get_user_info().result())
     _logger.debug(user.create_encryption_key().result())
     _logger.debug(user.get_public_key().result())
+    _logger.debug(user._remove_encryption_key().result())
+
+    # TODO: create a test case for deleting account,
+    # TODO: but create first a function for creating account
