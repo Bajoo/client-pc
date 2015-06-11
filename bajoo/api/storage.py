@@ -54,7 +54,9 @@ class Storage(object):
         raise NotImplemented()
 
     def list_files(self, prefix=None):
-        raise NotImplemented()
+        return self._session.send_api_request(
+            'GET', '/storages/%s' % self.id,
+            headers={'Accept': 'application/json'})
 
     def download(self, path):
         raise NotImplemented()
@@ -69,6 +71,8 @@ if __name__ == '__main__':
 
     from .session import Session
 
-    session1 = Session.create_session('stran+test_api@bajoo.fr',
-                                      'stran+test_api@bajoo.fr').result()
-    _logger.debug(Storage.list(session1).result())
+    session1 = Session.create_session('stran+20@bajoo.fr',
+                                      'stran+20@bajoo.fr').result()
+    _logger.debug('Storage list: %s', Storage.list(session1).result())
+    _logger.debug('Storage files: %s', Storage.list(session1).result()[0]
+                  .list_files().result())

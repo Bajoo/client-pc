@@ -200,16 +200,23 @@ class Session(BajooOAuth2Session):
 
         Returns (Future<dict>): the future returned by json_request
         """
+        # Add default params if not exist: 'headers' & 'verify'
         headers = {
             'Authorization': 'Bearer ' + self.token.get('access_token', '')
         }
+        headers.update(params.get('headers', {}))
+        params['headers'] = headers
 
+        verify = params.get('verify', False)
+        params['verify'] = verify
+
+        # Resolve url according to `request_type`
         url = {
             'API': IDENTITY_API_URL + url_path,
             'STORAGE': STORAGE_API_URL + url_path
         }.get(request_type, url_path)
 
-        return json_request(verb, url, headers=headers, verify=False, **params)
+        return json_request(verb, url, **params)
 
     def send_api_request(self, verb, url_path, **params):
         """
