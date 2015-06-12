@@ -5,6 +5,8 @@ import os
 import pkg_resources
 import sys
 
+from PyInstaller.hooks.hookutils import collect_data_files
+
 
 # Note: this script take the first entry point of the first distribution
 # package found as the executable script.
@@ -38,11 +40,18 @@ with open(script_path, 'w') as f:
     f.write("%s.%s()\n" % (entry_point.module_name,
                            '.'.join(entry_point.attrs)))
 
+
+package_data = [(os.path.relpath(file, 'bajoo'), file, 'DATA')
+                for [file, __] in collect_data_files('bajoo')]
+
+
 a = Analysis([script_path],
              pathex=pathex,
              hiddenimports=[],
              hookspath=None,
              runtime_hooks=None)
+
+a.datas += package_data
 
 pyz = PYZ(a.pure)
 

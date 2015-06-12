@@ -4,6 +4,8 @@
 import errno
 import logging
 import os
+import pkg_resources
+import sys
 import appdirs
 
 _logger = logging.getLogger(__name__)
@@ -54,6 +56,15 @@ def get_data_dir():
     data_dir = _appdirs.user_data_dir
     _ensure_dir_exists(data_dir)
     return data_dir
+
+
+def resource_filename(resource):
+    """Returns the correct filename of the package_data resource."""
+
+    if getattr(sys, 'frozen', False) and getattr(sys, '_MEIPASS', False):
+        # The application is executed frozen with pyinstaller.
+        return os.path.join(getattr(sys, '_MEIPASS'), resource)
+    return pkg_resources.resource_filename('bajoo', resource)
 
 
 def main():
