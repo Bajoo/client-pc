@@ -4,17 +4,17 @@ import logging
 _logger = logging.getLogger(__name__)
 
 
-class Storage(object):
-    def __init__(self, session, storage_id, name):
+class Container(object):
+    def __init__(self, session, container_id, name):
         self._session = session
-        self.id = storage_id
+        self.id = container_id
         self.name = name
 
     def __repr__(self):
         """
-        Override the representational string of the storage object.
+        Override the representational string of the container object.
         """
-        return "<Storage '%s' (id=%s)>" % (self.name, self.id)
+        return "<Container '%s' (id=%s)>" % (self.name, self.id)
 
     @staticmethod
     def create(session, name):
@@ -33,19 +33,19 @@ class Storage(object):
             session: a user's session to whom share folders belong.
 
         Returns:
-            Future<list<Storage>>
+            Future<list<Container>>
         """
 
-        def _on_get_storages(result):
-            result_storages = result.get('content', {})
-            storage_list = [Storage(session, result_storage.get('id', ''),
-                                    result_storage.get('name', ''))
-                            for result_storage in result_storages]
+        def _on_get_containers(result):
+            result_containers = result.get('content', {})
+            container_list = [Container(session, result_container.get('id', ''),
+                                    result_container.get('name', ''))
+                            for result_container in result_containers]
 
-            return storage_list
+            return container_list
 
         return session.send_api_request('GET', '/storages') \
-            .then(_on_get_storages)
+            .then(_on_get_containers)
 
     def delete(self):
         raise NotImplemented()
@@ -73,6 +73,6 @@ if __name__ == '__main__':
 
     session1 = Session.create_session('stran+20@bajoo.fr',
                                       'stran+20@bajoo.fr').result()
-    _logger.debug('Storage list: %s', Storage.list(session1).result())
-    _logger.debug('Storage files: %s', Storage.list(session1).result()[0]
+    _logger.debug('Storage list: %s', Container.list(session1).result())
+    _logger.debug('Storage files: %s', Container.list(session1).result()[0]
                   .list_files().result())
