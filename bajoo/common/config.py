@@ -31,7 +31,8 @@ _default_config = {
 }
 
 # Actual config parser
-_config_parser = None
+_config_parser = configparser.ConfigParser()
+_config_parser.add_section('config')
 
 
 def _get_config_file_path():
@@ -47,11 +48,8 @@ def load():
 
     config_file_path = _get_config_file_path()
 
-    _config_parser = configparser.ConfigParser()
     if not _config_parser.read(config_file_path):
         _logger.warning('Unable to load config file: %s' % config_file_path)
-    if not _config_parser.has_section('config'):
-        _config_parser.add_section('config')
 
 
 def get(key):
