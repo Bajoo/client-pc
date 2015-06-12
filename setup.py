@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from distutils.cmd import Command
+from distutils.command.build import build as BuildCommand
+from glob import glob
+import os
 from setuptools import find_packages, setup
 from setuptools.command.test import test as TestCommand
 from setuptools.command.install import install as InstallCommand
@@ -44,6 +48,31 @@ class Tox(TestCommand):
         import shlex
         errno = tox.cmdline(args=shlex.split(self.tox_args))
         sys.exit(errno)
+
+
+class Build(BuildCommand):
+    sub_commands = [('build_translation', None)] + BuildCommand.sub_commands
+
+
+class BuildTranslation(Command):
+    description = "Convert .po files into .mo files."
+
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        from pythongettext.msgfmt import Msgfmt
+
+        locale_dir = os.path.join(os.path.dirname(__file__), 'bajoo/locale/')
+        for src in glob(os.path.join(locale_dir, '*/LC_MESSAGES/*.po')):
+            dest = src[:-2] + 'mo'
+            with open(src, 'rb') as po_file, open(dest, 'wb') as mo_file:
+                mo_file.write(Msgfmt(po_file).get())
 
 
 class Install(InstallCommand):
@@ -92,10 +121,13 @@ setup(
     ],
     keywords="bajoo storage cloud file-sharing",
     packages=find_packages(),
+    setup_requires=['python-gettext'],
     install_requires=requirements,
     tests_require=['tox'],
     include_package_data=True,
-    package_data={},
+    package_data={
+        'bajoo': ['locale/*/LC_MESSAGES/*.mo']
+    },
     dependency_links=['http://wxpython.org/Phoenix/snapshot-builds/'],
     entry_points={
         "console_scripts": [
@@ -104,7 +136,9 @@ setup(
     },
     cmdclass={
         'install': Install,
-        'test': Tox
+        'test': Tox,
+        'build': Build,
+        'build_translation': BuildTranslation
     },
     zip_safe=True
 )

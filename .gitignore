@@ -13,3 +13,6 @@ pip-log.txt
 # Tests
 .tox/
 .coverage
+
+# compiled translation files.
+*.mo
