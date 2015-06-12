@@ -4,7 +4,7 @@ import wx
 from wx.lib.agw.hyperlink import HyperLinkCtrl
 
 from ...common.i18n import N_
-from ..translator import Translator
+from ..base_view import BaseView
 
 
 class HomeScreen(wx.Panel):
@@ -14,10 +14,12 @@ class HomeScreen(wx.Panel):
         self._view = HomeScreenView(self)
 
 
-class HomeScreenView(Translator):
+class HomeScreenView(BaseView):
 
     def __init__(self, home_screen):
-        Translator.__init__(self)
+        BaseView.__init__(self, home_screen)
+
+        self.set_frame_title(N_('Bajoo'))
 
         app_name_txt = wx.StaticText(home_screen)
         app_name_txt.SetFont(app_name_txt.GetFont().Scaled(3.5))

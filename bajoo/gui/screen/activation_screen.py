@@ -3,7 +3,7 @@
 import wx
 
 from ...common.i18n import N_
-from ..translator import Translator
+from ..base_view import BaseView
 
 
 class ActivationScreen(wx.Panel):
@@ -13,13 +13,12 @@ class ActivationScreen(wx.Panel):
         self._view = ActivationScreenView(self)
 
 
-class ActivationScreenView(Translator):
+class ActivationScreenView(BaseView):
 
     def __init__(self, activation_screen):
-        Translator.__init__(self)
+        BaseView.__init__(self, activation_screen)
 
-        self.register_i18n(activation_screen.GetTopLevelParent().SetTitle,
-                           N_('Bajoo - Activate your account'))
+        self.set_frame_title(N_('Bajoo - Activate your account'))
 
         title_txt = wx.StaticText(activation_screen)
         title_txt.SetFont(title_txt.GetFont().Bold())
@@ -39,21 +38,10 @@ class ActivationScreenView(Translator):
         done_btn = wx.Button(activation_screen)
         self.register_i18n(done_btn.SetLabel, N_("It's done!"))
 
-        main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(title_txt, flag=wx.ALL, border=15)
-        main_sizer.Add(content_txt, flag=wx.RIGHT | wx.LEFT | wx.BOTTOM,
-                       border=15)
-        main_sizer.AddStretchSpacer()
-
-        button_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        button_sizer.Add(come_back_later_btn)
-        button_sizer.AddStretchSpacer()
-        button_sizer.Add(done_btn)
-        main_sizer.Add(button_sizer,
-                       flag=wx.RIGHT | wx.LEFT | wx.BOTTOM | wx.EXPAND,
-                       border=15)
-
-        activation_screen.SetSizer(main_sizer)
+        sizer = self.make_sizer(wx.VERTICAL, [
+            title_txt, content_txt, None,
+            [come_back_later_btn, None, done_btn]])
+        activation_screen.SetSizer(sizer)
 
 
 def main():
