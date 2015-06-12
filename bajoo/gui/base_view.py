@@ -28,7 +28,8 @@ class BaseView(Translator):
         frame = self.window.GetTopLevelParent()
         self.register_i18n(frame.SetTitle, title)
 
-    def make_sizer(self, direction, items, outside_border=True):
+    def make_sizer(self, direction, items, outside_border=True, flag=0,
+                   proportion=0):
         """Recursively make sizers with border for simple cases.
 
         Each element given will be added to the sizer, with appropriate
@@ -44,6 +45,10 @@ class BaseView(Translator):
             outside_border (boolean, optional): If set to False, no outside
                 border are added: Only borders between elements will be
                 created.
+            flag (optional): if set, additional flags who will be passed to
+                each ``sizer.Add()`` call.
+            proportion (optional): If set, the parameter will be passed to each
+                ``sizer.Add()`` call.
         returns:
             wx.Sizer: the top-level sizer created.
         """
@@ -83,6 +88,7 @@ class BaseView(Translator):
                 else:
                     flags |= wx.RIGHT
 
-            sizer.Add(item, border=15, flag=flags)
+            flags |= flag
+            sizer.Add(item, border=15, flag=flags, proportion=proportion)
 
         return sizer
