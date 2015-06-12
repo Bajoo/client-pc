@@ -3,6 +3,8 @@
 import wx
 
 from ..ui_handler_of_connection import UIHandlerOfConnection
+from .event_future import EventFuture
+from .screen import HomeScreen
 
 
 class HomeWindow(wx.Frame, UIHandlerOfConnection):
@@ -32,24 +34,26 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
 
     def get_register_or_connection_credentials(self, last_username=None,
                                                errors=None):
-        pass
+        self.Show(True)
+        return EventFuture(self, wx.EVT_CLOSE).then(lambda evt: evt.Skip())
 
     def inform_user_is_connected(self):
         pass
 
 
-class HomeWindowView(wx.Panel):
+class HomeWindowView(object):
     """View of the HomeWindow"""
 
-    def __init__(self, parent):
-        wx.Panel.__init__(self, parent)
+    def __init__(self, window):
+        self._current_screen = None
 
         s = wx.BoxSizer(wx.VERTICAL)
 
-        # TODO: insert elements.
+        self._current_screen = HomeScreen(window)
 
-        self.SetSizer(s)
-        s.SetSizeHints(self.GetParent())  # Set default and min size of Window
+        s.Add(self._current_screen, proportion=1, flag=wx.EXPAND)
+        s.SetSizeHints(window)  # Set default and min size of Window
+        window.SetSizer(s)
 
 
 def main():

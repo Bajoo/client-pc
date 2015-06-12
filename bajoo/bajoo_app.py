@@ -89,7 +89,6 @@ class BajooApp(wx.App):
 
         # clean variable when destroyed.
         def _clean_home_window(_evt):
-            self.Unbind(wx.EVT_WINDOW_DESTROY, source=self._home_window)
             self._home_window = None
         self.Bind(wx.EVT_WINDOW_DESTROY, _clean_home_window,
                   source=self._home_window)
@@ -100,10 +99,6 @@ class BajooApp(wx.App):
 
         if not self._ensures_single_instance_running():
             return False
-
-        frame = wx.Frame(None, wx.ID_ANY, "Hello World")
-        frame.Show(True)
-        self.SetTopWindow(frame)
 
         # TODO: Create the TrayIcon
 
