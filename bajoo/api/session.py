@@ -253,7 +253,8 @@ class Session(BajooOAuth2Session):
             url_path (str): part of the url after the host address,
                 e.g. /keys/test@bajoo.fr.key, /storages/sample.txt, etc.
 
-        Returns (Future<TemporaryFile>): the future returned by network.download
+        Returns (Future<TemporaryFile>):
+            the future returned by network.download
         """
         headers = {
             'Authorization': 'Bearer ' + self.token.get('access_token', '')

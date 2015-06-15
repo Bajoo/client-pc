@@ -22,7 +22,29 @@ class Container(object):
 
     @staticmethod
     def find(session, container_id):
-        raise NotImplemented()
+        """
+        Find a container by its id.
+
+        Args:
+            session: a user's session to whom the container belongs.
+            container_id: id of the container to search.
+
+        Returns Future<Container>: the container found, Future<None> otherwise.
+        """
+
+        def _on_get_containers(result):
+            result_container = result.get('content', {})
+            return Container(session, result_container.get('id', ''),
+                             result_container.get('name', ''))
+
+        def _on_error(error):
+            # TODO: throw ContainerNotFoundError
+            _logger.debug('Error when search for container (%s, %s)',
+                          error.code, error.message)
+            return None
+
+        return session.send_api_request('GET', '/storages/%s' % container_id) \
+            .then(_on_get_containers, _on_error)
 
     @staticmethod
     def list(session):
@@ -38,9 +60,10 @@ class Container(object):
 
         def _on_get_containers(result):
             result_containers = result.get('content', {})
-            container_list = [Container(session, result_container.get('id', ''),
-                                    result_container.get('name', ''))
-                            for result_container in result_containers]
+            container_list = [Container(session,
+                                        result_container.get('id', ''),
+                                        result_container.get('name', ''))
+                              for result_container in result_containers]
 
             return container_list
 
@@ -76,3 +99,9 @@ if __name__ == '__main__':
     _logger.debug('Storage list: %s', Container.list(session1).result())
     _logger.debug('Storage files: %s', Container.list(session1).result()[0]
                   .list_files().result())
+
+    container_id = '5cf75964e49a4f4c809aaf2d80cc8178'
+    _logger.debug('Search container by id %s: %s', container_id,
+                  Container.find(session1, container_id).result())
+    _logger.debug('Search container by id %s: %s', 'invalid_id',
+                  Container.find(session1, 'invalid_id').result())
