@@ -1,17 +1,28 @@
 # -*- coding: utf-8 -*-
 
 import wx
-from wx.lib.agw.hyperlink import HyperLinkCtrl
+from wx.lib.agw.hyperlink import HyperLinkCtrl, EVT_HYPERLINK_LEFT
 
 from ...common.i18n import N_
 from ..base_view import BaseView
+from ..proxy_window import ProxyWindow
 
 
 class HomeScreen(wx.Panel):
     """Home screen, presenting the connection form."""
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
+
+        self.proxy_settings_link = HyperLinkCtrl(self)
+
         self._view = HomeScreenView(self)
+
+        self.Bind(EVT_HYPERLINK_LEFT, self._open_proxy_window,
+                  self.proxy_settings_link)
+
+    def _open_proxy_window(self, _event):
+        pw = ProxyWindow(self)
+        pw.ShowModal()
 
 
 class HomeScreenView(BaseView):
@@ -28,10 +39,10 @@ class HomeScreenView(BaseView):
         app_subtitle_txt.SetFont(app_subtitle_txt.GetFont().Scaled(2.5))
         self.register_i18n(app_subtitle_txt.SetLabel,
                            N_('Your online file storage, secure!'))
-        proxy_settings_link = HyperLinkCtrl(home_screen)
-        proxy_settings_link.DoPopup(False)
-        proxy_settings_link.AutoBrowse(False)
-        self.register_i18n(proxy_settings_link.SetLabel, N_('proxy settings'))
+        home_screen.proxy_settings_link.DoPopup(False)
+        home_screen.proxy_settings_link.AutoBrowse(False)
+        self.register_i18n(home_screen.proxy_settings_link.SetLabel,
+                           N_('proxy settings'))
         lang_label = wx.StaticText(home_screen)
         self.register_i18n(lang_label.SetLabel, N_('Language:'))
         notebook = wx.Notebook(home_screen)
@@ -54,7 +65,7 @@ class HomeScreenView(BaseView):
         title_sizer.AddStretchSpacer()
 
         settings_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        settings_sizer.Add(proxy_settings_link,
+        settings_sizer.Add(home_screen.proxy_settings_link,
                            flag=wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, border=10)
         settings_sizer.AddStretchSpacer()
         settings_sizer.Add(lang_label,

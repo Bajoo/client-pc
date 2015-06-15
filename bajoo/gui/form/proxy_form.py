@@ -59,11 +59,18 @@ class ProxyFormView(BaseView):
         sizer_radio = wx.BoxSizer(wx.VERTICAL)
         sizer_radio.AddMany([auto_radio, system_radio, no_radio, manual_radio])
 
+        uri_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        uri_sizer.Add(server_input, proportion=5, flag=wx.ALIGN_CENTER)
+        uri_sizer.Add(wx.StaticText(proxy_form, label=':'),
+                      flag=wx.ALIGN_CENTER | wx.RIGHT | wx.LEFT,
+                      border=10)
+        uri_sizer.Add(port_input, proportion=1, flag=wx.ALIGN_CENTER)
+
         s = self.make_sizer(wx.VERTICAL, [
             sizer_radio,
             self.make_sizer(wx.HORIZONTAL, [proxy_type_txt, proxy_type_choice],
                             outside_border=False, flag=wx.ALIGN_CENTER),
-            [server_input, wx.StaticText(proxy_form, label=':'), port_input],
+            uri_sizer,
             auth_box,
             self.make_sizer(wx.HORIZONTAL, [username_input, password_input],
                             outside_border=False, proportion=1)
