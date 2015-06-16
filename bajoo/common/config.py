@@ -27,7 +27,15 @@ _default_config = {
     'lang': {'type': str, 'default': None},
     # TODO: set default debug_mode to False for stable release
     'debug_mode': {'type': bool, 'default': True},
-    'log_levels': {'type': dict, 'default': {}}
+    'log_levels': {'type': dict, 'default': {}},
+    # Can be "no_proxy", "system_settings" or "manual_settings"
+    'proxy_mode': {'type': str, 'default': 'system_settings'},
+    # can be "SOCKS4", "SOCKS5" or "HTTP".
+    'proxy_type': {'type': str, 'default': 'HTTP'},
+    'proxy_url': {'type': str, 'default': None},
+    'proxy_port': {'type': int, 'default': None},
+    'proxy_user': {'type': str, 'default': None},
+    'proxy_password': {'type': str, 'default': None}
 }
 
 # Actual config parser
