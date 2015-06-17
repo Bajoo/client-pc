@@ -27,6 +27,9 @@ class ProxyForm(BaseForm):
     This form don't contains any submit button. The submission of te form must
     be done outside (either manually, or by a parent form).
     """
+
+    proxy_type_list = ['HTTP', 'SOCKS4', 'SOCKS5']
+
     def __init__(self, parent, **kwargs):
         BaseForm.__init__(self, parent, **kwargs)
         self._view = ProxyFormView(self)
@@ -54,12 +57,10 @@ class ProxyForm(BaseForm):
         else:
             self.FindWindowByName('system_settings').SetValue(True)
 
-        config2type = {
-            'HTTP': 0,
-            'SOCKS4': 1,
-            'SOCKS5': 2,
-        }
-        selection = config2type.get(proxy_type, 0)
+        try:
+            selection = self.proxy_type_list.index(proxy_type)
+        except ValueError:
+            selection = 0
         self.FindWindowByName('proxy_type').SetSelection(selection)
 
         self.FindWindowByName('server_uri').SetValue(url)
@@ -82,6 +83,27 @@ class ProxyForm(BaseForm):
 
         for name in ('username', 'password'):
             self.FindWindowByName(name).Enable(is_manual_config and use_auth)
+
+    def get_data(self):
+        """Override get_data to provides more easily usable results.
+
+        `proxy_type` contains the appropriate str value.
+        All `XX_settings` values are replaced by `proxy_mode`, containing
+        the textual mode according to the config choices.
+
+        Returns:
+            dict
+        """
+        data = BaseForm.get_data(self)
+        proxy_type = self.proxy_type_list[data['proxy_type']]
+
+        proxy_mode = None
+        for mode in ('system_settings', 'no_proxy', 'manual_settings'):
+            if data[mode]:
+                proxy_mode = mode
+            del data[mode]
+        data.update(proxy_type=proxy_type, proxy_mode=proxy_mode)
+        return data
 
 
 class ProxyFormView(BaseView):
