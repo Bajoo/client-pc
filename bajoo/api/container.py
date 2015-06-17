@@ -18,7 +18,14 @@ class Container(object):
 
     @staticmethod
     def create(session, name):
-        raise NotImplemented()
+        def _on_create_returned(response):
+            container_result = response.get('content', {})
+            return Container(session, container_result.get('id', ''),
+                             container_result.get('name', ''))
+
+        return session.send_api_request(
+            'POST', '/storages', data={'name': name}) \
+            .then(_on_create_returned)
 
     @staticmethod
     def find(session, container_id):
@@ -59,16 +66,18 @@ class Container(object):
         """
 
         def _on_get_containers(result):
-            result_containers = result.get('content', {})
-            container_list = [Container(session,
-                                        result_container.get('id', ''),
-                                        result_container.get('name', ''))
-                              for result_container in result_containers]
+            result_container = result.get('content', {})
+            return Container(session, result_container.get('id', ''),
+                             result_container.get('name', ''))
 
-            return container_list
+        def _on_error(error):
+            # TODO: throw ContainerNotFoundError
+            _logger.debug('Error when search for container (%s, %s)',
+                          error.code, error.message)
+            return None
 
-        return session.send_api_request('GET', '/storages') \
-            .then(_on_get_containers)
+        return session.send_api_request('GET', '/storages/%s' % container_id) \
+            .then(_on_get_containers, _on_error)
 
     def delete(self):
         raise NotImplemented()
@@ -105,3 +114,11 @@ if __name__ == '__main__':
                   Container.find(session1, container_id).result())
     _logger.debug('Search container by id %s: %s', 'invalid_id',
                   Container.find(session1, 'invalid_id').result())
+
+    from random import choice
+    from string import ascii_lowercase
+
+    # generate a random container name
+    new_container_name = ''.join(choice(ascii_lowercase) for _ in range(16))
+    _logger.debug('Created container: %s',
+                  Container.create(session1, new_container_name).result())
