@@ -25,7 +25,7 @@ class BaseForm(wx.Window, Translator):
 
     Attributes:
         EVT_SUBMIT: ID of the event form (if any). Must be overridden for use.
-        SubmitEvent (wx.Event subclass): Event class corresponding to
+        SubmitEvent (wx.CommandEvent subclass): Event class corresponding to
         EVT_SUBMIT.
     """
 
@@ -46,6 +46,8 @@ class BaseForm(wx.Window, Translator):
 
         # map Window ID <-> Previous state
         self._form_state = {}
+
+        self.auto_disable = auto_disable
 
         if auto_disable:
             self.Bind(wx.EVT_BUTTON, self._on_child_submitted)
@@ -97,14 +99,16 @@ class BaseForm(wx.Window, Translator):
         """
         return self.get_data()
 
-    def submit(self, _event=None):
+    def submit(self, event=None):
         """Post a SubmitEvent with form data.
 
         Take a dummy argument ``_event``, allowing to directly use has an event
         handler.
         """
-        event = self.SubmitEvent(**self.get_data())
-        wx.PostEvent(self, event)
+        if self.auto_disable:
+            self.disable()
+        submit_event = self.SubmitEvent(self.GetId(), **self.get_data())
+        wx.PostEvent(self, submit_event)
 
 
 def main():
