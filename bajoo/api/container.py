@@ -65,22 +65,21 @@ class Container(object):
             Future<list<Container>>
         """
 
-        def _on_get_containers(result):
-            result_container = result.get('content', {})
-            return Container(session, result_container.get('id', ''),
-                             result_container.get('name', ''))
+        def _on_get_storages(result):
+            result_storages = result.get('content', {})
+            storage_list = [Container(session, result_storage.get('id', ''),
+                                      result_storage.get('name', ''))
+                            for result_storage in result_storages]
 
-        def _on_error(error):
-            # TODO: throw ContainerNotFoundError
-            _logger.debug('Error when search for container (%s, %s)',
-                          error.code, error.message)
-            return None
+            return storage_list
 
-        return session.send_api_request('GET', '/storages/%s' % container_id) \
-            .then(_on_get_containers, _on_error)
+        return session.send_api_request('GET', '/storages') \
+            .then(_on_get_storages)
 
     def delete(self):
-        raise NotImplemented()
+        return self._session \
+            .send_api_request('DELETE', '/storages/%s' % self.id) \
+            .then(lambda _: None)
 
     def get_stats(self):
         raise NotImplemented()
@@ -120,5 +119,8 @@ if __name__ == '__main__':
 
     # generate a random container name
     new_container_name = ''.join(choice(ascii_lowercase) for _ in range(16))
-    _logger.debug('Created container: %s',
-                  Container.create(session1, new_container_name).result())
+    container_created = Container.create(session1, new_container_name).result()
+    _logger.debug('Created container: %s', container_created)
+
+    # test delete created container
+    _logger.debug('Deleted container: %s', container_created.delete().result())
