@@ -123,14 +123,19 @@ class ProxyFormView(BaseView):
         wx.Choice(self.window, name='proxy_type',
                   choices=["HTTP", "SOCKS4", "SOCKS5"])
 
-        wx.TextCtrl(self.window, name='server_uri')
-        wx.TextCtrl(self.window, name='server_port')
+        server_uri_txt = wx.TextCtrl(self.window, name='server_uri')
+        server_port_txt = wx.TextCtrl(self.window, name='server_port')
+        self.register_i18n(server_uri_txt.SetHint, N_('Server'))
+        self.register_i18n(server_port_txt.SetHint, N_('Port'))
 
         auth_box = wx.CheckBox(self.window, name='use_auth')
         self.register_i18n(auth_box.SetLabel,
                            N_('The server requires an authentication'))
-        wx.TextCtrl(self.window, name='username')
-        wx.TextCtrl(self.window, style=wx.TE_PASSWORD, name='password')
+        username_txt = wx.TextCtrl(self.window, name='username')
+        password_txt = wx.TextCtrl(self.window, style=wx.TE_PASSWORD,
+                                   name='password')
+        self.register_i18n(username_txt.SetHint, N_('User'))
+        self.register_i18n(password_txt.SetHint, N_('Password'))
 
     def create_layout(self):
         """Create appropriate layout and static text for proxy form."""
