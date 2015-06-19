@@ -111,8 +111,13 @@ class BajooApp(wx.App):
         """Start the event loop, and the connection process."""
         _logger.debug('run BajooApp')
 
-        connect_or_register(self.create_home_window)
+        def _on_unhandled_exception(_exception):
+            _logger.critical('Uncaught exception on Run process',
+                             exc_info=True)
+
+        future = connect_or_register(self.create_home_window)
         # TODO: .then(StartSyncProcess)
+        future.then(None, _on_unhandled_exception)
 
         _logger.debug('Start main loop')
         self.MainLoop()
