@@ -22,6 +22,7 @@ import errno
 import logging
 import os.path
 import sys
+
 from . import path as bajoo_path
 
 
@@ -86,6 +87,50 @@ def _get_file_handler():
                                             exc_info=True)
 
 
+class ColoredFormatter(logging.Formatter):
+    """Formatter who display colored messages using ANSI escape codes."""
+
+    _colors = {
+        'RESET': '\033[0m',
+        'DEBUG': '\033[34m',
+        'INFO': '\033[32m',
+        'WARNING': '\033[33m',
+        'ERROR': '\033[31m',
+        'CRITICAL': '\033[31m',
+        'NAME': '\033[36m',
+        'DATE': '\033[30;1m',
+        'EXCEPTION_NAME': '\033[31;1m',
+        'EXCEPTION_STR': '\033[37;1m'
+    }
+
+    def _colorize(self, msg, color):
+        return self._colors.get(color, '') + msg + self._colors.get('RESET')
+
+    def formatTime(self, record, datefmt=None):
+        result = logging.Formatter.formatTime(self, record, datefmt)
+        return self._colorize(result, 'DATE')
+
+    def formatException(self, ei):
+        msg = logging.Formatter.formatException(self, ei)
+        msg_lines = msg.split('\n')
+        last_line = msg_lines[-1]
+        result = '\n'.join(msg_lines[:-1]) + '\n'
+        result += self._colorize(last_line.split(':')[0], 'EXCEPTION_NAME')
+        result += ':' + self._colorize(':'.join(last_line.split(':')[1:]),
+                                       'EXCEPTION_STR')
+        return result
+
+    def format(self, record):
+        record.name = self._colorize(record.name, 'NAME')
+        record.levelname = self._colorize(record.levelname, record.levelname)
+        return logging.Formatter.format(self, record)
+
+
+def _excepthook(exctype, value, traceback):
+    logging.getLogger(__name__).critical('Uncaught exception',
+                                         exc_info=(exctype, value, traceback))
+
+
 def init():
     """Open the log file and prepare the logging module before first use."""
     root_logger = logging.getLogger()
@@ -95,11 +140,12 @@ def init():
     string_format = '%(asctime)s %(levelname)-7s %(name)s - %(message)s'
     formatter = logging.Formatter(fmt=string_format, datefmt=date_format)
 
-    stdout_handler.setFormatter(formatter)
-
     if _support_color_output():
-        # TODO: set ColorFormatter
-        pass
+        colored_formatter = ColoredFormatter(fmt=string_format,
+                                             datefmt=date_format)
+        stdout_handler.setFormatter(colored_formatter)
+    else:
+        stdout_handler.setFormatter(formatter)
     root_logger.addHandler(stdout_handler)
 
     file_handler = _get_file_handler()
@@ -109,6 +155,9 @@ def init():
 
     # Before any configuration, all messages should be displayed.
     set_debug_mode(True)
+
+    # Log all uncaught exceptions
+    sys.excepthook = _excepthook
 
 
 def set_logs_level(levels):
