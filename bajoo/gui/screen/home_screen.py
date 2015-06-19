@@ -47,8 +47,8 @@ class HomeScreen(wx.Panel):
     def reset_form(self, username=None, errors=None):
         """Prepare or reset the form with initial values."""
         self.FindWindowByName('notebook').Enable()
+        self._view.get_active_form().set_data(username, errors)
         self._view.get_active_form().enable()
-        # TODO: transmit username and error to the form.
 
     def _open_proxy_window(self, _event):
         pw = ProxyWindow(self)

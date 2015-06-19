@@ -58,6 +58,12 @@ class BaseView(Translator):
         }
 
         sizer = wx.BoxSizer(direction)
+
+        # the first border is implemented as a Spacer,
+        # because borders of hidden elements don't appears.
+        if outside_border:
+            sizer.AddSpacer(15)
+
         for (index, item) in enumerate(items):
             if item is None:
                 sizer.AddStretchSpacer()
@@ -77,12 +83,7 @@ class BaseView(Translator):
                     flags |= wx.LEFT | wx.RIGHT
                 else:
                     flags |= wx.TOP | wx.BOTTOM
-                if index is 0:  # first item
-                    if direction is wx.VERTICAL:
-                        flags |= wx.TOP
-                    else:
-                        flags |= wx.LEFT
-            if outside_border or len(items) - 1 is not index:
+            if len(items) - 1 is not index:
                 if direction is wx.VERTICAL:
                     flags |= wx.BOTTOM
                 else:
@@ -90,5 +91,9 @@ class BaseView(Translator):
 
             flags |= flag
             sizer.Add(item, border=15, flag=flags, proportion=proportion)
+
+        # last border
+        if outside_border:
+            sizer.AddSpacer(15)
 
         return sizer

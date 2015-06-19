@@ -31,6 +31,16 @@ class ConnectionForm(BaseForm):
         # TODO: validate form (empty or bad fields)
         self.Bind(wx.EVT_BUTTON, self.submit, self.FindWindowByName('submit'))
 
+    def set_data(self, username=None, errors=None):
+        """Initialize the form and set default data."""
+        self.FindWindowByName('password').SetValue('')
+        if username:
+            self.FindWindowByName('username').SetValue(username)
+        if errors:
+            self._view.display_message(errors)
+        else:
+            self._view.hide_message()
+
 
 class ConnectionFormView(BaseView):
     """View of the ProxyForm"""
@@ -38,6 +48,7 @@ class ConnectionFormView(BaseView):
     def create_children(self):
         """Create all named children of proxy form."""
 
+        wx.StaticText(self.window, name='messages')
         username_txt = wx.TextCtrl(self.window, name='username')
         password_txt = wx.TextCtrl(self.window, name='password',
                                    style=wx.TE_PASSWORD)
@@ -68,12 +79,25 @@ class ConnectionFormView(BaseView):
         forgotten_password_link.DoPopup(False)
 
         sizer = self.make_sizer(wx.VERTICAL, [
+            self.window.FindWindowByName('messages'),
             self.window.FindWindowByName('username'),
             self.window.FindWindowByName('password'),
             forgotten_password_link,
             self.window.FindWindowByName('submit')
         ])
         self.window.SetSizer(sizer)
+
+    def display_message(self, message):
+        """Display a message on top of the form."""
+        message_text = self.window.FindWindowByName('messages')
+        message_text.SetLabel(message)
+        message_text.Show()
+        self.window.GetTopLevelParent().Layout()
+
+    def hide_message(self):
+        """Hide the message displayed on top of the form."""
+        self.window.FindWindowByName('messages').Hide()
+        self.window.GetTopLevelParent().Layout()
 
 
 def main():
@@ -87,6 +111,7 @@ def main():
         print('password = "%s"' % event.password)
 
     form = ConnectionForm(win)
+    form.set_data()
     win.Bind(ConnectionForm.EVT_SUBMIT, _form_submit)
 
     sizer = wx.BoxSizer(wx.HORIZONTAL)
