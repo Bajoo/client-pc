@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import wx
+from wx.lib.newevent import NewEvent
 
 from ..common.future import Future
 
@@ -46,3 +47,31 @@ class EventFuture(Future):
                                 handler=self._event_handler)
         self.cancel()
         self.set_running_or_notify_cancel()
+
+
+def ensure_gui_thread(f):
+    """Ensure the function will always be called in the GUI thread.
+
+    This decorator will execute the function only in the GUI thread.
+    If we are not in the right thread, it will delay the execution (using
+    wx.PostEvent) and returns a Future
+    """
+
+    RunEvent, EVT_RUN = NewEvent()
+    handler = wx.EvtHandler()
+
+    def wrapper(*args, **kwargs):
+        if 'phoenix' in wx.version():
+            is_main_thread = wx.IsMainThread
+        else:
+            is_main_thread = wx.Thread_IsMain
+
+        if is_main_thread():
+            return f(*args, **kwargs)
+        else:
+            future = EventFuture(handler, EVT_RUN)
+            future = future.then(lambda _evt: f(*args, **kwargs))
+            wx.PostEvent(handler, RunEvent())
+            return future
+
+    return wrapper
