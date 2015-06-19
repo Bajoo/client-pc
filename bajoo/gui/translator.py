@@ -38,7 +38,7 @@ class Translator(object):
 
         Args:
             method (callable): method to call when the language changes.
-            value (tsr): text to translate and to pass to the method.
+            value (str): text to translate and to pass to the method.
         """
         self._i18n_methods.append((method, value))
         method(_(value))
@@ -62,3 +62,7 @@ class Translator(object):
             self._i18n_child.remove(item)
         except ValueError:
             self._i18n_methods.remove(item)
+
+    def register_many_i18n(self, method_name, windows):
+        for (window, text) in windows.items():
+            self.register_i18n(getattr(window, method_name), text)

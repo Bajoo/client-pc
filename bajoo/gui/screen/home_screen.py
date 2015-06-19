@@ -64,18 +64,13 @@ class HomeScreenView(BaseView):
 
         app_name_txt = wx.StaticText(home_screen)
         app_name_txt.SetFont(app_name_txt.GetFont().Scaled(3.5))
-        self.register_i18n(app_name_txt.SetLabel, N_('Bajoo'))
         app_subtitle_txt = wx.StaticText(home_screen)
         app_subtitle_txt.SetFont(app_subtitle_txt.GetFont().Scaled(2.5))
-        self.register_i18n(app_subtitle_txt.SetLabel,
-                           N_('Your online file storage, secure!'))
         proxy_settings_link = HyperLinkCtrl(home_screen,
                                             name='proxy_settings_link')
         proxy_settings_link.DoPopup(False)
         proxy_settings_link.AutoBrowse(False)
-        self.register_i18n(proxy_settings_link.SetLabel, N_('proxy settings'))
         lang_label = wx.StaticText(home_screen)
-        self.register_i18n(lang_label.SetLabel, N_('Language:'))
 
         notebook = wx.Notebook(home_screen, name='notebook')
 
@@ -88,6 +83,13 @@ class HomeScreenView(BaseView):
         notebook.AddPage(register_form, '')
         self.register_i18n(partial(notebook.SetPageText, 1),
                            N_('Make an account'))
+
+        self.register_many_i18n('SetLabel', {
+            app_name_txt: N_('Bajoo'),
+            app_subtitle_txt: N_('Your online file storage, secure!'),
+            proxy_settings_link: N_('proxy settings'),
+            lang_label: N_('Language:')
+        })
 
         title_sizer = wx.BoxSizer(wx.HORIZONTAL)
         title_sizer.AddStretchSpacer()
@@ -112,7 +114,7 @@ class HomeScreenView(BaseView):
         right_column.Add(settings_sizer, flag=wx.EXPAND | wx.ALL, border=15)
 
         content_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        bmp = wx.Image('bajoo/assets/images/home_bajoo_mascot.png')\
+        bmp = wx.Image('bajoo/assets/images/home_bajoo_mascot.png') \
             .ConvertToBitmap()
         # Compatibility wxPython classic and phoenix
         if 'phoenix' in wx.version():

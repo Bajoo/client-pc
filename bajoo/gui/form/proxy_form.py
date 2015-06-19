@@ -114,28 +114,33 @@ class ProxyFormView(BaseView):
 
         system_radio = wx.RadioButton(self.window, name='system_settings',
                                       style=wx.RB_GROUP)
-        self.register_i18n(system_radio.SetLabel, N_('System settings'))
         no_radio = wx.RadioButton(self.window, name='no_proxy')
-        self.register_i18n(no_radio.SetLabel, N_('Do not use proxy'))
         manual_radio = wx.RadioButton(self.window, name='manual_settings')
-        self.register_i18n(manual_radio.SetLabel, N_('Manual settings'))
 
         wx.Choice(self.window, name='proxy_type',
                   choices=["HTTP", "SOCKS4", "SOCKS5"])
 
         server_uri_txt = wx.TextCtrl(self.window, name='server_uri')
         server_port_txt = wx.TextCtrl(self.window, name='server_port')
-        self.register_i18n(server_uri_txt.SetHint, N_('Server'))
-        self.register_i18n(server_port_txt.SetHint, N_('Port'))
 
         auth_box = wx.CheckBox(self.window, name='use_auth')
-        self.register_i18n(auth_box.SetLabel,
-                           N_('The server requires an authentication'))
         username_txt = wx.TextCtrl(self.window, name='username')
         password_txt = wx.TextCtrl(self.window, style=wx.TE_PASSWORD,
                                    name='password')
-        self.register_i18n(username_txt.SetHint, N_('User'))
-        self.register_i18n(password_txt.SetHint, N_('Password'))
+
+        self.register_many_i18n('SetLabel', {
+            system_radio: N_('System settings'),
+            no_radio: N_('Do not use proxy'),
+            manual_radio: N_('Manual settings'),
+            auth_box: N_('The server requires an authentication')
+        })
+
+        self.register_many_i18n('SetHint', {
+            server_uri_txt: N_('Server'),
+            server_port_txt: N_('Port'),
+            username_txt: N_('User'),
+            password_txt: N_('Password')
+        })
 
     def create_layout(self):
         """Create appropriate layout and static text for proxy form."""

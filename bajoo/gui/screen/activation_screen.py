@@ -22,21 +22,23 @@ class ActivationScreenView(BaseView):
 
         title_txt = wx.StaticText(activation_screen)
         title_txt.SetFont(title_txt.GetFont().Bold())
-        self.register_i18n(title_txt.SetLabel,
-                           N_('Your account is not activated.'))
         content_txt = wx.StaticText(activation_screen)
-        self.register_i18n(content_txt.SetLabel, N_(
-            "For continuing, your must activate your account.\n"
-            "You should receive in the next minutes, a confirmation email with"
-            " an activation link.\n"
-            "You should follow that link to continue."
-        ))
 
         # TODO: disable the form after it's submitted.
         come_back_later_btn = wx.Button(activation_screen)
-        self.register_i18n(come_back_later_btn.SetLabel, N_('Come back later'))
         done_btn = wx.Button(activation_screen)
-        self.register_i18n(done_btn.SetLabel, N_("It's done!"))
+
+        self.register_many_i18n('SetLabel', {
+            title_txt: N_('Your account is not activated.'),
+            content_txt: N_(
+                "For continuing, your must activate your account.\n"
+                "You should receive in the next minutes, a confirmation email"
+                " with an activation link.\n"
+                "You should follow that link to continue."
+            ),
+            come_back_later_btn: N_('Come back later'),
+            done_btn: N_("It's done!")
+        })
 
         sizer = self.make_sizer(wx.VERTICAL, [
             title_txt, content_txt, None,
