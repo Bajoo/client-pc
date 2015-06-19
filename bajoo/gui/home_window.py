@@ -39,8 +39,15 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
     @ensure_gui_thread
     def get_register_or_connection_credentials(self, last_username=None,
                                                errors=None):
+
+        self._view.current_screen.reset_form(last_username, errors)
         self.Show(True)
-        return EventFuture(self, wx.EVT_CLOSE).then(lambda evt: evt.Skip())
+
+        def callback(evt):
+            return 'connection', evt.username, evt.password
+
+        return EventFuture(self, HomeScreen.EVT_CONNECTION_SUBMIT)\
+            .then(callback)
 
     @ensure_gui_thread
     def inform_user_is_connected(self):
@@ -48,16 +55,20 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
 
 
 class HomeWindowView(object):
-    """View of the HomeWindow"""
+    """View of the HomeWindow
+
+    Attributes:
+        current_screen (wx.Window): the screen actually active.
+    """
 
     def __init__(self, window):
-        self._current_screen = None
+        self.current_screen = None
 
         s = wx.BoxSizer(wx.VERTICAL)
 
-        self._current_screen = HomeScreen(window)
+        self.current_screen = HomeScreen(window)
 
-        s.Add(self._current_screen, proportion=1, flag=wx.EXPAND)
+        s.Add(self.current_screen, proportion=1, flag=wx.EXPAND)
         s.SetSizeHints(window)  # Set default and min size of Window
         window.SetSizer(s)
 

@@ -1,24 +1,54 @@
 # -*- coding: utf-8 -*-
 
+from functools import partial
 import wx
 from wx.lib.agw.hyperlink import HyperLinkCtrl, EVT_HYPERLINK_LEFT
 
 from ...common.i18n import N_
 from ..base_view import BaseView
+from ..form import ConnectionForm
 from ..proxy_window import ProxyWindow
 
 
 class HomeScreen(wx.Panel):
-    """Home screen, presenting the connection form."""
+    """Home screen, presenting the connection form.
+
+    When one of the two forms are submitted, the corresponding event
+    (ConnectionForm.EVT_SUBMIT or RegisterForm.EVT_SUBMIT) is propagated.
+
+    The window has the following named children:
+    * notebook (wx.Notebook) contains the two forms.
+    * connection_form (ConnectionForm)
+    * lang (wx.Choice): the language selection.
+    * proxy_settings_link (wx.HyperLinkCtrl)
+
+    Attributes:
+        EVT_CONNECTION_SUBMIT (Event Id): event emitted when the connection
+            form is submitted.
+    """
+
+    EVT_CONNECTION_SUBMIT = ConnectionForm.EVT_SUBMIT
+
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-
-        self.proxy_settings_link = HyperLinkCtrl(self)
 
         self._view = HomeScreenView(self)
 
         self.Bind(EVT_HYPERLINK_LEFT, self._open_proxy_window,
-                  self.proxy_settings_link)
+                  self.FindWindowByName('proxy_settings_link'))
+
+        self.Bind(ConnectionForm.EVT_SUBMIT, self._on_submitted_form)
+
+    def _on_submitted_form(self, event):
+        """Disable all the notebook when a form is submitted."""
+        self.FindWindowByName('notebook').Disable()
+        event.Skip()
+
+    def reset_form(self, username=None, errors=None):
+        """Prepare or reset the form with initial values."""
+        self.FindWindowByName('notebook').Enable()
+        self._view.get_active_form().enable()
+        # TODO: transmit username and error to the form.
 
     def _open_proxy_window(self, _event):
         pw = ProxyWindow(self)
@@ -39,22 +69,25 @@ class HomeScreenView(BaseView):
         app_subtitle_txt.SetFont(app_subtitle_txt.GetFont().Scaled(2.5))
         self.register_i18n(app_subtitle_txt.SetLabel,
                            N_('Your online file storage, secure!'))
-        home_screen.proxy_settings_link.DoPopup(False)
-        home_screen.proxy_settings_link.AutoBrowse(False)
-        self.register_i18n(home_screen.proxy_settings_link.SetLabel,
-                           N_('proxy settings'))
+        proxy_settings_link = HyperLinkCtrl(home_screen,
+                                            name='proxy_settings_link')
+        proxy_settings_link.DoPopup(False)
+        proxy_settings_link.AutoBrowse(False)
+        self.register_i18n(proxy_settings_link.SetLabel, N_('proxy settings'))
         lang_label = wx.StaticText(home_screen)
         self.register_i18n(lang_label.SetLabel, N_('Language:'))
-        notebook = wx.Notebook(home_screen)
-        # TODO: add forms.
-        notebook.AddPage(
-            wx.StaticText(notebook,
-                          label='TODO: insert connect form HERE\n\n\n\n'),
-            N_('Connection'))
-        notebook.AddPage(
-            wx.StaticText(notebook,
-                          label='TODO: insert register form HERE\n\n\n\n'),
-            N_('Make an account'))
+
+        notebook = wx.Notebook(home_screen, name='notebook')
+
+        connection_form = ConnectionForm(notebook, name='connection_form')
+        notebook.AddPage(connection_form, '')
+        self.register_i18n(partial(notebook.SetPageText, 0), N_('Connection'))
+        # TODO: add register forms.
+        register_form = wx.StaticText(
+            notebook, label='TODO: Insert register form HERE ...\n')
+        notebook.AddPage(register_form, '')
+        self.register_i18n(partial(notebook.SetPageText, 1),
+                           N_('Make an account'))
 
         title_sizer = wx.BoxSizer(wx.HORIZONTAL)
         title_sizer.AddStretchSpacer()
@@ -65,12 +98,12 @@ class HomeScreenView(BaseView):
         title_sizer.AddStretchSpacer()
 
         settings_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        settings_sizer.Add(home_screen.proxy_settings_link,
+        settings_sizer.Add(proxy_settings_link,
                            flag=wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, border=10)
         settings_sizer.AddStretchSpacer()
         settings_sizer.Add(lang_label,
                            flag=wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, border=10)
-        settings_sizer.Add(wx.ComboBox(home_screen, value="Auto"))
+        settings_sizer.Add(wx.ComboBox(home_screen, value="Auto", name='lang'))
 
         right_column = wx.BoxSizer(wx.VERTICAL)
         right_column.AddStretchSpacer()
@@ -95,6 +128,10 @@ class HomeScreenView(BaseView):
         main_sizer.Add(title_sizer, flag=wx.EXPAND, border=30)
         main_sizer.Add(content_sizer, proportion=1, flag=wx.EXPAND, border=30)
         home_screen.SetSizer(main_sizer)
+
+    def get_active_form(self):
+        """Find and return the active form."""
+        return self.window.FindWindowByName('notebook').GetCurrentPage()
 
 
 def main():
