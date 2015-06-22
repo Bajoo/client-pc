@@ -18,6 +18,31 @@ control_thread_pool = ThreadPoolExecutor(max_workers=2)
 data_thread_pool = ThreadPoolExecutor(max_workers=2)
 # TODO: configurable max_workers
 
+# Config dictionary
+_config = {
+    'proxy_mode': "system_settings",
+    # Choice of proxy modes, among "system_settings" (default), "no_proxy",
+    # "manual_settings" & "network_settings".
+    'proxy_type': 'HTTP',
+    # Proxy type used. Possible values are:
+    # "HTTP" (default), "SOCKS4" & "SOCKS5".
+    'proxy_url': None,
+    'proxy_port': None,
+    'proxy_user': None,
+    'proxy_password': None
+}
+
+
+def get_config(key, default):
+    """Get a network configuration config."""
+    return _config.get(key, default)
+
+
+def set_config(key, value):
+    """Set a network configuration config."""
+    # TODO: validate value
+    _config[key] = value
+
 
 def _prepare_session(url):
     """
