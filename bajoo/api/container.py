@@ -5,7 +5,21 @@ _logger = logging.getLogger(__name__)
 
 
 class Container(object):
+    """
+    Represent a Bajoo container, which can be the MyBajoo folder,
+    a TeamShare or a PublicShare.
+    This should always be used as an abstract class.
+    """
+
     def __init__(self, session, container_id, name):
+        """
+        Init a new Container object with user session, container's id & name.
+
+        Args:
+            session (bajoo.api.session.Session): user session
+            container_id (str): container's id
+            name (str): container's name
+        """
         self._session = session
         self.id = container_id
         self.name = name
@@ -18,6 +32,16 @@ class Container(object):
 
     @staticmethod
     def create(session, name):
+        """
+        Create a new Container on Bajoo server.
+
+        Args:
+            session (bajoo.api.session.Session): user session
+            name (str): the name of the new container to be created.
+
+        Returns Future<Container>: the newly created container.
+        """
+
         def _on_create_returned(response):
             container_result = response.get('content', {})
             return Container(session, container_result.get('id', ''),
@@ -33,8 +57,9 @@ class Container(object):
         Find a container by its id.
 
         Args:
-            session: a user's session to whom the container belongs.
-            container_id: id of the container to search.
+            session (bajoo.api.session.Session):
+                a user's session to whom the container belongs.
+            container_id (str): id of the container to search.
 
         Returns Future<Container>: the container found, Future<None> otherwise.
         """
@@ -59,7 +84,8 @@ class Container(object):
         Get the list of share folders of a user.
 
         Args:
-            session: a user's session to whom share folders belong.
+            session (bajoo.api.session.Session):
+                a user's session to whom share folders belong.
 
         Returns:
             Future<list<Container>>
@@ -77,6 +103,7 @@ class Container(object):
             .then(_on_get_storages)
 
     def delete(self):
+        """Delete this container from Bajoo server."""
         return self._session \
             .send_api_request('DELETE', '/storages/%s' % self.id) \
             .then(lambda _: None)
@@ -85,16 +112,46 @@ class Container(object):
         raise NotImplemented()
 
     def list_files(self, prefix=None):
+        """
+        List all files in this container.
+
+        Args:
+            prefix (str): when defined, this will search only for files whose names
+                start with this prefix.
+
+        Returns Future<array>: the request result.
+        """
+
+        def _on_list_file_result(response):
+            return response.get('content', {})
+
         return self._session.send_storage_request(
             'GET', '/storages/%s' % self.id,
             headers={'Accept': 'application/json'},
-            params={'prefix': prefix})
+            params={'prefix': prefix}).then(_on_list_file_result)
 
     def download(self, path):
+        """
+        Download a file in this container.
+
+        Args:
+            path (str): the path to the file to be downloaded.
+
+        Returns <Future<TemporaryFile>>: the temporary file downloaded.
+        """
         url = '/storages/%s/%s' % (self.id, path)
         return self._session.download_storage_file('GET', url)
 
     def upload(self, path, file):
+        """
+        Upload a file in this container.
+
+        Args:
+            path (str): the path to the file will be placed on the server.
+            file (str): the path to the local file to be uploaded
+
+        Returns Future<dict>: the upload result.
+        """
         url = '/storages/%s/%s' % (self.id, path)
         return self._session.upload_storage_file('PUT', url, file)
 
