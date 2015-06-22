@@ -85,9 +85,10 @@ class Container(object):
         raise NotImplemented()
 
     def list_files(self, prefix=None):
-        return self._session.send_api_request(
+        return self._session.send_storage_request(
             'GET', '/storages/%s' % self.id,
-            headers={'Accept': 'application/json'})
+            headers={'Accept': 'application/json'},
+            params={'prefix': prefix})
 
     def download(self, path):
         url = '/storages/%s/%s' % (self.id, path)
@@ -148,7 +149,7 @@ if __name__ == '__main__':
 
     # get statistics of the new created container
     # _logger.debug('Container\'s statistics: %s',
-    #              container_created.get_stats().result())
+    # container_created.get_stats().result())
 
     # test delete created container
     _logger.debug('Deleted container: %s', container_created.delete().result())
