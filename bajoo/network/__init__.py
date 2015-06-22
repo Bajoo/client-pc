@@ -2,8 +2,8 @@
 import logging
 import os
 import tempfile
-from concurrent.futures import ThreadPoolExecutor, CancelledError
 
+from concurrent.futures import ThreadPoolExecutor, CancelledError
 from requests import Session
 from requests.adapters import HTTPAdapter
 
@@ -18,11 +18,15 @@ control_thread_pool = ThreadPoolExecutor(max_workers=2)
 data_thread_pool = ThreadPoolExecutor(max_workers=2)
 # TODO: configurable max_workers
 
+PROXY_MODE_SYSTEM = 'system_settings'
+PROXY_MODE_MANUAL = 'manual_settings'
+PROXY_MODE_NO = 'no_proxy'
+
 # Config dictionary
 _config = {
     'proxy_mode': "system_settings",
     # Choice of proxy modes, among "system_settings" (default), "no_proxy",
-    # "manual_settings" & "network_settings".
+    # & "manual_settings".
     'proxy_type': 'HTTP',
     # Proxy type used. Possible values are:
     # "HTTP" (default), "SOCKS4" & "SOCKS5".
@@ -42,6 +46,54 @@ def set_config(key, value):
     """Set a network configuration config."""
     # TODO: validate value
     _config[key] = value
+
+
+def _prepare_proxy():
+    proxy_mode = get_config('proxy_mode', PROXY_MODE_SYSTEM)
+
+    # mode no proxy
+    if proxy_mode == PROXY_MODE_NO:
+        return {}
+
+    # mode manual proxy
+    if proxy_mode == PROXY_MODE_MANUAL:
+        proxy_type = get_config('proxy_type', 'HTTP')
+        proxy_url, proxy_port = \
+            get_config('proxy_url', 'HTTP'), \
+            get_config('proxy_port', 'HTTP')
+        proxy_user, proxy_password = \
+            get_config('proxy_user', 'HTTP'), \
+            get_config('proxy_password', 'HTTP')
+
+        if not proxy_url:
+            # TODO: config-specific exception
+            raise Exception
+
+        # parse the host name the proxy url
+        from urlparse import urlparse
+
+        proxy_string = urlparse(proxy_url).hostname  # any.proxy.addr
+
+        # add the port number
+        if proxy_port:
+            proxy_string += ':' + proxy_port  # any.proxy.addr:port
+
+        # add user & password
+        if proxy_user:
+            user = proxy_user
+
+            if proxy_password:
+                user += ':' + proxy_password + '@'  # user:pass@
+
+            proxy_string = user + proxy_string  # user:pass@any.proxy.addr:port
+
+        # type://user:pass@any.proxy.addr:port
+        proxy_string = proxy_type + "://" + proxy_string
+
+        return {proxy_type: proxy_string}
+
+    # mode system settings (default)
+    return None
 
 
 def _prepare_session(url):
@@ -102,6 +154,7 @@ def json_request(verb, url, **params):
     def _json_request():
         session = _prepare_session(url)
         params.setdefault('timeout', 4)
+        params.setdefault('proxies', _prepare_proxy())
         response = session.request(method=verb, url=url, **params)
 
         _logger.debug('JSON Request %s %s -> %s',
@@ -148,6 +201,7 @@ def download(verb, url, **params):
     def _download():
         session = _prepare_session(url)
         params.setdefault('timeout', 4)
+        params.setdefault('proxies', _prepare_proxy())
         response = session.request(method=verb, url=url, stream=True, **params)
 
         _logger.debug("%s downloading from %s -> %s",
@@ -217,6 +271,7 @@ def upload(verb, url, source, **params):
     def _upload():
         session = _prepare_session(url)
         params.setdefault('timeout', 4)
+        params.setdefault('proxies', _prepare_proxy())
         file = source
 
         if isinstance(file, str):
@@ -248,6 +303,7 @@ def upload(verb, url, source, **params):
 if __name__ == "__main__":
     logging.basicConfig()
     _logger.setLevel(logging.DEBUG)
+    _logger.debug('get proxy: %s', _prepare_proxy())
 
     # Test JSON_request
     json_future = json_request('GET', 'http://ip.jsontest.com/')
