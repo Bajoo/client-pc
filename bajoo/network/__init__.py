@@ -201,7 +201,7 @@ def upload(verb, url, source, **params):
         with file:
             # TODO: search a way to cancel this upload
             response = session.request(method=verb, url=url,
-                                       files={'file': file}, **params)
+                                       data=file, **params)
 
             _logger.debug("%s uploading from %s -> %s",
                           verb, url, response.status_code)

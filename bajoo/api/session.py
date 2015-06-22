@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 
-from ..network import json_request, download
+from ..network import json_request, download, upload
 from .user import User
 
 
@@ -262,6 +262,15 @@ class Session(BajooOAuth2Session):
 
         return download(verb, STORAGE_API_URL + url_path,
                         headers=headers, verify=False, **params)
+
+    def upload_storage_file(self, verb, url_path, source, **params):
+        # TODO: documentation
+        headers = {
+            'Authorization': 'Bearer ' + self.token.get('access_token', '')
+        }
+
+        return upload(verb, STORAGE_API_URL + url_path, source,
+                      headers=headers, verify=False, **params)
 
     def disconnect(self):
         """

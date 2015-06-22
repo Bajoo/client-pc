@@ -90,10 +90,12 @@ class Container(object):
             headers={'Accept': 'application/json'})
 
     def download(self, path):
-        raise NotImplemented()
+        url = '/storages/%s/%s' % (self.id, path)
+        return self._session.download_storage_file('GET', url)
 
     def upload(self, path, file):
-        raise NotImplemented()
+        url = '/storages/%s/%s' % (self.id, path)
+        return self._session.upload_storage_file('PUT', url, file)
 
 
 if __name__ == '__main__':
@@ -118,9 +120,35 @@ if __name__ == '__main__':
     from string import ascii_lowercase
 
     # generate a random container name
-    new_container_name = ''.join(choice(ascii_lowercase) for _ in range(16))
+    def gen(length):
+        return ''.join(choice(ascii_lowercase) for _ in range(length))
+
+    new_container_name = gen(16)
     container_created = Container.create(session1, new_container_name).result()
     _logger.debug('Created container: %s', container_created)
+
+    # upload a file to the new created container
+    from tempfile import NamedTemporaryFile
+
+    with NamedTemporaryFile() as tmp:
+        file_content = 'Hello world! ' + gen(32)
+        _logger.debug('Temporary file content: %s', file_content)
+        tmp.write(file_content)
+        tmp.seek(0)
+        container_created.upload('tmp.txt', tmp).result()
+
+    # get file list again to verify uploaded file
+    _logger.debug('New container\'s files: %s',
+                  container_created.list_files().result())
+
+    # download the uploaded file
+    _logger.debug('Download file: %s',
+                  container_created.download('tmp.txt').result().get(
+                      'content').read())
+
+    # get statistics of the new created container
+    # _logger.debug('Container\'s statistics: %s',
+    #              container_created.get_stats().result())
 
     # test delete created container
     _logger.debug('Deleted container: %s', container_created.delete().result())
