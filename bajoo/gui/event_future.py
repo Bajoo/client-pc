@@ -43,10 +43,12 @@ class EventFuture(Future):
         self.set_result(event)
 
     def cancel(self):
-        self.evt_handler.UnBind(self.event, source=self.source,
+        self.evt_handler.Unbind(self.event, source=self.source,
                                 handler=self._event_handler)
-        self.cancel()
-        self.set_running_or_notify_cancel()
+        if Future.cancel(self):
+            self.set_running_or_notify_cancel()
+            return True
+        return False
 
 
 def ensure_gui_thread(f):

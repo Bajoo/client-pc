@@ -10,6 +10,8 @@ decorator version.
 """
 
 import concurrent.futures
+from multiprocessing import Lock as ProcessLock
+from threading import Lock as ThreadLock
 import types
 
 
@@ -154,6 +156,49 @@ def patch_dec(f):
         return result
 
     return wrapper
+
+
+def wait_one(futures, cancel_others=False):
+    """Wait until one of the futures resolves.
+
+    When one of the tasks is over, the future returns, with the same value.
+    All others tasks results will be ignored.
+
+    This method is thread-safe and multiprocess-safe.
+
+    Args:
+        futures (list of Future): list of tasks to wait.
+        cancel_others (boolean ,optional): if set, try to cancel others tasks
+            when the first one is done.
+    Returns:
+        Future<?>: result of the first finished task.
+    """
+    tlock, plock = ThreadLock(), ProcessLock()
+    resulting_future = Future()
+
+    def _done_callback(value):
+        with tlock, plock:
+            if resulting_future.done():
+                return  # Another future has already finished.
+            if cancel_others:
+                for f in futures:
+                    f.cancel()
+            resulting_future.set_running_or_notify_cancel()
+            resulting_future.set_result(value)
+
+    def _fail_callback(exception):
+        with tlock, plock:
+            if resulting_future.done():
+                return  # Another future has already finished.
+            resulting_future.set_running_or_notify_cancel()
+            resulting_future.set_exception(exception)
+            if cancel_others:
+                for f in futures:
+                    f.cancel()
+
+    for f in futures:
+        f.then(_done_callback)
+    return resulting_future
 
 
 def main():
