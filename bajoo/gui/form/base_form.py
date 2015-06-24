@@ -1,12 +1,31 @@
 # -*- coding: utf-8 -*-
 
+from logging import getLogger
 import wx
 
 from ..translator import Translator
 
+_logger = getLogger(__name__)
+
 
 class BaseForm(wx.Window, Translator):
     """Base class for all Bajoo forms
+
+    A form is a window containing user controls, like buttons, input fields and
+    choice lists. It provides useful behavior to get and set data of all these
+    objects.
+
+    This class use mainly the ``name`` property to access to its children. All
+    field components should have a unique name.
+
+    The field children (child used as user input) are defined by theirs names
+    and should be listed in the ``fields`` attributes. If not, all children
+    will be considered as a field component, unless its name start with an
+    underscore.
+
+    The methods ``get_data()`` and ``set_data()`` are here to get and set
+    values of all fields of the form.
+
 
     When the class detect an EVT_BUTTON events in automatic mode (or when
     ``disable()`` is called), it disable all fields to prevents the user to
@@ -25,12 +44,18 @@ class BaseForm(wx.Window, Translator):
 
     Attributes:
         EVT_SUBMIT: ID of the event form (if any). Must be overridden for use.
-        SubmitEvent (wx.CommandEvent subclass): Event class corresponding to
-        EVT_SUBMIT.
+            SubmitEvent (wx.CommandEvent subclass): Event class corresponding
+            to EVT_SUBMIT.
+        msg_windows (list of str): list of wx.Window names who should be erased
+            after each submit. Typical use are validator and error messages.
+        fields (list of str): If defined in subclass, list of child's name
+            considered as form fields. If not set, all
     """
 
     EVT_SUBMIT = None
     SubmitEvent = None
+
+    fields = None
 
     def __init__(self, parent, auto_disable=False, **kwargs):
         """BaseForm constructor
@@ -82,7 +107,17 @@ class BaseForm(wx.Window, Translator):
         """
 
         result = dict()
-        for child in self.GetChildren():
+        if self.fields:
+            children = filter(None, [self.FindWindowByName(name)
+                                     for name in self.fields])
+        else:
+            children = [c for c in self.GetChildren()
+                        if not c.GetName().startswith('_')]
+
+        for child in children:
+            if child.GetName().startswith('_'):
+                continue
+
             if hasattr(child, 'GetValue'):
                 value = child.GetValue()
             elif hasattr(child, 'GetSelection'):  # wx.Choices
@@ -91,6 +126,30 @@ class BaseForm(wx.Window, Translator):
                 continue
             result[child.GetName()] = value
         return result
+
+    def set_data(self, **data):
+        """Set the content of form fields.
+
+        Args:
+            **data: list of pairs key/value corresponding to field's name and
+                associated value to set.
+        """
+        for (name, value) in data.items():
+            if self.fields and name not in self.fields:
+                _logger.warning('Try to set value to non-valid field %s in %s'
+                                % (name, self))
+                continue
+            child = self.FindWindowByName(name)
+            if not child:
+                _logger.warning('Try to set value to unknown field %s in %s'
+                                % (name, self))
+                continue
+
+            if hasattr(child, 'SetValue'):
+                child.SetValue(value)
+            elif hasattr(child, 'SetSelection'):  # wx.Choices
+                child.SetSelection(value)
+        self.TransferDataToWindow()
 
     def GetValue(self):
         """Alias of ``get_data()``
@@ -102,9 +161,19 @@ class BaseForm(wx.Window, Translator):
     def submit(self, event=None):
         """Post a SubmitEvent with form data.
 
+        Before sending the event, the child's validators will be checked, and
+        the submit aborted if there is an error.
+
+        If the ``auto_disable`` option is set, the form will be disabled.
+
         Take a dummy argument ``_event``, allowing to directly use has an event
         handler.
         """
+        if not self.Validate() or not self.TransferDataFromWindow():
+            # Validators may have updated windows, so we need to update layout.
+            self.GetTopLevelParent().Layout()
+            return
+
         if self.auto_disable:
             self.disable()
         submit_event = self.SubmitEvent(self.GetId(), **self.get_data())

@@ -22,6 +22,8 @@ class ConnectionForm(BaseForm):
 
     SubmitEvent, EVT_SUBMIT = NewCommandEvent()
 
+    fields = ['username', 'password']
+
     def __init__(self, parent, **kwargs):
         BaseForm.__init__(self, parent, auto_disable=True, **kwargs)
         self._view = ConnectionFormView(self)
@@ -33,9 +35,7 @@ class ConnectionForm(BaseForm):
 
     def set_data(self, username=None, errors=None):
         """Initialize the form and set default data."""
-        self.FindWindowByName('password').SetValue('')
-        if username:
-            self.FindWindowByName('username').SetValue(username)
+        BaseForm.set_data(self, password='', username=username or '')
         if errors:
             self._view.display_message(errors)
         else:
