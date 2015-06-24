@@ -93,10 +93,9 @@ class HomeScreenView(BaseView):
 
         title_sizer = wx.BoxSizer(wx.HORIZONTAL)
         title_sizer.AddStretchSpacer()
-        title_sizer.Add(app_name_txt, flag=wx.ALL, border=15)
+        title_sizer.Add(app_name_txt, flag=wx.RIGHT, border=30)
         title_sizer.AddStretchSpacer()
-        title_sizer.Add(app_subtitle_txt, flag=wx.ALL | wx.ALIGN_BOTTOM,
-                        border=15)
+        title_sizer.Add(app_subtitle_txt, flag=wx.ALIGN_BOTTOM)
         title_sizer.AddStretchSpacer()
 
         settings_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -109,9 +108,9 @@ class HomeScreenView(BaseView):
 
         right_column = wx.BoxSizer(wx.VERTICAL)
         right_column.AddStretchSpacer()
-        right_column.Add(notebook, flag=wx.ALIGN_CENTER)
+        right_column.Add(notebook, flag=wx.ALIGN_CENTER | wx.BOTTOM, border=15)
         right_column.AddStretchSpacer()
-        right_column.Add(settings_sizer, flag=wx.EXPAND | wx.ALL, border=15)
+        right_column.Add(settings_sizer, flag=wx.EXPAND)
 
         content_sizer = wx.BoxSizer(wx.HORIZONTAL)
         bmp = wx.Image('bajoo/assets/images/home_bajoo_mascot.png') \
@@ -122,13 +121,14 @@ class HomeScreenView(BaseView):
         else:
             kwargs = {'bitmap': bmp}
         content_sizer.Add(wx.StaticBitmap(home_screen, **kwargs),
-                          proportion=1, flag=wx.ALL | wx.CENTER, border=20)
+                          proportion=1, flag=wx.RIGHT | wx.CENTER, border=15)
         content_sizer.Add(right_column, proportion=1,
                           flag=wx.EXPAND | wx.CENTER)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(title_sizer, flag=wx.EXPAND, border=30)
-        main_sizer.Add(content_sizer, proportion=1, flag=wx.EXPAND, border=30)
+        main_sizer.Add(title_sizer, flag=wx.EXPAND | wx.ALL, border=15)
+        main_sizer.Add(content_sizer, proportion=1, border=15,
+                       flag=wx.EXPAND | wx.RIGHT | wx.LEFT | wx.BOTTOM)
         home_screen.SetSizer(main_sizer)
 
     def get_active_form(self):
