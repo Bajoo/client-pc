@@ -6,7 +6,7 @@ from wx.lib.agw.hyperlink import HyperLinkCtrl, EVT_HYPERLINK_LEFT
 
 from ...common.i18n import N_
 from ..base_view import BaseView
-from ..form import ConnectionForm
+from ..form import ConnectionForm, RegisterForm
 from ..proxy_window import ProxyWindow
 
 
@@ -25,9 +25,12 @@ class HomeScreen(wx.Panel):
     Attributes:
         EVT_CONNECTION_SUBMIT (Event Id): event emitted when the connection
             form is submitted.
+        EVT_REGISTER_SUBMIT (Event Id): event emitted when the register
+            form is submitted.
     """
 
     EVT_CONNECTION_SUBMIT = ConnectionForm.EVT_SUBMIT
+    EVT_REGISTER_SUBMIT = RegisterForm.EVT_SUBMIT
 
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
@@ -77,9 +80,7 @@ class HomeScreenView(BaseView):
         connection_form = ConnectionForm(notebook, name='connection_form')
         notebook.AddPage(connection_form, '')
         self.register_i18n(partial(notebook.SetPageText, 0), N_('Connection'))
-        # TODO: add register forms.
-        register_form = wx.StaticText(
-            notebook, label='TODO: Insert register form HERE ...\n')
+        register_form = RegisterForm(notebook, name='register_form')
         notebook.AddPage(register_form, '')
         self.register_i18n(partial(notebook.SetPageText, 1),
                            N_('Make an account'))

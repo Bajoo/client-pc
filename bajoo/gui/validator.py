@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import re
 import wx
 
 from ..common.i18n import _, N_
@@ -84,3 +85,51 @@ class NotEmptyValidator(BaseValidator):
 
     def check(self):
         return not self.target.GetValue() == ''
+
+
+class ConfirmPasswordValidator(BaseValidator):
+    """ Ensures two fields have the same value."""
+    default_error_message = N_('The confirmation differs from the password.')
+
+    def __init__(self, parent, ref, target, **kwargs):
+        """
+        Args:
+            parent (wx.Window): parent
+            ref: reference element for the value comparison.
+            target: element to check the value.
+            **kwargs: optional args transmitted to ``BaseValidator``.
+        """
+        BaseValidator.__init__(self, parent, target, **kwargs)
+        self.ref = ref
+
+    def check(self):
+        return self.target.GetValue() == self.ref.GetValue()
+
+
+class EmailValidator(BaseValidator):
+    """Check the value is a valid email."""
+    default_error_message = N_('This email is not valid.')
+
+    def check(self):
+        return re.match(r'[^@]+@[^@]+\.[^@]+', self.target.GetValue())
+
+
+class MinLengthValidator(BaseValidator):
+    """Check the value as a minimum length"""
+    def __init__(self, parent, target, min_length, **kwargs):
+        """
+        Args:
+            parent (wx.Window): parent
+            target: element to check the value.
+            min_length (int): minimum length allowed.
+            **kwargs: optional args transmitted to ``BaseValidator``.
+        """
+
+        BaseValidator.__init__(self, parent, target, **kwargs)
+        self.min_length = min_length
+        self.default_error_message = \
+            N_('This field must contains at least %s characters.' %
+               self.min_length)
+
+    def check(self):
+        return len(self.target.GetValue()) >= self.min_length
