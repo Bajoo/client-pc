@@ -6,6 +6,7 @@ from wx.lib.newevent import NewCommandEvent
 
 from ...common.i18n import N_
 from ..base_view import BaseView
+from ..validator import NotEmptyValidator
 from . import BaseForm
 
 
@@ -30,7 +31,11 @@ class ConnectionForm(BaseForm):
         self._view.create_children()
         self._view.create_layout()
 
-        # TODO: validate form (empty or bad fields)
+        self.validators = [
+            self.FindWindowByName('username_error'),
+            self.FindWindowByName('password_error')
+        ]
+
         self.Bind(wx.EVT_BUTTON, self.submit, self.FindWindowByName('submit'))
 
     def set_data(self, username=None, errors=None):
@@ -50,8 +55,12 @@ class ConnectionFormView(BaseView):
 
         wx.StaticText(self.window, name='messages')
         username_txt = wx.TextCtrl(self.window, name='username')
+        NotEmptyValidator(self.window, name='username_error',
+                          target=username_txt)
         password_txt = wx.TextCtrl(self.window, name='password',
                                    style=wx.TE_PASSWORD)
+        NotEmptyValidator(self.window, name='password_error',
+                          target=password_txt)
 
         submit_btn = wx.Button(self.window, name='submit')
 
@@ -80,8 +89,13 @@ class ConnectionFormView(BaseView):
 
         sizer = self.make_sizer(wx.VERTICAL, [
             self.window.FindWindowByName('messages'),
-            self.window.FindWindowByName('username'),
-            self.window.FindWindowByName('password'),
+            [
+                self.window.FindWindowByName('username'),
+                self.window.FindWindowByName('username_error')
+            ], [
+                self.window.FindWindowByName('password'),
+                self.window.FindWindowByName('password_error')
+            ],
             forgotten_password_link,
             self.window.FindWindowByName('submit')
         ])

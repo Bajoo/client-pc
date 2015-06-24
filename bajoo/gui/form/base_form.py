@@ -50,6 +50,8 @@ class BaseForm(wx.Window, Translator):
             after each submit. Typical use are validator and error messages.
         fields (list of str): If defined in subclass, list of child's name
             considered as form fields. If not set, all
+        validators (list of Validator): vadidator that will be checked during
+            submit.
     """
 
     EVT_SUBMIT = None
@@ -71,6 +73,8 @@ class BaseForm(wx.Window, Translator):
 
         # map Window ID <-> Previous state
         self._form_state = {}
+
+        self.validators = []
 
         self.auto_disable = auto_disable
 
@@ -149,7 +153,6 @@ class BaseForm(wx.Window, Translator):
                 child.SetValue(value)
             elif hasattr(child, 'SetSelection'):  # wx.Choices
                 child.SetSelection(value)
-        self.TransferDataToWindow()
 
     def GetValue(self):
         """Alias of ``get_data()``
@@ -157,6 +160,18 @@ class BaseForm(wx.Window, Translator):
         Allow to recursively call get_data() on child form.
         """
         return self.get_data()
+
+    def _apply_validation(self):
+        """Call all validator to check validity of user input."""
+        result = True
+        for v in self.validators:
+            v.reset()
+            if not v.validate():
+                if result:
+                    # first element to fail
+                    v.target.SetFocus()
+                result = False
+        return result
 
     def submit(self, event=None):
         """Post a SubmitEvent with form data.
@@ -169,13 +184,14 @@ class BaseForm(wx.Window, Translator):
         Take a dummy argument ``_event``, allowing to directly use has an event
         handler.
         """
-        if not self.Validate() or not self.TransferDataFromWindow():
+        if not self._apply_validation():
             # Validators may have updated windows, so we need to update layout.
             self.GetTopLevelParent().Layout()
             return
 
         if self.auto_disable:
             self.disable()
+        self.GetTopLevelParent().Layout()
         submit_event = self.SubmitEvent(self.GetId(), **self.get_data())
         wx.PostEvent(self, submit_event)
 
