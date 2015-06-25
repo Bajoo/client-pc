@@ -118,6 +118,7 @@ class ColoredFormatter(logging.Formatter):
         result += self._colorize(last_line.split(':')[0], 'EXCEPTION_NAME')
         result += ':' + self._colorize(':'.join(last_line.split(':')[1:]),
                                        'EXCEPTION_STR')
+        result += '\n' + repr(ei[1]) + '\n----'
         return result
 
     def format(self, record):

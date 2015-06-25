@@ -11,7 +11,155 @@ They are also more verbose when displayed using 'repr()`.
 import logging
 import requests.exceptions
 
+from ..common.i18n import N_
+
+
 _logger = logging.getLogger(__name__)
+
+
+class NetworkError(Exception):
+    """Base class for bajoo.network errors.
+
+    Attributes:
+        message (str): Human readable message, describing the error.
+    """
+
+    def __init__(self, error):
+        """
+        Args:
+            error: base error
+        """
+        self.data = error
+        self.message = N_("A network error has occurred.")
+
+
+class ConnectionError(NetworkError):
+    def __init__(self, error):
+        NetworkError.__init__(self, error)
+        self.message = N_("Unable to connect to the Bajoo servers.")
+
+
+class ConnectTimeoutError(NetworkError):
+    def __init__(self, error):
+        NetworkError.__init__(self, error)
+        self.message = N_("The server did not respond on time.")
+
+
+class HTTPError(NetworkError):
+    """Base class for HTTP errors.
+
+    The class can be displayed for debug, using ``repr(error)``.
+
+    Attributes:
+        code (int): HTTP status code
+        reason (str): HTTP status text
+        request (str): representation of the request.
+        response (dict or text): If the response content was in json, the
+            corresponding dict, else the content as text.
+        err_code (str): If response is a standard Bajoo error, the Bajoo error
+            code.
+        err_description (str): If response is a standard Bajoo error, the Bajoo
+            error description.
+        err_data: If response is a standard Bajoo error, the data
+            associated to the error, if any.
+    """
+    def __init__(self, error):
+        """
+        Args:
+            error (requests.exceptions.HTTPError): base error.
+        """
+        NetworkError.__init__(self, error)
+
+        self.message = (N_("The server has returned an HTTP error: %s %s") %
+                        (error.response.status_code, error.response.reason))
+
+        self.code = error.response.status_code
+        self.reason = error.response.reason
+        self.request = '%s %s' % (error.request.method, error.request.url)
+        self.err_code = None
+        self.err_description = None
+        self.err_data = None
+
+        try:
+            self.response = self.data.response.json()
+            self.err_code = self.response.get('error')
+            self.err_description = self.response.get('error_description')
+            self.err_data = self.response.get('error_data')
+        except ValueError:
+            self.response = self.data.response.text
+
+    def __repr__(self):
+        if self.err_code:
+            response = '\n'.join((
+                '\tResponse:',
+                '\t\tcode: "%s"' % self.err_code,
+                '\t\tdescription: "%s"' % self.err_description,
+                '\t\tdata: "%s"' % self.err_data))
+        else:
+            response = '\tResponse: %s' % self.response
+
+        return '\n'.join(("HTTP Error: %s %s" % (self.code, self.reason),
+                          "\tRequest: %s" % self.request,
+                          response))
+
+
+class HTTPBadRequestError(HTTPError):
+    def __init__(self, error):
+        HTTPError.__init__(self, error)
+        self.message = N_("The HTTP request is invalid. This is a bug, "
+                          "either in the client or in the server. "
+                          "Sorry for the inconvenience :(")
+
+
+class HTTPUnauthorizedError(HTTPError):
+    def __init__(self, error):
+        HTTPError.__init__(self, error)
+        self.message = N_("Your session has expired.")
+
+
+class HTTPForbiddenError(HTTPError):
+    def __init__(self, error):
+        HTTPError.__init__(self, error)
+        self.message = N_("You don't have the permission to do this "
+                          "operation.")
+
+
+class HTTPNotFoundError(HTTPError):
+    def __init__(self, error):
+        HTTPError.__init__(self, error)
+        self.message = N_("The element you're looking for has not been found.")
+
+
+class HTTPInternalServerError(HTTPError):
+    def __init__(self, error):
+        HTTPError.__init__(self, error)
+        self.message = N_("The Bajoo servers have encountered "
+                          "an unexpected error :(")
+
+
+class HTTPNotImplementedError(HTTPError):
+    def __init__(self, error):
+        HTTPError.__init__(self, error)
+        self.message = N_("Bajoo service does not understand or "
+                          "does not support this function.")
+
+
+class HTTPServiceUnavailableError(HTTPError):
+    def __init__(self, error):
+        HTTPError.__init__(self, error)
+        self.message = N_("The Bajoo servers are temporarily unavailable. "
+                          "Please try again later.")
+
+
+_code2error = {
+    400: HTTPBadRequestError,
+    401: HTTPUnauthorizedError,
+    403: HTTPForbiddenError,
+    404: HTTPNotFoundError,
+    500: HTTPInternalServerError,
+    501: HTTPNotImplementedError,
+    503: HTTPServiceUnavailableError
+}
 
 
 def handler(func):
@@ -29,122 +177,9 @@ def handler(func):
                 requests.exceptions.ReadTimeout) as error:
             raise ConnectTimeoutError(error)
         except requests.exceptions.HTTPError as error:
-            # TODO: raise the corresponding subclass of HTTPError.
-            raise HTTPError(error)
+            err_class = _code2error.get(error.response.status_code, HTTPError)
+            raise err_class(error)
         except requests.exceptions.RequestException as error:
             raise NetworkError(error)
 
     return wrapper
-
-
-class NetworkError(Exception):
-    def __init__(self, error):
-        """
-        Args:
-            error: base error
-        """
-        self.data = error
-
-        if not self.message:
-            self.message = "A network error has occurred."
-
-        _logger.exception(self.message)
-
-
-class ConnectionError(NetworkError):
-    def __init__(self, error):
-        self.message = "Unable to connect to the Bajoo servers."
-        NetworkError.__init__(self, error)
-
-
-class ConnectTimeoutError(NetworkError):
-    def __init__(self, error):
-        self.message = "The server did not respond on time."
-        NetworkError.__init__(self, error)
-
-
-class HTTPError(NetworkError):
-    def __init__(self, error):
-        """
-        Args:
-            error (requests.exceptions.HTTPError): base error.
-        """
-        if not hasattr(self, 'name') or \
-                not self.name:
-            self.name = "HTTP Error"
-
-        if not self.message:
-            self.message = "The server has returned an HTTP error: %s" % \
-                           error.response.status_code
-
-        self.code = error.response.status_code
-        NetworkError.__init__(self, error)
-
-    def __repr__(self):
-        json = self.data.response.json()
-        request = self.data.request
-
-        return ("HTTP Error: %s %s\n"
-                "\tRequest: %s %s\n"
-                "\tResponse:\n"
-                "\t\tcode: %s\n"
-                "\t\tmessage: %s\n"
-                "\t\tdata: %s") % \
-               (self.code, self.name,
-                request.method, request.url,
-                json.code, json.message, json.data)
-
-
-class HTTPBadRequestError(HTTPError):
-    def __init__(self, error):
-        self.name = "Bad Request"
-        self.message = "The HTTP request is invalid. " \
-                       "This is a bug, " \
-                       "either in the client or in the server. " \
-                       "Sorry for the inconvenience :("
-        HTTPError.__init__(self, error)
-
-
-class HTTPUnauthorizedError(HTTPError):
-    def __init__(self, error):
-        self.name = "Unauthorized"
-        self.message = "Your session has expired."
-        HTTPError.__init__(self, error)
-
-
-class HTTPForbiddenError(HTTPError):
-    def __init__(self, error):
-        self.name = "Forbidden"
-        self.message = "You don't have the permission to do this operation."
-        HTTPError.__init__(self, error)
-
-
-class HTTPNotFoundError(HTTPError):
-    def __init__(self, error):
-        self.name = "Not Found"
-        self.message = "The element you're looking for has not been found."
-        HTTPError.__init__(self, error)
-
-
-class HTTPInternalServerError(HTTPError):
-    def __init__(self, error):
-        self.name = "Internal Server"
-        self.message = "The Bajoo servers have encountered " \
-                       "an unexpected error :("
-        HTTPError.__init__(self, error)
-
-
-class HTTPNotImplementedError(HTTPError):
-    def __init__(self, error):
-        self.name = "Not Implemented"
-        self.message = "Bajoo service does not understand or " \
-                       "does not support this function."
-        HTTPError.__init__(self, error)
-
-
-class HTTPServiceUnavailableError(HTTPError):
-    def __init__(self, error):
-        self.name = "Service Unavailable"
-        self.message = "The Bajoo servers are temporarily unavailable. " \
-                       "Please try again later."
-        HTTPError.__init__(self, error)
