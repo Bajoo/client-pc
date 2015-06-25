@@ -30,8 +30,8 @@ class Container(object):
         """
         return "<Container '%s' (id=%s)>" % (self.name, self.id)
 
-    @staticmethod
-    def create(session, name):
+    @classmethod
+    def create(cls, session, name):
         """
         Create a new Container on Bajoo server.
 
@@ -44,8 +44,8 @@ class Container(object):
 
         def _on_create_returned(response):
             container_result = response.get('content', {})
-            return Container(session, container_result.get('id', ''),
-                             container_result.get('name', ''))
+            return cls(session, container_result.get('id', ''),
+                       container_result.get('name', ''))
 
         return session.send_api_request(
             'POST', '/storages', data={'name': name}) \
@@ -116,8 +116,8 @@ class Container(object):
         List all files in this container.
 
         Args:
-            prefix (str): when defined, this will search only for files whose names
-                start with this prefix.
+            prefix (str): when defined, this will search only for files
+                whose names start with this prefix.
 
         Returns Future<array>: the request result.
         """
