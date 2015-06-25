@@ -21,6 +21,29 @@ class User(object):
         self._session = session
 
     @staticmethod
+    def create(email, password):
+        """
+        Create a new user using email & password.
+
+        Returns:
+            Future<None>
+        """
+        from .session import Session
+
+        session = Session()
+        hashed_password = User.hash_password(password)
+
+        def _send_create_user_request(_result=None):
+            session \
+                .send_api_request('POST', '/users',
+                                  data={u'email': email,
+                                        u'password': hashed_password}) \
+                .then(lambda _: None)
+
+        return session.fetch_client_token() \
+            .then(_send_create_user_request)
+
+    @staticmethod
     @resolve_dec
     def load(session):
         """
@@ -228,6 +251,3 @@ if __name__ == '__main__':
     _logger.debug(user.create_encryption_key().result())
     _logger.debug(user.get_public_key().result())
     _logger.debug(user._remove_encryption_key().result())
-
-    # TODO: create a test case for deleting account,
-    # TODO: but create first a function for creating account

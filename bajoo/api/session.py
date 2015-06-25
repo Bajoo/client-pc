@@ -37,6 +37,35 @@ class BajooOAuth2Session(object):
 
         return auth, headers
 
+    def fetch_client_token(self, token_url=None):
+        """
+        Fetch a new client token to use for non-specific-user request.
+
+        Args:
+            token_url (str): the url to which the request will be sent
+
+        Returns:
+            Future<None>
+        """
+        token_url = token_url or TOKEN_URL
+        auth, headers = self._prepare_request()
+        data = {
+            u'grant_type': u'client_credentials'
+        }
+
+        response_future = json_request('POST', token_url,
+                                       auth=auth, headers=headers, data=data,
+                                       # disable temporarily
+                                       # certificate verifying
+                                       verify=False)
+
+        def _on_request_result(response):
+            # Analyze response and save the tokens
+            if response and response.get('code') == 200:
+                self.token = response.get('content')
+
+        return response_future.then(_on_request_result)
+
     def fetch_token(self, token_url, email, password):
         """
         Fetch a new access_token using email & password.
@@ -51,6 +80,7 @@ class BajooOAuth2Session(object):
         """
 
         # Send request to token url
+        token_url = token_url or TOKEN_URL
         auth, headers = self._prepare_request()
         data = {
             u'username': email,
@@ -203,7 +233,8 @@ class Session(BajooOAuth2Session):
         # Add default params if not exist: 'headers' & 'verify'
         headers = {
             'Authorization': 'Bearer ' + self.token.get('access_token', '')
-        }
+        } if self.token else {}
+
         headers.update(params.get('headers', {}))
         params['headers'] = headers
 
