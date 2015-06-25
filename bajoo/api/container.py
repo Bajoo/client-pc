@@ -155,6 +155,20 @@ class Container(object):
         url = '/storages/%s/%s' % (self.id, path)
         return self._session.upload_storage_file('PUT', url, file)
 
+    def remove_file(self, path):
+        """
+        Delete a file object in this container.
+
+        Args:
+            path (str): the relative file path inside the container.
+
+        Returns (Future<None>)
+        """
+        url = '/storages/%s/%s' % (self.id, path)
+        return self._session \
+            .send_storage_request('DELETE', url) \
+            .then(lambda _: None)
+
 
 if __name__ == '__main__':
     logging.basicConfig()
@@ -203,6 +217,10 @@ if __name__ == '__main__':
     _logger.debug('Download file: %s',
                   container_created.download('tmp.txt').result().get(
                       'content').read())
+
+    # delete the uploaded file
+    _logger.debug('Delete file: %s',
+                  container_created.remove_file('tmp.txt').result())
 
     # get statistics of the new created container
     # _logger.debug('Container\'s statistics: %s',
