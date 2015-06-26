@@ -34,7 +34,7 @@ class User(object):
         hashed_password = User.hash_password(password)
 
         def _send_create_user_request(_result=None):
-            session \
+            return session \
                 .send_api_request('POST', '/users',
                                   data={u'email': email,
                                         u'password': hashed_password}) \

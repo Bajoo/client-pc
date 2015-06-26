@@ -4,7 +4,10 @@ import logging
 from functools import partial
 
 from . import stored_credentials
+from .api import register
 from .api.session import Session
+from .common.i18n import N_
+from .network.errors import HTTPError
 from .ui_handler_of_connection import UserInterrupt
 
 _logger = logging.getLogger(__name__)
@@ -87,11 +90,7 @@ class _ConnectionProcess(object):
         if refresh_token:
             f = self.log_user(username, refresh_token=refresh_token)
         else:
-            ui_handler = self._get_ui_handler()
-            action = partial(ui_handler.get_register_or_connection_credentials,
-                             last_username=username)
-            on_error = partial(self._ui_error, action)
-            f = action().then(self._use_credentials, on_error)
+            f = self.ask_user_credentials(username)
 
         f = f.then(self.save_credentials)
 
@@ -126,6 +125,15 @@ class _ConnectionProcess(object):
             f = Session.load_session(refresh_token)
         return f.then(None, self._on_login_error)
 
+    def ask_user_credentials(self, username, errors=None):
+        """Ask the user if he want to connect or to register an account."""
+        ui_handler = self._get_ui_handler()
+
+        action = partial(ui_handler.get_register_or_connection_credentials,
+                         last_username=username, errors=errors)
+        on_error = partial(self._ui_error, action)
+        return action().then(self._use_credentials, on_error)
+
     def _use_credentials(self, credentials):
         """Callback called on submission of the register or connection form.
 
@@ -140,8 +148,9 @@ class _ConnectionProcess(object):
                       % (username, action))
 
         if action is 'register':
-            # TODO: implements ...
-            pass
+            f = register(username, password)
+            return f.then(lambda _: self.log_user(username, password=password),
+                          self._on_login_error)
         else:
             return self.log_user(username, password=password)
 
@@ -157,23 +166,35 @@ class _ConnectionProcess(object):
         """
         ui_handler = self._get_ui_handler()
 
-        # TODO: really check error is NotActivatedAccount
-        if error is 'NotActivatedAccount':
-            log_user = partial(self.log_user, self._username,
-                               password=self._password,
-                               refresh_token=self._refresh_token)
-            f = ui_handler.wait_activation()
-            on_error = partial(self._ui_error, ui_handler.wait_activation)
-            return f.then(log_user, on_error)
-        else:
-            # TODO: format errors
-            error = 'ERROR'
+        if isinstance(error, HTTPError):
 
-            action = partial(ui_handler.get_register_or_connection_credentials,
-                             last_username=self._username, errors=error)
-            on_error = partial(self._ui_error, action)
+            if error.err_code == 'account_not_activated':
+                _logger.debug('login failed: the account is not activated.')
+                log_user = lambda _: self.log_user(
+                    self._username, password=self._password,
+                    refresh_token=self._refresh_token)
+                f = ui_handler.wait_activation()
+                on_error = partial(self._ui_error, ui_handler.wait_activation)
+                return f.then(log_user, on_error)
 
-            return action().then(self._use_credentials, on_error)
+            _logger.debug('login failed due to error: %s (%s)' %
+                          (error.err_code, error.code))
+
+            if error.code == 401:
+                message = N_('Invalid username or password.')
+            elif error.code == 409:
+                message = N_('There is already an account with this email.')
+            else:
+                message = error.message
+
+            # Note: error.err_description is more accurate, but actually not
+            # translated, and not always comprehensible for the end-user.
+            return self.ask_user_credentials(self._username,
+                                             errors=message)
+        else:  # network error
+            _logger.debug('login failed due to error: %s' % error)
+            return self.ask_user_credentials(self._username,
+                                             errors=error.message)
 
             # TODO: detect network errors (like no internet)
             # and retry after a delay.
