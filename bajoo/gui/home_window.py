@@ -3,9 +3,10 @@
 import wx
 
 from ..common.future import wait_one
-from ..ui_handler_of_connection import UIHandlerOfConnection, UserInterrupt
+from ..ui_handler_of_connection import UIHandlerOfConnection
+from .base_view import BaseView
 from .event_future import EventFuture, ensure_gui_thread
-from .screen import HomeScreen
+from .screen import ActivationScreen, HomeScreen
 
 
 class HomeWindow(wx.Frame, UIHandlerOfConnection):
@@ -25,13 +26,28 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
         wx.Frame.__init__(self, parent=None, title='Bajoo')
         self._view = HomeWindowView(self)
 
-    @ensure_gui_thread
-    def wait_activation(self):
-        pass
+        self.Bind(wx.EVT_CLOSE, self._on_close)
+
+    def _on_close(self, event):
+        """Hide the window instead of closing."""
+        if event.CanVeto():
+            event.Veto()
+            self.Hide()
 
     @ensure_gui_thread
-    def wait_user_resume(self):
-        pass
+    def wait_activation(self):
+        self._view.set_screen(ActivationScreen)
+        self._view.current_screen.reset_form()
+
+        self.Bind(ActivationScreen.EVT_ACTIVATION_DELAYED,
+                  lambda _evt: self.Close())
+
+        def callback(evt):
+            self.Unbind(ActivationScreen.EVT_ACTIVATION_DELAYED)
+            return None
+
+        f = EventFuture(self, ActivationScreen.EVT_ACTIVATION_DONE)
+        return f.then(callback)
 
     @ensure_gui_thread
     def ask_for_settings(self, folder_setting=True, key_setting=True):
@@ -41,12 +57,11 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
     def get_register_or_connection_credentials(self, last_username=None,
                                                errors=None):
 
+        self._view.set_screen(HomeScreen)
         self._view.current_screen.reset_form(last_username, errors)
         self.Show(True)
 
         def callback(evt):
-            if evt.GetEventType() == wx.EVT_CLOSE.typeId:
-                raise UserInterrupt()
             if evt.GetEventType() == HomeScreen.EVT_CONNECTION_SUBMIT.typeId:
                 action = 'connection'
             else:
@@ -56,7 +71,6 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
         return wait_one([
             EventFuture(self, HomeScreen.EVT_CONNECTION_SUBMIT),
             EventFuture(self, HomeScreen.EVT_REGISTER_SUBMIT),
-            EventFuture(self, wx.EVT_CLOSE)
         ], cancel_others=True).then(callback)
 
     @ensure_gui_thread
@@ -64,7 +78,7 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
         pass
 
 
-class HomeWindowView(object):
+class HomeWindowView(BaseView):
     """View of the HomeWindow
 
     Attributes:
@@ -72,15 +86,37 @@ class HomeWindowView(object):
     """
 
     def __init__(self, window):
+        BaseView.__init__(self, window)
+
         self.current_screen = None
-
         s = wx.BoxSizer(wx.VERTICAL)
-
-        self.current_screen = HomeScreen(window)
-
-        s.Add(self.current_screen, proportion=1, flag=wx.EXPAND)
-        s.SetSizeHints(window)  # Set default and min size of Window
         window.SetSizer(s)
+
+        # List of all already instantiated screens.
+        # The key is the Screen class.
+        # The value is the SizerItem, corresponding to the screen.
+        self._screen_map = {}
+
+    def set_screen(self, screen_class):
+        """Change the current screen.
+
+        If a screen of the same class is already instantiated, it's reused.
+        Only one screen is displayed at the same time.
+        """
+        sizer = self.window.GetSizer()
+
+        sizer_item = self._screen_map.get(screen_class)
+        if sizer_item:
+            self.current_screen = sizer_item.GetWindow()
+        if not sizer_item:
+            self.current_screen = screen_class(self.window)
+            sizer_item = sizer.Add(self.current_screen, proportion=1,
+                                   flag=wx.EXPAND)
+            self._screen_map[screen_class] = sizer_item
+
+        sizer.ShowItems(False)
+        sizer_item.Show(True)
+        sizer.SetSizeHints(self.window)  # Set default and min size of Window
 
 
 def main():

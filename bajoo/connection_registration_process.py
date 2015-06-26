@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import logging
-from functools import partial
 
 from . import stored_credentials
 from .api import register
 from .api.session import Session
 from .common.i18n import N_
 from .network.errors import HTTPError
-from .ui_handler_of_connection import UserInterrupt
 
 _logger = logging.getLogger(__name__)
 
@@ -129,10 +127,9 @@ class _ConnectionProcess(object):
         """Ask the user if he want to connect or to register an account."""
         ui_handler = self._get_ui_handler()
 
-        action = partial(ui_handler.get_register_or_connection_credentials,
-                         last_username=username, errors=errors)
-        on_error = partial(self._ui_error, action)
-        return action().then(self._use_credentials, on_error)
+        f = ui_handler.get_register_or_connection_credentials(
+            last_username=username, errors=errors)
+        return f.then(self._use_credentials)
 
     def _use_credentials(self, credentials):
         """Callback called on submission of the register or connection form.
@@ -174,8 +171,7 @@ class _ConnectionProcess(object):
                     self._username, password=self._password,
                     refresh_token=self._refresh_token)
                 f = ui_handler.wait_activation()
-                on_error = partial(self._ui_error, ui_handler.wait_activation)
-                return f.then(log_user, on_error)
+                return f.then(log_user)
 
             _logger.debug('login failed due to error: %s (%s)' %
                           (error.err_code, error.code))
@@ -198,22 +194,6 @@ class _ConnectionProcess(object):
 
             # TODO: detect network errors (like no internet)
             # and retry after a delay.
-
-    def _ui_error(self, ui_action, error):
-        """Callback of UI handler errors.
-
-        Note: the UserQuit is not caught: if it happens, it will go out of
-        all the calls, and stop everything.
-
-        Args:
-            ui_action (callable): action to call when the user is ready.
-        Returns:
-            Future<?>: Future chained to the ``ui_action`` result.
-        """
-        if isinstance(error, UserInterrupt):
-            _logger.debug('User interruption. Wait that the user resume ...')
-            return self._get_ui_handler().wait_user_resume().then(ui_action)
-        raise error
 
     def save_credentials(self, session):
         """Save the refresh token obtained, and clears the password.

@@ -3,15 +3,6 @@
 import abc
 
 
-class UserInterrupt(Exception):
-    """Exception raised when the user closes the user interface.
-
-    When this exception is raised, the interface is no longer active, and the
-    caller should wait the return of the user, using ``wait_user_resume``.
-    """
-    pass
-
-
 class UserQuit(Exception):
     """Exception raised when the user quit Bajoo during an input operation."""
     pass
@@ -48,9 +39,6 @@ class UIHandlerOfConnection(object):
         Raises:
             UserQuit: the user quit the application. The caller should
                 terminate.
-            UserInterrupt: the user has interrupted the operation (by example
-                by closing the window). The caller should wait the user wants
-                to resume the operation.
         """
         pass
 
@@ -70,9 +58,6 @@ class UIHandlerOfConnection(object):
         Raises:
             UserQuit: the user quit the application. The caller should
                 terminate.
-            UserInterrupt: the user has interrupted the operation (by example
-                by closing the window). The caller should wait the user wants
-                to resume the operation.
         """
         pass
 
@@ -98,24 +83,6 @@ class UIHandlerOfConnection(object):
                 If only one element is asked, the other can be None. If the
                 user don't want any passphrase, it should be None.
 
-        Raises:
-            UserQuit: the user quit the application. The caller should
-                terminate.
-            UserInterrupt: the user has interrupted the operation (by example
-                by closing the window). The caller should wait the user wants
-                to resume the operation.
-        """
-        pass
-
-    @abc.abstractmethod
-    def wait_user_resume(self):
-        """Wait the user resumes the (suspended) connection operation.
-
-        This method should be called after that another method has raised an
-        UserInterrupt exception.
-
-        Returns:
-            Future<None>: resolves when the interface is active again.
         Raises:
             UserQuit: the user quit the application. The caller should
                 terminate.

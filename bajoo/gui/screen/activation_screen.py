@@ -1,16 +1,47 @@
 # -*- coding: utf-8 -*-
 
 import wx
+from wx.lib.newevent import NewCommandEvent
 
 from ...common.i18n import N_
 from ..base_view import BaseView
+from ..form import BaseForm
 
 
 class ActivationScreen(wx.Panel):
-    """Ask the user to activate his account."""
+    """Ask the user to activate his account.
+
+    The window contains three named children: 'come_back_btn', 'done_btn'
+    and 'form'
+
+    Attributes:
+        EVT_ACTIVATION_DONE (Event Id): event emitted when the user indicates
+            to have activated his account.
+        EVT_ACTIVATION_DELAYED (Event Id): event emitted when the user
+            indicates he will not activate his account soon.
+    """
+
+    ActivationDoneEvent, EVT_ACTIVATION_DONE = NewCommandEvent()
+    ActivationDelayedEvent, EVT_ACTIVATION_DELAYED = NewCommandEvent()
+
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
         self._view = ActivationScreenView(self)
+
+        self.Bind(wx.EVT_BUTTON, self._send_delayed_event,
+                  source=self.FindWindow('come_back_btn'))
+        self.Bind(wx.EVT_BUTTON, self._send_done_event,
+                  source=self.FindWindow('done_btn'))
+
+    def _send_done_event(self, _event):
+        wx.PostEvent(self, self.ActivationDoneEvent(self.GetId()))
+
+    def _send_delayed_event(self, _event):
+        wx.PostEvent(self, self.ActivationDelayedEvent(self.GetId()))
+
+    def reset_form(self):
+        """Re-enable the form, if needed."""
+        self.FindWindow('form').enable()
 
 
 class ActivationScreenView(BaseView):
@@ -24,9 +55,13 @@ class ActivationScreenView(BaseView):
         title_txt.SetFont(title_txt.GetFont().Bold())
         content_txt = wx.StaticText(activation_screen)
 
-        # TODO: disable the form after it's submitted.
-        come_back_later_btn = wx.Button(activation_screen)
-        done_btn = wx.Button(activation_screen)
+        form = BaseForm(activation_screen, auto_disable=True, name='form')
+        come_back_later_btn = wx.Button(form, name='come_back_btn')
+        done_btn = wx.Button(form, name='done_btn')
+        form_sizer = self.make_sizer(wx.HORIZONTAL,
+                                     [come_back_later_btn, None, done_btn],
+                                     outside_border=False)
+        form.SetSizer(form_sizer)
 
         self.register_many_i18n('SetLabel', {
             title_txt: N_('Your account is not activated.'),
@@ -40,9 +75,9 @@ class ActivationScreenView(BaseView):
             done_btn: N_("It's done!")
         })
 
-        sizer = self.make_sizer(wx.VERTICAL, [
-            title_txt, content_txt, None,
-            [come_back_later_btn, None, done_btn]])
+        sizer = self.make_sizer(wx.VERTICAL,
+                                [title_txt, content_txt, None, form],
+                                flag=wx.EXPAND)
         activation_screen.SetSizer(sizer)
 
 
@@ -54,6 +89,16 @@ def main():
     app.SetTopWindow(win)
     screen = ActivationScreen(win)
     screen.GetSizer().SetSizeHints(win)
+
+    def on_activation_delayed(_evt):
+        print('Activation delayed')
+
+    def on_activation_done(_evt):
+        print('Activation done')
+
+    screen.Bind(ActivationScreen.EVT_ACTIVATION_DELAYED, on_activation_delayed)
+    screen.Bind(ActivationScreen.EVT_ACTIVATION_DONE, on_activation_done)
+
     win.Show(True)
     app.MainLoop()
 
