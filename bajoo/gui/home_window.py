@@ -6,7 +6,7 @@ from ..common.future import wait_one
 from ..ui_handler_of_connection import UIHandlerOfConnection
 from .base_view import BaseView
 from .event_future import EventFuture, ensure_gui_thread
-from .screen import ActivationScreen, HomeScreen
+from .screen import ActivationScreen, HomeScreen, SetupConfigScreen
 
 
 class HomeWindow(wx.Frame, UIHandlerOfConnection):
@@ -51,7 +51,11 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
 
     @ensure_gui_thread
     def ask_for_settings(self, folder_setting=True, key_setting=True):
-        pass
+        self._view.set_screen(SetupConfigScreen)
+        self._view.current_screen.reset_form(folder_setting, key_setting)
+
+        f = EventFuture(self, SetupConfigScreen.EVT_SUBMIT)
+        return f.then(lambda data: (data.bajoo_folder, data.passphrase))
 
     @ensure_gui_thread
     def get_register_or_connection_credentials(self, last_username=None,

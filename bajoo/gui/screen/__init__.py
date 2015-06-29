@@ -2,5 +2,6 @@
 
 from .activation_screen import ActivationScreen
 from .home_screen import HomeScreen
+from .setup_config_screen import SetupConfigScreen
 
-__all__ = [ActivationScreen, HomeScreen]
+__all__ = [ActivationScreen, HomeScreen, SetupConfigScreen]

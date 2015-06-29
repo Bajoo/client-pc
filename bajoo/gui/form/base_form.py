@@ -126,6 +126,8 @@ class BaseForm(wx.Window, Translator):
                 value = child.GetValue()
             elif hasattr(child, 'GetSelection'):  # wx.Choices
                 value = child.GetSelection()
+            elif hasattr(child, 'GetPath'):  # wx.DirPickerFolder
+                value = child.GetPath()
             else:
                 continue
             result[child.GetName()] = value
@@ -166,6 +168,8 @@ class BaseForm(wx.Window, Translator):
         result = True
         for v in self.validators:
             v.reset()
+            if not v.target.IsEnabled():
+                continue  # We don't check disabled elements.
             if not v.validate():
                 if result:
                     # first element to fail

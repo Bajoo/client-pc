@@ -30,7 +30,7 @@ class BaseView(Translator):
         self.register_i18n(frame.SetTitle, title)
 
     def make_sizer(self, direction, items, outside_border=True, flag=0,
-                   proportion=0):
+                   proportion=0, sizer=None):
         """Recursively make sizers with border for simple cases.
 
         Each element given will be added to the sizer, with appropriate
@@ -50,6 +50,8 @@ class BaseView(Translator):
                 each ``sizer.Add()`` call.
             proportion (optional): If set, the parameter will be passed to each
                 ``sizer.Add()`` call.
+            sizer (wx.Sizer, optional): If set, this empty sizer will be used,
+                instead of creating a new one.
         returns:
             wx.Sizer: the top-level sizer created.
         """
@@ -58,7 +60,8 @@ class BaseView(Translator):
             wx.HORIZONTAL: wx.VERTICAL
         }
 
-        sizer = wx.BoxSizer(direction)
+        if not sizer:
+            sizer = wx.BoxSizer(direction)
 
         # the first border is implemented as a Spacer,
         # because borders of hidden elements don't appears.

@@ -67,11 +67,18 @@ def resource_filename(resource):
     return pkg_resources.resource_filename('bajoo', resource)
 
 
+def default_root_folder():
+    """Returns the default emplacement fir the Bajoo root folder."""
+    return os.path.expanduser('~/Bajoo')
+
+
 def main():
     print('log dir: %s' % get_log_dir())
     print('cache dir: %s' % get_cache_dir())
     print('config dir: %s' % get_config_dir())
     print('data dir: %s' % get_data_dir())
+    print('')
+    print('default Bajoo root folder: %s', default_root_folder())
 
 if __name__ == "__main__":
     main()
