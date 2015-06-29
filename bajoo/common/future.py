@@ -197,7 +197,44 @@ def wait_one(futures, cancel_others=False):
                     f.cancel()
 
     for f in futures:
-        f.then(_done_callback)
+        f.then(_done_callback, _fail_callback)
+    return resulting_future
+
+
+def wait_all(futures):
+    """Create a future who wait that all futures in the list are resolved.
+
+    returns:
+        Future<None>
+    """
+    tlock, plock = ThreadLock(), ProcessLock()
+    resulting_future = Future()
+
+    _remaining_tasks = [len(futures)]
+
+    if _remaining_tasks == 0:
+        return Future.resolve(None)
+
+    def _done_callback(_value):
+        with tlock, plock:
+            if _remaining_tasks[0] <= 0:
+                return
+            _remaining_tasks[0] -= 1
+            if _remaining_tasks[0] == 0:
+                resulting_future.set_running_or_notify_cancel()
+                resulting_future.set_result(None)
+
+    def _fail_callback(exception):
+        with tlock, plock:
+            if _remaining_tasks[0] <= 0:
+                return
+            resulting_future.set_running_or_notify_cancel()
+            resulting_future.set_exception(exception)
+            _remaining_tasks[0] = -1
+
+    for f in futures:
+        f.then(_done_callback, _fail_callback)
+
     return resulting_future
 
 
