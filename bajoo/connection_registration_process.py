@@ -6,6 +6,7 @@ from . import stored_credentials
 from .api import register
 from .api.session import Session
 from .common.i18n import N_
+from .common.future import Future, wait_all
 from .network.errors import HTTPError
 
 _logger = logging.getLogger(__name__)
@@ -50,10 +51,15 @@ class _ConnectionProcess(object):
         self.ui_factory = ui_factory
         self.ui_handler = None
 
+        self.is_new_account = False
+
         # Last used credentials, modified by log_user()
         self._username = None
         self._password = None
         self._refresh_token = None
+
+        self._need_root_folder_config = False
+        self._need_gpg_config = False
 
     def _get_ui_handler(self):
         """Create the UI handler if it's not done yet, and returns it.
@@ -93,7 +99,10 @@ class _ConnectionProcess(object):
         f = f.then(self.save_credentials)
 
         # Phase 2: configuration
-        return f.then(self.check_user_configuration)
+        f = f.then(self.check_user_configuration)
+
+        # Phase 3: prevent the user and returns the token.
+        return f.then(self.inform_user)
 
     def log_user(self, username, refresh_token=None, password=None):
         """Connect the user from the credentials given.
@@ -144,10 +153,13 @@ class _ConnectionProcess(object):
         _logger.debug('User has given username "%s" to performs action: %s'
                       % (username, action))
 
+        def _on_register(_):
+            self.is_new_account = True
+            return self.log_user(username, password=password)
+
         if action is 'register':
             f = register(username, password)
-            return f.then(lambda _: self.log_user(username, password=password),
-                          self._on_login_error)
+            return f.then(_on_register, self._on_login_error)
         else:
             return self.log_user(username, password=password)
 
@@ -205,11 +217,137 @@ class _ConnectionProcess(object):
         self._clear_credentials()
         return session
 
-    def check_user_configuration(self):
+    def check_user_configuration(self, session):
         """
         This is the begin of the phase 2: ensure proper configuration.
         At this point, we have a valid session.
         """
         _logger.info('Connection process phase 2: Configuration')
+
+        if self.is_new_account:
+            self._need_gpg_config = True
+            self._need_root_folder_config = True
+            f = self._get_settings_and_apply()
+        else:
+            f = wait_all([
+                self.check_bajoo_root_folder().then(self._set_folder_flag,
+                                                    self._set_folder_flag),
+                self.check_gpg_config().then(self._set_gpg_flag,
+                                             self._set_gpg_flag)
+            ])
+            f = f.then(self._ask_config_if_flags)
+
+        return f.then(lambda __: session)
+
+    def _get_settings_and_apply(self):
+        """Ask settings from the user, then apply them."""
+        ui_handler = self._get_ui_handler()
+        f = ui_handler.ask_for_settings(self._need_root_folder_config,
+                                        self._need_gpg_config)
+        return f.then(self._apply_setup_settings)
+
+    def _ask_config_if_flags(self, __):
+        if self._need_gpg_config or self._need_root_folder_config:
+            return self._get_settings_and_apply()
+        else:
+            return None
+
+    def _apply_setup_settings(self, settings):
+        """Receive settings from the UI, and apply them.
+
+        If the settings are invalid, the ui will be called agin,until the two
+        checks pass.
+
+        Returns:
+            Future<None>: resolve when the settings have been applied.
+        """
+        root_folder_path, gpg_passphrase = settings
+        futures = []
+
+        if self._need_root_folder_config:
+            f1 = self.set_root_folder(root_folder_path)
+            f1 = f1.then(self.check_bajoo_root_folder)
+            f1 = f1.then(self._set_folder_flag, self._set_folder_flag)
+            futures.append(f1)
+        if self._need_gpg_config:
+            f2 = self.create_gpg_key(gpg_passphrase)
+            f2 = f2.then(self.check_gpg_config)
+            f2 = f2.then(self._set_gpg_flag, self._set_gpg_flag)
+            futures.append(f2)
+
+        return wait_all(futures).then(self._ask_config_if_flags)
+
+    def _set_folder_flag(self, result):
+        if isinstance(result, Exception):
+            _logger.warning('Error when applying the Bajoo root folder config',
+                            exc_info=True)
+        self._need_root_folder_config = not result
+
+    def _set_gpg_flag(self, result):
+        if isinstance(result, Exception):
+            _logger.warning('Error when applying the GPG config',
+                            exc_info=True)
+        self._need_gpg_config = not result
+
+    def check_bajoo_root_folder(self):
+        """Check that the root Bajoo folder is valid.
+
+        To be valid the bajoo folder should be defined in the user
+        configuration (ie: already explicitely choosen), and the corresponding
+        folder must exists.
+
+        Returns:
+            Future<boolean>: True if valid; Otherwise None.
+        """
+        # TODO: find config (where?), then check folder presence.
+        # TODO: what to do if it's defined, but not exists ?
+
+        self._need_root_folder_config = False
+        return Future.resolve(False)
+
+    def check_gpg_config(self):
+        """Check that the GPG config is valid and the user has a valid set of
+        keys.
+
+        First, it loads the GPG information known by the server. If there is
+        none, the config is not valid.
+        If there is a key, it's compared to the local key, or downloaded if
+        there is not local key.
+
+        Returns:
+            Future<boolean>: True if the GPG config is valid; Otherwise None.
+        """
+        # TODO: what to do if keys remote and local mismatches ?
+        # TODO: check
+        self._need_gpg_config = False
+        return Future.resolve(False)
+
+    def create_gpg_key(self, passphrase):
+        """Create a new GPG key and upload it.
+
+        Returns:
+            Future<None>: resolve when the user has a valid GPG key,
+                synchronized with the server.
+        """
         # TODO
-        pass
+        return Future.resolve(None)
+
+    def set_root_folder(self, root_folder_path):
+        """Create the Bajoo root folder.
+
+        Returns:
+            Future<None>: resolve when the user has a valid bajoo root folder,
+        """
+        # TODO
+        return Future.resolve(None)
+
+    def inform_user(self, session):
+        """Informs the user interface if it's been used.
+
+        At this point, the user is successfully logged. The UI should act in
+        consequence.
+        """
+        if self.ui_handler:
+            self.ui_handler.inform_user_is_connected()
+
+        return session
