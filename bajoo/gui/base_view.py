@@ -13,6 +13,7 @@ class BaseView(Translator):
     Attributes:
         window (wx.Window): the window element the view is in charge.
     """
+
     def __init__(self, window):
         Translator.__init__(self)
 
@@ -97,3 +98,21 @@ class BaseView(Translator):
             sizer.AddSpacer(15)
 
         return sizer
+
+    def create_settings_button_box(self, parent):
+        """Create a common box with 3 buttons: ok, cancel, apply"""
+        btn_ok = wx.Button(parent, wx.ID_OK, name='btn_ok')
+        btn_cancel = wx.Button(parent, wx.ID_CANCEL, name='btn_cancel')
+        btn_apply = wx.Button(parent, wx.ID_APPLY, name='btn_apply')
+
+        # Buttons box
+        button_box = wx.StdDialogButtonSizer()
+
+        button_box.SetAffirmativeButton(btn_ok)
+        button_box.SetCancelButton(btn_cancel)
+        button_box.AddButton(btn_apply)
+
+        # Layout the button box
+        button_box.Realize()
+
+        return button_box
