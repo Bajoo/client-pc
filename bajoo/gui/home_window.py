@@ -50,9 +50,12 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
         return f.then(callback)
 
     @ensure_gui_thread
-    def ask_for_settings(self, folder_setting=True, key_setting=True):
+    def ask_for_settings(self, folder_setting=True, key_setting=True,
+                         root_folder_error=None, gpg_error=None):
         self._view.set_screen(SetupConfigScreen)
-        self._view.current_screen.reset_form(folder_setting, key_setting)
+        self._view.current_screen.reset_form(
+            folder_setting, key_setting,
+            root_folder_error=root_folder_error, gpg_error=gpg_error)
 
         f = EventFuture(self, SetupConfigScreen.EVT_SUBMIT)
         return f.then(lambda data: (data.bajoo_folder, data.passphrase))

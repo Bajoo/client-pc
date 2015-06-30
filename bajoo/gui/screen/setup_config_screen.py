@@ -3,7 +3,7 @@
 import wx
 from wx.lib.newevent import NewCommandEvent
 
-from ...common.i18n import N_
+from ...common.i18n import N_, _
 from ...common.path import default_root_folder
 from ..base_view import BaseView
 from ..form import BaseForm
@@ -56,10 +56,27 @@ class SetupConfigScreen(BaseForm):
         del data['confirmation']
         return data
 
-    def reset_form(self, folder_setting, key_setting):
+    def reset_form(self, folder_setting, key_setting, root_folder_error=None,
+                   gpg_error=None):
+
+        root_folder_error_txt = self.FindWindow('root_folder_error')
+        if root_folder_error:
+            root_folder_error_txt.SetLabel(_(root_folder_error))
+            root_folder_error_txt.Show()
+        else:
+            root_folder_error_txt.Hide()
         self.FindWindow('encryption_section').Show(key_setting)
+
+        gpg_error_txt = self.FindWindow('gpg_error')
+        if gpg_error:
+            gpg_error_txt.SetLabel(_(gpg_error))
+            gpg_error_txt.Show()
+        else:
+            gpg_error_txt.Hide()
         self.FindWindow('bajoo_folder_section').Show(folder_setting)
         self.enable()
+
+        self.GetTopLevelParent().Layout()
 
 
 class SetupConfigScreenView(BaseView):
@@ -73,6 +90,9 @@ class SetupConfigScreenView(BaseView):
 
         encryption_section = wx.StaticBox(self.window,
                                           name='encryption_section')
+        gpg_error = wx.StaticText(encryption_section, name='gpg_error')
+        gpg_error.Show(False)
+
         encryption_txt = wx.StaticText(encryption_section)
         passphrase = wx.TextCtrl(encryption_section, name='passphrase',
                                  style=wx.TE_PASSWORD)
@@ -88,6 +108,10 @@ class SetupConfigScreenView(BaseView):
 
         bajoo_folder_section = wx.StaticBox(self.window,
                                             name='bajoo_folder_section')
+        root_folder_error = wx.StaticText(bajoo_folder_section,
+                                          name='root_folder_error')
+        root_folder_error.Show(False)
+
         bajoo_folder_label = wx.StaticText(bajoo_folder_section)
         folder_picker = wx.DirPickerCtrl(bajoo_folder_section,
                                          name='bajoo_folder',
@@ -114,24 +138,26 @@ class SetupConfigScreenView(BaseView):
         passphrase_sizer = self.make_sizer(wx.HORIZONTAL, [
             passphrase, passphrase_validator
         ], outside_border=False, flag=wx.EXPAND, proportion=1)
-        passphrase_sizer.GetItem(0).Proportion = 2
+        passphrase_sizer.GetItem(passphrase).Proportion = 2
         confirmation_sizer = self.make_sizer(wx.HORIZONTAL, [
             confirmation, confirmation_validator
         ], outside_border=False, flag=wx.EXPAND, proportion=1)
-        confirmation_sizer.GetItem(0).Proportion = 2
+        confirmation_sizer.GetItem(confirmation).Proportion = 2
 
         encryption_sizer = wx.StaticBoxSizer(encryption_section, wx.VERTICAL)
         self.make_sizer(wx.VERTICAL, [
-            encryption_txt, passphrase_sizer, confirmation_sizer, no_passphrase
+            gpg_error, encryption_txt, passphrase_sizer, confirmation_sizer,
+            no_passphrase
         ], sizer=encryption_sizer, flag=wx.EXPAND)
 
         bajoo_folder_sizer = wx.StaticBoxSizer(bajoo_folder_section,
-                                               wx.HORIZONTAL)
+                                               wx.VERTICAL)
 
-        self.make_sizer(wx.HORIZONTAL, [
-            bajoo_folder_label, folder_picker
+        self.make_sizer(wx.VERTICAL, [
+            root_folder_error, [bajoo_folder_label, folder_picker]
         ], flag=wx.EXPAND, sizer=bajoo_folder_sizer)
-        bajoo_folder_sizer.GetItem(2).Proportion = 1
+        bajoo_folder_sizer.GetItem(folder_picker,
+                                   recursive=True).Proportion = 1
 
         btn_sizer = wx.StdDialogButtonSizer()
         btn_sizer.AddButton(validate_btn)

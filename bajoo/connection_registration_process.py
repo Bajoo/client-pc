@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 
+import errno
 import logging
+import os
+import sys
 
 from . import stored_credentials
 from .api import register
 from .api.session import Session
+from .common import config
 from .common.i18n import N_
-from .common.future import Future, wait_all
+from .common.future import Future, resolve_dec, wait_all
 from .network.errors import HTTPError
 
 _logger = logging.getLogger(__name__)
@@ -60,6 +64,9 @@ class _ConnectionProcess(object):
 
         self._need_root_folder_config = False
         self._need_gpg_config = False
+
+        self._root_folder_error = None
+        self._gpg_error = None
 
     def _get_ui_handler(self):
         """Create the UI handler if it's not done yet, and returns it.
@@ -179,7 +186,7 @@ class _ConnectionProcess(object):
 
             if error.err_code == 'account_not_activated':
                 _logger.debug('login failed: the account is not activated.')
-                log_user = lambda _: self.log_user(
+                log_user = lambda __: self.log_user(
                     self._username, password=self._password,
                     refresh_token=self._refresh_token)
                 f = ui_handler.wait_activation()
@@ -224,6 +231,8 @@ class _ConnectionProcess(object):
         """
         _logger.info('Connection process phase 2: Configuration')
 
+        self._session = session
+
         if self.is_new_account:
             self._need_gpg_config = True
             self._need_root_folder_config = True
@@ -242,8 +251,10 @@ class _ConnectionProcess(object):
     def _get_settings_and_apply(self):
         """Ask settings from the user, then apply them."""
         ui_handler = self._get_ui_handler()
-        f = ui_handler.ask_for_settings(self._need_root_folder_config,
-                                        self._need_gpg_config)
+        f = ui_handler.ask_for_settings(
+            self._need_root_folder_config, self._need_gpg_config,
+            root_folder_error=self._root_folder_error,
+            gpg_error=self._gpg_error)
         return f.then(self._apply_setup_settings)
 
     def _ask_config_if_flags(self, __):
@@ -278,34 +289,60 @@ class _ConnectionProcess(object):
         return wait_all(futures).then(self._ask_config_if_flags)
 
     def _set_folder_flag(self, result):
+        log_msg = str(result)
+        if sys.version_info[0] < 3:  # Python 2
+            log_msg = log_msg.decode('utf-8')
         if isinstance(result, Exception):
-            _logger.warning('Error when applying the Bajoo root folder config',
-                            exc_info=True)
-        self._need_root_folder_config = not result
+            if isinstance(result, OSError):
+                msg = os.strerror(result.errno)
+                if sys.version_info[0] < 3:  # Python 2
+                    msg = str(msg).decode('utf-8')
+                self._root_folder_error = N_('Error: %s' % msg)
+            else:
+                self._root_folder_error = N_(
+                    'Error when applying the Bajoo root folder config:\n %s' %
+                    log_msg)
+                _logger.info()
+            _logger.warning(
+                'Error when applying the Bajoo root folder config: %s' %
+                log_msg)
+
+        self._need_root_folder_config = (result is not True)
 
     def _set_gpg_flag(self, result):
         if isinstance(result, Exception):
-            _logger.warning('Error when applying the GPG config',
-                            exc_info=True)
+            _logger.warning('Error when applying the GPG config: %s' % result)
         self._need_gpg_config = not result
 
-    def check_bajoo_root_folder(self):
+    def check_bajoo_root_folder(self, __=None):
         """Check that the root Bajoo folder is valid.
 
         To be valid the bajoo folder should be defined in the user
-        configuration (ie: already explicitely choosen), and the corresponding
+        configuration (ie: already explicitly chosen), and the corresponding
         folder must exists.
 
         Returns:
-            Future<boolean>: True if valid; Otherwise None.
+            Future<boolean>: True if valid; Otherwise False.
         """
-        # TODO: find config (where?), then check folder presence.
-        # TODO: what to do if it's defined, but not exists ?
+        root_folder = config.get('root_folder')
 
-        self._need_root_folder_config = False
-        return Future.resolve(False)
+        if not root_folder:
+            self._root_folder_error = None
+            return Future.resolve(False)
 
-    def check_gpg_config(self):
+        if not os.path.isdir(root_folder):
+            self._root_folder_error = N_(
+                "%s doesn't exists, or is not a directory" % root_folder)
+            return Future.resolve(False)
+
+        if not os.access(root_folder, os.R_OK | os.W_OK):
+            self._root_folder_error = N_(
+                "%s has not the read and/or write permissions." % root_folder)
+            return Future.resolve(False)
+
+        return Future.resolve(True)
+
+    def check_gpg_config(self, __=None):
         """Check that the GPG config is valid and the user has a valid set of
         keys.
 
@@ -332,14 +369,26 @@ class _ConnectionProcess(object):
         # TODO
         return Future.resolve(None)
 
+    @resolve_dec
     def set_root_folder(self, root_folder_path):
         """Create the Bajoo root folder.
 
         Returns:
             Future<None>: resolve when the user has a valid bajoo root folder,
         """
-        # TODO
-        return Future.resolve(None)
+        try:
+            os.makedirs(root_folder_path)
+            _logger.debug('Create Bajoo root folder "%s"' % root_folder_path)
+        except OSError as e:
+            if e.errno == errno.EEXIST and os.path.isdir(root_folder_path):
+                pass  # Folder already exists.
+            else:
+                _logger.warning('Unable to create Bajoo root folder "%s".'
+                                ' See the error below.'
+                                % root_folder_path, exc_info=True)
+                raise
+
+        config.set('root_folder', root_folder_path)
 
     def inform_user(self, session):
         """Informs the user interface if it's been used.

@@ -110,6 +110,20 @@ class Future(concurrent.futures.Future):
         future.set_result(value)
         return future
 
+    @staticmethod
+    def reject(value):
+        """Create a future who contains an exception.
+
+        Args:
+            value: Exception set to the future
+        Returns:
+            Future: new Future already terminated, containing the exception.
+        """
+        future = Future()
+        future.set_running_or_notify_cancel()
+        future.set_exception(value)
+        return future
+
     def then(self, on_success=None, on_error=None):
         return then(self, on_success, on_error)
 
@@ -121,7 +135,10 @@ def resolve_dec(f):
     Else, a new Future is created with the returned value as result.
     """
     def wrapper(*args, **kwargs):
-        return Future.resolve(f(*args, **kwargs))
+        try:
+            return Future.resolve(f(*args, **kwargs))
+        except Exception as error:
+            return Future.reject(error)
 
     return wrapper
 

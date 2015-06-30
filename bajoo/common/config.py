@@ -35,7 +35,8 @@ _default_config = {
     'proxy_url': {'type': str, 'default': None},
     'proxy_port': {'type': int, 'default': None},
     'proxy_user': {'type': str, 'default': None},
-    'proxy_password': {'type': str, 'default': None}
+    'proxy_password': {'type': str, 'default': None},
+    'root_folder': {'type': str, 'default': None}
 }
 
 # Actual config parser

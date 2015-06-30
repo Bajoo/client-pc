@@ -62,7 +62,8 @@ class UIHandlerOfConnection(object):
         pass
 
     @abc.abstractmethod
-    def ask_for_settings(self, folder_setting=True, key_setting=True):
+    def ask_for_settings(self, folder_setting=True, key_setting=True,
+                         root_folder_error=None, gpg_error=None):
         """Ask to user to precise some important settings.
 
         The caller may ask for two settings independently: the Bajoo root
@@ -77,6 +78,10 @@ class UIHandlerOfConnection(object):
                 folder path.
             key_setting (boolean): If True, this method asks for the passphrase
                 of the GPG user key.
+            root_folder_error (str, optional):  if set, error message of the
+                previous tentative to set the bajoo root folder.
+            gpg_error (str, optional): if set, error message or the previous
+                tentative to set the GPG config.
         returns:
             Future<str, str>: the first return value contains the folder path,
                 and the second contains the passphrase for the GPG user key.
