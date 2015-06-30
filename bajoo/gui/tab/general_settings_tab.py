@@ -70,14 +70,9 @@ class GeneralSettingsView(BaseView):
             general_settings_screen)
 
         # Main sizer
-        main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(options_box_sizer, 0,
-                       wx.EXPAND | wx.LEFT | wx.TOP | wx.RIGHT, 10)
-        main_sizer.Add(language_box_sizer, 0,
-                       wx.EXPAND | wx.LEFT | wx.TOP | wx.RIGHT, 10)
-        main_sizer.AddStretchSpacer(1)
-        main_sizer.Add(buttons_box, 0,
-                       wx.EXPAND | wx.ALL, 10)
+        main_sizer = self.make_sizer(
+            wx.VERTICAL,
+            [options_box_sizer, language_box_sizer, None, buttons_box])
 
         general_settings_screen.SetSizer(main_sizer)
 

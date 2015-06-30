@@ -150,17 +150,12 @@ class AccountView(BaseView):
         info_button_sizer.Add(btn_open_bajoo_folder, 0,
                               wx.EXPAND | wx.TOP, 10)
 
-        info_text_button_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        info_text_button_sizer.Add(info_text_sizer)
-        info_text_button_sizer.AddStretchSpacer(1)
-        info_text_button_sizer.Add(info_button_sizer, 0, wx.LEFT, 10)
+        info_text_button_sizer = self.make_sizer(
+            wx.HORIZONTAL, [info_text_sizer, None, info_button_sizer], False)
 
-        gauge_text_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        gauge_text_sizer.Add(gauge_text_min)
-        gauge_text_sizer.AddStretchSpacer()
-        gauge_text_sizer.Add(gauge_text_value)
-        gauge_text_sizer.AddStretchSpacer()
-        gauge_text_sizer.Add(gauge_text_max)
+        gauge_text_sizer = self.make_sizer(
+            wx.HORIZONTAL, [gauge_text_min, None, gauge_text_value,
+                            None, gauge_text_max], False, 0, 0)
 
         box_sizer.Add(info_text_button_sizer, 1, wx.EXPAND | wx.ALL, 10)
         box_sizer.Add(gauge_quota, 0,
@@ -168,14 +163,9 @@ class AccountView(BaseView):
         box_sizer.Add(gauge_text_sizer, 0,
                       wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
-        main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(box_sizer, 0,
-                       wx.EXPAND | wx.LEFT | wx.TOP | wx.RIGHT, 10)
-        main_sizer.AddStretchSpacer()
-        main_sizer.Add(btn_reinit_passphrase, 0,
-                       wx.LEFT | wx.TOP, 10)
-        main_sizer.Add(btn_change_password, 0,
-                       wx.LEFT | wx.TOP | wx.BOTTOM, 10)
+        main_sizer = self.make_sizer(
+            wx.VERTICAL, [box_sizer, None, btn_reinit_passphrase,
+                          btn_change_password])
 
         account_screen.SetSizer(main_sizer)
 

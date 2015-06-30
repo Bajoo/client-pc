@@ -93,15 +93,9 @@ class AdvancedSettingsView(BaseView):
         exclude_box_sizer.Add(exclude_box_sizer_inside)
 
         # main_sizer
-        proportion = 0
-        flag = wx.EXPAND | wx.ALL
-        border = 10
-        main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(report_debug_box_sizer, proportion, flag, border)
-        main_sizer.Add(updates_box_sizer, proportion, flag, border)
-        main_sizer.Add(exclude_box_sizer, proportion, flag, border)
-        main_sizer.AddStretchSpacer()
-        main_sizer.Add(buttons_box, proportion, flag, border)
+        main_sizer = self.make_sizer(
+            wx.VERTICAL, [report_debug_box_sizer, updates_box_sizer,
+                          exclude_box_sizer, None, buttons_box])
 
         advanced_settings_screen.SetSizer(main_sizer)
 

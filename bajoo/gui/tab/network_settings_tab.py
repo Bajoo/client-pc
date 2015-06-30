@@ -77,14 +77,9 @@ class NetworkSettingsView(BaseView):
         buttons_box = self.create_settings_button_box(
             network_settings_screen)
 
-        main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(bandwidth_box_sizer, 0,
-                       wx.EXPAND | wx.LEFT | wx.TOP | wx.RIGHT, 10)
-        main_sizer.Add(proxy_form, 0,
-                       wx.EXPAND | wx.LEFT | wx.TOP | wx.RIGHT, 10)
-        main_sizer.AddStretchSpacer(1)
-        main_sizer.Add(buttons_box, 0,
-                       wx.EXPAND | wx.ALL, 10)
+        main_sizer = self.make_sizer(
+            wx.VERTICAL,
+            [bandwidth_box_sizer, proxy_form, None, buttons_box])
 
         network_settings_screen.SetSizer(main_sizer)
 
