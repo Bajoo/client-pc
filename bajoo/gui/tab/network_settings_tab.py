@@ -4,6 +4,7 @@ import wx
 
 from ...common.i18n import N_
 from ..base_view import BaseView
+from ..form import ProxyForm
 
 
 class NetworkSettingsTab(wx.Panel):
@@ -69,11 +70,8 @@ class NetworkSettingsView(BaseView):
         bandwidth_box_sizer = wx.StaticBoxSizer(bandwidth_box)
         bandwidth_box_sizer.Add(bandwidth_grid_sizer, 1, wx.ALL, 5)
 
-        # Proxy box
-        proxy_box = wx.StaticBox(
-            network_settings_screen, wx.ID_ANY,
-            N_("Proxy"))
-        proxy_box_sizer = wx.StaticBoxSizer(proxy_box)
+        # proxy form
+        proxy_form = ProxyForm(network_settings_screen, name='proxy_form')
 
         # Buttons box
         buttons_box = self.create_settings_button_box(
@@ -82,7 +80,7 @@ class NetworkSettingsView(BaseView):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(bandwidth_box_sizer, 0,
                        wx.EXPAND | wx.LEFT | wx.TOP | wx.RIGHT, 10)
-        main_sizer.Add(proxy_box_sizer, 0,
+        main_sizer.Add(proxy_form, 0,
                        wx.EXPAND | wx.LEFT | wx.TOP | wx.RIGHT, 10)
         main_sizer.AddStretchSpacer(1)
         main_sizer.Add(buttons_box, 0,
