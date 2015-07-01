@@ -30,6 +30,16 @@ class Container(object):
         """
         return "<Container '%s' (id=%s)>" % (self.name, self.id)
 
+    @staticmethod
+    def _from_json(session, json_object):
+        from .my_bajoo import MyBajoo
+        from .team_share import TeamShare
+
+        id, name = json_object.get('id', ''), json_object.get('name', '')
+        cls = MyBajoo if name == "MyBajoo" else TeamShare
+
+        return cls(session, id, name)
+
     @classmethod
     def create(cls, session, name):
         """
@@ -66,8 +76,7 @@ class Container(object):
 
         def _on_get_containers(result):
             result_container = result.get('content', {})
-            return Container(session, result_container.get('id', ''),
-                             result_container.get('name', ''))
+            return Container._from_json(session, result_container)
 
         def _on_error(error):
             # TODO: throw ContainerNotFoundError
@@ -93,8 +102,7 @@ class Container(object):
 
         def _on_get_storages(result):
             result_storages = result.get('content', {})
-            storage_list = [Container(session, result_storage.get('id', ''),
-                                      result_storage.get('name', ''))
+            storage_list = [Container._from_json(session, result_storage)
                             for result_storage in result_storages]
 
             return storage_list
