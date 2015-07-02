@@ -5,6 +5,7 @@ import wx
 from wx.lib.agw.hyperlink import HyperLinkCtrl, EVT_HYPERLINK_LEFT
 
 from ...common.i18n import N_
+from ...common.path import resource_filename
 from ..base_view import BaseView
 from ..form import ConnectionForm, RegisterForm
 from ..proxy_window import ProxyWindow
@@ -108,15 +109,21 @@ class HomeScreenView(BaseView):
                            flag=wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, border=10)
         settings_sizer.Add(wx.ComboBox(home_screen, value="Auto", name='lang'))
 
+        notebook_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        notebook_sizer.AddStretchSpacer()
+        notebook_sizer.Add(notebook, flag=wx.EXPAND, proportion=4)
+        notebook_sizer.AddStretchSpacer()
         right_column = wx.BoxSizer(wx.VERTICAL)
         right_column.AddStretchSpacer()
-        right_column.Add(notebook, flag=wx.ALIGN_CENTER | wx.BOTTOM, border=15)
+        right_column.Add(notebook_sizer,
+                         flag=wx.ALIGN_CENTER | wx.BOTTOM | wx.EXPAND,
+                         border=15)
         right_column.AddStretchSpacer()
         right_column.Add(settings_sizer, flag=wx.EXPAND)
 
         content_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        bmp = wx.Image('bajoo/assets/images/home_bajoo_mascot.png') \
-            .ConvertToBitmap()
+        img_path = resource_filename('assets/images/home_bajoo_mascot.png')
+        bmp = wx.Image(img_path).ConvertToBitmap()
         content_sizer.Add(wx.StaticBitmap(home_screen, label=bmp),
                           proportion=1, flag=wx.RIGHT | wx.CENTER, border=15)
         content_sizer.Add(right_column, proportion=1,

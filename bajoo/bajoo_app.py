@@ -3,6 +3,7 @@
 import logging
 from .gui import wx_compat  # noqa
 import wx
+from wx.lib.softwareupdate import SoftwareUpdate
 
 from .common.path import get_data_dir
 from .connection_registration_process import connect_or_register
@@ -11,7 +12,7 @@ from .gui.home_window import HomeWindow
 _logger = logging.getLogger(__name__)
 
 
-class BajooApp(wx.App):
+class BajooApp(wx.App, SoftwareUpdate):
     """Main class who start and manages the user interface.
 
     This is the first class created, just after the loading of configuration
@@ -40,6 +41,13 @@ class BajooApp(wx.App):
     def __init__(self):
         # Don't redirect the stdout in a windows.
         wx.App.__init__(self, redirect=False)
+
+        self.SetAppName("Bajoo")
+
+        # TODO: Set real value for production.
+        base_url = "http://192.168.1.120:8000"
+        self.InitUpdates(base_url, base_url + "/" + 'ChangeLog.txt')
+        self.AutoCheckForUpdate(0)
 
         self._checker = None
         self._home_window = None

@@ -127,6 +127,15 @@ class ColoredFormatter(logging.Formatter):
         return logging.Formatter.format(self, record)
 
 
+class OutLogger(object):
+    """Replacement for sys.stdout and sys.stderr, who log output."""
+    def __init__(self, level):
+        self._level = level
+
+    def write(self, txt):
+        logging.log(self._level, txt)
+
+
 def _excepthook(exctype, value, traceback):
     logging.getLogger(__name__).critical('Uncaught exception',
                                          exc_info=(exctype, value, traceback))
@@ -141,13 +150,25 @@ def init():
     string_format = '%(asctime)s %(levelname)-7s %(name)s - %(message)s'
     formatter = logging.Formatter(fmt=string_format, datefmt=date_format)
 
-    if _support_color_output():
-        colored_formatter = ColoredFormatter(fmt=string_format,
-                                             datefmt=date_format)
-        stdout_handler.setFormatter(colored_formatter)
+    if getattr(sys, 'frozen', False):
+        # In frozen mode, this is a GUI app, and there is no stdout.
+
+        STDOUT_LEVEL = logging.WARNING + 1
+        STDERR_LEVEL = logging.WARNING + 2
+
+        logging.addLevelName(STDOUT_LEVEL, 'STDOUT')
+        logging.addLevelName(STDERR_LEVEL, 'STDERR')
+
+        sys.stdout = OutLogger(STDOUT_LEVEL)
+        sys.stderr = OutLogger(STDERR_LEVEL)
     else:
-        stdout_handler.setFormatter(formatter)
-    root_logger.addHandler(stdout_handler)
+        if _support_color_output():
+            colored_formatter = ColoredFormatter(fmt=string_format,
+                                                 datefmt=date_format)
+            stdout_handler.setFormatter(colored_formatter)
+        else:
+            stdout_handler.setFormatter(formatter)
+        root_logger.addHandler(stdout_handler)
 
     file_handler = _get_file_handler()
     if file_handler:

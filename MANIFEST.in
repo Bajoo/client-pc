@@ -1,3 +1,4 @@
 include README.rst COPYING
 include tox.ini
 recursive-include bajoo/locale *.po
+recursive-include bajoo/assets *.png *.ico

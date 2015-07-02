@@ -19,17 +19,6 @@ with open('README.rst') as readme_file:
     long_description = readme_file.read()
 
 
-requirements = [
-    'appdirs==1.4',
-    'requests>=2.6.0',
-    'futures>=2.2.0'
-]
-if sys.version_info[0] is 3:  # Python3 only
-    requirements += [
-        'wxpython>=Phoenix-3.0.0.dev,<Phoenix-9999'
-    ]
-
-
 class Tox(TestCommand):
     user_options = [('tox-args=', 'a', "Arguments to pass to tox")]
 
@@ -99,16 +88,16 @@ On Windows, you can download it from http://wxpython.org/download.php""")
         InstallCommand.run(self)
 
 
-setup(
-    name="bajoo",
-    version=__version__,  # noqa
-    description="Official client for the cloud storage service Bajoo",
-    long_description=long_description,
-    url="https://www.bajoo.fr",
-    author="Bajoo",
-    author_email="support@bajoo.fr",
-    license="GPLv3",
-    classifiers=[
+setup_kwargs = {
+    'name': "bajoo",
+    'version': __version__,  # noqa
+    'description': "Official client for the cloud storage service Bajoo",
+    'long_description': long_description,
+    'url': "https://www.bajoo.fr",
+    'author': "Bajoo",
+    'author_email': "support@bajoo.fr",
+    'license': "GPLv3",
+    'classifiers': [
         "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: End Users/Desktop",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
@@ -119,26 +108,79 @@ setup(
         "Programming Language :: Python :: 3.4",
         "Topic :: Communications :: File Sharing"
     ],
-    keywords="bajoo storage cloud file-sharing",
-    packages=find_packages(),
-    setup_requires=['python-gettext'],
-    install_requires=requirements,
-    tests_require=['tox'],
-    include_package_data=True,
-    package_data={
-        'bajoo': ['locale/*/LC_MESSAGES/*.mo']
+    'keywords': "bajoo storage cloud file-sharing",
+    'packages': find_packages(),
+    'setup_requires': ['python-gettext'],
+    'install_requires': [
+        'appdirs==1.4',
+        'requests>=2.6.0',
+        'futures>=2.2.0'
+    ],
+    'tests_require': ['tox'],
+    'include_package_data': True,
+    'package_data': {
+        # Note: esky build doesn't support 'include_package_data'
+        'bajoo': ['locale/*/LC_MESSAGES/*.mo', 'assets/*/*.png']
     },
-    dependency_links=['http://wxpython.org/Phoenix/snapshot-builds/'],
-    entry_points={
+    'dependency_links': ['http://wxpython.org/Phoenix/snapshot-builds/'],
+    'entry_points': {
         "console_scripts": [
             "bajoo=bajoo:main"
         ]
     },
-    cmdclass={
+    'cmdclass': {
         'install': Install,
         'test': Tox,
         'build': Build,
         'build_translation': BuildTranslation
     },
-    zip_safe=True
-)
+    'zip_safe': False,
+    'options': {
+        'bdist_esky': {
+            'freezer_module': 'py2exe',
+            'freezer_options': {
+                'dll_excludes': {
+                    # Note that users will have to install
+                    # VCRedist 2008 by themselves.
+                    'msvcp90.dll'
+                },
+                'skip_archive': True
+            }
+        },
+
+    }
+}
+
+
+if sys.version_info[0] is 3:  # Python3 only
+    setup_kwargs['install_requires'] += [
+        'wxpython>=Phoenix-3.0.0.dev,<Phoenix-9999',
+        'py2exe'
+    ]
+
+
+try:
+    from esky import bdist_esky
+except ImportError:
+    print("Warning: esky package not found. It is needed to build the "
+          "distributable archives.")
+else:
+    if sys.platform in ['win32', 'cygwin', 'win64']:
+
+        if sys.version_info[0] is 2:  # Python 2
+            try:
+                import py2exe  # noqa
+            except ImportError:
+                print('Warning: To use esky, py2exe must be installed manually'
+                      ' using this command:')
+                print('\tpip install http://sourceforge.net/projects/py2exe/'
+                      'files/latest/download?source=files')
+
+        icon_path = './bajoo/assets/icons/bajoo.ico'
+        setup_kwargs['scripts'] = [
+            bdist_esky.Executable('start.py', name='Bajoo', gui_only=True,
+                                  icon=icon_path)
+        ]
+
+
+setup(**setup_kwargs)

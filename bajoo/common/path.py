@@ -61,9 +61,10 @@ def get_data_dir():
 def resource_filename(resource):
     """Returns the correct filename of the package_data resource."""
 
-    if getattr(sys, 'frozen', False) and getattr(sys, '_MEIPASS', False):
-        # The application is executed frozen with pyinstaller.
-        return os.path.join(getattr(sys, '_MEIPASS'), resource)
+    # Note: it works only in non-zipped mode.
+    if getattr(sys, 'frozen', False) and getattr(sys, 'executable', False):
+        exe_path = unicode(sys.executable, sys.getfilesystemencoding())
+        return os.path.join(os.path.dirname(exe_path), 'bajoo', resource)
     return pkg_resources.resource_filename('bajoo', resource)
 
 
