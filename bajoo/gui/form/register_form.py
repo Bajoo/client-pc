@@ -33,12 +33,12 @@ class RegisterForm(BaseForm):
         self._view.create_layout()
 
         self.validators = [
-            self.FindWindowByName('username_error'),
-            self.FindWindowByName('password_error'),
-            self.FindWindowByName('confirmation_error')
+            self.FindWindow('username_error'),
+            self.FindWindow('password_error'),
+            self.FindWindow('confirmation_error')
         ]
 
-        self.Bind(wx.EVT_BUTTON, self.submit, self.FindWindowByName('submit'))
+        self.Bind(wx.EVT_BUTTON, self.submit, self.FindWindow('submit'))
 
     def set_data(self, username=None, errors=None):
         """Initialize the form and set default data."""
@@ -88,31 +88,31 @@ class RegisterFormView(BaseView):
         """Create appropriate layout and static text for form."""
 
         sizer = self.make_sizer(wx.VERTICAL, [
-            self.window.FindWindowByName('messages'),
+            self.window.FindWindow('messages'),
             [
-                self.window.FindWindowByName('username'),
-                self.window.FindWindowByName('username_error')
+                self.window.FindWindow('username'),
+                self.window.FindWindow('username_error')
             ], [
-                self.window.FindWindowByName('password'),
-                self.window.FindWindowByName('password_error')
+                self.window.FindWindow('password'),
+                self.window.FindWindow('password_error')
             ], [
-                self.window.FindWindowByName('confirmation'),
-                self.window.FindWindowByName('confirmation_error')
+                self.window.FindWindow('confirmation'),
+                self.window.FindWindow('confirmation_error')
             ],
-            self.window.FindWindowByName('submit')
+            self.window.FindWindow('submit')
         ])
         self.window.SetSizer(sizer)
 
     def display_message(self, message):
         """Display a message on top of the form."""
-        message_text = self.window.FindWindowByName('messages')
+        message_text = self.window.FindWindow('messages')
         message_text.SetLabel(message)
         message_text.Show()
         self.window.GetTopLevelParent().Layout()
 
     def hide_message(self):
         """Hide the message displayed on top of the form."""
-        self.window.FindWindowByName('messages').Hide()
+        self.window.FindWindow('messages').Hide()
         self.window.GetTopLevelParent().Layout()
 
 

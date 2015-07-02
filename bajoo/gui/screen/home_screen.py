@@ -38,18 +38,18 @@ class HomeScreen(wx.Panel):
         self._view = HomeScreenView(self)
 
         self.Bind(EVT_HYPERLINK_LEFT, self._open_proxy_window,
-                  self.FindWindowByName('proxy_settings_link'))
+                  self.FindWindow('proxy_settings_link'))
 
         self.Bind(ConnectionForm.EVT_SUBMIT, self._on_submitted_form)
 
     def _on_submitted_form(self, event):
         """Disable all the notebook when a form is submitted."""
-        self.FindWindowByName('notebook').Disable()
+        self.FindWindow('notebook').Disable()
         event.Skip()
 
     def reset_form(self, username=None, errors=None):
         """Prepare or reset the form with initial values."""
-        self.FindWindowByName('notebook').Enable()
+        self.FindWindow('notebook').Enable()
         self._view.get_active_form().set_data(username, errors)
         self._view.get_active_form().enable()
 
@@ -129,7 +129,7 @@ class HomeScreenView(BaseView):
 
     def get_active_form(self):
         """Find and return the active form."""
-        return self.window.FindWindowByName('notebook').GetCurrentPage()
+        return self.window.FindWindow('notebook').GetCurrentPage()
 
 
 def main():

@@ -112,7 +112,7 @@ class BaseForm(wx.Window, Translator):
 
         result = dict()
         if self.fields:
-            children = filter(None, [self.FindWindowByName(name)
+            children = filter(None, [self.FindWindow(name)
                                      for name in self.fields])
         else:
             children = [c for c in self.GetChildren()
@@ -143,7 +143,7 @@ class BaseForm(wx.Window, Translator):
                 _logger.warning('Try to set value to non-valid field %s in %s'
                                 % (name, self))
                 continue
-            child = self.FindWindowByName(name)
+            child = self.FindWindow(name)
             if not child:
                 _logger.warning('Try to set value to unknown field %s in %s'
                                 % (name, self))

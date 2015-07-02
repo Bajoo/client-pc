@@ -38,7 +38,7 @@ class ProxyWindow(wx.Dialog):
 
     def _on_submit(self, event):
         if event.GetId() == wx.ID_OK:
-            data = self.FindWindowByName('proxy_form').get_data()
+            data = self.FindWindow('proxy_form').get_data()
             proxy_event = ProxyFormRequest(data=data)
             wx.PostEvent(wx.GetApp(), proxy_event)
         event.Skip()

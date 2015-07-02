@@ -41,7 +41,7 @@ class ProxyForm(BaseForm):
 
         self.Bind(wx.EVT_RADIOBUTTON, self.apply_field_constraints)
         self.Bind(wx.EVT_CHECKBOX, self.apply_field_constraints,
-                  self.FindWindowByName('use_auth'))
+                  self.FindWindow('use_auth'))
 
     def populate(self):
         mode = config.get('proxy_mode')
@@ -51,22 +51,22 @@ class ProxyForm(BaseForm):
         user = config.get('proxy_user') or ''
         password = config.get('proxy_password') or ''
 
-        mode_radio = self.FindWindowByName(mode)
+        mode_radio = self.FindWindow(mode)
         if mode_radio:
             mode_radio.SetValue(True)
         else:
-            self.FindWindowByName('system_settings').SetValue(True)
+            self.FindWindow('system_settings').SetValue(True)
 
         try:
             selection = self.proxy_type_list.index(proxy_type)
         except ValueError:
             selection = 0
-        self.FindWindowByName('proxy_type').SetSelection(selection)
+        self.FindWindow('proxy_type').SetSelection(selection)
 
-        self.FindWindowByName('server_uri').SetValue(url)
-        self.FindWindowByName('server_port').SetValue(port)
-        self.FindWindowByName('username').SetValue(user)
-        self.FindWindowByName('password').SetValue(password)
+        self.FindWindow('server_uri').SetValue(url)
+        self.FindWindow('server_port').SetValue(port)
+        self.FindWindow('username').SetValue(user)
+        self.FindWindow('password').SetValue(password)
 
     def apply_field_constraints(self, _evt=None):
         """Set the form in a coherent state by applying fields constraints.
@@ -75,14 +75,14 @@ class ProxyForm(BaseForm):
         an event handler.
         """
 
-        is_manual_config = self.FindWindowByName('manual_settings').GetValue()
-        use_auth = self.FindWindowByName('use_auth').GetValue()
+        is_manual_config = self.FindWindow('manual_settings').GetValue()
+        use_auth = self.FindWindow('use_auth').GetValue()
 
         for name in ('proxy_type', 'server_uri', 'server_port', 'use_auth'):
-            self.FindWindowByName(name).Enable(is_manual_config)
+            self.FindWindow(name).Enable(is_manual_config)
 
         for name in ('username', 'password'):
-            self.FindWindowByName(name).Enable(is_manual_config and use_auth)
+            self.FindWindow(name).Enable(is_manual_config and use_auth)
 
     def get_data(self):
         """Override get_data to provides more easily usable results.
@@ -150,31 +150,31 @@ class ProxyFormView(BaseView):
 
         sizer_radio = wx.BoxSizer(wx.VERTICAL)
         sizer_radio.AddMany([
-            self.window.FindWindowByName('system_settings'),
-            self.window.FindWindowByName('no_proxy'),
-            self.window.FindWindowByName('manual_settings')
+            self.window.FindWindow('system_settings'),
+            self.window.FindWindow('no_proxy'),
+            self.window.FindWindow('manual_settings')
         ])
 
         # Line "[ server_uri ] : [ server_port ]"
         uri_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        uri_sizer.Add(self.window.FindWindowByName('server_uri'),
+        uri_sizer.Add(self.window.FindWindow('server_uri'),
                       proportion=5, flag=wx.ALIGN_CENTER)
         uri_sizer.Add(wx.StaticText(self.window, label=':'),
                       flag=wx.ALIGN_CENTER | wx.RIGHT | wx.LEFT, border=10)
-        uri_sizer.Add(self.window.FindWindowByName('server_port'),
+        uri_sizer.Add(self.window.FindWindow('server_port'),
                       proportion=1, flag=wx.ALIGN_CENTER)
 
         s = self.make_sizer(wx.VERTICAL, [
             sizer_radio,
             self.make_sizer(wx.HORIZONTAL, [
                 proxy_type_txt,
-                self.window.FindWindowByName('proxy_type')
+                self.window.FindWindow('proxy_type')
             ], outside_border=False, flag=wx.ALIGN_CENTER),
             uri_sizer,
-            self.window.FindWindowByName('use_auth'),
+            self.window.FindWindow('use_auth'),
             self.make_sizer(wx.HORIZONTAL, [
-                self.window.FindWindowByName('username'),
-                self.window.FindWindowByName('password')
+                self.window.FindWindow('username'),
+                self.window.FindWindow('password')
             ], outside_border=False, proportion=1)
         ])
 
