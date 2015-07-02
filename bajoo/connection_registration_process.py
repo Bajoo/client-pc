@@ -206,7 +206,7 @@ class _ConnectionProcess(object):
 
     def check_user_configuration(self):
         """
-        This is the begin of the phase 2: ensureq proper configuration.
+        This is the begin of the phase 2: ensure proper configuration.
         At this point, we have a valid session.
         """
         _logger.info('Connection process phase 2: Configuration')

@@ -48,7 +48,7 @@ class ConnectionForm(BaseForm):
 
 
 class ConnectionFormView(BaseView):
-    """View of the ProxyForm"""
+    """View of the ConnectionForm"""
 
     def create_children(self):
         """Create all named children of proxy form."""

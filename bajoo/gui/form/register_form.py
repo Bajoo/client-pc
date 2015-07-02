@@ -55,7 +55,6 @@ class RegisterFormView(BaseView):
 
     def create_children(self):
         """Create all named children of proxy form."""
-        print(self.window)
 
         wx.StaticText(self.window, name='messages')
         username_txt = wx.TextCtrl(self.window, name='username')

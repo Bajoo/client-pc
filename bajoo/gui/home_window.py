@@ -2,7 +2,8 @@
 
 import wx
 
-from ..ui_handler_of_connection import UIHandlerOfConnection
+from ..common.future import wait_one
+from ..ui_handler_of_connection import UIHandlerOfConnection, UserInterrupt
 from .event_future import EventFuture, ensure_gui_thread
 from .screen import HomeScreen
 
@@ -44,10 +45,19 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
         self.Show(True)
 
         def callback(evt):
-            return 'connection', evt.username, evt.password
+            if evt.GetEventType() == wx.EVT_CLOSE.typeId:
+                raise UserInterrupt()
+            if evt.GetEventType() == HomeScreen.EVT_CONNECTION_SUBMIT.typeId:
+                action = 'connection'
+            else:
+                action = 'register'
+            return action, evt.username, evt.password
 
-        return EventFuture(self, HomeScreen.EVT_CONNECTION_SUBMIT)\
-            .then(callback)
+        return wait_one([
+            EventFuture(self, HomeScreen.EVT_CONNECTION_SUBMIT),
+            EventFuture(self, HomeScreen.EVT_REGISTER_SUBMIT),
+            EventFuture(self, wx.EVT_CLOSE)
+        ], cancel_others=True).then(callback)
 
     @ensure_gui_thread
     def inform_user_is_connected(self):

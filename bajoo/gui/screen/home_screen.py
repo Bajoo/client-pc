@@ -41,6 +41,7 @@ class HomeScreen(wx.Panel):
                   self.FindWindow('proxy_settings_link'))
 
         self.Bind(ConnectionForm.EVT_SUBMIT, self._on_submitted_form)
+        self.Bind(RegisterForm.EVT_SUBMIT, self._on_submitted_form)
 
     def _on_submitted_form(self, event):
         """Disable all the notebook when a form is submitted."""
