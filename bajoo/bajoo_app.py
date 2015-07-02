@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
+from .gui import wx_compat  # noqa
 import wx
 
 from .common.path import get_data_dir

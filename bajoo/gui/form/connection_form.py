@@ -65,12 +65,8 @@ class ConnectionFormView(BaseView):
         submit_btn = wx.Button(self.window, name='submit')
 
         str20 = '123456789ABCDEF01234'
-        try:  # wxPython phoenix
-            size = username_txt.GetSizefromTextSize(
-                username_txt.GetTextExtent(str20))
-        except AttributeError:  # wxPython classic
-            size = username_txt.GetTextExtent(' %s ' % str20)
-            size = (size[0], -1)
+        size = username_txt.GetSizeFromTextSize(
+            username_txt.GetTextExtent(str20))
         username_txt.SetMinSize(size)
         password_txt.SetMinSize(size)
 

@@ -63,12 +63,7 @@ def ensure_gui_thread(f):
     handler = wx.EvtHandler()
 
     def wrapper(*args, **kwargs):
-        if 'phoenix' in wx.version():
-            is_main_thread = wx.IsMainThread
-        else:
-            is_main_thread = wx.Thread_IsMain
-
-        if is_main_thread():
+        if wx.IsMainThread():
             return f(*args, **kwargs)
         else:
             future = EventFuture(handler, EVT_RUN)

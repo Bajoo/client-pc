@@ -116,12 +116,7 @@ class HomeScreenView(BaseView):
         content_sizer = wx.BoxSizer(wx.HORIZONTAL)
         bmp = wx.Image('bajoo/assets/images/home_bajoo_mascot.png') \
             .ConvertToBitmap()
-        # Compatibility wxPython classic and phoenix
-        if 'phoenix' in wx.version():
-            kwargs = {'label': bmp}
-        else:
-            kwargs = {'bitmap': bmp}
-        content_sizer.Add(wx.StaticBitmap(home_screen, **kwargs),
+        content_sizer.Add(wx.StaticBitmap(home_screen, label=bmp),
                           proportion=1, flag=wx.RIGHT | wx.CENTER, border=15)
         content_sizer.Add(right_column, proportion=1,
                           flag=wx.EXPAND | wx.CENTER)
