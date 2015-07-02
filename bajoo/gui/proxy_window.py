@@ -53,8 +53,8 @@ class ProxyWindowView(BaseView):
         self.set_frame_title(N_('Bajoo - Proxy'))
 
         self._proxy_form = ProxyForm(window, name='proxy_form')
-        self._apply_btn = wx.Button(window, id=wx.ID_OK)
         self._cancel_btn = wx.Button(window, id=wx.ID_CANCEL)
+        self._apply_btn = wx.Button(window, id=wx.ID_OK)
 
         self.register_i18n(self._cancel_btn.SetLabel, N_('Cancel'))
         self.register_i18n(self._apply_btn.SetLabel, N_('OK'))

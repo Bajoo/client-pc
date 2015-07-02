@@ -179,7 +179,7 @@ class ProxyFormView(BaseView):
         ])
 
         box = wx.StaticBox(self.window)
-        self.register_i18n(self.window.SetLabel, N_('Proxy'))
+        self.register_i18n(box.SetLabel, N_('Proxy'))
         sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
         sizer.Add(s, flag=wx.EXPAND)
         self.window.SetSizer(sizer)

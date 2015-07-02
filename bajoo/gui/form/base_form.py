@@ -8,7 +8,7 @@ from ..translator import Translator
 _logger = getLogger(__name__)
 
 
-class BaseForm(wx.Window, Translator):
+class BaseForm(wx.Panel, Translator):
     """Base class for all Bajoo forms
 
     A form is a window containing user controls, like buttons, input fields and
@@ -68,7 +68,7 @@ class BaseForm(wx.Window, Translator):
                 automatically disabled when a wx.EVT_BUTTON occurs.
             **kwargs: arguments passed to ``wx.Window``
         """
-        wx.Window.__init__(self, parent, **kwargs)
+        wx.Panel.__init__(self, parent, **kwargs)
         Translator.__init__(self)
 
         # map Window ID <-> Previous state
