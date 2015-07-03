@@ -12,7 +12,15 @@ ProxyFormRequest, EVT_PROXY_FORM = NewEvent()
 """Event emitted when the user wants to change its proxy settings.
 
 Attributes:
-    data (dict): All proxy settings. See ``ProxyForm``.
+    proxy_mode (str)
+    proxy_type (str)
+    server_uri (str)
+    server_port (str)
+    use_auth (boolean)
+    username (str)
+    password (str)
+
+See ``ProxyForm``.
 """
 
 
@@ -39,7 +47,7 @@ class ProxyWindow(wx.Dialog):
     def _on_submit(self, event):
         if event.GetId() == wx.ID_OK:
             data = self.FindWindow('proxy_form').get_data()
-            proxy_event = ProxyFormRequest(data=data)
+            proxy_event = ProxyFormRequest(**data)
             wx.PostEvent(wx.GetApp(), proxy_event)
         event.Skip()
 

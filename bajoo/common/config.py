@@ -98,6 +98,10 @@ def get(key):
             return _config_parser.get('config', key)
     except configparser.NoOptionError:
         return _default_config[key]['default']
+    except ValueError:
+        _logger.warn('Invalid config value for key %s. '
+                     'Returns default value instead' % key)
+        return _default_config[key]['default']
 
 
 def set(key, value):
@@ -111,7 +115,10 @@ def set(key, value):
     """
     if key not in _default_config:
         raise KeyError
-    _config_parser.set('config', key, str(value))
+    if value is None:
+        _config_parser.remove_option('config', key)
+    else:
+        _config_parser.set('config', key, str(value))
     config_file_path = _get_config_file_path()
     try:
         with open(config_file_path, 'w') as config_file:

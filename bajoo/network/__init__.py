@@ -3,10 +3,16 @@ import logging
 import os
 import tempfile
 
+try:
+    from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse
+
 from concurrent.futures import ThreadPoolExecutor, CancelledError
 from requests import Session
 from requests.adapters import HTTPAdapter
 
+from ..common import config
 from ..common.future import patch
 from .request_future import RequestFuture
 from . import errors
@@ -22,34 +28,9 @@ PROXY_MODE_SYSTEM = 'system_settings'
 PROXY_MODE_MANUAL = 'manual_settings'
 PROXY_MODE_NO = 'no_proxy'
 
-# Config dictionary
-_config = {
-    'proxy_mode': "system_settings",
-    # Choice of proxy modes, among "system_settings" (default), "no_proxy",
-    # & "manual_settings".
-    'proxy_type': 'HTTP',
-    # Proxy type used. Possible values are:
-    # "HTTP" (default), "SOCKS4" & "SOCKS5".
-    'proxy_url': None,
-    'proxy_port': None,
-    'proxy_user': None,
-    'proxy_password': None
-}
-
-
-def get_config(key, default):
-    """Get a network configuration config."""
-    return _config.get(key, default)
-
-
-def set_config(key, value):
-    """Set a network configuration config."""
-    # TODO: validate value
-    _config[key] = value
-
 
 def _prepare_proxy():
-    proxy_mode = get_config('proxy_mode', PROXY_MODE_SYSTEM)
+    proxy_mode = config.get('proxy_mode')
 
     # mode no proxy
     if proxy_mode == PROXY_MODE_NO:
@@ -57,26 +38,24 @@ def _prepare_proxy():
 
     # mode manual proxy
     if proxy_mode == PROXY_MODE_MANUAL:
-        proxy_type = get_config('proxy_type', 'HTTP')
+        proxy_type = config.get('proxy_type').lower()
         proxy_url, proxy_port = \
-            get_config('proxy_url', 'HTTP'), \
-            get_config('proxy_port', 'HTTP')
+            config.get('proxy_url'), config.get('proxy_port')
         proxy_user, proxy_password = \
-            get_config('proxy_user', 'HTTP'), \
-            get_config('proxy_password', 'HTTP')
+            config.get('proxy_user'), \
+            config.get('proxy_password')
 
         if not proxy_url:
             # TODO: config-specific exception
             raise Exception
 
         # parse the host name the proxy url
-        from urlparse import urlparse
 
         proxy_string = urlparse(proxy_url).hostname  # any.proxy.addr
 
         # add the port number
         if proxy_port:
-            proxy_string += ':' + proxy_port  # any.proxy.addr:port
+            proxy_string = '%s:%s' % (proxy_string, proxy_port)
 
         # add user & password
         if proxy_user:
@@ -90,7 +69,7 @@ def _prepare_proxy():
         # type://user:pass@any.proxy.addr:port
         proxy_string = proxy_type + "://" + proxy_string
 
-        return {proxy_type: proxy_string}
+        return {'https': proxy_string}
 
     # mode system settings (default)
     return None

@@ -5,9 +5,11 @@ from .gui import wx_compat  # noqa
 import wx
 from wx.lib.softwareupdate import SoftwareUpdate
 
+from .common import config
 from .common.path import get_data_dir
 from .connection_registration_process import connect_or_register
 from .gui.home_window import HomeWindow
+from .gui.proxy_window import EVT_PROXY_FORM
 
 _logger = logging.getLogger(__name__)
 
@@ -52,6 +54,8 @@ class BajooApp(wx.App, SoftwareUpdate):
         self._checker = None
         self._home_window = None
 
+        self.Bind(EVT_PROXY_FORM, self._on_proxy_config_changes)
+
     def _ensures_single_instance_running(self):
         """Check that only one instance of Bajoo is running per user.
 
@@ -77,6 +81,18 @@ class BajooApp(wx.App, SoftwareUpdate):
                           caption="Bajoo already started")
             return False
         return True
+
+    def _on_proxy_config_changes(self, event):
+        config.set('proxy_mode', event.proxy_mode)
+        config.set('proxy_type', event.proxy_type)
+        config.set('proxy_url', event.server_uri)
+        config.set('proxy_port', event.server_port)
+        if event.use_auth:
+            config.set('proxy_user', event.username)
+            config.set('proxy_password', event.proxy_password)
+        else:
+            config.set('proxy_user', None)
+            config.set('proxy_password', None)
 
     def create_home_window(self):
         """Create a new HomeWindow instance and return it.

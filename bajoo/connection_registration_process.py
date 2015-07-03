@@ -208,8 +208,10 @@ class _ConnectionProcess(object):
                                              errors=message)
         else:  # network error
             _logger.debug('login failed due to error: %s' % error)
+            message = getattr(error, 'message',
+                              N_('An error happened: %s') % error)
             return self.ask_user_credentials(self._username,
-                                             errors=error.message)
+                                             errors=message)
 
             # TODO: detect network errors (like no internet)
             # and retry after a delay.

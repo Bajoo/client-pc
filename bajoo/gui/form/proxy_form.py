@@ -63,10 +63,10 @@ class ProxyForm(BaseForm):
             selection = 0
         self.FindWindow('proxy_type').SetSelection(selection)
 
-        self.FindWindow('server_uri').SetValue(url)
-        self.FindWindow('server_port').SetValue(port)
-        self.FindWindow('username').SetValue(user)
-        self.FindWindow('password').SetValue(password)
+        self.FindWindow('server_uri').SetValue(url or '')
+        self.FindWindow('server_port').SetValue(str(port) or '0')
+        self.FindWindow('username').SetValue(user or '')
+        self.FindWindow('password').SetValue(password or '')
 
     def apply_field_constraints(self, _evt=None):
         """Set the form in a coherent state by applying fields constraints.
