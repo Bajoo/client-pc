@@ -4,6 +4,7 @@ import wx
 from wx.lib.agw.hyperlink import HyperLinkCtrl
 
 from ...common.i18n import N_
+from ...common.util import human_readable_bytes
 from ..base_view import BaseView
 
 
@@ -32,6 +33,8 @@ class AccountTab(wx.Panel):
         self._data[key] = value
 
     def _populate(self):
+        quota_str = human_readable_bytes(self._data['quota'])
+        quota_used_str = human_readable_bytes(self._data['quota_used'])
         quota_percentage = 0
 
         # TODO: human readable size
@@ -47,16 +50,12 @@ class AccountTab(wx.Panel):
             N_("Account type:") + " " + self._data['account_type'])
         self.FindWindow('lbl_quota_info').SetLabelText(
             str(self._data['n_shares']) + " " + N_("share folder use")
-            + " " + str(self._data['quota_used']) + ", "
+            + " " + quota_used_str + ", "
             + (N_("so %0.2f%% of your Bajoo storage.") % quota_percentage))
-        self.FindWindow('gauge_quota') \
-            .SetValue(quota_percentage)
-        self.FindWindow('gauge_text_min') \
-            .SetLabelText('0')
-        self.FindWindow('gauge_text_value') \
-            .SetLabelText(str(self._data['quota_used']))
-        self.FindWindow('gauge_text_max') \
-            .SetLabelText(str(self._data['quota']))
+        self.FindWindow('gauge_quota').SetValue(quota_percentage)
+        self.FindWindow('gauge_text_min').SetLabelText('0')
+        self.FindWindow('gauge_text_value').SetLabelText(quota_used_str)
+        self.FindWindow('gauge_text_max').SetLabelText(quota_str)
 
     def Show(self, show=True):
         self._populate()
