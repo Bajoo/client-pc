@@ -2,8 +2,9 @@
 import logging
 from hashlib import sha256
 
-from ..common.future import resolve_dec
-
+from .. import encryption
+from ..common.future import resolve_dec, wait_all
+from ..encryption import AsymmetricKey
 
 _logger = logging.getLogger(__name__)
 
@@ -149,6 +150,23 @@ class User(object):
             .download_storage_file('GET', self._get_public_key_url()) \
             .then(_on_download_finished)
 
+    def check_remote_key(self):
+        """Download the user's GPG private key from the server, and add it to
+        the keyring.
+
+        Returns:
+            Future<boolean>: True if the operation succeeded. False if there is
+                no remote key.
+        """
+        def _on_download_finished(response):
+            tmp_file = response.get('content', None)
+            with response.get('content', None) as tmp_file:
+                AsymmetricKey.load(tmp_file, main_context=True)
+                return True
+
+        f = self._session.download_storage_file('GET', self._get_key_url())
+        return f.then(_on_download_finished)
+
     def _upload_private_key(self, key_content):
         return self._session.send_storage_request(
             'PUT', self._get_key_url(), data=key_content)
@@ -173,20 +191,16 @@ class User(object):
             passphrase: the passphrase used to create the new GPG key.
 
         Returns:
-            Future<dict>
+            Future<None>
         """
-        # TODO: use encryption.AsyncKey.create() to create the new key
-        # TODO: then AsyncKey.export() to obtain the key file
-        priv_key, pub_key = 'PRIVATE_KEY_CONTENT', 'PUBLIC_KEY_CONTENT'
 
-        def _on_private_key_uploaded(result):
-            return {
-                'private_key_result': result,
-                'pub_key_result': self._upload_public_key(pub_key).result()
-            }
+        def _upload_key(key):
+            return wait_all([
+                self._upload_private_key(key.export(secret=True)),
+                self._upload_public_key(key.export())
+            ])
 
-        return self._upload_private_key(priv_key) \
-            .then(_on_private_key_uploaded)
+        return encryption.create_key(self.name, passphrase).then(_upload_key)
 
     def _remove_encryption_key(self):
         """

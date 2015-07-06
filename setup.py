@@ -114,7 +114,8 @@ setup_kwargs = {
     'install_requires': [
         'appdirs==1.4',
         'requests>=2.6.0',
-        'futures>=2.2.0'
+        'futures>=2.2.0',
+        'python-gnupg'
     ],
     'tests_require': ['tox'],
     'include_package_data': True,

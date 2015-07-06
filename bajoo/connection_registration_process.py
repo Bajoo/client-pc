@@ -6,7 +6,7 @@ import os
 import sys
 
 from . import stored_credentials
-from .api import register
+from .api import register, User
 from .api.session import Session
 from .common import config
 from .common.i18n import N_
@@ -312,9 +312,16 @@ class _ConnectionProcess(object):
         self._need_root_folder_config = (result is not True)
 
     def _set_gpg_flag(self, result):
+
+        if result is False:
+            self._gpg_error = N_("You haven't yet registered a GPG key.")
+
         if isinstance(result, Exception):
+            self._gpg_error = N_('Error when during the GPG key check:\n %s' %
+                                 result)
             _logger.warning('Error when applying the GPG config: %s' % result)
-        self._need_gpg_config = not result
+
+        self._need_gpg_config = (result is not True)
 
     def check_bajoo_root_folder(self, __=None):
         """Check that the root Bajoo folder is valid.
@@ -356,10 +363,11 @@ class _ConnectionProcess(object):
         Returns:
             Future<boolean>: True if the GPG config is valid; Otherwise None.
         """
-        # TODO: what to do if keys remote and local mismatches ?
-        # TODO: check
-        self._need_gpg_config = False
-        return Future.resolve(False)
+        def _load_user_info(user):
+            return user.get_user_info().then(lambda _: user)
+
+        f = User.load(self._session).then(_load_user_info)
+        return f.then(lambda user: user.check_remote_key())
 
     def create_gpg_key(self, passphrase):
         """Create a new GPG key and upload it.
@@ -368,8 +376,11 @@ class _ConnectionProcess(object):
             Future<None>: resolve when the user has a valid GPG key,
                 synchronized with the server.
         """
-        # TODO
-        return Future.resolve(None)
+        def _load_user_info(user):
+            return user.get_user_info().then(lambda _: user)
+
+        f = User.load(self._session).then(_load_user_info)
+        return f.then(lambda user: user.create_encryption_key(passphrase))
 
     @resolve_dec
     def set_root_folder(self, root_folder_path):
