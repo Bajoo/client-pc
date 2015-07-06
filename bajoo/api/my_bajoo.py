@@ -16,6 +16,12 @@ class MyBajoo(Container):
     def __init__(self, session, container_id, name):
         Container.__init__(self, session, container_id, name)
 
+    def __repr__(self):
+        """
+        Override the representational string of the container object.
+        """
+        return "<MyBajoo (id=%s)>" % self.id
+
 
 if __name__ == '__main__':
     logging.basicConfig()

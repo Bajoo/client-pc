@@ -16,6 +16,11 @@ class MainWindow(wx.Frame):
         wx.Frame.__init__(self, parent=None)
         self._view = MainWindowListbook(self)
 
+        sizer = wx.BoxSizer()
+        sizer.Add(self._view, 1, wx.EXPAND)
+
+        self.SetSizer(sizer)
+
 
 class MainWindowListbook(wx.Listbook):
     """
@@ -47,6 +52,13 @@ class MainWindowListbook(wx.Listbook):
 
     def on_page_changed(self, _event=None):
         self.GetParent().SetTitle(self.GetPageText(self.GetSelection()))
+        page = self.GetCurrentPage()
+
+        if page.GetSizer() and not self.GetParent().IsMaximized():
+            page.GetSizer().SetSizeHints(self)
+
+        if self.GetSizer():
+            self.GetSizer().SetSizeHints(self)
 
 
 def main():

@@ -25,6 +25,12 @@ class TeamShare(Container):
     def __init__(self, session, container_id, name):
         Container.__init__(self, session, container_id, name)
 
+    def __repr__(self):
+        """
+        Override the representational string of the container object.
+        """
+        return "<TeamShare '%s' (id=%s)>" % (self.name, self.id)
+
     @classmethod
     def create(cls, session, name, encrypted=True):
         share = super(TeamShare, cls).create(session, name)

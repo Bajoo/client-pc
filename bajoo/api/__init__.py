@@ -2,6 +2,10 @@
 import logging
 
 from .user import User
+from .session import Session
+from .my_bajoo import MyBajoo
+from .container import Container
+from .team_share import TeamShare
 
 
 _logger = logging.getLogger(__name__)
@@ -36,3 +40,5 @@ if __name__ == '__main__':
                   register(new_email, new_password).result())
 
     # TODO: create a test case for deleting account
+
+__all__ = [User, Session, Container, MyBajoo, TeamShare, register]
