@@ -140,20 +140,19 @@ class DynamicContainerList(object):
 
         if len(removed_containers) == 1:
             title = _('A Bajoo share have been removed.')
-            body = _('You no longer have access to the share %s\n'
-                     'Either the share has been deleted or your permissions '
-                     'have been revoked.'
-                     ) % removed_containers[0].name
+            body = _('Either the share has been deleted or your permissions '
+                     'have been revoked.')
         else:
-            title = _('%s Bajoo shares have been removed.')
+            title = _('%s Bajoo shares have been removed.'
+                      % len(removed_containers))
             body = _('Either the shares have been deleted, or your permissions'
                      ' have been revoked.')
         self._notify(title, body)
 
         with self._list_lock:
-            for container in removed_containers:
+            for container_id in removed_containers:
                 to_remove = [c for c in self._local_list
-                             if c['id'] == container.id]
+                             if c['id'] == container_id]
                 for c in to_remove:
                     self._local_list.remove(c)
 

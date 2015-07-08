@@ -8,9 +8,13 @@ from wx.lib.softwareupdate import SoftwareUpdate
 from .common import config
 from .common.path import get_data_dir
 from .connection_registration_process import connect_or_register
+from .dynamic_container_list import DynamicContainerList
+from .gui.event_future import ensure_gui_thread
 from .gui.home_window import HomeWindow
+from .gui.main_window import MainWindow
 from .gui.message_notifier import MessageNotifier
 from .gui.proxy_window import EVT_PROXY_FORM
+from .gui.task_bar_icon import TaskBarIcon
 
 _logger = logging.getLogger(__name__)
 
@@ -42,6 +46,14 @@ class BajooApp(wx.App, SoftwareUpdate):
     """
 
     def __init__(self):
+        self._checker = None
+        self._home_window = None
+        self._main_window = None
+        self._task_bar_icon = None
+        self._notifier = None
+        self._session = None
+        self._container_list = None
+
         # Don't redirect the stdout in a windows.
         wx.App.__init__(self, redirect=False)
 
@@ -52,9 +64,9 @@ class BajooApp(wx.App, SoftwareUpdate):
         self.InitUpdates(base_url, base_url + "/" + 'ChangeLog.txt')
         self.AutoCheckForUpdate(0)
 
-        self._checker = None
-        self._home_window = None
-        self._notifier = None
+        # Note: the loop event only works if at least one wx.Window exists. As
+        # wx.TaskBarIcon is not a wx.Window, we need to keep this unused frame.
+        self._dummy_frame = wx.Frame(None)
 
         self.Bind(EVT_PROXY_FORM, self._on_proxy_config_changes)
 
@@ -127,10 +139,32 @@ class BajooApp(wx.App, SoftwareUpdate):
         if not self._ensures_single_instance_running():
             return False
 
-        # TODO: Create the TrayIcon
-        self._notifier = MessageNotifier(None)
+        self._task_bar_icon = TaskBarIcon()
+        self._notifier = MessageNotifier(self._task_bar_icon)
 
+        self.Bind(TaskBarIcon.EVT_OPEN_WINDOW, self._show_home_window)
+        self.Bind(TaskBarIcon.EVT_EXIT, self._exit)
         return True
+
+    def _show_home_window(self, event):
+        if not self._session:
+            if self._home_window:
+                self._home_window.Show()
+                self._home_window.Raise()
+        else:
+            if not self._main_window:
+                self._main_window = MainWindow()
+            self._main_window.Show()
+
+    def _exit(self, _event):
+        """Close all resources and quit the app."""
+        _logger.debug('Exiting ...')
+        if self._home_window:
+            self._home_window.Destroy()
+        self._task_bar_icon.Destroy()
+        self._dummy_frame.Destroy()
+        if self._container_list:
+            self._container_list.stop()
 
     # Note (Kevin): OnEventLoopEnter(), from wx.App, is inconsistent. run()
     # is used instead.
@@ -144,8 +178,17 @@ class BajooApp(wx.App, SoftwareUpdate):
                              exc_info=True)
 
         future = connect_or_register(self.create_home_window)
-        # TODO: .then(StartSyncProcess)
+        future.then(self._on_connection)
         future.then(None, _on_unhandled_exception)
 
         _logger.debug('Start main loop')
         self.MainLoop()
+
+    @ensure_gui_thread
+    def _on_connection(self, session):
+        self._session = session
+        self._home_window.Destroy()
+
+        _logger.debug('Start DynamicContainerList() ...')
+        self._container_list = DynamicContainerList(
+            session, self._notifier.send_message)
