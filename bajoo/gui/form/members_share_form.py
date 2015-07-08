@@ -8,7 +8,9 @@ from wx.lib.newevent import NewCommandEvent
 
 from ..base_view import BaseView
 from .base_form import BaseForm
+from ..validator import EmailValidator
 from ...common.i18n import N_
+from ...common.path import resource_filename
 
 _logger = logging.getLogger(__name__)
 
@@ -24,12 +26,22 @@ class MembersShareForm(BaseForm):
     SubmitEvent, EVT_SUBMIT = NewCommandEvent()
     fields = ['user_email', 'permission']
 
+    ADD_ICON = None
+
     def __init__(self, parent):
         BaseForm.__init__(self, parent)
+        self._init_icons()
         self._view = MembersShareView(self)
+        self.validators = self._view.get_validators()
         self._members = []
         self.Bind(wx.EVT_BUTTON, self.submit,
                   self.FindWindowById(wx.ID_APPLY))
+
+    def _init_icons(self):
+        if not MembersShareForm.ADD_ICON:
+            MembersShareForm.ADD_ICON = wx.Image(resource_filename(
+                'assets/images/add.png')) \
+                .ConvertToBitmap()
 
     def load_members(self, members):
         self._members = members
@@ -57,6 +69,9 @@ class MembersShareView(BaseView):
         txt_user_email = wx.TextCtrl(
             members_share_form, name='user_email')
         txt_user_email.SetHint(N_('Email'))
+        email_error = EmailValidator(
+            members_share_form, name='email_error', target=txt_user_email)
+        self._email_error = email_error
 
         cmb_permission = wx.ComboBox(
             members_share_form, name='permission',
@@ -66,12 +81,14 @@ class MembersShareView(BaseView):
         cmb_permission.Append(N_('Read Only'), 'READ_ONLY')
         cmb_permission.SetSelection(0)
 
-        btn_add_user = wx.Button(
-            members_share_form, label=N_('Add'), name='btn_add_user', )
+        btn_add_user = wx.BitmapButton(
+            members_share_form, bitmap=MembersShareForm.ADD_ICON,
+            name='btn_add_user')
 
         user_sizer = wx.BoxSizer(wx.HORIZONTAL)
         user_sizer.Add(txt_user_email, proportion=2,
                        flag=wx.EXPAND | wx.RIGHT, border=15)
+        user_sizer.Add(email_error)
         user_sizer.Add(cmb_permission, proportion=1,
                        flag=wx.EXPAND | wx.RIGHT, border=15)
         user_sizer.Add(btn_add_user, proportion=0)
@@ -93,6 +110,9 @@ class MembersShareView(BaseView):
 
     def remove_member_view(self, member):
         pass
+
+    def get_validators(self):
+        return [self._email_error]
 
 
 def main():
