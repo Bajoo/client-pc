@@ -159,6 +159,11 @@ if sys.version_info[0] is 3:  # Python3 only
         'py2exe'
     ]
 
+if sys.platform not in ['win32', 'cygwin', 'win64']:
+    setup_kwargs['install_requires'] += [
+        'notify2'
+    ]
+
 
 try:
     from esky import bdist_esky

@@ -6,6 +6,7 @@ from threading import Lock as Lock
 import os
 import errno
 
+from .common.i18n import _
 from .common.path import get_data_dir
 from .api.sync import container_list_updater
 
@@ -40,7 +41,14 @@ class DynamicContainerList(object):
     should be considered being loaded.
     """
 
-    def __init__(self, session):
+    def __init__(self, session, notify):
+        """
+        Args:
+            session (Session)
+            notify (callable): Notify the user about an event. take two
+                parameters: the summary and the text body.
+        """
+        self._notify = notify
         self._list_path = os.path.join(get_data_dir(), 'container_list.json')
         self._local_list = []
         self._list_lock = Lock()
@@ -70,7 +78,7 @@ class DynamicContainerList(object):
     def _save_local_list(self):
         """Save the local list file."""
         try:
-            with open(self._list_path, 'wb') as list_file, self._list_lock:
+            with open(self._list_path, 'w') as list_file, self._list_lock:
                 local_list = [{'id': c['id'],
                                'name': c['name'],
                                'path': c['path']} for c in self._local_list]
@@ -97,7 +105,20 @@ class DynamicContainerList(object):
     def _on_added_containers(self, added_containers):
         _logger.info('New container(s) detected: %s', added_containers)
 
-        # TODO: inform the USER !
+        if len(added_containers) == 1:
+            self._notify(_('New Bajoo share added'),
+                         _('You have a new Bajoo share:\n%s') %
+                         added_containers[0].name)
+        else:
+            body = _('You have %s new Bajoo shares:') % len(added_containers)
+            body += '\n\t- %s' % added_containers[0].name
+            body += '\n\t- %s' % added_containers[1].name
+            if len(added_containers) == 3:
+                body += '\n\t- %s' % added_containers[2].name
+            elif len(added_containers) > 3:
+                body += '\n\t'
+                body += _('and %s others') % (len(added_containers) - 2)
+            self._notify(_('New Bajoo shares added'), body)
 
         with self._list_lock:
             for c in added_containers:
@@ -117,11 +138,22 @@ class DynamicContainerList(object):
     def _on_removed_containers(self, removed_containers):
         _logger.info('container(s) removed: %s', removed_containers)
 
+        if len(removed_containers) == 1:
+            title = _('A Bajoo share have been removed.')
+            body = _('You no longer have access to the share %s\n'
+                     'Either the share has been deleted or your permissions '
+                     'have been revoked.'
+                     ) % removed_containers[0].name
+        else:
+            title = _('%s Bajoo shares have been removed.')
+            body = _('Either the shares have been deleted, or your permissions'
+                     ' have been revoked.')
+        self._notify(title, body)
+
         with self._list_lock:
             for container in removed_containers:
                 to_remove = [c for c in self._local_list
                              if c['id'] == container.id]
-                # TODO: inform the USER !
                 for c in to_remove:
                     self._local_list.remove(c)
 
@@ -155,11 +187,15 @@ def main():
     import time
     from .api.session import Session
 
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig()
+
+    def notify(summary, body):
+        print('NOTIFICATION: %s' % summary)
+        print(body)
 
     session = Session.create_session('stran+20@bajoo.fr',
                                      'stran+20@bajoo.fr').result()
-    dyn_list = DynamicContainerList(session)
+    dyn_list = DynamicContainerList(session, notify)
     try:
         while True:
             time.sleep(0.3)

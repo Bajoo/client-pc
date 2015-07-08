@@ -9,6 +9,7 @@ from .common import config
 from .common.path import get_data_dir
 from .connection_registration_process import connect_or_register
 from .gui.home_window import HomeWindow
+from .gui.message_notifier import MessageNotifier
 from .gui.proxy_window import EVT_PROXY_FORM
 
 _logger = logging.getLogger(__name__)
@@ -53,6 +54,7 @@ class BajooApp(wx.App, SoftwareUpdate):
 
         self._checker = None
         self._home_window = None
+        self._notifier = None
 
         self.Bind(EVT_PROXY_FORM, self._on_proxy_config_changes)
 
@@ -126,6 +128,7 @@ class BajooApp(wx.App, SoftwareUpdate):
             return False
 
         # TODO: Create the TrayIcon
+        self._notifier = MessageNotifier(None)
 
         return True
 
