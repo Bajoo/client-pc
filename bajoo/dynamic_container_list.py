@@ -9,6 +9,7 @@ import errno
 from .common.i18n import _
 from .common.path import get_data_dir
 from .api.sync import container_list_updater
+from .local_container import LocalContainer
 
 _logger = logging.getLogger(__name__)
 
@@ -95,11 +96,22 @@ class DynamicContainerList(object):
                 for c in containers_list:
                     if c.id == item['id']:
                         item['container'] = c
+                        local = LocalContainer(c.id)
+                        item['local'] = local
+                        if item['path'] is None:
+                            item['path'] = local.create_folder(c.name)
+                            if item['path'] is None:
+                                self._notify(_('Error when adding new share'),
+                                             _('Unable to create a folder for '
+                                               '%s:\n%s'
+                                               % c.name, local.error_msg))
+                        elif not local.check_path(item['path']):
+                            self._notify(_('Error on share sync'),
+                                         _('Unable to sync the share %s:\n%s'
+                                           % (c.name, local.error_msg)))
                         break
 
-        # TODO: find and check the path of each container
-        # If the path is not valid, or if there isn't an index file in the
-        # folder, we must inform the user and set the status to ERROR.
+        self._save_local_list()
         # TODO: start each container
 
     def _on_added_containers(self, added_containers):
@@ -122,17 +134,20 @@ class DynamicContainerList(object):
 
         with self._list_lock:
             for c in added_containers:
+                local = LocalContainer(c.id)
+                c_path = local.create_folder(c.name)
+                if c_path is None:
+                    self._notify(_('Error when adding new share'),
+                                 _('Unable to create a folder for %s:\n%s'
+                                   % c.name, local.error_msg))
                 self._local_list.append({
                     'id': c.id,
                     'name': c.name,
-                    'path': None,
-                    'container': c
+                    'path': c_path,
+                    'container': c,
+                    'local': local
                 })
         self._save_local_list()
-
-        # TODO: associate folders to the containers
-        # Generate path for the container's name.
-        # If a path is taken, generate a new one, unless the index file match.
         # TODO: start the containers.
 
     def _on_removed_containers(self, removed_containers):
@@ -172,7 +187,7 @@ class DynamicContainerList(object):
              - name (str)
              - path (str): corresponding path on the disk.
              - container (bajoo.api.Container): if set, container instance.
-             - status (str)
+             - local (LocalContainer)
 
          Note: the returned container instance is not a copy but a reference.
          It will not be modified directly by the dynamic list.
