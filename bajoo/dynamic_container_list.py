@@ -42,21 +42,30 @@ class DynamicContainerList(object):
     should be considered being loaded.
     """
 
-    def __init__(self, session, notify):
+    def __init__(self, session, notify, start_container,
+                 stop_container):
         """
         Args:
             session (Session)
             notify (callable): Notify the user about an event. take two
                 parameters: the summary and the text body.
+            start_container (callable): callback called when the LocalContainer
+                is ready. Receive (LocalContainer, api.Container) in
+                parameters.
+            stop_container (callable): callback called when a container is
+                removed. Receive LocalContainer in parameters.
         """
         self._notify = notify
         self._list_path = os.path.join(get_data_dir(), 'container_list.json')
         self._local_list = []
         self._list_lock = Lock()
+        self._start_container = start_container
+        self._stop_container = stop_container
 
+        local_list_data = []
         try:
             with open(self._list_path) as list_file:
-                self._local_list = json.load(list_file)
+                local_list_data = json.load(list_file)
         except IOError as e:
             if e.errno is errno.ENOENT:
                 _logger.debug('Container list file not found.')
@@ -67,7 +76,9 @@ class DynamicContainerList(object):
             _logger.warning('The container list file is not valid:',
                             exc_info=True)
 
-        local_id_list = [c['id'] for c in self._local_list]
+        self._local_list = [LocalContainer(c['id'], c['name'], c['path'])
+                            for c in local_list_data]
+        local_id_list = [c['id'] for c in local_list_data]
 
         self._updater = container_list_updater(session,
                                                self._on_added_containers,
@@ -80,9 +91,9 @@ class DynamicContainerList(object):
         """Save the local list file."""
         try:
             with open(self._list_path, 'w') as list_file, self._list_lock:
-                local_list = [{'id': c['id'],
-                               'name': c['name'],
-                               'path': c['path']} for c in self._local_list]
+                local_list = [{'id': c.id,
+                               'name': c.name,
+                               'path': c.path} for c in self._local_list]
                 json.dump(local_list, list_file)
         except IOError:
             _logger.warning("The container list file can't be saved:",
@@ -92,27 +103,28 @@ class DynamicContainerList(object):
         _logger.debug('Container(s) loaded: %s', containers_list)
 
         with self._list_lock:
-            for item in self._local_list:
+            for local_container in self._local_list:
                 for c in containers_list:
-                    if c.id == item['id']:
-                        item['container'] = c
-                        local = LocalContainer(c.id)
-                        item['local'] = local
-                        if item['path'] is None:
-                            item['path'] = local.create_folder(c.name)
-                            if item['path'] is None:
-                                self._notify(_('Error when adding new share'),
-                                             _('Unable to create a folder for '
-                                               '%s:\n%s'
-                                               % c.name, local.error_msg))
-                        elif not local.check_path(item['path']):
-                            self._notify(_('Error on share sync'),
-                                         _('Unable to sync the share %s:\n%s'
-                                           % (c.name, local.error_msg)))
+                    if c.id == local_container.id:
+                        if local_container.path is None:
+                            new_path = local_container.create_folder(c.name)
+                            if new_path is None:
+                                self._notify(
+                                    _('Error when adding new share'),
+                                    _('Unable to create a folder for %s:\n%s'
+                                      % (c.name, local_container.error_msg)))
+                            else:
+                                self._start_container(local_container, c)
+                        elif not local_container.check_path():
+                            self._notify(
+                                _('Error on share sync'),
+                                _('Unable to sync the share %s:\n%s'
+                                  % (c.name, local_container.error_msg)))
+                        else:
+                            self._start_container(local_container, c)
                         break
 
         self._save_local_list()
-        # TODO: start each container
 
     def _on_added_containers(self, added_containers):
         _logger.info('New container(s) detected: %s', added_containers)
@@ -134,21 +146,16 @@ class DynamicContainerList(object):
 
         with self._list_lock:
             for c in added_containers:
-                local = LocalContainer(c.id)
-                c_path = local.create_folder(c.name)
+                local_container = LocalContainer(c.id, c.name)
+                c_path = local_container.create_folder(c.name)
                 if c_path is None:
                     self._notify(_('Error when adding new share'),
                                  _('Unable to create a folder for %s:\n%s'
-                                   % c.name, local.error_msg))
-                self._local_list.append({
-                    'id': c.id,
-                    'name': c.name,
-                    'path': c_path,
-                    'container': c,
-                    'local': local
-                })
+                                   % (c.name, local_container.error_msg)))
+                else:
+                    self._start_container(local_container, c)
+                self._local_list.append(local_container)
         self._save_local_list()
-        # TODO: start the containers.
 
     def _on_removed_containers(self, removed_containers):
         _logger.info('container(s) removed: %s', removed_containers)
@@ -167,11 +174,10 @@ class DynamicContainerList(object):
         with self._list_lock:
             for container_id in removed_containers:
                 to_remove = [c for c in self._local_list
-                             if c['id'] == container_id]
-                for c in to_remove:
-                    self._local_list.remove(c)
-
-        # TODO: properly stop the containers (if started).
+                             if c.id == container_id]
+                for local_container in to_remove:
+                    self._stop_container(local_container)
+                    self._local_list.remove(local_container)
 
         self._save_local_list()
 
@@ -182,19 +188,13 @@ class DynamicContainerList(object):
         """returns the list of containers.
 
         Returns:
-            list of dict: each dict represent a container. It contains:
-             - id (str)
-             - name (str)
-             - path (str): corresponding path on the disk.
-             - container (bajoo.api.Container): if set, container instance.
-             - local (LocalContainer)
+            list of LocalContainer
 
-         Note: the returned container instance is not a copy but a reference.
-         It will not be modified directly by the dynamic list.
+         Note: the returned LocalContainer instances are not copy but
+         references. They will not be modified directly by the dynamic list.
         """
         with self._list_lock:
-            # Note: item.container are copied by reference.
-            return [dict(c) for c in self._local_list]
+            return list(self._local_list)
 
 
 def main():
@@ -207,9 +207,16 @@ def main():
         print('NOTIFICATION: %s' % summary)
         print(body)
 
+    def start_container(local, container):
+        print('Start container %s' % container)
+
+    def stop_container(local):
+        print('Stop container %s (%s)' % (local.id, local.name))
+
     session = Session.create_session('stran+20@bajoo.fr',
                                      'stran+20@bajoo.fr').result()
-    dyn_list = DynamicContainerList(session, notify)
+    dyn_list = DynamicContainerList(session, notify,
+                                    start_container, stop_container)
     try:
         while True:
             time.sleep(0.3)

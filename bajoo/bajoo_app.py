@@ -191,4 +191,22 @@ class BajooApp(wx.App, SoftwareUpdate):
 
         _logger.debug('Start DynamicContainerList() ...')
         self._container_list = DynamicContainerList(
-            session, self._notifier.send_message)
+            session, self._notifier.send_message, self._start_container,
+            self._stop_container)
+
+    def _start_container(self, local, container):
+        """Called when a new container is ready to start.
+
+        Either the container has been fetched at start of the dynamic container
+        list, or it's a newly-added container.
+        """
+        print('START CONTAINER', container)
+
+    def _stop_container(self, container):
+        """Called when a container is removed from the remote list.
+
+        Note: if a container has been removed when bajoo was not running, this
+        method will be called even if the container has never been started
+        with ``self._start_container``.
+        """
+        print('STOP CONTAINER', container)
