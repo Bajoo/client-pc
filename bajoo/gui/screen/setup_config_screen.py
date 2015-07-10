@@ -66,6 +66,8 @@ class SetupConfigScreen(BaseForm):
         else:
             root_folder_error_txt.Hide()
         self.FindWindow('encryption_section').Show(key_setting)
+        self.FindWindow('passphrase').Enable(key_setting)
+        self.FindWindow('confirmation').Enable(key_setting)
 
         gpg_error_txt = self.FindWindow('gpg_error')
         if gpg_error:
