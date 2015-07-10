@@ -57,10 +57,11 @@ class TeamShare(Container):
 
         def _on_receive_response(result):
             # Delete 'scope' element in results
-            for element in result.get('content', {}):
+            members = result.get('content', [])
+            for element in members:
                 del element['scope']
 
-            return result
+            return members
 
         return self._session.send_api_request('GET', url) \
             .then(_on_receive_response)
@@ -71,11 +72,15 @@ class TeamShare(Container):
         """
         url = '/storages/%s/rights/users/%s' % (self.id, user)
 
+        def _on_receive_response(result):
+            return result.get('content', {})
+
         # TODO: Handle the 404 error when user email is not found.
         return self._session.send_api_request(
             'PUT', url,
             headers={'Content-type': 'application/json'},
-            data=json.dumps(permissions))
+            data=json.dumps(permissions)) \
+            .then(_on_receive_response)
 
     def add_member(self, user, permissions):
         """
@@ -149,34 +154,34 @@ if __name__ == '__main__':
     _logger.debug('Add stran+21@bajoo.fr: %s',
                   container_created.add_member(
                       'stran+21@bajoo.fr', permission['ADMIN'])
-                  .result().get('content', {}))
+                  .result())
 
     # get list of rights in the newly created container
     # which should contain stran+21@bajoo.fr as admin
     _logger.debug('New containter\'s rights: %s',
                   container_created.list_members()
-                  .result().get('content', {}))
+                  .result())
 
     _logger.debug('Change rights of stran+21@bajoo.fr: %s',
                   container_created.change_permissions(
                       'stran+21@bajoo.fr', permission['READ_WRITE'])
-                  .result().get('content', {}))
+                  .result())
 
     # get list of rights in the newly created container
     # which should contain stran+21@bajoo.fr as writer
     _logger.debug('New containter\'s rights: %s',
                   container_created.list_members()
-                  .result().get('content', {}))
+                  .result())
 
     _logger.debug('Remove access of stran+21@bajoo.fr: %s',
                   container_created.remove_member('stran+21@bajoo.fr')
-                  .result().get('content', {}))
+                  .result())
 
     # get list of rights in the newly created container
     # which should NOT contain stran+21@bajoo.fr.
     _logger.debug('New containter\'s rights: %s',
                   container_created.list_members()
-                  .result().get('content', {}))
+                  .result())
 
     # delete created container
     _logger.debug('Deleted container: %s', container_created.delete().result())
