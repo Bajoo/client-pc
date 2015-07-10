@@ -6,7 +6,9 @@ import wx
 import wx.dataview as dv
 from wx.lib.newevent import NewCommandEvent
 
+from ..event_future import ensure_gui_thread
 from ..base_view import BaseView
+
 from .base_form import BaseForm
 from ..validator import EmailValidator
 from ...common.i18n import N_
@@ -65,6 +67,7 @@ class MembersShareView(BaseView):
         members_list_view.AppendTextColumn(N_('Permission'), width=100)
         members_list_view.AppendTextColumn(N_(''), width=50)
         members_list_view.SetMinSize((400, 100))
+        self._members_list_view = members_list_view
 
         txt_user_email = wx.TextCtrl(
             members_share_form, name='user_email')
@@ -102,11 +105,25 @@ class MembersShareView(BaseView):
                        proportion=0, border=15)
         members_share_form.SetSizer(main_sizer)
 
+    @ensure_gui_thread
     def load_members_view(self, members):
-        pass
+        self._members_list_view.DeleteAllItems()
+
+        for member in members:
+            self.add_member_view(member)
 
     def add_member_view(self, member):
-        pass
+        email = member.get('user', '<unknown>')
+        permission = N_('Read Only')
+
+        if member.get('admin'):
+            permission = N_('Admin')
+        elif member.get('write'):
+            permission = N_('Read Write')
+
+        # TODO: add delete button
+        delete = ''
+        self._members_list_view.AppendItem([email, permission, delete])
 
     def remove_member_view(self, member):
         pass
