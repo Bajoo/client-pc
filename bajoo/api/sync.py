@@ -46,7 +46,7 @@ def container_list_updater(session, on_added_containers, on_removed_containers,
 
     When one or more containers are added to the list, the
     `on_added_containers` callback is called. When a containers is removed
-    from the list, the
+    from the list, the `on_removed_containers` is called.
 
     Args:
         session
@@ -89,6 +89,40 @@ def container_list_updater(session, on_added_containers, on_removed_containers,
 
     return PeriodicTask(check_period, update_list, last_known_list or [],
                         on_unchanged_containers)
+
+
+def files_list_updater(container, on_new_files, on_changed_files,
+                       on_deleted_files, on_initial_files=None,
+                       last_known_list=None, check_period=600):
+    """Detect changes in the files of a container.
+
+    Each time a file is added, modified or removed, the corresponding callback
+    is called.
+
+    Args:
+        session
+        on_new_files (callable):
+        on_changed_files (callable):
+        on_deleted_files (callable):
+        on_initial_files (callable, optional):
+        last_known_list (list of str, optional):
+    Returns;
+        PeriodicTask: a task who update the list (by calling the callbacks) at
+            a regular interval. It must be started using `start()`, and
+            stopped with `stop()`
+    """
+
+    def update_list(last_known_list, on_initial_files=None):
+        print('--- ---- ---')
+        print(last_known_list, on_initial_files)
+
+        list_files = container.list_files().result()
+        print(list_files)
+
+        # TODO: We need to reorganize the list
+
+    return PeriodicTask(check_period, update_list, last_known_list or [],
+                        on_initial_files)
 
 
 def main():
