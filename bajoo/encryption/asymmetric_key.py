@@ -45,7 +45,7 @@ class AsymmetricKey(object):
             context = GPG(verbose=False, gnupghome='./test_keyring',
                           keyring=tmp_file)
 
-        if isinstance(key_file, str):
+        if isinstance(key_file, basestring):
             key_file = open(key_file, 'rb')
         with key_file:
             content = key_file.read().decode('utf-8')

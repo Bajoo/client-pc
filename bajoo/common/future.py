@@ -250,7 +250,7 @@ def wait_all(futures):
             _remaining_tasks[0] = -1
 
     for f in futures:
-        f.then(_done_callback, _fail_callback)
+        then(f, _done_callback, _fail_callback)
 
     return resulting_future
 

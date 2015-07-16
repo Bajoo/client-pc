@@ -295,6 +295,18 @@ class Session(BajooOAuth2Session):
                         headers=headers, verify=False, **params)
 
     def upload_storage_file(self, verb, url_path, source, **params):
+        """Upload a file into the storage
+
+        Note: if a file-like object is passed as source, it will be
+        automatically closed after the upload.
+
+        Args:
+            verb (str): HTTP verb
+            url_path (str): URL of the for '/storage/%id/%filename'
+            source (str / File-like): path of the file to upload (if type is
+                str), or file content to upload.
+            **params (dict): additional parameters passed to `network.upload`.
+        """
         # TODO: documentation
         headers = {
             'Authorization': 'Bearer ' + self.token.get('access_token', '')

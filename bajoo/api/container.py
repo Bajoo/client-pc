@@ -151,14 +151,17 @@ class Container(object):
         return self._session.download_storage_file('GET', url)
 
     def upload(self, path, file):
-        """
-        Upload a file in this container.
+        """Upload a file in this container.
+
+        Note: if a file-like object is passed as `file`, it will be
+        automatically closed after the upload.
 
         Args:
             path (str): the path to the file will be placed on the server.
-            file (str): the path to the local file to be uploaded
-
-        Returns Future<dict>: the upload result.
+            file (str / File-like): the path to the local file to be uploaded
+            (if type is str), or file content to be uploaded.
+        Returns:
+            Future<dict>: the upload result.
         """
         url = '/storages/%s/%s' % (self.id, path)
         return self._session.upload_storage_file('PUT', url, file)

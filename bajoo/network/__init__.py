@@ -234,10 +234,14 @@ def upload(verb, url, source, **params):
     """
     Upload a file to an address.
 
+    Note: if a file-like object is passed as source, it will be automatically
+    closed after the upload.
+
     Args:
         verb: (str)
         url: (str)
-        source: (str/File)
+        source (str/File): Path of the file to upload (if type is str), or
+            file-like object to upload.
         params: additional parameters
             - has_priority: (boolean) set request priority (by default True)
     """
@@ -253,16 +257,18 @@ def upload(verb, url, source, **params):
         params.setdefault('proxies', _prepare_proxy())
         file = source
 
-        if isinstance(file, str):
+        if isinstance(file, basestring):
             # If 'file' is a filename, open it
             file = open(file, 'rb')
 
         with file:
+            _logger.debug("Start %s uploading to %s", verb, url)
+
             # TODO: search a way to cancel this upload
             response = session.request(method=verb, url=url,
                                        data=file, **params)
 
-            _logger.debug("%s uploading from %s -> %s",
+            _logger.debug("%s upload to %s -> %s",
                           verb, url, response.status_code)
 
             response.raise_for_status()
