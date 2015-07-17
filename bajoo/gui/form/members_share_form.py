@@ -30,8 +30,8 @@ class MembersShareForm(BaseForm):
 
     ADD_ICON = None
 
-    def __init__(self, parent):
-        BaseForm.__init__(self, parent)
+    def __init__(self, parent, auto_disable=False, **kwargs):
+        BaseForm.__init__(self, parent, auto_disable, **kwargs)
         self._init_icons()
         self._view = MembersShareView(self)
         self.validators = self._view.get_validators()
