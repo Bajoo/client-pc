@@ -122,7 +122,7 @@ class MembersShareView(BaseView):
             permission = N_('Read Write')
 
         # TODO: add delete button
-        delete = ''
+        delete = 'Delete'
         self._members_list_view.AppendItem([email, permission, delete])
 
     def remove_member_view(self, member):
