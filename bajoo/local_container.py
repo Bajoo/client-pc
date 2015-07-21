@@ -4,6 +4,7 @@ import errno
 import json
 import logging
 import os
+from threading import Lock
 
 from .common.i18n import _
 from .common.path import default_root_folder
@@ -13,6 +14,15 @@ _logger = logging.getLogger(__name__)
 
 class LocalContainer(object):
     """Representation of the local image of the container.
+
+    It also contains (and manages) the local index. The index associate two
+    hashes for each file present in the container: the md5 sum of the last
+    known local version, and the last known remote version. (These values
+    should be identical if the container isn't encrypted).
+
+    The index must be kept coherent, and sync tasks must never works on the
+    same part at the same time, to avoid race conditions. To respect this
+    constraint, an index part can be reserved.
 
     Attributes:
         id (str): ID of the Bajoo Container
@@ -35,7 +45,9 @@ class LocalContainer(object):
         self.path = path
         self.status = self.STATUS_UNKNOWN
         self.error_msg = None
-        self._index = None
+        self._index = {}
+        self._index_lock = Lock()  # Lock both `_index` and `_index_booking`
+        self._index_booking = {}
         self._container = None
 
     def check_path(self):
@@ -56,7 +68,6 @@ class LocalContainer(object):
             self.status = self.STATUS_ERROR
 
             if e.errno == errno.ENOENT:
-                print(self.path)
                 if os.path.isdir(self.path):
                     self.error_msg = _('The local folder content seems to have'
                                        ' been deleted.')
@@ -122,3 +133,80 @@ class LocalContainer(object):
         index_path = os.path.join(path, '.bajoo-%s.idx' % self.id)
         with open(index_path, "w") as index_file:
             index_file.write('{}')
+
+    def _save_index(self):
+        index_path = os.path.join(self.path, '.bajoo-%s.idx' % self.id)
+        try:
+            with open(index_path, 'w+') as index_file:
+                json.dump(self._index, index_file)
+        except (OSError, IOError):
+            _logger.exception('Unable to save index %s:' % index_path)
+
+    def acquire_index(self, path, item=None):
+        """Acquire a part of the index, and returns corresponding values.
+
+        Marks the path as 'acquired', and associate an item to it.
+        If the path correspond to some hashes, these hashes are returned.
+
+        Args:
+            path (str): filename of a file or directory to acquire. It will
+                prevents any following calls to acquire the same path (or a
+                sub-path if the path correspond to a directory).
+            item (*, optional): This object will be associated to the acquired
+                path.
+        Returns:
+            (None, dict): if the resource is free. The dict contains a list of
+                path (or subpath) associated to a couple
+                (local_hash, remote_hash).
+            (path, Item): if the resource is not availlable. Returns the path
+                acquired, and the item who've reserved the resource or a parent
+                resource.
+        """
+        # Generate paths of all possible parents and itself.
+        if path.endswith('/'):
+            path = path[:-1]
+
+        paths = []
+        words = path.split('/')
+        for i in range(1, len(words) + 1):
+            paths.append('/'.join(words[:i]))
+
+        with self._index_lock:
+            for parent_path in paths:
+                if parent_path in self._index_booking:
+                    return parent_path, self._index_booking[parent_path]
+
+            self._index_booking[path] = item
+
+            return None, {key: tuple(hashes) for (key, hashes)
+                          in self._index.items()
+                          if key == path or key.startswith('%s/' % path)}
+
+    def release_index(self, path, new_index=None):
+        """Release an acquired index part, and update it.
+
+        Args:
+            new_index (dict, optional): If set, replace all values (hashes)
+                corresponding to the path and its sub-paths. If None, the
+                values are kept intact.
+        """
+        _logger.debug('Replace index part of %s' % path)
+
+        if path.endswith('/'):
+            path = path[:-1]
+        with self._index_lock:
+            if new_index is not None:
+                self._index = {
+                    key: value for (key, value) in self._index.items()
+                    if key != path and not key.startswith('%s/' % path)}
+                self._index.update(new_index)
+                self._save_index()
+
+            del self._index_booking[path]
+
+    def update_index_owner(self, path, new_item):
+        """Update the item associated to a acquired path."""
+        if path.endswith('/'):
+            path = path[:-1]
+        with self._index_lock:
+            self._index_booking[path] = new_item

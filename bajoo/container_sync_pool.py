@@ -152,9 +152,11 @@ class ContainerSyncPool(object):
 
         filename = os.path.relpath(file_path, local_container.path)
         self._increment()
-        f = filesync.added_local_files(container, local_container.path,
-                                       filename)
-        f = f.then(self._decrement)
+        f = filesync.added_local_files(container, local_container, filename)
+        if f:
+            f = f.then(self._decrement)
+        else:  # The task has been "merged" with another.
+            self._decrement()
         return f
 
     def _removed_local_files(self, container_id, file_path):
@@ -166,9 +168,11 @@ class ContainerSyncPool(object):
         filename = os.path.relpath(file_path, local_container.path)
         self._increment()
         # TODO: set hash
-        f = filesync.removed_local_files(container, local_container.path,
-                                         filename, None, None)
-        f = f.then(self._decrement)
+        f = filesync.removed_local_files(container, local_container, filename)
+        if f:
+            f = f.then(self._decrement)
+        else:
+            self._decrement()
         return f
 
     def _modified_local_files(self, container_id, file_path):
@@ -179,9 +183,11 @@ class ContainerSyncPool(object):
         filename = os.path.relpath(file_path, local_container.path)
         self._increment()
         # TODO: set hash
-        f = filesync.changed_local_files(container, local_container.path,
-                                         filename, None, None)
-        f = f.then(self._decrement)
+        f = filesync.changed_local_files(container, local_container, filename)
+        if f:
+            f = f.then(self._decrement)
+        else:
+            self._decrement()
         return f
 
     def _moved_local_files(self, container_id, src_path, dest_path):
@@ -193,8 +199,10 @@ class ContainerSyncPool(object):
         dest_filename = os.path.relpath(dest_path, local_container.path)
         self._increment()
         # TODO: set hash
-        f = filesync.moved_local_files(container, local_container.path,
-                                       src_filename, dest_filename, None, None,
-                                       None, None)
-        f = f.then(self._decrement)
+        f = filesync.moved_local_files(container, local_container,
+                                       src_filename, dest_filename)
+        if f:
+            f = f.then(self._decrement)
+        else:
+            self._decrement()
         return f

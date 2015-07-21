@@ -39,20 +39,36 @@ class FileWatcher(FileSystemEventHandler):
     def on_moved(self, event):
         if event.is_directory:
             return
+        split_path = event.src_path.split('/')
+        filename = split_path[-1] or split_path[-2]
+        if filename.startswith('.bajoo'):
+            return
         self._on_moved_files(event.src_path, event.dest_path)
 
     def on_created(self, event):
         if event.is_directory:
+            return
+        split_path = event.src_path.split('/')
+        filename = split_path[-1] or split_path[-2]
+        if filename.startswith('.bajoo'):
             return
         self._on_new_files(event.src_path)
 
     def on_deleted(self, event):
         if event.is_directory:
             return
+        split_path = event.src_path.split('/')
+        filename = split_path[-1] or split_path[-2]
+        if filename.startswith('.bajoo'):
+            return
         self._on_deleted_files(event.src_path)
 
     def on_modified(self, event):
         if event.is_directory:
+            return
+        split_path = event.src_path.split('/')
+        filename = split_path[-1] or split_path[-2]
+        if filename.startswith('.bajoo'):
             return
         self._on_changed_files(event.src_path)
 
