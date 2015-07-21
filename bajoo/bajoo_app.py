@@ -10,6 +10,7 @@ from .common.path import get_data_dir
 from .connection_registration_process import connect_or_register
 from .container_sync_pool import ContainerSyncPool
 from .dynamic_container_list import DynamicContainerList
+from .gui.about_window import AboutBajooWindow
 from .gui.event_future import ensure_gui_thread
 from .gui.home_window import HomeWindow
 from .gui.main_window import MainWindow
@@ -50,6 +51,7 @@ class BajooApp(wx.App, SoftwareUpdate):
         self._checker = None
         self._home_window = None
         self._main_window = None
+        self._about_window = None
         self._task_bar_icon = None
         self._notifier = None
         self._session = None
@@ -125,16 +127,34 @@ class BajooApp(wx.App, SoftwareUpdate):
             _logger.error(
                 'Creation of a new HomeWindow(), but there is already one!\n'
                 'This is not supposed to happen.')
+            return self._home_window
 
-        self._home_window = HomeWindow()
+        return self.get_window('_home_window', HomeWindow)
+
+    def get_window(self, attribute, cls):
+        """Get a window, or create it if it's not instantiated yet.
+
+        the attribute used to store the Window is set the None
+        when the window is deleted.
+        Args:
+            attribute (str): attribute of this class, used to ref the window.
+            cls (type): Class of the Window.
+        Returns:
+            Window
+        """
+        if getattr(self, attribute):
+            return getattr(self, attribute)
+
+        _logger.debug('Creation of Window %s' % attribute)
+        window = cls()
 
         # clean variable when destroyed.
-        def _clean_home_window(_evt):
-            self._home_window = None
-        self.Bind(wx.EVT_WINDOW_DESTROY, _clean_home_window,
-                  source=self._home_window)
+        def clean(_evt):
+            setattr(self, attribute, None)
+        self.Bind(wx.EVT_WINDOW_DESTROY, clean, source=window)
 
-        return self._home_window
+        setattr(self, attribute, window)
+        return window
 
     def OnInit(self):
 
@@ -144,11 +164,36 @@ class BajooApp(wx.App, SoftwareUpdate):
         self._task_bar_icon = TaskBarIcon()
         self._notifier = MessageNotifier(self._task_bar_icon)
 
-        self.Bind(TaskBarIcon.EVT_OPEN_WINDOW, self._show_home_window)
+        self.Bind(TaskBarIcon.EVT_OPEN_WINDOW, self._show_window)
         self.Bind(TaskBarIcon.EVT_EXIT, self._exit)
         return True
 
-    def _show_home_window(self, event):
+    def _show_window(self, event):
+        """Catch event from tray icon, asking to show a window."""
+        window = None
+
+        if event.target == TaskBarIcon.OPEN_HOME:
+            self._show_home_window()
+        elif event.target == TaskBarIcon.OPEN_ABOUT:
+            window = self.get_window('_about_window', AboutBajooWindow)
+        elif event.target == TaskBarIcon.OPEN_SUSPEND:
+            pass  # TODO: open window
+        elif event.target == TaskBarIcon.OPEN_INVITATION:
+            pass  # TODO: open window
+        elif event.target == TaskBarIcon.OPEN_SETTINGS:
+            window = self.get_window('_main_window', MainWindow)
+            # TODO: set selected tab
+        elif event.target == TaskBarIcon.OPEN_SHARES:
+            window = self.get_window('_main_window', MainWindow)
+            # TODO: set selected tab
+        else:
+            _logger.error('Unexpected "Open Window" event: %s' % event)
+
+        if window:
+            window.Show()
+            window.Raise()
+
+    def _show_home_window(self):
         if not self._session:
             if self._home_window:
                 self._home_window.Show()
@@ -157,6 +202,7 @@ class BajooApp(wx.App, SoftwareUpdate):
             if not self._main_window:
                 self._main_window = MainWindow()
             self._main_window.Show()
+            self._main_window.Raise()
 
     def _exit(self, _event):
         """Close all resources and quit the app."""
@@ -189,10 +235,11 @@ class BajooApp(wx.App, SoftwareUpdate):
     @ensure_gui_thread
     def _on_connection(self, session):
         self._session = session
-        self._home_window.Destroy()
-
+        if self._home_window:
+            self._home_window.Destroy()
         _logger.debug('Start DynamicContainerList() ...')
         self._container_list = DynamicContainerList(
             session, self._notifier.send_message,
             self._container_sync_pool.add,
             self._container_sync_pool.remove)
+        self._task_bar_icon.set_state(TaskBarIcon.SYNC_PROGRESS)
