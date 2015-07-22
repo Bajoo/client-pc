@@ -51,6 +51,9 @@ class ProxyWindow(wx.Dialog):
             wx.PostEvent(wx.GetApp(), proxy_event)
         event.Skip()
 
+    def notify_lang_change(self):
+        self._view.notify_lang_change()
+
 
 class ProxyWindowView(BaseView):
     """View of the ProxyWindow"""

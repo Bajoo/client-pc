@@ -43,6 +43,9 @@ class ActivationScreen(wx.Panel):
         """Re-enable the form, if needed."""
         self.FindWindow('form').enable()
 
+    def notify_lang_change(self):
+        self._view.notify_lang_change()
+
 
 class ActivationScreenView(BaseView):
 

@@ -6,9 +6,10 @@ from wx.lib.newevent import NewCommandEvent
 
 from ..common.i18n import N_, _
 from ..common.path import resource_filename
+from .translator import Translator
 
 
-class TaskBarIcon(wx.TaskBarIcon):
+class TaskBarIcon(wx.TaskBarIcon, Translator):
     """Task bar icon of the Bajoo app
 
     The trayicon send an ExitEvent when the user want to quit.
@@ -54,6 +55,7 @@ class TaskBarIcon(wx.TaskBarIcon):
 
     def __init__(self):
         wx.TaskBarIcon.__init__(self)
+        Translator.__init__(self)
 
         self._is_connected = False
 
@@ -142,4 +144,6 @@ class TaskBarIcon(wx.TaskBarIcon):
 
         self._is_connected = state is not self.NOT_CONNECTED
 
-        self.SetIcon(self._icons[state], tooltip=_(self._tooltips[state]))
+        self.register_i18n(
+            lambda txt: self.SetIcon(self._icons[state], tooltip=txt),
+            self._tooltips[state])

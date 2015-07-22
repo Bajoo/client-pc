@@ -84,6 +84,9 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
     def inform_user_is_connected(self):
         pass
 
+    def notify_lang_change(self):
+        self._view.notify_lang_change()
+
 
 class HomeWindowView(BaseView):
     """View of the HomeWindow
@@ -120,6 +123,7 @@ class HomeWindowView(BaseView):
             sizer_item = sizer.Add(self.current_screen, proportion=1,
                                    flag=wx.EXPAND)
             self._screen_map[screen_class] = sizer_item
+            self.add_i18n_child(self.current_screen)
 
         sizer.ShowItems(False)
         sizer_item.Show(True)

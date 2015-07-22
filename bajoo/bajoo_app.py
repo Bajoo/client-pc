@@ -156,6 +156,13 @@ class BajooApp(wx.App, SoftwareUpdate):
         setattr(self, attribute, window)
         return window
 
+    def _notify_lang_change(self):
+        """Notify a language change to all root translators instances"""
+        for widget in (self._home_window, self._main_window,
+                       self._about_window, self._task_bar_icon):
+            if widget is not None:
+                widget.notify_lang_change()
+
     def OnInit(self):
 
         if not self._ensures_single_instance_running():

@@ -27,6 +27,7 @@ class SetupConfigScreen(BaseForm):
     def __init__(self, parent):
         BaseForm.__init__(self, parent, auto_disable=True)
         self._view = SetupConfigScreenView(self)
+        self.add_i18n_child(self._view)
 
         self.validators = [
             self.FindWindow('passphrase_validator'),

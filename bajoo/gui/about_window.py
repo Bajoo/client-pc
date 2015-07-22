@@ -36,6 +36,9 @@ class AboutBajooWindow(wx.Frame):
                 resource_filename('assets/images/twitter.png')) \
                 .ConvertToBitmap()
 
+    def notify_lang_change(self):
+        self._view.notify_lang_change()
+
 
 class AboutBajooView(BaseView):
     def __init__(self, about_panel):

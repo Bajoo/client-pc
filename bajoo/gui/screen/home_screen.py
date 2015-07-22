@@ -59,6 +59,9 @@ class HomeScreen(wx.Panel):
         pw = ProxyWindow(self)
         pw.ShowModal()
 
+    def notify_lang_change(self):
+        self._view.notify_lang_change()
+
 
 class HomeScreenView(BaseView):
 

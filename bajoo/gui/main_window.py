@@ -9,6 +9,7 @@ from .tab import AccountTab
 from .tab import GeneralSettingsTab
 from .tab import NetworkSettingsTab
 from .tab import AdvancedSettingsTab
+from .translator import Translator
 
 
 class MainWindow(wx.Frame):
@@ -21,8 +22,11 @@ class MainWindow(wx.Frame):
 
         self.SetSizer(sizer)
 
+    def notify_lang_change(self):
+        self._view.notify_lang_change()
 
-class MainWindowListbook(wx.Listbook):
+
+class MainWindowListbook(wx.Listbook, Translator):
     """
     The layout of the main window, which initiates & contains all tabs.
     """
