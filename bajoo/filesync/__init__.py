@@ -40,11 +40,11 @@ import os
 import shutil
 
 from ..network.errors import HTTPNotFoundError
-from ..common.future import Future, patch_dec, wait_all
+from ..common.future import Future, patch_dec, wait_all, then
 
 _logger = logging.getLogger(__name__)
 
-_thread_pool = ThreadPoolExecutor(max_workers=5)
+_thread_pool = ThreadPoolExecutor(max_workers=50)
 
 
 class _Task(object):
@@ -200,7 +200,7 @@ class _Task(object):
                 remote_md5 = metadata['hash']
                 future = _thread_pool.submit(self._write_downloaded_file,
                                              file_content)
-                return future.then(lambda local_md5: {
+                return then(future, lambda local_md5: {
                     self.target: (local_md5, remote_md5)})
 
             return self.container.download(self.target).then(callback)
@@ -289,25 +289,28 @@ class _Task(object):
         abs_path = os.path.join(self.local_path, self.target)
         md5_hash = self._compute_md5_hash(file_content)
         file_content.seek(0)
-        with open(abs_path) as dest_file, file_content:
+        with open(abs_path, 'w') as dest_file, file_content:
             shutil.copyfileobj(file_content, dest_file)
 
         return md5_hash
 
 
 @patch_dec
-def added_remote_files(files):
-    return Future.resolve(None)
+def added_remote_files(container, local_container, filename):
+    task = _Task(_Task.REMOTE_ADD, container, filename, local_container)
+    return task.start()
 
 
 @patch_dec
-def changed_remote_files(files):
-    return Future.resolve(None)
+def changed_remote_files(container, local_container, filename):
+    task = _Task(_Task.REMOTE_CHANGE, container, filename, local_container)
+    return task.start()
 
 
 @patch_dec
-def removed_remote_files(files):
-    return Future.resolve(None)
+def removed_remote_files(container, local_container, filename):
+    task = _Task(_Task.REMOTE_DELETION, container, filename, local_container)
+    return task.start()
 
 
 @patch_dec

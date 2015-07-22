@@ -6,6 +6,7 @@ import os
 import threading
 
 from .api.sync import files_list_updater
+from .common.future import wait_all
 from . import filesync
 from .file_watcher import FileWatcher
 
@@ -54,9 +55,11 @@ class ContainerSyncPool(object):
         self._local_containers[container.id] = local_container
 
         # TODO: give it the last known list.
-        updater = files_list_updater(container, self._added_remote_file,
-                                     self._modified_remote_files,
-                                     self._removed_remote_files)
+        updater = files_list_updater(
+            container,
+            partial(self._added_remote_file, container.id),
+            partial(self._modified_remote_files, container.id),
+            partial(self._removed_remote_files, container.id))
         self._updaters[container.id] = updater
         updater.start()
 
@@ -145,20 +148,59 @@ class ContainerSyncPool(object):
                 else:
                     self._global_status = self.STATUS_SYNCING
 
-    def _added_remote_file(self, files):
+    def _added_remote_file(self, container_id, files):
         print('Added (remote): %s' % files)
-        self._increment()
-        filesync.added_remote_files(files).then(self._decrement)
 
-    def _removed_remote_files(self, files):
+        container = self._containers[container_id]
+        local_container = self._local_containers[container_id]
+
+        futures = []
+        for f in files:
+            self._increment()
+            f = filesync.added_remote_files(container, local_container,
+                                            f['name'])
+            if f:
+                f = f.then(self._decrement)
+                futures.append(f)
+            else:
+                self._decrement()
+        wait_all(futures)
+
+    def _removed_remote_files(self, container_id, files):
         print('Removed (remote): %s' % files)
-        self._increment()
-        filesync.removed_remote_files(files).then(self._decrement)
 
-    def _modified_remote_files(self, files):
+        container = self._containers[container_id]
+        local_container = self._local_containers[container_id]
+
+        futures = []
+        for f in files:
+            self._increment()
+            f = filesync.removed_remote_files(container, local_container,
+                                              f['name'])
+            if f:
+                f = f.then(self._decrement)
+                futures.append(f)
+            else:
+                self._decrement()
+        wait_all(futures)
+
+    def _modified_remote_files(self, container_id, files):
         print('Modified (remote): %s' % files)
-        self._increment()
-        filesync.changed_remote_files(files).then(self._decrement)
+
+        container = self._containers[container_id]
+        local_container = self._local_containers[container_id]
+
+        futures = []
+        for f in files:
+            self._increment()
+            f = filesync.changed_remote_files(container, local_container,
+                                              f['name'])
+            if f:
+                f = f.then(self._decrement)
+                futures.append(f)
+            else:
+                self._decrement()
+        wait_all(futures)
 
     def _added_local_file(self, container_id, file_path):
         print('Added (local): %s for %s' % (file_path, container_id))
@@ -183,7 +225,6 @@ class ContainerSyncPool(object):
 
         filename = os.path.relpath(file_path, local_container.path)
         self._increment()
-        # TODO: set hash
         f = filesync.removed_local_files(container, local_container, filename)
         if f:
             f = f.then(self._decrement)
@@ -198,7 +239,6 @@ class ContainerSyncPool(object):
 
         filename = os.path.relpath(file_path, local_container.path)
         self._increment()
-        # TODO: set hash
         f = filesync.changed_local_files(container, local_container, filename)
         if f:
             f = f.then(self._decrement)
@@ -214,7 +254,6 @@ class ContainerSyncPool(object):
         src_filename = os.path.relpath(src_path, local_container.path)
         dest_filename = os.path.relpath(dest_path, local_container.path)
         self._increment()
-        # TODO: set hash
         f = filesync.moved_local_files(container, local_container,
                                        src_filename, dest_filename)
         if f:

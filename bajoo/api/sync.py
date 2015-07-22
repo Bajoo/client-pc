@@ -105,7 +105,8 @@ def files_list_updater(container, on_new_files, on_changed_files,
         on_changed_files (callable):
         on_deleted_files (callable):
         on_initial_files (callable, optional):
-        last_known_list (list of str, optional):
+        last_known_list (dict(str, str), optional): known file. the key is the
+            file's name and the value is the md5 sum.
     Returns;
         PeriodicTask: a task who update the list (by calling the callbacks) at
             a regular interval. It must be started using `start()`, and
@@ -113,13 +114,39 @@ def files_list_updater(container, on_new_files, on_changed_files,
     """
 
     def update_list(last_known_list, on_initial_files=None):
-        print('--- ---- ---')
-        print(last_known_list, on_initial_files)
+        new_files = []
+        changed_files = []
+        initial_files = []
+        deleted_files = []
+
+        new_known_list = {}
 
         list_files = container.list_files().result()
-        print(list_files)
 
-        # TODO: We need to reorganize the list
+        for f in list_files:
+            new_known_list[f['name']] = f['hash']
+            if f['name'] in last_known_list:
+                if f['hash'] != last_known_list[f['name']]:
+                    changed_files.append(f)
+                elif on_initial_files:
+                    initial_files.append(f)
+            else:
+                new_files.append(f)
+
+        for key in last_known_list:
+            if key not in new_known_list:
+                deleted_files.append(last_known_list[key])
+
+        if new_files:
+            on_new_files(new_files)
+        if changed_files:
+            on_changed_files(changed_files)
+        if initial_files:
+            on_initial_files(initial_files)
+        if deleted_files:
+            on_deleted_files(deleted_files)
+
+        return [new_known_list]
 
     return PeriodicTask(check_period, update_list, last_known_list or [],
                         on_initial_files)
