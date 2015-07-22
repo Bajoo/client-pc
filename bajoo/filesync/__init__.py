@@ -44,7 +44,7 @@ from ..common.future import Future, patch_dec, wait_all
 
 _logger = logging.getLogger(__name__)
 
-_thread_pool = ThreadPoolExecutor(max_workers=1)
+_thread_pool = ThreadPoolExecutor(max_workers=5)
 
 
 class _Task(object):
@@ -89,14 +89,19 @@ class _Task(object):
         return ('<Task %s %s local_path=%s>' %
                 (self.type.upper(), self.target, self.local_path))
 
-    def start(self):
+    def start(self, parent_path=None):
         """Register the task and execute it.
 
         The task will be added to the ref task index.
+
+        Args:
+            parent_path (str, optional): if ste, target path of the parent
+                task. It indicates the parent task allow this one to "acquire"
+                fragments of folder owner by itself.
         """
         # TODO: create a new Future to returns to the user.
         path, item = self.local_container.acquire_index(
-            self.target, (self, None), self.start)
+            self.target, (self, None), self.start, bypass_folder=parent_path)
         if path is not None:  # The path is not available.
             _logger.debug('Resource path acquired by another task; waiting ..')
 
@@ -109,7 +114,6 @@ class _Task(object):
                                                        (None, None))
 
         future = _thread_pool.submit(self.execute)
-        self.local_container.update_index_owner(self.target, (self, future))
         return future
 
     def execute(self):
@@ -221,20 +225,43 @@ class _Task(object):
 
             for name in os.listdir(src_path):
                 abs_path = os.path.join(src_path, name)
-                rel_path = os.path.relpath(name, self.local_path)
-                if os.path.isdir(os.path.join(abs_path, name)):
-                    _Task(_Task.SYNC, self.container, rel_path,
-                          self.local_container)
-                    # TODO: NEW SYNC TASK ?
-                    f = None
+                rel_path = os.path.relpath(abs_path, self.local_path)
+                task = None
+                if os.path.isdir(abs_path):
+                    self.index_fragment = {
+                        k: v for (k, v) in self.index_fragment.items()
+                        if not k.startswith('%s/' % rel_path)}
+                    task = _Task(_Task.SYNC, self.container, rel_path,
+                                 self.local_container)
                 else:
-                    # TODO: New XXX TASK ? comparison ?
-                    f = None
-                if f is not None:
-                    subtasks.append(f)
+                    if name.startswith('.bajoo'):
+                        continue
 
-            wait_all(subtasks)  # TODO: retry when result is None !
-            # TODO: return value
+                    if rel_path in self.index_fragment:
+                        # TODO: don't log when file is not modified !
+                        del self.index_fragment[rel_path]
+                        task = _Task(_Task.LOCAL_CHANGE, self.container,
+                                     rel_path, self.local_container)
+                    else:
+                        task = _Task(_Task.LOCAL_ADD, self.container,
+                                     rel_path, self.local_container)
+
+                if task:
+                    subtasks.append(task.start(parent_path=self.target))
+
+            # locally removed items, present in the index, but not in local.
+            for child_path in self.index_fragment:
+                task = _Task(_Task.LOCAL_DELETION, self.container, child_path,
+                             self.local_container)
+                subtasks.append(task.start(parent_path=self.target))
+
+            # TODO: at this point we can release the sync !
+
+            if subtasks:
+                # TODO: ask for retrying when a sub-task fails.
+                return wait_all(subtasks)
+            else:
+                return None
 
     @staticmethod
     def _compute_md5_hash(file_content):
@@ -348,3 +375,19 @@ def moved_local_files(container, local_container, src_filename, dest_filename):
     """
     # TODO: to implement
     return Future.resolve(None)
+
+
+@patch_dec
+def sync_folder(container, local_container, folder_path):
+    """Sync a local folder
+
+    Args:
+        container (Container)
+        local_container (LocalContainer)
+        filename (str): path of the directory, relative to base_path.
+    Returns:
+        Future<boolean>: True if the task is successful; False if an error
+            happened.
+    """
+    task = _Task(_Task.SYNC, container, folder_path, local_container)
+    return task.start()

@@ -142,7 +142,8 @@ class LocalContainer(object):
         except (OSError, IOError):
             _logger.exception('Unable to save index %s:' % index_path)
 
-    def acquire_index(self, path, item, callback, is_directory=False):
+    def acquire_index(self, path, item, callback, is_directory=False,
+                      bypass_folder=None):
         """Acquire a part of the index, and returns corresponding values.
 
         Marks the path as 'acquired', and associate an item to it.
@@ -152,12 +153,14 @@ class LocalContainer(object):
             path (str): filename of a file or directory to acquire. It will
                 prevents any following calls to acquire the same path (or a
                 sub-path if the path correspond to a directory).
-            item (*, optional): This object will be associated to the acquired
+            item (*): This object will be associated to the acquired
                 path.
             callback (callable): If the acquire fails, this callback will be
                 called when the index fragment is released.
-            is_directory (boolean, optional): if True, additional checks are
+            is_directory (boolean): if True, additional checks are
                 done to ensures any file in the target folder are reserved.
+            bypass_folder (str): If set, the reservation fo this folder is
+                non-blocking.
         Returns:
             (None, dict): if the resource is free. The dict contains a list of
                 path (or subpath) associated to a couple
@@ -179,9 +182,9 @@ class LocalContainer(object):
         with self._index_lock:
             for parent_path in ancestor_paths:
                 if parent_path in self._index_booking:
-                    self._index_booking[parent_path][1].append(callback)
-                    _logger.warning('WAIT %s' % parent_path)
-                    return parent_path, self._index_booking[parent_path][0]
+                    if parent_path != bypass_folder:
+                        self._index_booking[parent_path][1].append(callback)
+                        return parent_path, self._index_booking[parent_path][0]
 
             if is_directory:
                 for p in [p for p in self._index_lock

@@ -70,6 +70,13 @@ class ContainerSyncPool(object):
         self._local_watchers[container.id] = watcher
         watcher.start()
 
+        self._increment()
+        f = filesync.sync_folder(container, local_container, '.')
+        if f:
+            f = f.then(self._decrement)
+        else:  # The task has been "merged" with another.
+            self._decrement()
+
     def remove(self, local_container):
         """Remove a container and stop its sync operations.
 
@@ -113,6 +120,15 @@ class ContainerSyncPool(object):
                 self._global_status = self.STATUS_UP_TO_DATE
             else:
                 self._global_status = self.STATUS_SYNCING
+
+        for container in self._containers:
+            local_container = self._local_containers[container.id]
+            self._increment()
+            f = filesync.sync_folder(container, local_container, '.')
+            if f:
+                f = f.then(self._decrement)
+            else:  # The task has been "merged" with another.
+                self._decrement()
 
     def _increment(self, _arg=None):
         with self._status_lock:
