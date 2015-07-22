@@ -4,7 +4,7 @@ import errno
 import json
 import logging
 import os
-from threading import Lock
+from threading import RLock
 
 from .common.i18n import _
 from .common.path import default_root_folder
@@ -46,7 +46,7 @@ class LocalContainer(object):
         self.status = self.STATUS_UNKNOWN
         self.error_msg = None
         self._index = {}
-        self._index_lock = Lock()  # Lock both `_index` and `_index_booking`
+        self._index_lock = RLock()  # Lock both `_index` and `_index_booking`
         self._index_booking = {}
         self._container = None
 
@@ -142,7 +142,7 @@ class LocalContainer(object):
         except (OSError, IOError):
             _logger.exception('Unable to save index %s:' % index_path)
 
-    def acquire_index(self, path, item=None):
+    def acquire_index(self, path, item, callback, is_directory=False):
         """Acquire a part of the index, and returns corresponding values.
 
         Marks the path as 'acquired', and associate an item to it.
@@ -154,29 +154,43 @@ class LocalContainer(object):
                 sub-path if the path correspond to a directory).
             item (*, optional): This object will be associated to the acquired
                 path.
+            callback (callable): If the acquire fails, this callback will be
+                called when the index fragment is released.
+            is_directory (boolean, optional): if True, additional checks are
+                done to ensures any file in the target folder are reserved.
         Returns:
             (None, dict): if the resource is free. The dict contains a list of
                 path (or subpath) associated to a couple
                 (local_hash, remote_hash).
-            (path, Item): if the resource is not availlable. Returns the path
+            (path, Item): if the resource is not available. Returns the path
                 acquired, and the item who've reserved the resource or a parent
                 resource.
         """
-        # Generate paths of all possible parents and itself.
         if path.endswith('/'):
             path = path[:-1]
+        parent_path = '/'.join(path.split('/')[:-1]) or '.'
 
-        paths = []
+        # Generate paths of all possible parents and itself.
+        ancestor_paths = ['.']
         words = path.split('/')
         for i in range(1, len(words) + 1):
-            paths.append('/'.join(words[:i]))
+            ancestor_paths.append('/'.join(words[:i]))
 
         with self._index_lock:
-            for parent_path in paths:
+            for parent_path in ancestor_paths:
                 if parent_path in self._index_booking:
-                    return parent_path, self._index_booking[parent_path]
+                    self._index_booking[parent_path][1].append(callback)
+                    _logger.warning('WAIT %s' % parent_path)
+                    return parent_path, self._index_booking[parent_path][0]
 
-            self._index_booking[path] = item
+            if is_directory:
+                for p in [p for p in self._index_lock
+                          if p.startwith('%s/' % path)]:
+                    if '/' in p[len('%s/' % path):]:
+                        self._index_booking[p][1].append(callback)
+                        return p, self._index_booking[p][0]
+
+            self._index_booking[path] = [item, []]
 
             return None, {key: tuple(hashes) for (key, hashes)
                           in self._index.items()
@@ -202,11 +216,20 @@ class LocalContainer(object):
                 self._index.update(new_index)
                 self._save_index()
 
+            call_list = self._index_booking[path][1]
             del self._index_booking[path]
+
+            # Call next callback
+            while call_list and path not in self._index_booking:
+                callback = call_list[0]
+                del call_list[0]
+                callback()
+            if call_list:
+                self._index_booking[path][1] = call_list
 
     def update_index_owner(self, path, new_item):
         """Update the item associated to a acquired path."""
         if path.endswith('/'):
             path = path[:-1]
         with self._index_lock:
-            self._index_booking[path] = new_item
+            self._index_booking[path][0] = new_item

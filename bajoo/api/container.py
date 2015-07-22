@@ -145,10 +145,21 @@ class Container(object):
         Args:
             path (str): the path to the file to be downloaded.
 
-        Returns <Future<TemporaryFile>>: the temporary file downloaded.
+        Returns <Future<dict, TemporaryFile>>: metadata and the temporary file
+            downloaded.
         """
         url = '/storages/%s/%s' % (self.id, path)
-        return self._session.download_storage_file('GET', url)
+
+        # TODO: all the "decrypt" part must be done here:
+        # download
+        # check remote_md5
+        #   decrypt
+
+        def callback(result):
+            md5_hash = result.get('headers', {}).get('etag')
+            return {'hash': md5_hash}, result.get('content')
+
+        return self._session.download_storage_file('GET', url).then(callback)
 
     def upload(self, path, file):
         """Upload a file in this container.
@@ -161,10 +172,24 @@ class Container(object):
             file (str / File-like): the path to the local file to be uploaded
             (if type is str), or file content to be uploaded.
         Returns:
-            Future<dict>: the upload result.
+            Future<dict>: Metadata dict, containing the md5 hash of the
+                uploaded file.
         """
         url = '/storages/%s/%s' % (self.id, path)
-        return self._session.upload_storage_file('PUT', url, file)
+
+        def format_result(result):
+            md5_hash = result.get('headers', {}).get('etag')
+            return {'hash': md5_hash}
+
+        # TODO: upload should do the encryption, the upload, and check the
+        # integrity ! The 4 steps below:
+        # - encrypt
+        # - check remote_md5
+        # - upload
+        # - confirm upload
+
+        f = self._session.upload_storage_file('PUT', url, file)
+        return f.then(format_result)
 
     def remove_file(self, path):
         """
@@ -226,8 +251,7 @@ if __name__ == '__main__':
 
     # download the uploaded file
     _logger.debug('Download file: %s',
-                  container_created.download('tmp.txt').result().get(
-                      'content').read())
+                  container_created.download('tmp.txt').result()[1].read())
 
     # delete the uploaded file
     _logger.debug('Delete file: %s',

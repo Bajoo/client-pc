@@ -26,7 +26,7 @@ When done, it generates a dict containing the new values for theses hashes. If
 the dict is empty (or if some items are missing), the original hash values are
 removed. When an error occurs, the new index fragment is not generated. In this
 case, the original hash values are not modified.
-The Future returns True or False, accoridng to the success of the operation.
+The Future returns True or False, according to the success of the operation.
 The task should be executed again latter if it returns False.
 Sometimes, a task is ignored (duplicate tasks); In this case, the function
 doesn't returns a Future, but directly None.
@@ -37,6 +37,7 @@ import errno
 import hashlib
 import logging
 import os
+import shutil
 
 from ..network.errors import HTTPNotFoundError
 from ..common.future import Future, patch_dec, wait_all
@@ -47,7 +48,13 @@ _thread_pool = ThreadPoolExecutor(max_workers=1)
 
 
 class _Task(object):
-    """Class representing a sync task."""
+    """Class representing a sync task.
+
+    A task is executed in a separated thread (in the _thread_pool). The method
+    `start()` will start that thread and returns a Future. In practice, the
+    task can be executed in several steps (network and encryption parts), and
+    can be split in many subtasks (for SYNC tasks).
+    """
 
     # Type of tasks
     LOCAL_ADD = 'local_add'
@@ -60,11 +67,21 @@ class _Task(object):
     SYNC = 'sync'
 
     def __init__(self, type, container, target, local_container):
+        """
+        Args:
+            type (str): One of the 8 type declared above.
+            container (Container): used to performs upload and download
+                requests.
+            target (str): path of the target, relative the the container.
+            local_container (LocalContainer): local container. It will be used
+                only to acquire, update and release index fragments.
+        """
         self.type = type
         self.container = container
         self.target = target
         self.local_container = local_container
         self.local_path = local_container.path
+        self.index_fragment = {}
         self.local_md5 = None
         self.remote_md5 = None
 
@@ -77,16 +94,17 @@ class _Task(object):
 
         The task will be added to the ref task index.
         """
-        path, item = self.local_container.acquire_index(self.target,
-                                                        (self, None))
+        # TODO: create a new Future to returns to the user.
+        path, item = self.local_container.acquire_index(
+            self.target, (self, None), self.start)
         if path is not None:  # The path is not available.
             _logger.debug('Resource path acquired by another task; waiting ..')
 
-            return item[1].then(lambda _: self.start(), lambda _: self.start())
+            return None
             # TODO: detect if it's possible to merge the 2 events.
 
         if item:
-            # TODO: save index fragment in case of multiples values.
+            self.index_fragment = item
             self.local_md5, self.remote_md5 = item.get(self.target,
                                                        (None, None))
 
@@ -106,6 +124,9 @@ class _Task(object):
         result = None
         try:
             result = self._apply_task()
+            # TODO: use a better, non-blocking approach.
+            while isinstance(result, Future):
+                result = result.result()
         except Exception as error:
             result = self._manage_error(error)
         finally:
@@ -139,19 +160,13 @@ class _Task(object):
         if self.type in (_Task.LOCAL_ADD, _Task.LOCAL_CHANGE):
             src_path = os.path.join(self.local_path, self.target)
 
-            # TODO: upload should do the encryption, the upload, and check the
-            # integrity ! The 4 steps below:
-            # - encrypt
-            # - check remote_md5
-            # - upload
-            # - confirm upload
-
             file_content = None
             try:
                 file_content = open(src_path)
             except (IOError, OSError) as err:
                 if err.errno == errno.ENOENT and self.type == _Task.LOCAL_ADD:
-                    # The file is gone before we've done anything.
+                    _logger.debug("The file is gone before we've done"
+                                  " anything.")
                     return {}
                 raise
             try:
@@ -167,24 +182,24 @@ class _Task(object):
                     file_content.close()
                 raise
 
-            self.container.upload(self.target, file_content)
-            return {self.target: (md5, md5)}
-            # TODO: check upload error
-            # TODO: return value {self.target: (md5, new_remote_from_uplaod)}
+            def callback(metadata):
+                return {self.target: (md5, metadata['hash'])}
+
+            f = self.container.upload(self.target, file_content)
+            return f.then(callback)
         elif self.type == _Task.LOCAL_DELETION:
             # Delete remote file
-            # TODO: we should avoid to resolve future with result()
-            self.container.remove_file(self.target).result()
-            return {}
+            return self.container.remove_file(self.target).then(lambda _: {})
         elif self.type in (_Task.REMOTE_ADD, _Task.REMOTE_CHANGE):
+            def callback(result):
+                metadata, file_content = result
+                remote_md5 = metadata['hash']
+                future = _thread_pool.submit(self._write_downloaded_file,
+                                             file_content)
+                return future.then(lambda local_md5: {
+                    self.target: (local_md5, remote_md5)})
 
-            # download
-            # check remote_md5
-            #   decrypt
-            #   check local_md5
-            # write on disk
-            # TODO: implement
-            pass
+            return self.container.download(self.target).then(callback)
         elif self.type == _Task.REMOTE_DELETION:
             # Delete local
             src_path = os.path.join(self.local_path, self.target)
@@ -237,6 +252,20 @@ class _Task(object):
         for buf in file_content:
             d.update(buf)
         return d.hexdigest()
+
+    def _write_downloaded_file(self, file_content):
+        """Write the downloaded file on the disk.
+
+        Returns:
+            str: the local md5 hash
+        """
+        abs_path = os.path.join(self.local_path, self.target)
+        md5_hash = self._compute_md5_hash(file_content)
+        file_content.seek(0)
+        with open(abs_path) as dest_file, file_content:
+            shutil.copyfileobj(file_content, dest_file)
+
+        return md5_hash
 
 
 @patch_dec
