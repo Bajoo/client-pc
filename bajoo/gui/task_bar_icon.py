@@ -57,15 +57,19 @@ class TaskBarIcon(wx.TaskBarIcon):
 
         self._is_connected = False
 
-        # TODO: use different icons.
-        icon_path = resource_filename('assets/icons/bajoo.ico')
+        icon_path = 'assets/icons/trayicon-%s.png'
+        disconnected_icon = resource_filename(icon_path % 'connecting')
+        connecting_icon = resource_filename(icon_path % 'connecting')
+        sync_icon = resource_filename(icon_path % 'sync')
+        paused_icon = resource_filename(icon_path % 'paused')
+        progress_icon = resource_filename(icon_path % 'progress')
 
         self._icons = {
-            self.NOT_CONNECTED: wx.Icon(icon_path),
-            self.CONNECTION_PROGRESS: wx.Icon(icon_path),
-            self.SYNC_DONE: wx.Icon(icon_path),
-            self.SYNC_PROGRESS: wx.Icon(icon_path),
-            self.SYNC_PAUSE: wx.Icon(icon_path)
+            self.NOT_CONNECTED: wx.Icon(disconnected_icon),
+            self.CONNECTION_PROGRESS: wx.Icon(connecting_icon),
+            self.SYNC_DONE: wx.Icon(sync_icon),
+            self.SYNC_PROGRESS: wx.Icon(progress_icon),
+            self.SYNC_PAUSE: wx.Icon(paused_icon)
         }
 
         self.set_state(self.NOT_CONNECTED)
