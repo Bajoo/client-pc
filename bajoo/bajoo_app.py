@@ -56,7 +56,8 @@ class BajooApp(wx.App, SoftwareUpdate):
         self._notifier = None
         self._session = None
         self._container_list = None
-        self._container_sync_pool = ContainerSyncPool()
+        self._container_sync_pool = ContainerSyncPool(
+            self._on_global_status_change)
 
         # Don't redirect the stdout in a windows.
         wx.App.__init__(self, redirect=False)
@@ -250,3 +251,17 @@ class BajooApp(wx.App, SoftwareUpdate):
             self._container_sync_pool.add,
             self._container_sync_pool.remove)
         self._task_bar_icon.set_state(TaskBarIcon.SYNC_PROGRESS)
+
+    @ensure_gui_thread
+    def _on_global_status_change(self, status):
+        """The global status of container sync pool has changed.
+
+        We update the tray icon.
+        """
+        mapping = {
+            ContainerSyncPool.STATUS_PAUSE: TaskBarIcon.SYNC_PAUSE,
+            ContainerSyncPool.STATUS_SYNCING: TaskBarIcon.SYNC_PROGRESS,
+            ContainerSyncPool.STATUS_UP_TO_DATE: TaskBarIcon.SYNC_DONE
+        }
+        if self._task_bar_icon:
+            self._task_bar_icon.set_state(mapping[status])

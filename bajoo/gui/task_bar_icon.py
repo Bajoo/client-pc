@@ -58,6 +58,7 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
         Translator.__init__(self)
 
         self._is_connected = False
+        self._state = self.NOT_CONNECTED
 
         icon_path = 'assets/icons/trayicon-%s.png'
         disconnected_icon = resource_filename(icon_path % 'connecting')
@@ -75,6 +76,9 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
         }
 
         self.set_state(self.NOT_CONNECTED)
+        self.register_i18n(
+            lambda txt: self.SetIcon(self._icons[self._state], tooltip=txt),
+            self._tooltips[self._state])
 
         self.Bind(wx.EVT_TASKBAR_LEFT_DOWN, self._open_window)
         self.Bind(wx.EVT_MENU,
@@ -142,8 +146,6 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
                 'SYNC_DONE', 'SYNC_PROGRESS' or 'SYNC_PAUSE'
         """
 
+        self._state = state
         self._is_connected = state is not self.NOT_CONNECTED
-
-        self.register_i18n(
-            lambda txt: self.SetIcon(self._icons[state], tooltip=txt),
-            self._tooltips[state])
+        self.SetIcon(self._icons[state], tooltip=self._tooltips[state])

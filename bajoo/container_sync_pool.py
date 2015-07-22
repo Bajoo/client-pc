@@ -29,11 +29,17 @@ class ContainerSyncPool(object):
     STATUS_UP_TO_DATE = 2
     STATUS_PAUSE = 3
 
-    def __init__(self):
+    def __init__(self, on_state_change):
+        """
+        Args:
+            on_state_change (callable): called when the global state change.
+        """
         self._containers = {}
         self._local_containers = {}
         self._updaters = {}
         self._local_watchers = {}
+
+        self._on_state_change = on_state_change
 
         self._global_status = self.STATUS_UP_TO_DATE
         self._counter = 0
@@ -110,6 +116,7 @@ class ContainerSyncPool(object):
             w.stop()
         with self._status_lock:
             self._global_status = self.STATUS_PAUSE
+            self._on_state_change(self._global_status)
 
     def resume(self):
         """Resume sync operations if they are paused."""
@@ -123,6 +130,7 @@ class ContainerSyncPool(object):
                 self._global_status = self.STATUS_UP_TO_DATE
             else:
                 self._global_status = self.STATUS_SYNCING
+            self._on_state_change(self._global_status)
 
         for container in self._containers:
             local_container = self._local_containers[container.id]
@@ -136,17 +144,21 @@ class ContainerSyncPool(object):
     def _increment(self, _arg=None):
         with self._status_lock:
             self._counter += 1
-            if self._global_status != self.STATUS_PAUSE:
+            if self._global_status == self.STATUS_UP_TO_DATE:
                 self._global_status = self.STATUS_SYNCING
+                self._on_state_change(self._global_status)
 
     def _decrement(self, _arg=None):
         with self._status_lock:
             self._counter -= 1
             if self._global_status != self.STATUS_PAUSE:
                 if self._counter == 0:
-                    self._global_status = self.STATUS_UP_TO_DATE
-                else:
+                    if self._global_status != self.STATUS_UP_TO_DATE:
+                        self._global_status = self.STATUS_UP_TO_DATE
+                        self._on_state_change(self._global_status)
+                elif self._global_status != self.STATUS_SYNCING:
                     self._global_status = self.STATUS_SYNCING
+                    self._on_state_change(self._global_status)
 
     def _added_remote_file(self, container_id, files):
         print('Added (remote): %s' % files)
