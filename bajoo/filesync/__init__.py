@@ -34,6 +34,7 @@ doesn't returns a Future, but directly None.
 
 from concurrent.futures import ThreadPoolExecutor
 import errno
+from functools import partial
 import hashlib
 import logging
 import os
@@ -99,15 +100,16 @@ class _Task(object):
                 task. It indicates the parent task allow this one to "acquire"
                 fragments of folder owner by itself.
         """
-        # TODO: create a new Future to returns to the user.
+        delayed_start = Future()  # Future used in case of delayed start
         path, item = self.local_container.acquire_index(
-            self.target, (self, None), self.start, bypass_folder=parent_path)
+            self.target, (self, None),
+            partial(self._delayed_start, delayed_start),
+            bypass_folder=parent_path)
         if path is not None:  # The path is not available.
             _logger.debug('Resource path acquired by another task; '
                           'waiting for %s..' % self.target)
-
-            return None
             # TODO: detect if it's possible to merge the 2 events.
+            return delayed_start
 
         if item:
             self.index_fragment = item
@@ -118,6 +120,24 @@ class _Task(object):
         future = future.then(None, self._manage_error)
         future = future.then(self._release_index)
         return future
+
+    def _delayed_start(self, future):
+        """Execute a delayed start() call.
+
+        A start() call has been delayed, as the fragment index was not
+        available at the moment it was requested.
+
+        Args:
+            future (Future): empty, non started future. It will be notified
+                before start() and will receive the result of start().
+        """
+        if not future.set_running_or_notify_cancel():
+                return  # The task has been cancelled !
+        f = self.start()
+        if f:
+            then(f, future.set_result, future.set_exception)
+        else:
+            future.set_result(None)
 
     def _release_index(self, result):
         self.local_container.release_index(self.target, result)
