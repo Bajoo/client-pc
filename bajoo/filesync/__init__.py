@@ -40,11 +40,11 @@ import os
 import shutil
 
 from ..network.errors import HTTPNotFoundError
-from ..common.future import Future, patch_dec, wait_all, then
+from ..common.future import Future, patch_dec, wait_all, then, resolve_rec
 
 _logger = logging.getLogger(__name__)
 
-_thread_pool = ThreadPoolExecutor(max_workers=50)
+_thread_pool = ThreadPoolExecutor(max_workers=5)
 
 
 class _Task(object):
@@ -103,7 +103,8 @@ class _Task(object):
         path, item = self.local_container.acquire_index(
             self.target, (self, None), self.start, bypass_folder=parent_path)
         if path is not None:  # The path is not available.
-            _logger.debug('Resource path acquired by another task; waiting ..')
+            _logger.debug('Resource path acquired by another task; '
+                          'waiting for %s..' % self.target)
 
             return None
             # TODO: detect if it's possible to merge the 2 events.
@@ -113,30 +114,13 @@ class _Task(object):
             self.local_md5, self.remote_md5 = item.get(self.target,
                                                        (None, None))
 
-        future = _thread_pool.submit(self.execute)
+        future = resolve_rec(_thread_pool.submit(self._apply_task))
+        future = future.then(None, self._manage_error)
+        future = future.then(self._release_index)
         return future
 
-    def execute(self):
-        """Execute the task (called in a dedicated thread).
-
-        Returns:
-            boolean: True if all is OK, False if there is an error. In case of
-                error the task should be executed again (by the caller) after a
-                short time, then the target should be excluded if the error
-                persists.
-        """
-        result = None
-        try:
-            result = self._apply_task()
-            # TODO: use a better, non-blocking approach.
-            while isinstance(result, Future):
-                result = result.result()
-        except Exception as error:
-            result = self._manage_error(error)
-        finally:
-            self.local_container.release_index(self.target, result)
-
-        return result is not None
+    def _release_index(self, result):
+        self.local_container.release_index(self.target, result)
 
     def _manage_error(self, error):
         """Catch all error happened during the task execution.
@@ -166,7 +150,7 @@ class _Task(object):
 
             file_content = None
             try:
-                file_content = open(src_path)
+                file_content = open(src_path, 'rb')
             except (IOError, OSError) as err:
                 if err.errno == errno.ENOENT and self.type == _Task.LOCAL_ADD:
                     _logger.debug("The file is gone before we've done"
@@ -195,6 +179,16 @@ class _Task(object):
             # Delete remote file
             return self.container.remove_file(self.target).then(lambda _: {})
         elif self.type in (_Task.REMOTE_ADD, _Task.REMOTE_CHANGE):
+
+            if self.type == _Task.REMOTE_ADD:
+                # Make folder
+                try:
+                    abs_path = os.path.join(self.local_path, self.target)
+                    os.makedirs(os.path.dirname(abs_path))
+                except (IOError, OSError) as e:
+                    if e.errno != errno.EEXIST:
+                        raise e
+
             def callback(result):
                 metadata, file_content = result
                 remote_md5 = metadata['hash']
@@ -289,7 +283,7 @@ class _Task(object):
         abs_path = os.path.join(self.local_path, self.target)
         md5_hash = self._compute_md5_hash(file_content)
         file_content.seek(0)
-        with open(abs_path, 'w') as dest_file, file_content:
+        with open(abs_path, 'wb') as dest_file, file_content:
             shutil.copyfileobj(file_content, dest_file)
 
         return md5_hash

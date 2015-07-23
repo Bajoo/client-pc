@@ -159,8 +159,8 @@ class LocalContainer(object):
                 called when the index fragment is released.
             is_directory (boolean): if True, additional checks are
                 done to ensures any file in the target folder are reserved.
-            bypass_folder (str): If set, the reservation fo this folder is
-                non-blocking.
+            bypass_folder (str): If set, the reservation of this folder, and
+                parent folders are non-blocking.
         Returns:
             (None, dict): if the resource is free. The dict contains a list of
                 path (or subpath) associated to a couple
@@ -182,7 +182,11 @@ class LocalContainer(object):
         with self._index_lock:
             for parent_path in ancestor_paths:
                 if parent_path in self._index_booking:
-                    if parent_path != bypass_folder:
+                    bypass = bypass_folder is not None
+                    bypass &= (parent_path == '.' or
+                               ('%s/' % bypass_folder).startswith(
+                                   '%s/' % parent_path))
+                    if not bypass:
                         self._index_booking[parent_path][1].append(callback)
                         return parent_path, self._index_booking[parent_path][0]
 

@@ -10,9 +10,12 @@ decorator version.
 """
 
 import concurrent.futures
+import logging
 from multiprocessing import Lock as ProcessLock
 from threading import Lock as ThreadLock
 import types
+
+_logger = logging.getLogger(__name__)
 
 
 def then(original_future, on_success=None, on_error=None):
@@ -250,9 +253,29 @@ def wait_all(futures):
             _remaining_tasks[0] = -1
 
     for f in futures:
-        then(f, _done_callback, _fail_callback)
+        if f is None:
+            _logger.warning('wait_all() have received a None value in the list'
+                            ' of future to wait. That should not happen!')
+        else:
+            then(f, _done_callback, _fail_callback)
 
     return resulting_future
+
+
+def resolve_rec(result):
+    """Recursively resolve the future if it returns another Future.
+
+    In same case, an asynchronous action must be done in many steps, not known
+    at start. resolve_rec() allow a Future to resolve itself as another Future
+    object (the next step), and so recursively.
+
+    Returns:
+        Future<?>: Future guaranteed to resolve a non-future result.
+    """
+    if isinstance(result, concurrent.futures.Future):
+        return then(result, resolve_rec)
+    else:
+        return Future.resolve(result)
 
 
 def main():
