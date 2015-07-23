@@ -257,9 +257,14 @@ def upload(verb, url, source, **params):
         params.setdefault('proxies', _prepare_proxy())
         file = source
 
-        if isinstance(file, basestring):
-            # If 'file' is a filename, open it
-            file = open(file, 'rb')
+        try:
+            if isinstance(file, basestring):
+                # If 'file' is a filename, open it
+                file = open(file, 'rb')
+        except NameError:
+            if isinstance(file, str):
+                # If 'file' is a filename, open it
+                file = open(file, 'rb')
 
         with file:
             _logger.debug("Start %s uploading to %s", verb, url)

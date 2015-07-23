@@ -207,7 +207,7 @@ class LocalContainer(object):
                 corresponding to the path and its sub-paths. If None, the
                 values are kept intact.
         """
-        _logger.debug('Replace index part of %s' % path)
+        _logger.debug('Release index part of %s' % path)
 
         if path.endswith('/'):
             path = path[:-1]

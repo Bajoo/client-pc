@@ -48,3 +48,11 @@ if not hasattr(wx.Control, 'GetSizeFromTextSize'):
         return width, -1
 
     wx.Control.GetSizeFromTextSize = get_size_from_text_size
+
+try:
+    from wx import TaskBarIcon  # classic wxPython
+except ImportError:
+    from wx.adv import TaskBarIcon, EVT_TASKBAR_LEFT_DOWN
+
+    wx.TaskBarIcon = TaskBarIcon
+    wx.EVT_TASKBAR_LEFT_DOWN = EVT_TASKBAR_LEFT_DOWN
