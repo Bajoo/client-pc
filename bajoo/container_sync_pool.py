@@ -60,16 +60,18 @@ class ContainerSyncPool(object):
         self._containers[container.id] = container
         self._local_containers[container.id] = local_container
 
-        # TODO: give it the last known list.
+        last_remote_index = local_container.get_remote_index()
+
         updater = files_list_updater(
             container,
             partial(self._added_remote_file, container.id),
             partial(self._modified_remote_files, container.id),
-            partial(self._removed_remote_files, container.id))
+            partial(self._removed_remote_files, container.id),
+            None, last_remote_index)
+
         self._updaters[container.id] = updater
         updater.start()
 
-        # TODO: give it the last known list.
         watcher = FileWatcher(local_container,
                               partial(self._added_local_file, container.id),
                               partial(self._modified_local_files,

@@ -198,7 +198,8 @@ class LocalContainer(object):
                         return p, self._index_booking[p][0]
 
             self._index_booking[path] = [item, []]
-
+            if path == '.':
+                return None, dict(self._index.items())
             return None, {key: tuple(hashes) for (key, hashes)
                           in self._index.items()
                           if key == path or key.startswith('%s/' % path)}
@@ -240,3 +241,13 @@ class LocalContainer(object):
             path = path[:-1]
         with self._index_lock:
             self._index_booking[path][0] = new_item
+
+    def get_remote_index(self):
+        """Returns the remote part of the index.
+
+        Returns:
+            dict: list of files, of the form {'file/name': md5sum}, with md5sum
+                the md5 hash of the remote file.
+        """
+        with self._index_lock:
+            return {key: self._index[key][1] for key in self._index}
