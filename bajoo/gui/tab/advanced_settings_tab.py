@@ -29,39 +29,30 @@ class AdvancedSettingsView(BaseView):
 
         # chk_send_report
         chk_send_report = wx.CheckBox(
-            advanced_settings_screen, wx.ID_ANY,
-            N_('Send crash reports to Bajoo automatically'),
-            name='chk_send_report')
+            advanced_settings_screen, name='chk_send_report')
 
         # chk_debug_mode
         chk_debug_mode = wx.CheckBox(
-            advanced_settings_screen, wx.ID_ANY,
-            N_('Activate debug mode'),
-            name='chk_debug_mode')
+            advanced_settings_screen, name='chk_debug_mode')
 
-        # lbl_version
+        # version_box
+        lbl_version_desc = wx.StaticText(advanced_settings_screen)
         lbl_version = wx.StaticText(
-            advanced_settings_screen, wx.ID_ANY,
-            N_('Actual verion') + ": " + __version__,
-            name='lbl_version')
+            advanced_settings_screen, label=__version__, name='lbl_version')
+        version_box = self.make_sizer(wx.HORIZONTAL, [
+            lbl_version_desc, lbl_version], outside_border=False)
 
         # chk_auto_update
         chk_auto_update = wx.CheckBox(
-            advanced_settings_screen, wx.ID_ANY,
-            N_('Apply the updates automatically'),
-            name='chk_auto_update')
+            advanced_settings_screen, name='chk_auto_update')
 
         # btn_check_updates
         btn_check_updates = wx.Button(
-            advanced_settings_screen, wx.ID_ANY,
-            N_('Check for updates'),
-            name='btn_verify_updates')
+            advanced_settings_screen, name='btn_verify_updates')
 
         # chk_exclude_hidden_files
         chk_exclude_hidden_files = wx.CheckBox(
-            advanced_settings_screen, wx.ID_ANY,
-            N_("Don't synchronize hidden files"),
-            name='chk_exclude_hidden_files')
+            advanced_settings_screen, name='chk_exclude_hidden_files')
 
         # buttons_box
         buttons_box = self.create_settings_button_box(
@@ -76,11 +67,10 @@ class AdvancedSettingsView(BaseView):
         report_debug_box_sizer.Add(report_debug_box_sizer_inside)
 
         # updates_box
-        updates_box = wx.StaticBox(advanced_settings_screen, wx.ID_ANY,
-                                   N_('Updates'))
+        updates_box = wx.StaticBox(advanced_settings_screen)
         updates_box_sizer = wx.StaticBoxSizer(updates_box, wx.HORIZONTAL)
         updates_box_sizer_inside = self.make_sizer(
-            wx.VERTICAL, [lbl_version, chk_auto_update])
+            wx.VERTICAL, [version_box, chk_auto_update])
         updates_box_sizer.Add(updates_box_sizer_inside)
         updates_box_sizer.AddStretchSpacer(1)
 
@@ -98,6 +88,16 @@ class AdvancedSettingsView(BaseView):
                           exclude_box_sizer, None, buttons_box])
 
         advanced_settings_screen.SetSizer(main_sizer)
+
+        self.register_many_i18n('SetLabelText', {
+            lbl_version_desc: N_('Actual version:'),
+            chk_send_report: N_('Send crash reports to Bajoo automatically'),
+            chk_debug_mode: N_('Activate debug mode'),
+            chk_auto_update: N_('Apply the updates automatically'),
+            btn_check_updates: N_('Check for updates'),
+            chk_exclude_hidden_files: N_("Don't synchronize hidden files"),
+            updates_box: N_('Updates')
+        })
 
 
 def main():

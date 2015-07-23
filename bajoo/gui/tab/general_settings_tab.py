@@ -28,31 +28,22 @@ class GeneralSettingsView(BaseView):
 
         # chk_launch_at_startup
         chk_launch_at_startup = wx.CheckBox(
-            general_settings_screen, wx.ID_ANY,
-            N_("Launch Bajoo at system startup"),
-            name='chk_launch_at_startup')
+            general_settings_screen, name='chk_launch_at_startup')
 
         # chk_tray_icon
         chk_tray_icon = wx.CheckBox(
-            general_settings_screen, wx.ID_ANY,
-            N_("Activate status icon and the contextual menu"),
-            name='chk_tray_icon')
+            general_settings_screen, name='chk_tray_icon')
 
         # chk_notifications
         chk_notifications = wx.CheckBox(
-            general_settings_screen, wx.ID_ANY,
-            N_("Display a notification when finish "
-               "downloading file modifications"),
-            name='chk_notifications')
+            general_settings_screen, name='chk_notifications')
 
         # cmb_language
         cmb_language = wx.ComboBox(
-            general_settings_screen, wx.ID_ANY,
-            style=wx.CB_READONLY,
-            name='cmb_language')
+            general_settings_screen, style=wx.CB_READONLY, name='cmb_language')
 
         # Options box
-        options_box = wx.StaticBox(general_settings_screen, wx.ID_ANY)
+        options_box = wx.StaticBox(general_settings_screen)
         options_box_sizer = wx.StaticBoxSizer(options_box, wx.VERTICAL)
         options_box_sizer_inside = self.make_sizer(
             wx.VERTICAL,
@@ -60,8 +51,7 @@ class GeneralSettingsView(BaseView):
         options_box_sizer.Add(options_box_sizer_inside)
 
         # Language box
-        language_box = wx.StaticBox(general_settings_screen, wx.ID_ANY,
-                                    N_("Language"))
+        language_box = wx.StaticBox(general_settings_screen)
         language_box_sizer = wx.StaticBoxSizer(language_box, wx.VERTICAL)
         language_box_sizer.Add(cmb_language, 0,
                                wx.EXPAND | wx.ALL, 10)
@@ -75,6 +65,14 @@ class GeneralSettingsView(BaseView):
             [options_box_sizer, language_box_sizer, None, buttons_box])
 
         general_settings_screen.SetSizer(main_sizer)
+
+        self.register_many_i18n('SetLabelText', {
+            chk_launch_at_startup: N_("Launch Bajoo at system startup"),
+            chk_tray_icon: N_("Activate status icon and the contextual menu"),
+            chk_notifications: N_("Display a notification when finish "
+                                  "downloading file modifications"),
+            language_box: N_("Language")
+        })
 
 
 def main():
