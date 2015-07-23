@@ -42,16 +42,19 @@ class AccountTab(wx.Panel):
                 and 'quota_used' in self._data.keys():
             quota_percentage = \
                 self._data['quota_used'] * 100 / float(self._data['quota'])
-            print(quota_percentage)
 
-        self.FindWindow('lbl_email').SetLabelText(
-            N_("You are connected as") + " " + self._data['email'])
-        self.FindWindow('lbl_account_type').SetLabelText(
-            N_("Account type:") + " " + self._data['account_type'])
-        self.FindWindow('lbl_quota_info').SetLabelText(
-            str(self._data['n_shares']) + " " + N_("share folder use")
-            + " " + quota_used_str + ", "
-            + (N_("so %0.2f%% of your Bajoo storage.") % quota_percentage))
+        self.FindWindow('lbl_email') \
+            .SetLabelText(self._data['email'])
+        self.FindWindow('lbl_account_type') \
+            .SetLabelText(self._data['account_type'])
+
+        # re-register quota info text
+        self._view.remove_i18n(self.FindWindow('lbl_quota_info').SetLabelText)
+        self._view.register_i18n(
+            self.FindWindow('lbl_quota_info').SetLabelText,
+            N_("%d share folder use %s, so %0.2f%% of your Bajoo storage."),
+            (self._data['n_shares'], quota_used_str, quota_percentage))
+
         self.FindWindow('gauge_quota').SetValue(quota_percentage)
         self.FindWindow('gauge_text_min').SetLabelText('0')
         self.FindWindow('gauge_text_value').SetLabelText(quota_used_str)
@@ -71,22 +74,28 @@ class AccountView(BaseView):
         account_info_box = wx.StaticBox(account_screen, -1)
         box_sizer = wx.StaticBoxSizer(account_info_box, wx.VERTICAL)
 
-        # lbl_email
+        # email_box
+        lbl_email_description = wx.StaticText(
+            account_screen, name='lbl_email_description')
         lbl_email = wx.StaticText(
-            account_screen, wx.ID_ANY,
-            N_("You are connected as"), name='lbl_email')
+            account_screen, name='lbl_email')
+        email_box = self.make_sizer(
+            wx.HORIZONTAL, [lbl_email_description, lbl_email],
+            outside_border=False)
 
-        # lbl_account_type
+        # account_type_box
+        lbl_account_type_desc = wx.StaticText(
+            account_screen, name='lbl_account_type_desc')
         lbl_account_type = wx.StaticText(
-            account_screen, wx.ID_ANY,
-            N_("Account type:"), name='lbl_account_type')
+            account_screen, name='lbl_account_type')
+        account_type_box = self.make_sizer(
+            wx.HORIZONTAL, [lbl_account_type_desc, lbl_account_type],
+            outside_border=False)
 
         # btn_change_offer
         # TODO: URL
         btn_change_offer = HyperLinkCtrl(
-            account_screen, wx.ID_ANY,
-            N_(">>> Move to a higher offer"),
-            URL="https://www.bajoo.fr",
+            account_screen, URL="https://www.bajoo.fr",
             name='btn_change_offer')
 
         # lbl_quota_info
@@ -96,29 +105,21 @@ class AccountView(BaseView):
 
         # btn_disconnect
         btn_disconnect = wx.Button(
-            account_screen, wx.ID_ANY,
-            N_("Disconnect my account"),
-            name='btn_disconnect')
+            account_screen, name='btn_disconnect')
 
         # btn_open_bajoo_folder
         btn_open_bajoo_folder = wx.Button(
-            account_screen, wx.ID_ANY,
-            N_("Open my Bajoo folder"),
-            name='btn_open_bajoo_folder')
+            account_screen, name='btn_open_bajoo_folder')
 
         # btn_reinit_passphrase
         btn_reinit_passphrase = wx.Button(
-            account_screen, wx.ID_ANY,
-            N_("Reinitialize my passphrase"),
-            name='btn_reinit_passphrase')
+            account_screen, name='btn_reinit_passphrase')
         btn_reinit_passphrase.SetMinSize(
             (200, btn_reinit_passphrase.GetSize()[1]))
 
         # btn_change_password
         btn_change_password = wx.Button(
-            account_screen, wx.ID_ANY,
-            N_("Change password"),
-            name='btn_change_password')
+            account_screen, name='btn_change_password')
         btn_change_password.SetMinSize(
             (200, btn_change_password.GetSize()[1]))
 
@@ -139,8 +140,8 @@ class AccountView(BaseView):
             "max", name='gauge_text_max')
 
         info_text_sizer = wx.BoxSizer(wx.VERTICAL)
-        info_text_sizer.Add(lbl_email)
-        info_text_sizer.Add(lbl_account_type, 0, wx.TOP, 10)
+        info_text_sizer.Add(email_box)
+        info_text_sizer.Add(account_type_box, 0, wx.TOP, 10)
         info_text_sizer.Add(btn_change_offer, 0, wx.TOP, 10)
         info_text_sizer.Add(lbl_quota_info, 0, wx.TOP, 10)
 
@@ -167,6 +168,16 @@ class AccountView(BaseView):
                           btn_change_password])
 
         account_screen.SetSizer(main_sizer)
+
+        self.register_many_i18n('SetLabelText', {
+            lbl_email_description: N_('You are connected as:'),
+            lbl_account_type_desc: N_('Account type:'),
+            btn_change_offer: N_(">>> Move to a higher offer"),
+            btn_disconnect: N_("Disconnect my account"),
+            btn_open_bajoo_folder: N_("Open my Bajoo folder"),
+            btn_reinit_passphrase: N_("Reinitialize my passphrase"),
+            btn_change_password: N_("Change password")
+        })
 
 
 def main():

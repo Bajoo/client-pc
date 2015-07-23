@@ -40,7 +40,6 @@ class ChangePasswordView(BaseView):
             change_password_form, wx.ID_ANY,
             style=wx.TE_PASSWORD,
             name='old_password')
-        self._txt_old_password.SetHint(N_('Current password'))
         self._txt_old_password.SetMinSize(text_min_size)
         self._old_password_error = NotEmptyValidator(
             change_password_form, self._txt_old_password)
@@ -49,7 +48,6 @@ class ChangePasswordView(BaseView):
             change_password_form, wx.ID_ANY,
             style=wx.TE_PASSWORD,
             name='new_password')
-        self._txt_new_password.SetHint(N_('New password'))
         self._txt_new_password.SetMinSize(text_min_size)
         self._new_password_error = NotEmptyValidator(
             change_password_form, self._txt_new_password)
@@ -58,7 +56,6 @@ class ChangePasswordView(BaseView):
             change_password_form, wx.ID_ANY,
             style=wx.TE_PASSWORD,
             name='confirm_new_password')
-        self._txt_confirm_new_password.SetHint(N_('Confirm new password'))
         self._txt_confirm_new_password.SetMinSize(text_min_size)
         self._confirm_new_password_error = NotEmptyValidator(
             change_password_form, self._txt_confirm_new_password)
@@ -86,20 +83,33 @@ class ChangePasswordView(BaseView):
         confirm_new_password_sizer.Add(
             self._confirm_new_password_error, 0, wx.TOP, 3)
 
+        lbl_description = wx.StaticText(
+            change_password_form, name='lbl_description')
+        lbl_confirmation_email = wx.StaticText(
+            change_password_form, name='lbl_confirmation_email')
+
         main_sizer = self.make_sizer(
             wx.VERTICAL, [
-                wx.StaticText(
-                    change_password_form, wx.ID_ANY,
-                    N_("You are about to change your password.\n"
-                       "For this, you need to enter your current password, "
-                       "and the new password that you want to use.")),
-                wx.StaticText(
-                    change_password_form, wx.ID_ANY,
-                    N_("Then you will receive a confirmation email.\n")),
+                lbl_description, lbl_confirmation_email,
                 old_password_sizer, new_password_sizer,
                 confirm_new_password_sizer, buttons_sizer
             ], flag=wx.EXPAND)
         change_password_form.SetSizer(main_sizer)
+
+        self.register_many_i18n('SetLabel', {
+            lbl_description: N_("You are about to change your password.\n"
+                                "For this, you need to enter "
+                                "your current password, "
+                                "and the new password that you want to use."),
+            lbl_confirmation_email: N_("Then you will receive "
+                                       "a confirmation email.\n")
+        })
+
+        self.register_many_i18n('SetHint', {
+            self._txt_old_password: N_('Current password'),
+            self._txt_new_password: N_('New password'),
+            self._txt_confirm_new_password: N_('Confirm new password')
+        })
 
     def get_validators(self):
         return [
