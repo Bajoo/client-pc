@@ -33,22 +33,38 @@ class DetailsShareTab(wx.Panel):
         self._share = share
 
         self.FindWindow('lbl_share_name').SetLabel(share.name)
-        self.FindWindow('lbl_share_nb_members').SetLabel(
-            N_('%d members') % len(share.members))
-        self.FindWindow('lbl_share_encryption').SetLabel(
-            N_('encrypted'))
-        self.FindWindow('lbl_share_type').SetLabel(
-            N_('Team share'))
-        self.FindWindow('lbl_share_status').SetLabel(
-            N_('Status:') + ' ' + share.status)
-        self.FindWindow('lbl_share_files_folders').SetLabel(
-            N_('This share contains %d folders and %d files,') %
-            (share.stats['folders'], share.stats['files']))
-        self.FindWindow('lbl_local_space').SetLabel(
-            N_('which take the disk space of %s') %
-            human_readable_bytes(share.stats['space']))
-        self.FindWindow('members_share_form') \
-            .load_members(share.members)
+        self.FindWindow('members_share_form').load_members(share.members)
+
+        # Remove all i18n registrations
+        self._view.remove_i18n(
+            self.FindWindow('lbl_share_nb_members').SetLabel)
+        self._view.remove_i18n(
+            self.FindWindow('lbl_share_encryption').SetLabel)
+        self._view.remove_i18n(
+            self.FindWindow('lbl_share_type').SetLabel)
+        self._view.remove_i18n(
+            self.FindWindow('lbl_share_status').SetLabel)
+        self._view.remove_i18n(
+            self.FindWindow('lbl_share_files_folders').SetLabel)
+        self._view.remove_i18n(
+            self.FindWindow('lbl_local_space').SetLabel)
+
+        self._view.register_many_i18n('SetLabel', {
+            self.FindWindow('lbl_share_nb_members'): (
+                N_('%d members'), len(share.members)),
+            self.FindWindow('lbl_share_encryption'): N_('encrypted'),
+            self.FindWindow('lbl_share_type'): N_('Team share'),
+            self.FindWindow('lbl_share_status'): (
+                N_('Status: %s'), share.status),
+            self.FindWindow('lbl_share_files_folders'): (
+                N_('This share contains %d folders and %d files,'),
+                (share.stats['folders'], share.stats['files'])
+            ),
+            self.FindWindow('lbl_local_space'): (
+                N_('which takes the disk space of %s'),
+                human_readable_bytes(share.stats['space'])
+            )
+        })
 
         self.Layout()
 
@@ -60,14 +76,11 @@ class DetailsShareView(BaseView):
         BaseView.__init__(self, details_share_tab)
 
         btn_back = wx.Button(
-            details_share_tab, label=N_('<< Back to share list'),
-            name='btn_back')
+            details_share_tab, name='btn_back')
         btn_quit_share = wx.Button(
-            details_share_tab, label=N_('Quit this share'),
-            name='btn_quit_share')
+            details_share_tab, name='btn_quit_share')
         btn_delete_share = wx.Button(
-            details_share_tab, label=N_('Delete this share'),
-            name='btn_delete_share')
+            details_share_tab, name='btn_delete_share')
 
         lbl_share_name = wx.StaticText(
             details_share_tab,
@@ -92,21 +105,15 @@ class DetailsShareView(BaseView):
             details_share_tab,
             label='<storage_space_taken>', name='lbl_local_space')
         btn_open_folder = wx.Button(
-            details_share_tab,
-            label=N_('Open folder'), name='btn_open_folder')
+            details_share_tab, name='btn_open_folder')
 
         # the members share form
-        lbl_members = wx.StaticText(
-            details_share_tab,
-            label=N_('Members having access to this share'))
+        lbl_members = wx.StaticText(details_share_tab)
         members_share_form = MembersShareForm(
             details_share_tab, name='members_share_form')
 
-        chk_exclusion = wx.CheckBox(
-            details_share_tab, label=N_('Do not synchronize on this PC'),
-            name='chk_exclusion')
-        btn_browse_location = DirBrowseButton(
-            details_share_tab, labelText=N_('Location on this PC'))
+        chk_exclusion = wx.CheckBox(details_share_tab, name='chk_exclusion')
+        btn_browse_location = DirBrowseButton(details_share_tab)
 
         # the top sizer contains the back button
         top_sizer = self.make_sizer(
@@ -150,6 +157,16 @@ class DetailsShareView(BaseView):
             (buttons_sizer, 0, wx.EXPAND | wx.ALL, 15)
         ])
         details_share_tab.SetSizer(main_sizer)
+
+        self.register_many_i18n('SetLabel', {
+            btn_back: N_('<< Back to share list'),
+            btn_quit_share: N_('Quit this share'),
+            btn_delete_share: N_('Delete this share'),
+            btn_open_folder: N_('Open folder'),
+            lbl_members: N_('Members having access to this share'),
+            chk_exclusion: N_('Do not synchronize on this PC'),
+            btn_browse_location: N_('Location on this PC')
+        })
 
 
 def main():

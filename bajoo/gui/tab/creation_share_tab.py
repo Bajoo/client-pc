@@ -4,7 +4,6 @@ import wx
 from wx.lib.filebrowsebutton import DirBrowseButton
 
 from ...common.i18n import N_
-
 from ..base_view import BaseView
 from ..form.members_share_form import MembersShareForm
 
@@ -26,30 +25,19 @@ class CreationShareView(BaseView):
     def __init__(self, creation_share_tab):
         BaseView.__init__(self, creation_share_tab)
 
-        btn_back = wx.Button(
-            creation_share_tab, label=N_('<< Back to share list'),
-            name='btn_back')
+        btn_back = wx.Button(creation_share_tab, name='btn_back')
         btn_cancel = wx.Button(creation_share_tab, wx.ID_CANCEL)
-        btn_create = wx.Button(
-            creation_share_tab, wx.ID_OK, label=N_('Create'))
-        txt_share_name = wx.TextCtrl(
-            creation_share_tab, name='txt_share_name')
-        txt_share_name.SetHint(N_('Share name'))
+        btn_create = wx.Button(creation_share_tab, wx.ID_OK)
+        txt_share_name = wx.TextCtrl(creation_share_tab, name='txt_share_name')
         rbtn_team_share = wx.RadioButton(
-            creation_share_tab,
-            label=N_("Team share"), style=wx.RB_GROUP,
-            name='rbtn_team_share')
+            creation_share_tab, style=wx.RB_GROUP, name='rbtn_team_share')
         rbtn_public_share = wx.RadioButton(
-            creation_share_tab, label=N_("Public share"),
-            name='rbtn_public_share')
+            creation_share_tab, name='rbtn_public_share')
         chk_encryption = wx.CheckBox(
-            creation_share_tab, label=N_("Encrypt this share"),
-            name='chk_encryption')
+            creation_share_tab, name='chk_encryption')
         chk_exclusion = wx.CheckBox(
-            creation_share_tab, label=N_('Do not synchronize on this PC'),
-            name='chk_exclusion')
-        btn_browse_location = DirBrowseButton(
-            creation_share_tab, labelText=N_('Location on this PC'))
+            creation_share_tab, name='chk_exclusion')
+        btn_browse_location = DirBrowseButton(creation_share_tab)
 
         # TODO: disable for next release
         rbtn_team_share.Disable()
@@ -71,9 +59,7 @@ class CreationShareView(BaseView):
             flag=wx.EXPAND, outside_border=False)
 
         # the members share form
-        lbl_members = wx.StaticText(
-            creation_share_tab,
-            label=N_('Members having access to this share'))
+        lbl_members = wx.StaticText(creation_share_tab)
         members_share_form = MembersShareForm(creation_share_tab)
 
         # the share_options sizer contains options of exclusion & local dir
@@ -95,6 +81,21 @@ class CreationShareView(BaseView):
             (share_options_sizer, 0, wx.EXPAND | wx.ALL, 15),
             (buttons_sizer, 0, wx.EXPAND | wx.ALL, 15)])
         creation_share_tab.SetSizer(main_sizer)
+
+        self.register_many_i18n('SetLabel', {
+            btn_back: N_('<< Back to share list'),
+            btn_create: N_('Create'),
+            rbtn_team_share: N_("Team share"),
+            rbtn_public_share: N_("Public share"),
+            chk_encryption: N_("Encrypt this share"),
+            chk_exclusion: N_('Do not synchronize on this PC'),
+            btn_browse_location: N_('Location on this PC'),
+            lbl_members: N_('Members having access to this share')
+        })
+
+        self.register_many_i18n('SetHint', {
+            txt_share_name: N_('Share name')
+        })
 
 
 def main():

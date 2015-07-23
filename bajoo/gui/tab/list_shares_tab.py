@@ -6,10 +6,8 @@ import wx
 from wx.lib.newevent import NewCommandEvent
 
 from ...api import MyBajoo, TeamShare
-
 from ...common.i18n import N_
 from ..event_future import ensure_gui_thread
-
 from ..base_view import BaseView
 
 
@@ -85,9 +83,7 @@ class ListSharesView(BaseView):
         self.tab = list_shares_tab
         self._share_views = []
 
-        btn_create_share = wx.Button(
-            list_shares_tab, wx.ID_ANY,
-            N_("New share"), name='btn_create_share')
+        btn_create_share = wx.Button(list_shares_tab, name='btn_create_share')
 
         # The sizer which will contain all the share items
         self.share_sizer = self.make_sizer(wx.VERTICAL, [], False)
@@ -95,6 +91,7 @@ class ListSharesView(BaseView):
         main_sizer = self.make_sizer(
             wx.VERTICAL, [btn_create_share, self.share_sizer])
         self.tab.SetSizer(main_sizer)
+        self.register_i18n(btn_create_share.SetLabel, N_("New share"))
 
     def generate_share_views(self, shares):
         """
@@ -122,24 +119,28 @@ class ListSharesView(BaseView):
         lbl_share_name = wx.StaticText(
             self.tab, label=share.name,
             name='lbl_share_name_' + share.id)
+        lbl_share_status_desc = wx.StaticText(self.tab)
         lbl_share_status = wx.StaticText(
-            self.tab, label='Status: <status>',
-            name='lbl_share_status_' + share.id)
+            self.tab, name='lbl_share_status_' + share.id)
+        share_status_box = self.make_sizer(wx.HORIZONTAL, [
+            lbl_share_status_desc, lbl_share_status], outside_border=False)
         lbl_share_description = wx.StaticText(
             self.tab, name='lbl_share_desc_' + share.id)
         btn_share_details = wx.Button(
-            self.tab, label=N_('Details'),
-            name='btn_share_details_' + share.id)
+            self.tab, name='btn_share_details_' + share.id)
         btn_open_local_dir = wx.BitmapButton(
             self.tab, bitmap=ListSharesTab.FOLDER_ICON,
             name='btn_open_local_dir_' + share.id)
 
         if type(share) is MyBajoo:
             img_share = ListSharesTab.MY_BAJOO_ICON
-            lbl_share_description.SetLabel(N_('encrypted'))
+            self.register_i18n(lbl_share_description.SetLabel,
+                               N_('encrypted'))
         elif type(share) is TeamShare:
             img_share = ListSharesTab.TEAM_SHARE_ICON
-            lbl_share_description.SetLabel(N_('<number of members>'))
+            # TODO: get number of members
+            self.register_i18n(lbl_share_description.SetLabel,
+                               N_('%d members'), 18)
 
         share_box = wx.StaticBox(self.tab, name='share_box_' + share.id)
         share_box_sizer = wx.StaticBoxSizer(share_box)
@@ -147,7 +148,7 @@ class ListSharesView(BaseView):
         description_box = self.make_sizer(
             wx.HORIZONTAL, [lbl_share_name, lbl_share_description], False)
         description_status_box = self.make_sizer(
-            wx.VERTICAL, [description_box, lbl_share_status], False)
+            wx.VERTICAL, [description_box, share_status_box], False)
 
         share_box_sizer_inside = self.make_sizer(wx.HORIZONTAL, [
             wx.StaticBitmap(self.tab, label=img_share),
@@ -157,7 +158,12 @@ class ListSharesView(BaseView):
 
         self.share_sizer.Add(share_box_sizer, 0, wx.EXPAND)
         self._share_views.append(share_box)
-        _logger.debug("Add MyBajoo view for %s", share)
+        self.register_many_i18n('SetLabel', {
+            lbl_share_status_desc: N_('Status: '),
+            # TODO: share status
+            lbl_share_status: N_('<status>'),
+            btn_share_details: N_('Details')
+        })
 
 
 def main():
