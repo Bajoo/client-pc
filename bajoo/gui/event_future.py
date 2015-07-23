@@ -34,17 +34,26 @@ class EventFuture(Future):
 
     def _event_handler(self, event):
         """Callback of wxEvent"""
+
+        if self.evt_handler is None:
+            # Sometimes, the Unbind() is not instant and we caught events that
+            # we shouldn't. This is one of these wrong catches.
+            event.Skip()
+            return
+
         self.set_running_or_notify_cancel()
 
         # if the event is wx.EVT_WINDOW_DESTROY, the source widget and its
         # bound functions are already deleted.
         if self.event is not wx.EVT_WINDOW_DESTROY:
             self.evt_handler.Unbind(self.event, source=self.source)
+        self.evt_handler = None
         self.set_result(event)
 
     def cancel(self):
-        self.evt_handler.Unbind(self.event, source=self.source,
-                                handler=self._event_handler)
+        if self.evt_handler:
+            self.evt_handler.Unbind(self.event, source=self.source,
+                                    handler=self._event_handler)
         if Future.cancel(self):
             self.set_running_or_notify_cancel()
             return True
