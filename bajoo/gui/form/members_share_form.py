@@ -5,10 +5,10 @@ import logging
 import wx
 import wx.dataview as dv
 from wx.lib.newevent import NewCommandEvent
+from ..translator import Translator
 
 from ..event_future import ensure_gui_thread
 from ..base_view import BaseView
-
 from .base_form import BaseForm
 from ..validator import EmailValidator
 from ...common.i18n import N_
@@ -62,12 +62,18 @@ class MembersShareView(BaseView):
     def __init__(self, members_share_form):
         BaseView.__init__(self, members_share_form)
 
+        self._data = None
         members_list_view = dv.DataViewListCtrl(members_share_form)
-        members_list_view.AppendTextColumn(N_('User'), width=200)
-        members_list_view.AppendTextColumn(N_('Permission'), width=100)
-        members_list_view.AppendTextColumn(N_(''), width=50)
+        user_col = members_list_view.AppendTextColumn('', width=200)
+        permission_col = members_list_view.AppendTextColumn('', width=100)
+        actions_col = members_list_view.AppendTextColumn('', width=50)
         members_list_view.SetMinSize((400, 100))
         self._members_list_view = members_list_view
+        self.register_many_i18n('SetTitle', {
+            user_col: N_('User'),
+            permission_col: N_('Permission'),
+            actions_col: N_('-')
+        })
 
         txt_user_email = wx.TextCtrl(
             members_share_form, name='user_email')
@@ -83,6 +89,7 @@ class MembersShareView(BaseView):
         cmb_permission.Append(N_('Read Write'), 'READ_WRITE')
         cmb_permission.Append(N_('Read Only'), 'READ_ONLY')
         cmb_permission.SetSelection(0)
+        self._cmb_permission = cmb_permission
 
         btn_add_user = wx.BitmapButton(
             members_share_form, bitmap=MembersShareForm.ADD_ICON,
@@ -105,8 +112,20 @@ class MembersShareView(BaseView):
                        proportion=0, border=15)
         members_share_form.SetSizer(main_sizer)
 
+    def notify_lang_change(self):
+        Translator.notify_lang_change(self)
+        self.load_members_view()
+        self._cmb_permission.SetString(0, N_('Admin'))
+        self._cmb_permission.SetString(1, N_('Read Write'))
+        self._cmb_permission.SetString(2, N_('Read Only'))
+
     @ensure_gui_thread
-    def load_members_view(self, members):
+    def load_members_view(self, members=None):
+        if members is None:
+            members = self._data
+        else:
+            self._data = members
+
         self._members_list_view.DeleteAllItems()
 
         for member in members:
