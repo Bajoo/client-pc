@@ -8,8 +8,8 @@ import sys
 from . import config
 from .path import resource_filename
 
-_logger = getLogger(__name__)
 
+_logger = getLogger(__name__)
 
 _translation = None
 
@@ -86,6 +86,25 @@ def _(msg):
         return _translation.gettext(msg)
     else:
         return _translation.ugettext(msg)
+
+
+available_langs = {
+    None: {
+        'code': None,
+        'name': _('Auto'),
+        'flag': ''
+    },
+    'en': {
+        'code': 'en',
+        'name': u'English',
+        'flag': ''
+    },
+    'fr_FR': {
+        'code': 'fr_FR',
+        'name': u'Français (France)',
+        'flag': ''
+    }
+}
 
 
 # NOOP operation used for deferred translations.
