@@ -60,7 +60,6 @@ class _Task(object):
     # Type of tasks
     LOCAL_ADD = 'local_add'
     LOCAL_CHANGE = 'local_change'
-    LOCAL_MOVE = 'local_move'
     LOCAL_DELETION = 'local_deletion'
     REMOTE_ADD = 'remote_add'
     REMOTE_CHANGE = 'remote_change'
@@ -77,6 +76,7 @@ class _Task(object):
             local_container (LocalContainer): local container. It will be used
                 only to acquire, update and release index fragments.
         """
+        self._index_acquired = False
         self.type = type
         self.container = container
         self.target = target
@@ -111,6 +111,7 @@ class _Task(object):
             # TODO: detect if it's possible to merge the 2 events.
             return delayed_start
 
+        self._index_acquired = True
         if item:
             self.index_fragment = item
             self.local_md5, self.remote_md5 = item.get(self.target,
@@ -132,15 +133,17 @@ class _Task(object):
                 before start() and will receive the result of start().
         """
         if not future.set_running_or_notify_cancel():
-                return  # The task has been cancelled !
+            return  # The task has been cancelled !
         f = self.start()
         if f:
             then(f, future.set_result, future.set_exception)
         else:
             future.set_result(None)
 
-    def _release_index(self, result):
-        self.local_container.release_index(self.target, result)
+    def _release_index(self, result=None):
+        if self._index_acquired:
+            self.local_container.release_index(self.target, result)
+            self._index_acquired = False
 
     def _manage_error(self, error):
         """Catch all error happened during the task execution.
@@ -231,8 +234,6 @@ class _Task(object):
                                   'disk: nothing to do.')
                     raise
             return {}
-        elif self.type == _Task.LOCAL_MOVE:
-            pass  # TODO: implement
         else:  # SYNC
             src_path = os.path.join(self.local_path, self.target)
             subtasks = []
@@ -269,7 +270,7 @@ class _Task(object):
                              self.local_container)
                 subtasks.append(task.start(parent_path=self.target))
 
-            # TODO: at this point we can release the sync !
+            self._release_index()
 
             if subtasks:
                 # TODO: ask for retrying when a sub-task fails.
@@ -375,7 +376,6 @@ def removed_local_files(container, local_container, filename):
     return task.start()
 
 
-@patch_dec
 def moved_local_files(container, local_container, src_filename, dest_filename):
     """Tells that a file has been moved, and must be synced.
 
@@ -390,8 +390,13 @@ def moved_local_files(container, local_container, src_filename, dest_filename):
         Future<boolean>: True if the task is successful; False if an error
             happened.
     """
-    # TODO: to implement
-    return Future.resolve(None)
+    # TODO: optimization: move the file server-side.
+    return wait_all([
+        _Task(_Task.LOCAL_DELETION, container, src_filename,
+              local_container).start(),
+        _Task(_Task.LOCAL_ADD, container, dest_filename,
+              local_container).start()
+    ])
 
 
 @patch_dec
