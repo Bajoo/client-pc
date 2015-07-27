@@ -57,7 +57,9 @@ class BajooApp(wx.App, SoftwareUpdate):
         self._session = None
         self._container_list = None
         self._container_sync_pool = ContainerSyncPool(
-            self._on_global_status_change)
+            self._on_global_status_change, self._on_sync_error)
+
+        wx.SetDefaultPyEncoding("utf-8")
 
         # Don't redirect the stdout in a windows.
         wx.App.__init__(self, redirect=False)
@@ -265,3 +267,6 @@ class BajooApp(wx.App, SoftwareUpdate):
         }
         if self._task_bar_icon:
             self._task_bar_icon.set_state(mapping[status])
+
+    def _on_sync_error(self, err):
+        self._notifier.send_message('Sync error', err)

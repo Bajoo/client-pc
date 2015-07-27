@@ -29,7 +29,7 @@ class ContainerSyncPool(object):
     STATUS_UP_TO_DATE = 2
     STATUS_PAUSE = 3
 
-    def __init__(self, on_state_change):
+    def __init__(self, on_state_change, on_sync_error):
         """
         Args:
             on_state_change (callable): called when the global state change.
@@ -40,6 +40,7 @@ class ContainerSyncPool(object):
         self._local_watchers = {}
 
         self._on_state_change = on_state_change
+        self._on_sync_error = on_sync_error
 
         self._global_status = self.STATUS_UP_TO_DATE
         self._counter = 0
@@ -82,7 +83,8 @@ class ContainerSyncPool(object):
         watcher.start()
 
         self._increment()
-        f = filesync.sync_folder(container, local_container, '.')
+        f = filesync.sync_folder(container, local_container, '.',
+                                 self._on_sync_error)
         if f:
             f = f.then(self._decrement)
         else:  # The task has been "merged" with another.
@@ -137,7 +139,8 @@ class ContainerSyncPool(object):
         for container in self._containers:
             local_container = self._local_containers[container.id]
             self._increment()
-            f = filesync.sync_folder(container, local_container, '.')
+            f = filesync.sync_folder(container, local_container, '.',
+                                     self._on_sync_error)
             if f:
                 f = f.then(self._decrement)
             else:  # The task has been "merged" with another.
@@ -172,7 +175,7 @@ class ContainerSyncPool(object):
         for f in files:
             self._increment()
             f = filesync.added_remote_files(container, local_container,
-                                            f['name'])
+                                            f['name'], self._on_sync_error)
             if f:
                 f = f.then(self._decrement)
                 futures.append(f)
@@ -190,7 +193,7 @@ class ContainerSyncPool(object):
         for f in files:
             self._increment()
             f = filesync.removed_remote_files(container, local_container,
-                                              f['name'])
+                                              f['name'], self._on_sync_error)
             if f:
                 f = f.then(self._decrement)
                 futures.append(f)
@@ -208,7 +211,7 @@ class ContainerSyncPool(object):
         for f in files:
             self._increment()
             f = filesync.changed_remote_files(container, local_container,
-                                              f['name'])
+                                              f['name'], self._on_sync_error)
             if f:
                 f = f.then(self._decrement)
                 futures.append(f)
@@ -224,7 +227,8 @@ class ContainerSyncPool(object):
 
         filename = os.path.relpath(file_path, local_container.path)
         self._increment()
-        f = filesync.added_local_files(container, local_container, filename)
+        f = filesync.added_local_files(container, local_container, filename,
+                                       self._on_sync_error)
         if f:
             f = f.then(self._decrement)
         else:  # The task has been "merged" with another.
@@ -239,7 +243,8 @@ class ContainerSyncPool(object):
 
         filename = os.path.relpath(file_path, local_container.path)
         self._increment()
-        f = filesync.removed_local_files(container, local_container, filename)
+        f = filesync.removed_local_files(container, local_container, filename,
+                                         self._on_sync_error)
         if f:
             f = f.then(self._decrement)
         else:
@@ -253,7 +258,8 @@ class ContainerSyncPool(object):
 
         filename = os.path.relpath(file_path, local_container.path)
         self._increment()
-        f = filesync.changed_local_files(container, local_container, filename)
+        f = filesync.changed_local_files(container, local_container, filename,
+                                         self._on_sync_error)
         if f:
             f = f.then(self._decrement)
         else:
@@ -269,7 +275,8 @@ class ContainerSyncPool(object):
         dest_filename = os.path.relpath(dest_path, local_container.path)
         self._increment()
         f = filesync.moved_local_files(container, local_container,
-                                       src_filename, dest_filename)
+                                       src_filename, dest_filename,
+                                       self._on_sync_error)
         if f:
             f = f.then(self._decrement)
         else:

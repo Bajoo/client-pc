@@ -66,7 +66,8 @@ class _Task(object):
     REMOTE_DELETION = 'remote_deletion'
     SYNC = 'sync'
 
-    def __init__(self, type, container, target, local_container):
+    def __init__(self, type, container, target, local_container,
+                 display_error_cb):
         """
         Args:
             type (str): One of the 8 type declared above.
@@ -75,6 +76,7 @@ class _Task(object):
             target (str): path of the target, relative the the container.
             local_container (LocalContainer): local container. It will be used
                 only to acquire, update and release index fragments.
+            display_error_cb (callable)
         """
         self._index_acquired = False
         self.type = type
@@ -85,6 +87,7 @@ class _Task(object):
         self.index_fragment = {}
         self.local_md5 = None
         self.remote_md5 = None
+        self.display_error_cb = display_error_cb
 
     def __repr__(self):
         return ('<Task %s %s local_path=%s>' %
@@ -163,6 +166,10 @@ class _Task(object):
         # concerned files should be excluded of the sync for a period of
         # 24h if they keep failing.
 
+        # TODO: format and translate the message
+        self.display_error_cb('Error during sync of "%s" in the "%s" '
+                              'container:\n%s'
+                              % (self.target, self.container.name, error))
         return None
 
     def _apply_task(self):
@@ -247,7 +254,7 @@ class _Task(object):
                         k: v for (k, v) in self.index_fragment.items()
                         if not k.startswith('%s/' % rel_path)}
                     task = _Task(_Task.SYNC, self.container, rel_path,
-                                 self.local_container)
+                                 self.local_container, self.display_error_cb)
                 else:
                     if name.startswith('.bajoo'):
                         continue
@@ -256,10 +263,12 @@ class _Task(object):
                         # TODO: don't log when file is not modified !
                         del self.index_fragment[rel_path]
                         task = _Task(_Task.LOCAL_CHANGE, self.container,
-                                     rel_path, self.local_container)
+                                     rel_path, self.local_container,
+                                     self.display_error_cb)
                     else:
                         task = _Task(_Task.LOCAL_ADD, self.container,
-                                     rel_path, self.local_container)
+                                     rel_path, self.local_container,
+                                     self.display_error_cb)
 
                 if task:
                     subtasks.append(task.start(parent_path=self.target))
@@ -311,25 +320,30 @@ class _Task(object):
 
 
 @patch_dec
-def added_remote_files(container, local_container, filename):
-    task = _Task(_Task.REMOTE_ADD, container, filename, local_container)
+def added_remote_files(container, local_container, filename, display_error_cb):
+    task = _Task(_Task.REMOTE_ADD, container, filename, local_container,
+                 display_error_cb)
     return task.start()
 
 
 @patch_dec
-def changed_remote_files(container, local_container, filename):
-    task = _Task(_Task.REMOTE_CHANGE, container, filename, local_container)
+def changed_remote_files(container, local_container, filename,
+                         display_error_cb):
+    task = _Task(_Task.REMOTE_CHANGE, container, filename, local_container,
+                 display_error_cb)
     return task.start()
 
 
 @patch_dec
-def removed_remote_files(container, local_container, filename):
-    task = _Task(_Task.REMOTE_DELETION, container, filename, local_container)
+def removed_remote_files(container, local_container, filename,
+                         display_error_cb):
+    task = _Task(_Task.REMOTE_DELETION, container, filename, local_container,
+                 display_error_cb)
     return task.start()
 
 
 @patch_dec
-def added_local_files(container, local_container, filename):
+def added_local_files(container, local_container, filename, display_error_cb):
     """Tells that a new file as been created and must be synced.
 
     Args:
@@ -340,12 +354,14 @@ def added_local_files(container, local_container, filename):
         Future<boolean>: True if the task is successful; False if an error
             happened.
     """
-    task = _Task(_Task.LOCAL_ADD, container, filename, local_container)
+    task = _Task(_Task.LOCAL_ADD, container, filename, local_container,
+                 display_error_cb)
     return task.start()
 
 
 @patch_dec
-def changed_local_files(container, local_container, filename):
+def changed_local_files(container, local_container, filename,
+                        display_error_cb):
     """Tells that a file has been modified and must be synced.
 
     Args:
@@ -356,12 +372,13 @@ def changed_local_files(container, local_container, filename):
         Future<boolean>: True if the task is successful; False if an error
             happened.
     """
-    task = _Task(_Task.LOCAL_CHANGE, container, filename, local_container)
+    task = _Task(_Task.LOCAL_CHANGE, container, filename, local_container,
+                 display_error_cb)
     return task.start()
 
 
 @patch_dec
-def removed_local_files(container, local_container, filename):
+def removed_local_files(container, local_container, filename, display_error_cb):
     """Tells that a file has been deleted and must be synced.
 
     Args:
@@ -372,11 +389,13 @@ def removed_local_files(container, local_container, filename):
         Future<boolean>: True if the task is successful; False if an error
             happened.
     """
-    task = _Task(_Task.LOCAL_DELETION, container, filename, local_container)
+    task = _Task(_Task.LOCAL_DELETION, container, filename, local_container,
+                 display_error_cb)
     return task.start()
 
 
-def moved_local_files(container, local_container, src_filename, dest_filename):
+def moved_local_files(container, local_container, src_filename, dest_filename,
+                      display_error_cb):
     """Tells that a file has been moved, and must be synced.
 
     Args:
@@ -393,14 +412,14 @@ def moved_local_files(container, local_container, src_filename, dest_filename):
     # TODO: optimization: move the file server-side.
     return wait_all([
         _Task(_Task.LOCAL_DELETION, container, src_filename,
-              local_container).start(),
+              local_container, display_error_cb).start(),
         _Task(_Task.LOCAL_ADD, container, dest_filename,
-              local_container).start()
+              local_container, display_error_cb).start()
     ])
 
 
 @patch_dec
-def sync_folder(container, local_container, folder_path):
+def sync_folder(container, local_container, folder_path, display_error_cb):
     """Sync a local folder
 
     Args:
@@ -411,5 +430,6 @@ def sync_folder(container, local_container, folder_path):
         Future<boolean>: True if the task is successful; False if an error
             happened.
     """
-    task = _Task(_Task.SYNC, container, folder_path, local_container)
+    task = _Task(_Task.SYNC, container, folder_path, local_container,
+                 display_error_cb)
     return task.start()
