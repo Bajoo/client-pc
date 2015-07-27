@@ -135,7 +135,8 @@ def files_list_updater(container, on_new_files, on_changed_files,
 
         for key in last_known_list:
             if key not in new_known_list:
-                deleted_files.append(last_known_list[key])
+                deleted_files.append({'name': key,
+                                      'hash': last_known_list[key]})
 
         if new_files:
             on_new_files(new_files)

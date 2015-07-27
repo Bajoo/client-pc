@@ -59,7 +59,9 @@ class BajooApp(wx.App, SoftwareUpdate):
         self._container_sync_pool = ContainerSyncPool(
             self._on_global_status_change, self._on_sync_error)
 
-        wx.SetDefaultPyEncoding("utf-8")
+        if hasattr(wx, 'SetDefaultPyEncoding'):
+            # wxPython classic only
+            wx.SetDefaultPyEncoding("utf-8")
 
         # Don't redirect the stdout in a windows.
         wx.App.__init__(self, redirect=False)

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import os.path
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
@@ -39,8 +40,7 @@ class FileWatcher(FileSystemEventHandler):
     def on_moved(self, event):
         if event.is_directory:
             return
-        split_path = event.src_path.split('/')
-        filename = split_path[-1] or split_path[-2]
+        (_, filename) = os.path.split(event.src_path)
         if filename.startswith('.bajoo'):
             return
         self._on_moved_files(event.src_path, event.dest_path)
@@ -48,8 +48,7 @@ class FileWatcher(FileSystemEventHandler):
     def on_created(self, event):
         if event.is_directory:
             return
-        split_path = event.src_path.split('/')
-        filename = split_path[-1] or split_path[-2]
+        (_, filename) = os.path.split(event.src_path)
         if filename.startswith('.bajoo'):
             return
         self._on_new_files(event.src_path)
@@ -57,8 +56,7 @@ class FileWatcher(FileSystemEventHandler):
     def on_deleted(self, event):
         if event.is_directory:
             return
-        split_path = event.src_path.split('/')
-        filename = split_path[-1] or split_path[-2]
+        (_, filename) = os.path.split(event.src_path)
         if filename.startswith('.bajoo'):
             return
         self._on_deleted_files(event.src_path)
@@ -66,8 +64,7 @@ class FileWatcher(FileSystemEventHandler):
     def on_modified(self, event):
         if event.is_directory:
             return
-        split_path = event.src_path.split('/')
-        filename = split_path[-1] or split_path[-2]
+        (_, filename) = os.path.split(event.src_path)
         if filename.startswith('.bajoo'):
             return
         self._on_changed_files(event.src_path)
