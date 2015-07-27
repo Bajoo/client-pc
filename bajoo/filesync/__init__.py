@@ -36,6 +36,7 @@ from concurrent.futures import ThreadPoolExecutor
 import errno
 from functools import partial
 import hashlib
+import itertools
 import logging
 import os
 import shutil
@@ -124,6 +125,8 @@ class _Task(object):
         future = future.then(None, self._manage_error)
         future = future.then(self._release_index)
         return future
+        # TODO: we should returns tasks who've failed, to try to restart them
+        # later.
 
     def _delayed_start(self, future):
         """Execute a delayed start() call.
@@ -276,14 +279,20 @@ class _Task(object):
             # locally removed items, present in the index, but not in local.
             for child_path in self.index_fragment:
                 task = _Task(_Task.LOCAL_DELETION, self.container, child_path,
-                             self.local_container)
+                             self.local_container, self.display_error_cb)
                 subtasks.append(task.start(parent_path=self.target))
 
             self._release_index()
 
             if subtasks:
-                # TODO: ask for retrying when a sub-task fails.
-                return wait_all(subtasks)
+                def all_tasks_done(results):
+                    # TODO: return this list by self.start(), to informs the
+                    # callers these tasks have failed.
+                    failed_tasks = itertools.chain(*filter(None, results))
+                    failed_tasks = list(failed_tasks)
+                    return None
+
+                return wait_all(subtasks).then(all_tasks_done)
             else:
                 return None
 
@@ -378,7 +387,8 @@ def changed_local_files(container, local_container, filename,
 
 
 @patch_dec
-def removed_local_files(container, local_container, filename, display_error_cb):
+def removed_local_files(container, local_container, filename,
+                        display_error_cb):
     """Tells that a file has been deleted and must be synced.
 
     Args:
@@ -410,12 +420,21 @@ def moved_local_files(container, local_container, src_filename, dest_filename,
             happened.
     """
     # TODO: optimization: move the file server-side.
+
+    def join_results(results):
+        results = filter(None, results)
+        if results:
+            if len(results) > 1:
+                return results[0] + results[1]
+            else:
+                return results[0]
+
     return wait_all([
         _Task(_Task.LOCAL_DELETION, container, src_filename,
               local_container, display_error_cb).start(),
         _Task(_Task.LOCAL_ADD, container, dest_filename,
               local_container, display_error_cb).start()
-    ])
+    ]).then(join_results)
 
 
 @patch_dec

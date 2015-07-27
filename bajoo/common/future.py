@@ -10,6 +10,7 @@ decorator version.
 """
 
 import concurrent.futures
+from functools import partial
 import logging
 from multiprocessing import Lock as ProcessLock
 from threading import Lock as ThreadLock
@@ -225,24 +226,26 @@ def wait_all(futures):
     """Create a future who wait that all futures in the list are resolved.
 
     returns:
-        Future<None>
+        Future<list>: list of all results from each future.
     """
     tlock, plock = ThreadLock(), ProcessLock()
     resulting_future = Future()
 
     _remaining_tasks = [len(futures)]
+    results = [None] * len(futures)
 
     if _remaining_tasks == 0:
-        return Future.resolve(None)
+        return Future.resolve([])
 
-    def _done_callback(_value):
+    def _done_callback(index, value):
         with tlock, plock:
             if _remaining_tasks[0] <= 0:
                 return
             _remaining_tasks[0] -= 1
+            results[index] = value
             if _remaining_tasks[0] == 0:
                 resulting_future.set_running_or_notify_cancel()
-                resulting_future.set_result(None)
+                resulting_future.set_result(results)
 
     def _fail_callback(exception):
         with tlock, plock:
@@ -252,12 +255,12 @@ def wait_all(futures):
             resulting_future.set_exception(exception)
             _remaining_tasks[0] = -1
 
-    for f in futures:
+    for index, f in enumerate(futures):
         if f is None:
             _logger.warning('wait_all() have received a None value in the list'
                             ' of future to wait. That should not happen!')
         else:
-            then(f, _done_callback, _fail_callback)
+            then(f, partial(_done_callback, index), _fail_callback)
 
     return resulting_future
 
