@@ -217,6 +217,9 @@ class ContainerSyncPool(object):
         self._increment()
         f = task_factory(container, local_container, *args,
                          display_error_cb=self._on_sync_error)
+        # TODO: If the task factory returns a list of failed tasks, the tasks
+        # should be retried and the concerned files should be excluded of
+        # the sync for a period of 24h if they keep failing.
         if f:
             f.then(self._decrement)
         else:  # The task has been "merged" with another.

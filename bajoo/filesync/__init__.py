@@ -91,6 +91,9 @@ class _Task(object):
         self.remote_md5 = None
         self.display_error_cb = display_error_cb
 
+        # If set, list of tasks who've failed.
+        self._task_errors = None
+
     def __repr__(self):
         return ('<Task %s %s local_path=%s>' %
                 (self.type.upper(), self.target, self.local_path))
@@ -125,9 +128,7 @@ class _Task(object):
         future = resolve_rec(_thread_pool.submit(self._apply_task))
         future = future.then(None, self._manage_error)
         future = future.then(self._release_index)
-        return future
-        # TODO: we should returns tasks who've failed, to try to restart them
-        # later.
+        return future.then(lambda _none: self._task_errors)
 
     def _delayed_start(self, future):
         """Execute a delayed start() call.
@@ -166,9 +167,9 @@ class _Task(object):
 
         _logger.exception('Exception on filesync task:')
 
-        # TODO: These errors should be reported to the user, and the
-        # concerned files should be excluded of the sync for a period of
-        # 24h if they keep failing.
+        if not self._task_errors:
+            self._task_errors = []
+        self._task_errors.append(self)
 
         # TODO: format and translate the message
         self.display_error_cb('Error during sync of "%s" in the "%s" '
@@ -287,10 +288,10 @@ class _Task(object):
 
             if subtasks:
                 def all_tasks_done(results):
-                    # TODO: return this list by self.start(), to informs the
-                    # callers these tasks have failed.
                     failed_tasks = itertools.chain(*filter(None, results))
                     failed_tasks = list(failed_tasks)
+                    if failed_tasks:
+                        self._task_errors = failed_tasks
                     return None
 
                 return wait_all(subtasks).then(all_tasks_done)
