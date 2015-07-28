@@ -43,6 +43,7 @@ import shutil
 
 from ..network.errors import HTTPNotFoundError
 from ..common.future import Future, patch_dec, wait_all, then, resolve_rec
+from .filepath import is_path_allowed
 
 _logger = logging.getLogger(__name__)
 
@@ -259,7 +260,7 @@ class _Task(object):
                     task = _Task(_Task.SYNC, self.container, rel_path,
                                  self.local_container, self.display_error_cb)
                 else:
-                    if name.startswith('.bajoo'):
+                    if not is_path_allowed(rel_path):
                         continue
 
                     if rel_path in self.index_fragment:

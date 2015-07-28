@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import os.path
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
+from .filesync.filepath import is_path_allowed
 
 
 class FileWatcher(FileSystemEventHandler):
@@ -38,34 +38,22 @@ class FileWatcher(FileSystemEventHandler):
         self._observer.stop()
 
     def on_moved(self, event):
-        if event.is_directory:
-            return
-        (_, filename) = os.path.split(event.src_path)
-        if filename.startswith('.bajoo'):
+        if event.is_directory or not is_path_allowed(event.src_path):
             return
         self._on_moved_files(event.src_path, event.dest_path)
 
     def on_created(self, event):
-        if event.is_directory:
-            return
-        (_, filename) = os.path.split(event.src_path)
-        if filename.startswith('.bajoo'):
+        if event.is_directory or not is_path_allowed(event.src_path):
             return
         self._on_new_files(event.src_path)
 
     def on_deleted(self, event):
-        if event.is_directory:
-            return
-        (_, filename) = os.path.split(event.src_path)
-        if filename.startswith('.bajoo'):
+        if event.is_directory or not is_path_allowed(event.src_path):
             return
         self._on_deleted_files(event.src_path)
 
     def on_modified(self, event):
-        if event.is_directory:
-            return
-        (_, filename) = os.path.split(event.src_path)
-        if filename.startswith('.bajoo'):
+        if event.is_directory or not is_path_allowed(event.src_path):
             return
         self._on_changed_files(event.src_path)
 
