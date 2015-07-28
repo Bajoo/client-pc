@@ -6,7 +6,6 @@ import os
 import threading
 
 from .api.sync import files_list_updater
-from .common.future import wait_all
 from . import filesync
 from .file_watcher import FileWatcher
 
@@ -82,13 +81,7 @@ class ContainerSyncPool(object):
         self._local_watchers[container.id] = watcher
         watcher.start()
 
-        self._increment()
-        f = filesync.sync_folder(container, local_container, '.',
-                                 self._on_sync_error)
-        if f:
-            f = f.then(self._decrement)
-        else:  # The task has been "merged" with another.
-            self._decrement()
+        self._create_task(filesync.sync_folder, container.id, '.')
 
     def remove(self, local_container):
         """Remove a container and stop its sync operations.
@@ -137,14 +130,7 @@ class ContainerSyncPool(object):
             self._on_state_change(self._global_status)
 
         for container in self._containers:
-            local_container = self._local_containers[container.id]
-            self._increment()
-            f = filesync.sync_folder(container, local_container, '.',
-                                     self._on_sync_error)
-            if f:
-                f = f.then(self._decrement)
-            else:  # The task has been "merged" with another.
-                self._decrement()
+            self._create_task(filesync.sync_folder, container.id, '.')
 
     def _increment(self, _arg=None):
         with self._status_lock:
@@ -167,118 +153,71 @@ class ContainerSyncPool(object):
 
     def _added_remote_file(self, container_id, files):
         print('Added (remote): %s' % files)
-
-        container = self._containers[container_id]
-        local_container = self._local_containers[container_id]
-
-        futures = []
         for f in files:
-            self._increment()
-            f = filesync.added_remote_files(container, local_container,
-                                            f['name'], self._on_sync_error)
-            if f:
-                f = f.then(self._decrement)
-                futures.append(f)
-            else:
-                self._decrement()
-        wait_all(futures)
+            self._create_task(filesync.added_remote_files, container_id,
+                              f['name'])
 
     def _removed_remote_files(self, container_id, files):
         print('Removed (remote): %s' % files)
-
-        container = self._containers[container_id]
-        local_container = self._local_containers[container_id]
-
-        futures = []
         for f in files:
-            self._increment()
-            f = filesync.removed_remote_files(container, local_container,
-                                              f['name'], self._on_sync_error)
-            if f:
-                f = f.then(self._decrement)
-                futures.append(f)
-            else:
-                self._decrement()
-        wait_all(futures)
+            self._create_task(filesync.removed_remote_files, container_id,
+                              f['name'])
 
     def _modified_remote_files(self, container_id, files):
         print('Modified (remote): %s' % files)
-
-        container = self._containers[container_id]
-        local_container = self._local_containers[container_id]
-
-        futures = []
         for f in files:
-            self._increment()
-            f = filesync.changed_remote_files(container, local_container,
-                                              f['name'], self._on_sync_error)
-            if f:
-                f = f.then(self._decrement)
-                futures.append(f)
-            else:
-                self._decrement()
-        wait_all(futures)
+            self._create_task(filesync.changed_remote_files, container_id,
+                              f['name'])
 
     def _added_local_file(self, container_id, file_path):
         print('Added (local): %s for %s' % (file_path, container_id))
-
-        container = self._containers[container_id]
         local_container = self._local_containers[container_id]
-
         filename = os.path.relpath(file_path, local_container.path)
-        self._increment()
-        f = filesync.added_local_files(container, local_container, filename,
-                                       self._on_sync_error)
-        if f:
-            f = f.then(self._decrement)
-        else:  # The task has been "merged" with another.
-            self._decrement()
-        return f
+
+        self._create_task(filesync.added_local_files, container_id, filename)
 
     def _removed_local_files(self, container_id, file_path):
         print('Removed (local): %s for %s' % (file_path, container_id))
-
-        container = self._containers[container_id]
         local_container = self._local_containers[container_id]
-
         filename = os.path.relpath(file_path, local_container.path)
-        self._increment()
-        f = filesync.removed_local_files(container, local_container, filename,
-                                         self._on_sync_error)
-        if f:
-            f = f.then(self._decrement)
-        else:
-            self._decrement()
-        return f
+
+        self._create_task(filesync.removed_local_files, container_id, filename)
 
     def _modified_local_files(self, container_id, file_path):
         print('Modified (local): %s for %s' % (file_path, container_id))
-        container = self._containers[container_id]
         local_container = self._local_containers[container_id]
-
         filename = os.path.relpath(file_path, local_container.path)
-        self._increment()
-        f = filesync.changed_local_files(container, local_container, filename,
-                                         self._on_sync_error)
-        if f:
-            f = f.then(self._decrement)
-        else:
-            self._decrement()
-        return f
+
+        self._create_task(filesync.changed_local_files, container_id, filename)
 
     def _moved_local_files(self, container_id, src_path, dest_path):
         print('Moved (local): %s -> %s' % (src_path, dest_path))
+        local_container = self._local_containers[container_id]
+        src_filename = os.path.relpath(src_path, local_container.path)
+        dest_filename = os.path.relpath(dest_path, local_container.path)
+
+        self._create_task(filesync.moved_local_files, container_id,
+                          src_filename, dest_filename)
+
+    def _create_task(self, task_factory, container_id, *args):
+        """Create the task using the factory, then manages counter and errors.
+
+        Args:
+            task_factory (callable): function who generates a new task. it
+                must accept a container and a local_container as its 1rst and
+                2nd arguments, and a callback as named argument
+                'display_error_cb'.
+            container_id (str): id of the container.
+            *args (...): supplementary args passed to the
+                task_factory.
+        """
         container = self._containers[container_id]
         local_container = self._local_containers[container_id]
 
-        src_filename = os.path.relpath(src_path, local_container.path)
-        dest_filename = os.path.relpath(dest_path, local_container.path)
         self._increment()
-        f = filesync.moved_local_files(container, local_container,
-                                       src_filename, dest_filename,
-                                       self._on_sync_error)
+        f = task_factory(container, local_container, *args,
+                         display_error_cb=self._on_sync_error)
         if f:
-            f = f.then(self._decrement)
-        else:
+            f.then(self._decrement)
+        else:  # The task has been "merged" with another.
             self._decrement()
-        return f
