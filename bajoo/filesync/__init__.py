@@ -40,6 +40,7 @@ import itertools
 import logging
 import os
 import shutil
+import sys
 
 from ..network.errors import HTTPNotFoundError
 from ..common.future import Future, patch_dec, wait_all, then, resolve_rec
@@ -90,6 +91,9 @@ class _Task(object):
         self.local_md5 = None
         self.remote_md5 = None
         self.display_error_cb = display_error_cb
+
+        if sys.platform in ['win32', 'cygwin', 'win64']:
+            self.target = self.target.replace('\\', '/')
 
         # If set, list of tasks who've failed.
         self._task_errors = None
@@ -150,6 +154,9 @@ class _Task(object):
 
     def _release_index(self, result=None):
         if self._index_acquired:
+            if sys.platform in ['win32', 'cygwin', 'win64'] and result:
+                result = {key.replace('\\', '/'): value
+                          for (key, value) in result.items()}
             self.local_container.release_index(self.target, result)
             self._index_acquired = False
 
