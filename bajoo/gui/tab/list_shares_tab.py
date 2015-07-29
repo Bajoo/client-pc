@@ -80,7 +80,6 @@ class ListSharesView(BaseView):
 
     def __init__(self, list_shares_tab):
         BaseView.__init__(self, list_shares_tab)
-        self.tab = list_shares_tab
         self._share_views = []
 
         btn_create_share = wx.Button(list_shares_tab, name='btn_create_share')
@@ -90,7 +89,7 @@ class ListSharesView(BaseView):
 
         main_sizer = self.make_sizer(
             wx.VERTICAL, [btn_create_share, self.share_sizer])
-        self.tab.SetSizer(main_sizer)
+        self.window.SetSizer(main_sizer)
         self.register_i18n(btn_create_share.SetLabel, N_("New share"))
 
     def generate_share_views(self, shares):
@@ -102,11 +101,15 @@ class ListSharesView(BaseView):
         for share in shares:
             self._add_share_view(share)
 
-        self.tab.GetSizer().Layout()
+        self.window.GetSizer().Layout()
 
     def _remove_all_share_views(self):
-        for share_view in self._share_views:
-            self.tab.RemoveChild(share_view)
+        for (share_view, share_view_sizer) in self._share_views:
+            self.window.RemoveChild(share_view)
+
+            # removing the share_view_sizer will also destroy the share_view
+            self.share_sizer.Remove(share_view_sizer)
+        self._share_views = []
 
     def _add_share_view(self, share):
         """
@@ -115,21 +118,23 @@ class ListSharesView(BaseView):
         with the share id (e.g. lbl_something_<share_id>) so that
         we can populate them correctly later.
         """
+        share_box = wx.StaticBox(self.window, name='share_box_' + share.id)
+
         img_share = None
         lbl_share_name = wx.StaticText(
-            self.tab, label=share.name,
+            share_box, label=share.name,
             name='lbl_share_name_' + share.id)
-        lbl_share_status_desc = wx.StaticText(self.tab)
+        lbl_share_status_desc = wx.StaticText(share_box)
         lbl_share_status = wx.StaticText(
-            self.tab, name='lbl_share_status_' + share.id)
+            share_box, name='lbl_share_status_' + share.id)
         share_status_box = self.make_sizer(wx.HORIZONTAL, [
             lbl_share_status_desc, lbl_share_status], outside_border=False)
         lbl_share_description = wx.StaticText(
-            self.tab, name='lbl_share_desc_' + share.id)
+            share_box, name='lbl_share_desc_' + share.id)
         btn_share_details = wx.Button(
-            self.tab, name='btn_share_details_' + share.id)
+            share_box, name='btn_share_details_' + share.id)
         btn_open_local_dir = wx.BitmapButton(
-            self.tab, bitmap=ListSharesTab.FOLDER_ICON,
+            share_box, bitmap=ListSharesTab.FOLDER_ICON,
             name='btn_open_local_dir_' + share.id)
 
         if type(share) is MyBajoo:
@@ -142,7 +147,6 @@ class ListSharesView(BaseView):
             self.register_i18n(lbl_share_description.SetLabel,
                                N_('%d members'), 18)
 
-        share_box = wx.StaticBox(self.tab, name='share_box_' + share.id)
         share_box_sizer = wx.StaticBoxSizer(share_box)
 
         description_box = self.make_sizer(
@@ -151,7 +155,7 @@ class ListSharesView(BaseView):
             wx.VERTICAL, [description_box, share_status_box], False)
 
         share_box_sizer_inside = self.make_sizer(wx.HORIZONTAL, [
-            wx.StaticBitmap(self.tab, label=img_share),
+            wx.StaticBitmap(share_box, label=img_share),
             description_status_box, None,
             btn_share_details, btn_open_local_dir])
         share_box_sizer.Add(share_box_sizer_inside, 1, wx.EXPAND)

@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import logging
+
 import wx
 
 from ..common.i18n import N_
@@ -11,8 +13,16 @@ from .tab import NetworkSettingsTab
 from .tab import AdvancedSettingsTab
 from .translator import Translator
 
+_logger = logging.getLogger(__name__)
+
 
 class MainWindow(wx.Frame):
+    LIST_SHARES_TAB = 0
+    ACCOUNT_TAB = 1
+    GENERAL_SETTINGS_TAB = 2
+    NETWORK_SETTINGS_TAB = 3
+    ADVANCED_SETTINGS_TAB = 4
+
     def __init__(self):
         wx.Frame.__init__(self, parent=None)
         self._view = MainWindowListbook(self)
@@ -24,6 +34,40 @@ class MainWindow(wx.Frame):
 
     def notify_lang_change(self):
         self._view.notify_lang_change()
+
+    def _show_tab(self, tab_index):
+        self._view.SetSelection(tab_index)
+        self._view.GetPage(tab_index).Show()
+
+    def show_account_tab(self):
+        """Make the account tab shown on top."""
+        self._show_tab(MainWindow.ACCOUNT_TAB)
+
+    def show_list_shares_tab(self):
+        """Make the share list tab shown on top."""
+        self._show_tab(MainWindow.LIST_SHARES_TAB)
+
+    def show_general_settings_tab(self):
+        """Make the general settings tab shown on top."""
+        self._show_tab(MainWindow.GENERAL_SETTINGS_TAB)
+
+    def show_advanced_settings_tab(self):
+        """Make the advanced settings tab shown on top."""
+        self._show_tab(MainWindow.ADVANCED_SETTINGS_TAB)
+
+    def show_network_settings_tab(self):
+        """Make the network settings tab shown on top."""
+        self._show_tab(MainWindow.NETWORK_SETTINGS_TAB)
+
+    def load_shares(self, shares):
+        """Handle the SHARES_FETCHED message,
+        load & display the shares on share list tab. """
+        self._view.list_shares_tab.set_data(shares)
+
+    def load_config(self, config):
+        self._view.general_settings_tab.load_config(config)
+        self._view.advanced_settings_tab.load_config(config)
+        self._view.network_settings_tab.load_config(config)
 
 
 class MainWindowListbook(wx.Listbook, Translator):
@@ -40,21 +84,28 @@ class MainWindowListbook(wx.Listbook, Translator):
             'assets/images/settings.png')).ConvertToBitmap())
         self.AssignImageList(image_list)
 
-        self.AddPage(ListSharesTab(self),
+        self.list_shares_tab = ListSharesTab(self)
+        self.account_tab = AccountTab(self)
+        self.general_settings_tab = GeneralSettingsTab(self)
+        self.network_settings_tab = NetworkSettingsTab(self)
+        self.advanced_settings_tab = AdvancedSettingsTab(self)
+
+        self.AddPage(self.list_shares_tab,
                      N_("My Shares"), imageId=0)
-        self.AddPage(AccountTab(self),
+        self.AddPage(self.account_tab,
                      N_("My Account"), imageId=0)
-        self.AddPage(GeneralSettingsTab(self),
+        self.AddPage(self.general_settings_tab,
                      N_("General Settings"), imageId=0)
-        self.AddPage(NetworkSettingsTab(self),
+        self.AddPage(self.network_settings_tab,
                      N_("Network Settings"), imageId=0)
-        self.AddPage(AdvancedSettingsTab(self),
+        self.AddPage(self.advanced_settings_tab,
                      N_("Advanced Settings"), imageId=0)
 
         self.Bind(wx.EVT_LISTBOOK_PAGE_CHANGED, self.on_page_changed)
         self.on_page_changed()
 
     def on_page_changed(self, _event=None):
+        self.GetPage(self.GetSelection()).Show()
         self.GetParent().SetTitle(self.GetPageText(self.GetSelection()))
         page = self.GetCurrentPage()
 
@@ -66,8 +117,42 @@ class MainWindowListbook(wx.Listbook, Translator):
 
 
 def main():
+    from ..common import config
+
+    config.load()
+
     app = wx.App()
     win = MainWindow()
+
+    logging.basicConfig()
+    _logger.setLevel(logging.DEBUG)
+
+    from ..api import Session, Container
+
+    session_future = Session.create_session(
+        'stran+20@bajoo.fr',
+        'stran+20@bajoo.fr')
+
+    def _on_fetch_session(session):
+        return Container.list(session)
+
+    def _on_shares_fetched(shares):
+        _logger.debug("%d shares fetched", len(shares))
+        win.load_shares(shares)
+
+    def _on_request_shares(_event):
+        session_future \
+            .then(_on_fetch_session) \
+            .then(_on_shares_fetched)
+
+    def _on_request_config(_event):
+        win.load_config(config)
+
+    app.Bind(ListSharesTab.EVT_DATA_REQUEST, _on_request_shares)
+    app.Bind(GeneralSettingsTab.EVT_CONFIG_REQUEST, _on_request_config)
+    app.Bind(NetworkSettingsTab.EVT_CONFIG_REQUEST, _on_request_config)
+    app.Bind(AdvancedSettingsTab.EVT_CONFIG_REQUEST, _on_request_config)
+
     win.Show(True)
     app.MainLoop()
 

@@ -1,10 +1,15 @@
 # -*- coding: utf-8 -*-
+import logging
 
 import wx
+from wx.lib.newevent import NewCommandEvent
 
 from ...common.i18n import N_
 from ..base_view import BaseView
 from ...__version__ import __version__
+
+
+_logger = logging.getLogger(__name__)
 
 
 class AdvancedSettingsTab(wx.Panel):
@@ -16,9 +21,17 @@ class AdvancedSettingsTab(wx.Panel):
     * enable/disable hidden file synchronization
     """
 
+    ConfigRequest, EVT_CONFIG_REQUEST = NewCommandEvent()
+
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
         self._view = AdvancedSettingsView(self)
+
+    def Show(self, show=True):
+        wx.PostEvent(self, self.ConfigRequest(self.GetId()))
+
+    def load_config(self, config):
+        _logger.debug(config)
 
 
 class AdvancedSettingsView(BaseView):

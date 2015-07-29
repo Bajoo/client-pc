@@ -25,7 +25,7 @@ class AccountTab(wx.Panel):
             'email': '',
             'account_type': '',
             'n_shares': 0,
-            'quota': 0,
+            'quota': 1,
             'quota_used': 0
         }
 

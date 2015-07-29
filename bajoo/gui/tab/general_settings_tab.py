@@ -1,9 +1,14 @@
 # -*- coding: utf-8 -*-
+import logging
 
 import wx
+from wx.lib.newevent import NewCommandEvent
 
 from ...common.i18n import N_
 from ..base_view import BaseView
+
+
+_logger = logging.getLogger(__name__)
 
 
 class GeneralSettingsTab(wx.Panel):
@@ -15,9 +20,17 @@ class GeneralSettingsTab(wx.Panel):
     * change application language
     """
 
+    ConfigRequest, EVT_CONFIG_REQUEST = NewCommandEvent()
+
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
         self._view = GeneralSettingsView(self)
+
+    def Show(self, show=True):
+        wx.PostEvent(self, self.ConfigRequest(self.GetId()))
+
+    def load_config(self, config):
+        _logger.debug(config)
 
 
 class GeneralSettingsView(BaseView):
