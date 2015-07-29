@@ -21,7 +21,6 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
     The default screen is the HomeScreen, containing the connexion form.
     """
 
-    @ensure_gui_thread
     def __init__(self):
         wx.Frame.__init__(self, parent=None, title='Bajoo')
         self._view = HomeWindowView(self)

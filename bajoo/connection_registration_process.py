@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import errno
+import locale
 import logging
 import os
 import sys
@@ -76,7 +77,7 @@ class _ConnectionProcess(object):
         """
         if not self.ui_handler:
             _logger.debug('Load UI Handler')
-            self.ui_handler = self.ui_factory()
+            self.ui_handler = Future.resolve(self.ui_factory()).result()
         return self.ui_handler
 
     def _clear_credentials(self):
@@ -295,7 +296,7 @@ class _ConnectionProcess(object):
         if sys.version_info[0] < 3:  # Python 2
             log_msg = log_msg.decode('utf-8')
         if isinstance(result, Exception):
-            if isinstance(result, OSError):
+            if isinstance(result, (IOError, OSError)):
                 msg = os.strerror(result.errno)
                 if sys.version_info[0] < 3:  # Python 2
                     msg = str(msg).decode('utf-8')
@@ -317,6 +318,10 @@ class _ConnectionProcess(object):
             self._gpg_error = N_("You haven't yet registered a GPG key.")
 
         if isinstance(result, Exception):
+            if isinstance(result, (IOError, OSError)):
+                encoding = locale.getpreferredencoding()
+                if sys.version_info[0] < 3:  # Python 2
+                    result = unicode(str(result), encoding)
             self._gpg_error = N_('Error when during the GPG key check:\n %s' %
                                  result)
             _logger.warning('Error when applying the GPG config: %s' % result)

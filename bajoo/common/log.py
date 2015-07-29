@@ -70,15 +70,13 @@ def _get_file_handler():
             # Python3 has mode 'x' (creation only), but not Python2.7
             if sys.version_info[0] is 3:
                 try:
-                    return logging.FileHandler(log_path, mode='x',
-                                               encoding='utf-8')
+                    return logging.FileHandler(log_path, mode='x')
                 except FileExistsError as e:  # noqa
                     if e.errno == errno.EEXIST:
                         pass
             else:
                 if not os.path.exists(log_path):
-                    return logging.FileHandler(log_path, mode='w',
-                                               encoding='utf-8')
+                    return logging.FileHandler(log_path, mode='w')
             counter += 1
             log_path = os.path.join(bajoo_path.get_log_dir(),
                                     '%s (%s).log' % (base_name_file, counter))

@@ -117,6 +117,7 @@ class BajooApp(wx.App, SoftwareUpdate):
             config.set('proxy_user', None)
             config.set('proxy_password', None)
 
+    @ensure_gui_thread
     def create_home_window(self):
         """Create a new HomeWindow instance and return it.
 
