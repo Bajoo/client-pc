@@ -124,6 +124,7 @@ def set(key, value):
         _config_parser.set('config', key, str(value))
     config_file_path = _get_config_file_path()
     try:
+        # Note: configParser.write use the default string type
         with open(config_file_path, 'w') as config_file:
             _config_parser.write(config_file)
         _logger.debug('Config file modified.')

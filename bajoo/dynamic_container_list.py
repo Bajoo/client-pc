@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import io
 import json
 import logging
 from threading import Lock as Lock
@@ -64,7 +65,7 @@ class DynamicContainerList(object):
 
         local_list_data = []
         try:
-            with open(self._list_path) as list_file:
+            with io.open(self._list_path, encoding='utf-8') as list_file:
                 local_list_data = json.load(list_file)
         except IOError as e:
             if e.errno is errno.ENOENT:

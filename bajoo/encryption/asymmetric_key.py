@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import io
 import logging
 import os
 import tempfile
@@ -47,10 +48,10 @@ class AsymmetricKey(object):
 
         try:
             if isinstance(key_file, basestring):
-                key_file = open(key_file, 'rb')
+                key_file = io.open(key_file, 'rb')
         except NameError:
             if isinstance(key_file, str):
-                key_file = open(key_file, 'rb')
+                key_file = io.open(key_file, 'rb')
         with key_file:
             content = key_file.read().decode('utf-8')
             import_result = context.import_keys(content)

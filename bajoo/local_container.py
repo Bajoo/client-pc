@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import errno
+import io
 import json
 import logging
 import os
@@ -62,7 +63,7 @@ class LocalContainer(object):
 
         index_path = os.path.join(self.path, '.bajoo-%s.idx' % self.id)
         try:
-            with open(index_path) as index_file:
+            with io.open(index_path, encoding='utf-8') as index_file:
                 self._index = json.load(index_file)
         except (OSError, IOError) as e:
             self.status = self.STATUS_ERROR
@@ -131,7 +132,7 @@ class LocalContainer(object):
         """
         path = path or self.path
         index_path = os.path.join(path, '.bajoo-%s.idx' % self.id)
-        with open(index_path, "w") as index_file:
+        with io.open(index_path, "w", encoding='utf-8') as index_file:
             index_file.write('{}')
 
     def _save_index(self):

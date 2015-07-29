@@ -2,6 +2,7 @@
 """Functions to load and store user credentials persistently."""
 
 import errno
+import io
 import json
 import logging
 import os.path
@@ -23,7 +24,7 @@ def load():
     file_content = None
 
     try:
-        with open(token_path, 'r') as token_file:
+        with io.open(token_path, 'r', encoding='utf-8') as token_file:
             file_content = json.load(token_file)
     except (IOError, OSError) as error:
         if error.errno == errno.ENOENT:

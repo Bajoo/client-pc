@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+
+import io
 import logging
 import os
 import tempfile
@@ -260,11 +262,11 @@ def upload(verb, url, source, **params):
         try:
             if isinstance(file, basestring):
                 # If 'file' is a filename, open it
-                file = open(file, 'rb')
+                file = io.open(file, 'rb')
         except NameError:
             if isinstance(file, str):
                 # If 'file' is a filename, open it
-                file = open(file, 'rb')
+                file = io.open(file, 'rb')
 
         with file:
             _logger.debug("Start %s uploading to %s", verb, url)
@@ -306,7 +308,7 @@ if __name__ == "__main__":
         os.remove(sample_file_name)
 
     future_download = download('GET', 'http://www.pdf995.com/samples/pdf.pdf')
-    with open(sample_file_name, "wb") as sample_file, \
+    with io.open(sample_file_name, "wb") as sample_file, \
             future_download.result()['content'] as tmp_file:
         sample_file.write(tmp_file.read())
 
