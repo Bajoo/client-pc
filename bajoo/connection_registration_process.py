@@ -305,7 +305,6 @@ class _ConnectionProcess(object):
                 self._root_folder_error = N_(
                     'Error when applying the Bajoo root folder config:\n %s' %
                     log_msg)
-                _logger.info()
             _logger.warning(
                 'Error when applying the Bajoo root folder config: %s' %
                 log_msg)

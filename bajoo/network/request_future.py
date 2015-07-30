@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-from concurrent.futures import CancelledError
+
+from concurrent.futures import CancelledError, Future
 
 
-class RequestFuture(object):
+class RequestFuture(Future):
     """
     This is a proxy class for futures.Future
     which enables cancelling the long requests

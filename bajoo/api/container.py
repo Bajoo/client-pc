@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
+
 import logging
+from ..common.future import Future
+from .. import encryption
+from ..network.errors import HTTPNotFoundError
 
 _logger = logging.getLogger(__name__)
 
@@ -11,7 +15,7 @@ class Container(object):
     This should always be used as an abstract class.
     """
 
-    def __init__(self, session, container_id, name):
+    def __init__(self, session, container_id, name, encrypted=True):
         """
         Init a new Container object with user session, container's id & name.
 
@@ -19,16 +23,77 @@ class Container(object):
             session (bajoo.api.session.Session): user session
             container_id (str): container's id
             name (str): container's name
+            encrypted (boolean, optional): Determine if the container is
+                encrypted or not.
         """
         self._session = session
         self.id = container_id
         self.name = name
+        self.is_encrypted = encrypted
+
+        self._encryption_key = None
 
     def __repr__(self):
         """
         Override the representational string of the container object.
         """
         return "<Container '%s' (id=%s)>" % (self.name, self.id)
+
+    def _get_encryption_key(self):
+        """get the encryption key and returns it.
+
+        If the key is not present in local, it will be downloaded.
+
+        Returns:
+            Future<AsyncKey>: container key
+        """
+        if not self._encryption_key:
+
+            def dl_key_error(error):
+                if isinstance(error, HTTPNotFoundError):
+                    _logger.debug('Container key not found (404)')
+                    f = self._generate_key()
+                    return f.then(lambda _: self._encryption_key)
+                raise error
+
+            def callback(result):
+                key_content = result.get('content')
+                _logger.debug('Key of container #%s downloaded' % self.id)
+
+                # TODO: decrypt the key
+                key = encryption.AsymmetricKey.load(key_content)
+                self._encryption_key = key
+                return key
+
+            _logger.debug('Download key of container #%s ...' % self.id)
+            key_url = '/storages/%s/.key' % self.id
+            f = self._session.download_storage_file('GET', key_url)
+            return f.then(callback, dl_key_error)
+
+        return Future.resolve(self._encryption_key)
+
+    def _generate_key(self):
+        """Generate and upload the GPG key
+
+        Returns:
+            Future
+        """
+        key_name = 'bajoo-storage-%s' % self.id
+
+        def _upload_key(key):
+            self._encryption_key = key
+            key_url = '/storages/%s/.key' % self.id
+            key_content = key.export(secret=True)
+
+            # TODO: encrypt the key itself !
+            _logger.debug('Key for container #%s generated. Start upload ...'
+                          % self.id)
+            return self._session.send_storage_request(
+                'PUT', key_url, data=key_content)
+
+        _logger.debug('generate new key for container #%s ...' % self.id)
+        f = encryption.create_key(key_name, None, container=True)
+        return f.then(_upload_key)
 
     @staticmethod
     def _from_json(session, json_object):
@@ -41,21 +106,25 @@ class Container(object):
         return cls(session, id, name)
 
     @classmethod
-    def create(cls, session, name):
+    def create(cls, session, name, encrypt=True):
         """
         Create a new Container on Bajoo server.
 
         Args:
             session (bajoo.api.session.Session): user session
             name (str): the name of the new container to be created.
+            encrypt(boolean, optional): if set the container will be encrypted.
 
         Returns Future<Container>: the newly created container.
         """
 
         def _on_create_returned(response):
             container_result = response.get('content', {})
-            return cls(session, container_result.get('id', ''),
-                       container_result.get('name', ''))
+            container = cls(session, container_result.get('id', ''),
+                            container_result.get('name', ''), encrypt=encrypt)
+            if container.is_encrypted:
+                return container._generate_key().then(lambda _: container)
+            return container
 
         return session.send_api_request(
             'POST', '/storages', data={'name': name}) \
@@ -159,7 +228,9 @@ class Container(object):
             md5_hash = result.get('headers', {}).get('etag')
             return {'hash': md5_hash}, result.get('content')
 
-        return self._session.download_storage_file('GET', url).then(callback)
+        f = self._get_encryption_key()
+        f = f.then(lambda _: self._session.download_storage_file('GET', url))
+        return f.then(callback)
 
     def upload(self, path, file):
         """Upload a file in this container.
@@ -188,7 +259,9 @@ class Container(object):
         # - upload
         # - confirm upload
 
-        f = self._session.upload_storage_file('PUT', url, file)
+        f = self._get_encryption_key()
+        f = f.then(lambda _: self._session.upload_storage_file('PUT', url,
+                                                               file))
         return f.then(format_result)
 
     def remove_file(self, path):

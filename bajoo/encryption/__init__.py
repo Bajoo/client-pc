@@ -45,7 +45,7 @@ def _get_gpg_context():
     return _gpg
 
 
-def create_key(email, passphrase):
+def create_key(email, passphrase, container=False):
     """Generate a new GPG key.
 
     Returns:
@@ -54,8 +54,12 @@ def create_key(email, passphrase):
     _logger.debug('Start to generate a new GPG key ...')
     gpg = _get_gpg_context()
 
+    if container:
+        comment = 'Bajoo container key'
+    else:
+        comment = 'Bajoo user key'
     input_data = gpg.gen_key_input(key_length=2048, name_email=email,
-                                   name_comment='Bajoo user key',
+                                   name_comment=comment,
                                    passphrase=passphrase)
     f = _thread_pool.submit(gpg.gen_key, input_data)
 
