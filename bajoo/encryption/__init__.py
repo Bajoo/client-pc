@@ -18,10 +18,13 @@ communicate the result.
 """
 
 from concurrent.futures import ThreadPoolExecutor
+import errno
 import logging
 from multiprocessing import cpu_count
+import os.path
 from gnupg import GPG
 
+from ..common.path import get_data_dir
 from ..common.future import then
 from .asymmetric_key import AsymmetricKey
 
@@ -39,9 +42,13 @@ def _get_gpg_context():
     global _gpg
 
     if not _gpg:
-        # TODO: set real path for test_keyring !!!
-        _gpg = GPG(verbose=False, gnupghome='./test_keyring')
-        # TODO: manages exceptions
+        gpg_home = os.path.join(get_data_dir(), 'gpg')
+        try:
+            _gpg = GPG(verbose=False, gnupghome=gpg_home)
+        except (IOError, OSError) as e:
+            if e.errno == errno.ENOENT:
+                raise Exception('GPG binary executable not found.')
+            raise
     return _gpg
 
 
@@ -66,7 +73,8 @@ def create_key(email, passphrase, container=False):
     def on_key_generated(data):
         _logger.info('New GPG key created: %s', data.fingerprint)
         if not data:
-            pass  # TODO: raise Exception
+            raise Exception('Key generation failed: %s' % data)
+            # TODO: more explicit Exception
         return AsymmetricKey(gpg, data.fingerprint)
 
     return then(f, on_key_generated)
@@ -91,7 +99,8 @@ def encrypt(source, recipients):
         Future<TemporaryFile>: A Future returning a temporary file of the
             resulting encrypted data.
     """
-    raise NotImplemented()
+    print('Encrypt stub!')
+    return source
 
 
 def decrypt(source, key=None):
@@ -118,7 +127,8 @@ def decrypt(source, key=None):
         Future<TemporaryFile>: A Future returning a temporary file of the
             resulting decrypted data.
     """
-    raise NotImplemented()
+    print('Decrypt stub!')
+    return source
 
 
 def import_key(key):
@@ -130,7 +140,12 @@ def import_key(key):
     Args:
         key (AsymmetricKey): key to add to the global Bajoo keyring.
     """
-    raise NotImplemented()
+    key_buffer = b''
+
+    with key.export(secret=True) as key_content:
+        key_buffer += key_content.read()
+
+    _gpg.import_keys(key_content)
 
 
 def get_key(key_id):

@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import logging
-from ..common.future import Future
+from ..common.future import Future, wait_all
 from .. import encryption
 from ..network.errors import HTTPNotFoundError
+from . import User
 
 _logger = logging.getLogger(__name__)
 
@@ -56,11 +57,12 @@ class Container(object):
                     return f.then(lambda _: self._encryption_key)
                 raise error
 
-            def callback(result):
+            def on_key_downloaded(result):
                 key_content = result.get('content')
                 _logger.debug('Key of container #%s downloaded' % self.id)
+                return encryption.decrypt(key_content)
 
-                # TODO: decrypt the key
+            def on_key_decrypted(key_content):
                 key = encryption.AsymmetricKey.load(key_content)
                 self._encryption_key = key
                 return key
@@ -68,7 +70,8 @@ class Container(object):
             _logger.debug('Download key of container #%s ...' % self.id)
             key_url = '/storages/%s/.key' % self.id
             f = self._session.download_storage_file('GET', key_url)
-            return f.then(callback, dl_key_error)
+            f = f.then(on_key_downloaded)
+            return f.then(on_key_decrypted, dl_key_error)
 
         return Future.resolve(self._encryption_key)
 
@@ -80,20 +83,37 @@ class Container(object):
         """
         key_name = 'bajoo-storage-%s' % self.id
 
-        def _upload_key(key):
+        def extract_key_members(members):
+            return wait_all([User(member.user, self._session).get_public_key()
+                             for member in members])
+
+        def encrypt_key(key):
             self._encryption_key = key
-            key_url = '/storages/%s/.key' % self.id
             key_content = key.export(secret=True)
 
-            # TODO: encrypt the key itself !
-            _logger.debug('Key for container #%s generated. Start upload ...'
-                          % self.id)
+            # TODO: code smell: we shouldn't *use method of child classes.
+            if hasattr(self, 'list_members'):
+                f = self.list_members().then(extract_key_members)
+            else:
+                f = User.load(self._session)
+                f.then(lambda user: user.get_public_key())
+                f.then(lambda user_key: [user_key])
+
+            def encrypt(recipients):
+                return encryption.encrypt(key_content, recipients)
+
+            return f.then(encrypt)
+
+        def upload_key(key_content):
+            key_url = '/storages/%s/.key' % self.id
+            _logger.debug('Key for container #%s generated.' % self.id)
             return self._session.send_storage_request(
                 'PUT', key_url, data=key_content)
 
         _logger.debug('generate new key for container #%s ...' % self.id)
         f = encryption.create_key(key_name, None, container=True)
-        return f.then(_upload_key)
+        f = f.then(encrypt_key)
+        return f.then(upload_key)
 
     @staticmethod
     def _from_json(session, json_object):
@@ -219,18 +239,27 @@ class Container(object):
         """
         url = '/storages/%s/%s' % (self.id, path)
 
-        # TODO: all the "decrypt" part must be done here:
-        # download
-        # check remote_md5
-        #   decrypt
+        def download_file(_key=None):
+            return self._session.download_storage_file('GET', url)
 
-        def callback(result):
+        def format_result(result):
             md5_hash = result.get('headers', {}).get('etag')
             return {'hash': md5_hash}, result.get('content')
 
-        f = self._get_encryption_key()
-        f = f.then(lambda _: self._session.download_storage_file('GET', url))
-        return f.then(callback)
+        def decrypt_file(data):
+            metadata, encrypted_file = data
+            return (metadata,
+                    encryption.decrypt(encrypted_file, self._encryption_key))
+
+        if self.is_encrypted:
+            f = self._get_encryption_key()
+            f = f.then(download_file)
+            f = f.then(format_result)
+            f = f.then(decrypt_file)
+        else:
+            f = download_file()
+            f = f.then(format_result)
+        return f
 
     def upload(self, path, file):
         """Upload a file in this container.
@@ -248,20 +277,26 @@ class Container(object):
         """
         url = '/storages/%s/%s' % (self.id, path)
 
+        def encrypt_file(encryption_key):
+            return encryption.encrypt(file, recipients=[encryption_key])
+
+        def upload_file(encrypted_file):
+            return self._session.upload_storage_file('PUT', url,
+                                                     encrypted_file)
+
         def format_result(result):
             md5_hash = result.get('headers', {}).get('etag')
             return {'hash': md5_hash}
 
-        # TODO: upload should do the encryption, the upload, and check the
-        # integrity ! The 4 steps below:
-        # - encrypt
-        # - check remote_md5
-        # - upload
-        # - confirm upload
+        # TODO: check the upload result (using md5 sum)
 
-        f = self._get_encryption_key()
-        f = f.then(lambda _: self._session.upload_storage_file('PUT', url,
-                                                               file))
+        if self.is_encrypted:
+            f = self._get_encryption_key()
+            f = f.then(encrypt_file)
+        else:
+            f = Future.resolve(file)
+
+        f = f.then(upload_file)
         return f.then(format_result)
 
     def remove_file(self, path):

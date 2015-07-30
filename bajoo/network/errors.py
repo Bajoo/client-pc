@@ -33,6 +33,7 @@ class NetworkError(Exception):
         Exception.__init__(self, self.message)
         self.data = error
 
+
 class ConnectionError(NetworkError):
     def __init__(self, error):
         NetworkError.__init__(self, error,
