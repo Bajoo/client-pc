@@ -4,7 +4,7 @@ import io
 import logging
 import os
 import tempfile
-from gnupg import GPG
+# from gnupg import GPG
 
 
 _logger = logging.getLogger(__name__)
@@ -30,21 +30,20 @@ class AsymmetricKey(object):
             key_file (str|FileStream): if it's a str, path of the file
                 containing the key. If it's a File-like object, content of the
                 key.
-            main_context (boolean): If True, the global GPG contexte is used.
+            main_context (boolean): If True, the global GPG context is used.
                 Otherwise, a temporary, dedicated context is created.
         """
         from . import _get_gpg_context
 
-        # TODO: find a better way to create this temporary file.
-        with tempfile.NamedTemporaryFile(delete=False) as tf:
-            tmp_file = tf.name
-
-        if main_context:
-            context = _get_gpg_context()
-        else:
-            # TODO: set real gnupghome
-            context = GPG(verbose=False, gnupghome='./test_keyring',
-                          keyring=tmp_file)
+        # TODO: folder GPG key should not be added in the keyring.
+        # if main_context:
+        context = _get_gpg_context()
+        # else:
+        #    # TODO: find a better way to create this temporary file.
+        #    with tempfile.NamedTemporaryFile(delete=False) as tf:
+        #        tmp_file = tf.name
+        # context = GPG(verbose=False, gnupghome='./tmp_keyring',
+        #               keyring=tmp_file)
 
         try:
             if isinstance(key_file, basestring):

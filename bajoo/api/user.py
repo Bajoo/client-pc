@@ -139,12 +139,17 @@ class User(object):
     def get_public_key(self):
         """Get the user's public key string.
 
+        Note: user.name must be set before using this method, either at the
+        __init__() call or by using get_user_info().
+
         Returns (Future<str>): the public key string.
         """
 
         def _on_download_finished(response):
             tmp_file = response.get('content', None)
-            return tmp_file.read() if tmp_file else None
+            if not tmp_file:
+                return None
+            return encryption.AsymmetricKey.load(tmp_file, main_context=True)
 
         return self._session \
             .download_storage_file('GET', self._get_public_key_url()) \

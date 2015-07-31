@@ -133,7 +133,7 @@ class LocalContainer(object):
         path = path or self.path
         index_path = os.path.join(path, '.bajoo-%s.idx' % self.id)
         with io.open(index_path, "w", encoding='utf-8') as index_file:
-            index_file.write('{}')
+            index_file.write(u'{}')
 
     def _save_index(self):
         index_path = os.path.join(self.path, '.bajoo-%s.idx' % self.id)

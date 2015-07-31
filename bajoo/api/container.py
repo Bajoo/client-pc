@@ -87,17 +87,21 @@ class Container(object):
             return wait_all([User(member.user, self._session).get_public_key()
                              for member in members])
 
+        def get_owner_key():
+            f = User.load(self._session)
+            f = f.then(lambda user: user.get_user_info().then(lambda _: user))
+            return f.then(lambda user: user.get_public_key())
+
         def encrypt_key(key):
             self._encryption_key = key
             key_content = key.export(secret=True)
 
-            # TODO: code smell: we shouldn't *use method of child classes.
+            # TODO: code smell: we shouldn't use methods of child classes.
             if hasattr(self, 'list_members'):
                 f = self.list_members().then(extract_key_members)
             else:
-                f = User.load(self._session)
-                f.then(lambda user: user.get_public_key())
-                f.then(lambda user_key: [user_key])
+                f = get_owner_key()
+                f = f.then(lambda key: [key])
 
             def encrypt(recipients):
                 return encryption.encrypt(key_content, recipients)

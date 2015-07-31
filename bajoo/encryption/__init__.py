@@ -19,9 +19,11 @@ communicate the result.
 
 from concurrent.futures import ThreadPoolExecutor
 import errno
+import io
 import logging
 from multiprocessing import cpu_count
 import os.path
+import tempfile
 from gnupg import GPG
 
 from ..common.path import get_data_dir
@@ -44,7 +46,7 @@ def _get_gpg_context():
     if not _gpg:
         gpg_home = os.path.join(get_data_dir(), 'gpg')
         try:
-            _gpg = GPG(verbose=False, gnupghome=gpg_home)
+            _gpg = GPG(verbose=False, gnupghome=gpg_home, use_agent=True)
         except (IOError, OSError) as e:
             if e.errno == errno.ENOENT:
                 raise Exception('GPG binary executable not found.')
@@ -61,13 +63,20 @@ def create_key(email, passphrase, container=False):
     _logger.debug('Start to generate a new GPG key ...')
     gpg = _get_gpg_context()
 
+    args = {'key_length': 2048, 'name_email': email}
+
+    # Note: giving an argument passphrase=None to gen_key_input() will create a
+    # passphrase 'None'. We must not pass the argument if we don't want a
+    # passphrase.
+    if passphrase is not None:
+        args['passphrase'] = passphrase
+
     if container:
-        comment = 'Bajoo container key'
+        args['name_comment'] = 'Bajoo container key'
     else:
-        comment = 'Bajoo user key'
-    input_data = gpg.gen_key_input(key_length=2048, name_email=email,
-                                   name_comment=comment,
-                                   passphrase=passphrase)
+        args['name_comment'] = 'Bajoo user key'
+
+    input_data = gpg.gen_key_input(**args)
     f = _thread_pool.submit(gpg.gen_key, input_data)
 
     def on_key_generated(data):
@@ -99,8 +108,36 @@ def encrypt(source, recipients):
         Future<TemporaryFile>: A Future returning a temporary file of the
             resulting encrypted data.
     """
-    print('Encrypt stub!')
-    return source
+
+    # If 'source' is a filename, open it
+    try:
+        if isinstance(source, basestring):
+            source = io.open(source, 'rb')
+    except NameError:
+        if isinstance(source, str):
+            source = io.open(source, 'rb')
+
+    with source:
+        if len(recipients) == 1:
+            context = recipients[0]._context
+        else:
+            context = _gpg
+            for key in recipients:
+                import_key(key)
+
+        # TODO: find a better way to create this temporary file.
+        with tempfile.NamedTemporaryFile(delete=False) as tf:
+            dst_path = tf.name
+
+        result = context.encrypt_file(source,
+                                      [key.fingerprint for key in recipients],
+                                      output=dst_path,
+                                      armor=False, always_trust=True)
+    if not result:
+        raise Exception('Encryption failed', result)
+
+    # TODO: delete the file when it's closed !
+    return io.open(dst_path, mode='rb')
 
 
 def decrypt(source, key=None):
@@ -127,8 +164,30 @@ def decrypt(source, key=None):
         Future<TemporaryFile>: A Future returning a temporary file of the
             resulting decrypted data.
     """
-    print('Decrypt stub!')
-    return source
+
+    if key:
+        context = key._context
+    else:
+        context = _gpg
+    # If 'source' is a filename, open it
+    try:
+        if isinstance(source, basestring):
+            source = io.open(source, 'rb')
+    except NameError:
+        if isinstance(source, str):
+            source = io.open(source, 'rb')
+
+    with source:
+        # TODO: find a better way to create this temporary file.
+        with tempfile.NamedTemporaryFile(delete=False) as tf:
+            dst_path = tf.name
+
+        result = context.decrypt_file(source, output=dst_path)
+        if not result:
+            raise Exception('Decryption failed:', result.status)
+
+        # TODO: delete the file when it's closed !
+        return io.open(dst_path, mode='rb')
 
 
 def import_key(key):
