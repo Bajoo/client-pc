@@ -16,6 +16,7 @@ class CreationShareTab(wx.Panel):
     """
 
     RequestCreateShareEvent, EVT_CREATE_SHARE_REQUEST = NewCommandEvent()
+    RequestShowListShares, EVT_SHOW_LIST_SHARE_REQUEST = NewCommandEvent()
 
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
@@ -23,7 +24,13 @@ class CreationShareTab(wx.Panel):
         self.members = {}
 
         self.Bind(wx.EVT_BUTTON, self.btn_create_clicked, id=wx.ID_OK)
+        self.Bind(wx.EVT_BUTTON, self._btn_back_clicked,
+                  self.FindWindow('btn_back'))
         self.Bind(MembersShareForm.EVT_SUBMIT, self.on_add_member)
+
+    def _btn_back_clicked(self, _event):
+        back_event = CreationShareTab.RequestShowListShares(self.GetId())
+        wx.PostEvent(self, back_event)
 
     def btn_create_clicked(self, event):
         share_name = self.FindWindow('txt_share_name').GetValue()

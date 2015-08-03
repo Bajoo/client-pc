@@ -4,6 +4,7 @@ import logging
 
 import wx
 from wx.lib.filebrowsebutton import DirBrowseButton
+from wx.lib.newevent import NewCommandEvent
 
 from ...common.i18n import N_
 from ...common.util import human_readable_bytes
@@ -21,6 +22,8 @@ class DetailsShareTab(wx.Panel):
 
     User can also manage this share's all permissions here.
     """
+
+    RequestShowListShares, EVT_SHOW_LIST_SHARE_REQUEST = NewCommandEvent()
 
     @ensure_gui_thread
     def __init__(self, parent):
@@ -66,7 +69,14 @@ class DetailsShareTab(wx.Panel):
             )
         })
 
+        self.Bind(wx.EVT_BUTTON, self._btn_back_clicked,
+                  self.FindWindow('btn_back'))
+
         self.Layout()
+
+    def _btn_back_clicked(self, _event):
+        back_event = DetailsShareTab.RequestShowListShares(self.GetId())
+        wx.PostEvent(self, back_event)
 
 
 class DetailsShareView(BaseView):

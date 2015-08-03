@@ -37,6 +37,10 @@ class MainWindow(wx.Frame):
                   self._on_request_create_new_share)
         self.Bind(ListSharesTab.EVT_SHARE_DETAIL_REQUEST,
                   self._on_request_share_details)
+        self.Bind(CreationShareTab.EVT_SHOW_LIST_SHARE_REQUEST,
+                  self._on_request_show_list_shares)
+        self.Bind(DetailsShareTab.EVT_SHOW_LIST_SHARE_REQUEST,
+                  self._on_request_show_list_shares)
 
     def notify_lang_change(self):
         self._view.notify_lang_change()
@@ -45,6 +49,9 @@ class MainWindow(wx.Frame):
         # Remove all temperatory tabs
         while self._view.GetPageCount() > 5:
             self._view.DeletePage(5)
+
+        self._view.details_share_tab = None
+        self._view.creation_shares_tab = None
 
         self._view.SetSelection(tab_index)
         self._view.GetPage(tab_index).Show()
@@ -66,6 +73,9 @@ class MainWindow(wx.Frame):
                 and self._view.GetSelection() < 5:
             while self._view.GetPageCount() > 5:
                 self._view.DeletePage(5)
+
+            self._view.details_share_tab = None
+            self._view.creation_shares_tab = None
 
     def show_account_tab(self):
         """Make the account tab shown on top."""
@@ -108,6 +118,9 @@ class MainWindow(wx.Frame):
         self._view.general_settings_tab.load_config(config)
         self._view.advanced_settings_tab.load_config(config)
         self._view.network_settings_tab.load_config(config)
+
+    def _on_request_show_list_shares(self, _event):
+        self.show_list_shares_tab()
 
     def _on_request_create_new_share(self, _event):
         """When the button new share on the share list tab is clicked,
