@@ -25,6 +25,7 @@ class ListSharesTab(wx.ScrolledWindow):
 
     DataRequestEvent, EVT_DATA_REQUEST = NewCommandEvent()
     NewShareEvent, EVT_NEW_SHARE = NewCommandEvent()
+    ShareDetailRequestEvent, EVT_SHARE_DETAIL_REQUEST = NewCommandEvent()
 
     TEAM_SHARE_ICON = None
     MY_BAJOO_ICON = None
@@ -68,8 +69,43 @@ class ListSharesTab(wx.ScrolledWindow):
         self.GetSizer().SetSizeHints(self.GetTopLevelParent())
         _logger.debug('%d folders fetched', len(shares))
 
+    def find_share_by_id(self, id):
+        """
+        """
+        if self._shares:
+            for share in self._shares:
+                if share.id == id:
+                    return share
+
+        return None
+
+    def get_container_from_button(self, event, button_prefix):
+        """
+        Find the container associated to the UI element
+        which fired the event.
+
+        Args:
+            event (wx.Event): event fired
+            button_prefix (str): the prefix string assigned to the button name
+
+        Returns:
+            The container object if found, otherwise None.
+        """
+        name = event.GetEventObject().GetName()
+        share_id = name[len(button_prefix):]
+
+        return self.find_share_by_id(share_id)
+
     def _btn_new_share_clicked(self, event):
         wx.PostEvent(self, self.NewShareEvent(self.GetId()))
+
+    def btn_share_details_clicked(self, event):
+        share = self.get_container_from_button(event, 'btn_share_details_')
+
+        if share:
+            new_event = self.ShareDetailRequestEvent(self.GetId())
+            new_event.share = share
+            wx.PostEvent(self, new_event)
 
     def Show(self, show=True):
         wx.PostEvent(self, self.DataRequestEvent(self.GetId()))
@@ -131,8 +167,12 @@ class ListSharesView(BaseView):
             lbl_share_status_desc, lbl_share_status], outside_border=False)
         lbl_share_description = wx.StaticText(
             share_box, name='lbl_share_desc_' + share.id)
+
         btn_share_details = wx.Button(
             share_box, name='btn_share_details_' + share.id)
+        self.window.Bind(wx.EVT_BUTTON, self.window.btn_share_details_clicked,
+                      btn_share_details)
+
         btn_open_local_dir = wx.BitmapButton(
             share_box, bitmap=ListSharesTab.FOLDER_ICON,
             name='btn_open_local_dir_' + share.id)
