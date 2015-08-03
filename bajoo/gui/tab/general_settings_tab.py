@@ -15,7 +15,7 @@ class GeneralSettingsTab(wx.Panel):
     """
     General settings tab in the main window, which allows user to:
     * enable/disable start Bajoo on system startup
-    * enable/disable tray icon
+    * enable/disable contextual icon
     * enable/disable notifications
     * change application language
     """
@@ -26,11 +26,66 @@ class GeneralSettingsTab(wx.Panel):
         wx.Panel.__init__(self, parent)
         self._view = GeneralSettingsView(self)
 
+        self._config = None
+
+        self.Bind(wx.EVT_BUTTON, self._on_finished, id=wx.ID_OK)
+        self.Bind(wx.EVT_BUTTON, self._on_cancelled, id=wx.ID_CANCEL)
+        self.Bind(wx.EVT_BUTTON, self._on_applied, id=wx.ID_APPLY)
+
     def Show(self, show=True):
         wx.PostEvent(self, self.ConfigRequest(self.GetId()))
 
     def load_config(self, config):
-        _logger.debug(config)
+        """
+        Read config values in the config object and display on the UI.
+
+        Args:
+            config: the config object.
+            If None, the current (self) config object will be used.
+        """
+        if config:
+            self._config = config
+
+        if self._config is None:
+            _logger.debug("Null config object detected !!!")
+            return
+
+        launched_at_startup = self._config.get('launched_at_startup')
+        contextual_icon_shown = self._config.get('contextual_icon')
+        notifications_shown = self._config.get('notifications')
+        lang_code = self._config.get('lang')
+
+        self.FindWindow('chk_launch_at_startup').SetValue(launched_at_startup)
+        self.FindWindow('chk_contextual_icon').SetValue(contextual_icon_shown)
+        self.FindWindow('chk_notifications').SetValue(notifications_shown)
+        # TODO: change to language button & apply config
+
+    def _on_finished(self, _event):
+        """
+        Apply the setting changes & send event to close the window.
+        """
+        self._on_applied(_event)
+        # TODO: send event to close the window
+
+    def _on_cancelled(self, _event):
+        """
+        Handle the click event on the button Cancel:
+        Reset the UI elements according to the current config.
+        """
+        self.load_config(None)
+
+    def _on_applied(self, _event):
+        launched_at_startup = \
+            self.FindWindow('chk_launch_at_startup').GetValue()
+        contextual_icon_shown = \
+            self.FindWindow('chk_contextual_icon').GetValue()
+        notifications_shown = \
+            self.FindWindow('chk_notifications').GetValue()
+
+        if self._config:
+            self._config.set('launched_at_startup', launched_at_startup)
+            self._config.set('contextual_icon', contextual_icon_shown)
+            self._config.set('notifications', notifications_shown)
 
 
 class GeneralSettingsView(BaseView):
@@ -43,9 +98,9 @@ class GeneralSettingsView(BaseView):
         chk_launch_at_startup = wx.CheckBox(
             general_settings_screen, name='chk_launch_at_startup')
 
-        # chk_tray_icon
-        chk_tray_icon = wx.CheckBox(
-            general_settings_screen, name='chk_tray_icon')
+        # chk_contextual_icon
+        chk_contextual_icon = wx.CheckBox(
+            general_settings_screen, name='chk_contextual_icon')
 
         # chk_notifications
         chk_notifications = wx.CheckBox(
@@ -60,7 +115,7 @@ class GeneralSettingsView(BaseView):
         options_box_sizer = wx.StaticBoxSizer(options_box, wx.VERTICAL)
         options_box_sizer_inside = self.make_sizer(
             wx.VERTICAL,
-            [chk_launch_at_startup, chk_tray_icon, chk_notifications])
+            [chk_launch_at_startup, chk_contextual_icon, chk_notifications])
         options_box_sizer.Add(options_box_sizer_inside)
 
         # Language box
@@ -81,7 +136,8 @@ class GeneralSettingsView(BaseView):
 
         self.register_many_i18n('SetLabelText', {
             chk_launch_at_startup: N_("Launch Bajoo at system startup"),
-            chk_tray_icon: N_("Activate status icon and the contextual menu"),
+            chk_contextual_icon: N_("Activate status icon "
+                                    "and the contextual menu"),
             chk_notifications: N_("Display a notification when finish "
                                   "downloading file modifications"),
             language_box: N_("Language")
