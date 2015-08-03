@@ -5,8 +5,8 @@ import logging
 import wx
 import wx.dataview as dv
 from wx.lib.newevent import NewCommandEvent
-from ..translator import Translator
 
+from ..translator import Translator
 from ..event_future import ensure_gui_thread
 from ..base_view import BaseView
 from .base_form import BaseForm
@@ -36,8 +36,7 @@ class MembersShareForm(BaseForm):
         self._view = MembersShareView(self)
         self.validators = self._view.get_validators()
         self._members = []
-        self.Bind(wx.EVT_BUTTON, self.submit,
-                  self.FindWindowById(wx.ID_APPLY))
+        self.Bind(wx.EVT_BUTTON, self.submit, id=wx.ID_APPLY)
 
     def _init_icons(self):
         if not MembersShareForm.ADD_ICON:
@@ -92,7 +91,8 @@ class MembersShareView(BaseView):
         self._cmb_permission = cmb_permission
 
         btn_add_user = wx.BitmapButton(
-            members_share_form, bitmap=MembersShareForm.ADD_ICON,
+            members_share_form, id=wx.ID_APPLY,
+            bitmap=MembersShareForm.ADD_ICON,
             name='btn_add_user')
 
         user_sizer = wx.BoxSizer(wx.HORIZONTAL)

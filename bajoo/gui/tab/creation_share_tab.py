@@ -20,7 +20,10 @@ class CreationShareTab(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
         self._view = CreationShareView(self)
+        self.members = {}
+
         self.Bind(wx.EVT_BUTTON, self.btn_create_clicked, id=wx.ID_OK)
+        self.Bind(MembersShareForm.EVT_SUBMIT, self.on_add_member)
 
     def btn_create_clicked(self, event):
         share_name = self.FindWindow('txt_share_name').GetValue()
@@ -29,9 +32,14 @@ class CreationShareTab(wx.Panel):
             request_event = CreationShareTab.RequestCreateShareEvent(
                 self.GetId())
             request_event.share_name = share_name
-            request_event.members = {}
+            request_event.members = self.members
 
             wx.PostEvent(self, request_event)
+
+    def on_add_member(self, event):
+        email = event.user_email
+        permission = event.permission
+        self.members[email] = permission
 
 
 class CreationShareView(BaseView):
