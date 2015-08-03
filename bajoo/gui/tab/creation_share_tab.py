@@ -2,6 +2,7 @@
 
 import wx
 from wx.lib.filebrowsebutton import DirBrowseButton
+from wx.lib.newevent import NewCommandEvent
 
 from ...common.i18n import N_
 from ..base_view import BaseView
@@ -14,9 +15,23 @@ class CreationShareTab(wx.Panel):
     which allows user to create a new share.
     """
 
+    RequestCreateShareEvent, EVT_CREATE_SHARE_REQUEST = NewCommandEvent()
+
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
         self._view = CreationShareView(self)
+        self.Bind(wx.EVT_BUTTON, self.btn_create_clicked, id=wx.ID_OK)
+
+    def btn_create_clicked(self, event):
+        share_name = self.FindWindow('txt_share_name').GetValue()
+
+        if share_name:
+            request_event = CreationShareTab.RequestCreateShareEvent(
+                self.GetId())
+            request_event.share_name = share_name
+            request_event.members = {}
+
+            wx.PostEvent(self, request_event)
 
 
 class CreationShareView(BaseView):

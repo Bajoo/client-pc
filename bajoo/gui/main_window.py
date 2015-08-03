@@ -182,14 +182,18 @@ def main():
     logging.basicConfig()
     _logger.setLevel(logging.DEBUG)
 
-    from ..api import Session, Container
+    from ..api import Session, Container, TeamShare
 
+    session = None
     session_future = Session.create_session(
         'stran+20@bajoo.fr',
         'stran+20@bajoo.fr')
 
-    def _on_fetch_session(session):
-        return Container.list(session)
+    def _on_fetch_session(new_session):
+        global session
+        session = new_session
+
+        return Container.list(new_session)
 
     def _on_shares_fetched(shares):
         _logger.debug("%d shares fetched", len(shares))
@@ -222,10 +226,23 @@ def main():
     def _on_request_config(_event):
         win.load_config(config)
 
+    def _on_request_create_share(event):
+        share_name = event.share_name
+        members = event.members
+
+        def _on_share_created(new_share):
+            print(new_share)
+
+        global session
+        TeamShare.create(session, share_name) \
+            .then(_on_share_created)
+
     app.Bind(ListSharesTab.EVT_DATA_REQUEST,
              _on_request_shares)
     app.Bind(ListSharesTab.EVT_SHARE_DETAIL_REQUEST,
              _on_request_share_details)
+    app.Bind(CreationShareTab.EVT_CREATE_SHARE_REQUEST,
+             _on_request_create_share)
     app.Bind(GeneralSettingsTab.EVT_CONFIG_REQUEST,
              _on_request_config)
     app.Bind(NetworkSettingsTab.EVT_CONFIG_REQUEST,
