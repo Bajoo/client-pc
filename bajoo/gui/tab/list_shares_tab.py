@@ -14,7 +14,7 @@ from ..base_view import BaseView
 _logger = logging.getLogger(__name__)
 
 
-class ListSharesTab(wx.ScrolledWindow):
+class ListSharesTab(wx.Panel):
     """
     List shares tab in the main window, which displays
     the status of user's all shares.
@@ -33,9 +33,7 @@ class ListSharesTab(wx.ScrolledWindow):
 
     @ensure_gui_thread
     def __init__(self, parent):
-        wx.ScrolledWindow.__init__(self, parent)
-        self.SetScrollbars(1, 1, 1, 1)
-        self.SetScrollRate(5, 20)
+        wx.Panel.__init__(self, parent)
         self._init_images()
 
         self._shares = []
@@ -66,8 +64,7 @@ class ListSharesTab(wx.ScrolledWindow):
     def set_data(self, shares):
         self._shares = shares
         self._view.generate_share_views(shares)
-        self.GetSizer().SetSizeHints(self.GetTopLevelParent())
-        _logger.debug('%d folders fetched', len(shares))
+        self.Layout()
 
     def find_share_by_id(self, id):
         """
@@ -120,11 +117,17 @@ class ListSharesView(BaseView):
 
         btn_create_share = wx.Button(list_shares_tab, name='btn_create_share')
 
+        self.shares_window = wx.ScrolledWindow(self.window)
+        self.shares_window.SetScrollbars(1, 1, 1, 1)
+        self.shares_window.SetScrollRate(5, 20)
+
         # The sizer which will contain all the share items
         self.share_sizer = self.make_sizer(wx.VERTICAL, [], False)
+        self.shares_window.SetSizer(self.share_sizer)
 
         main_sizer = self.make_sizer(
-            wx.VERTICAL, [btn_create_share, self.share_sizer])
+            wx.VERTICAL, [btn_create_share])
+        main_sizer.Add(self.shares_window, 1, wx.EXPAND | wx.ALL, 15)
         self.window.SetSizer(main_sizer)
         self.register_i18n(btn_create_share.SetLabel, N_("New share"))
 
@@ -141,10 +144,15 @@ class ListSharesView(BaseView):
 
     def _remove_all_share_views(self):
         for (share_view, share_view_sizer) in self._share_views:
-            self.window.RemoveChild(share_view)
+            # Delete the view: it's necessary to do both, and consecutively:
+            # remove the child out of its parent
+            # then destroy itself.
+            self.shares_window.RemoveChild(share_view)
+            share_view.Destroy()
 
-            # removing the share_view_sizer will also destroy the share_view
+            # After all: removing the share_view_sizer
             self.share_sizer.Remove(share_view_sizer)
+
         self._share_views = []
 
     def _add_share_view(self, share):
@@ -154,7 +162,8 @@ class ListSharesView(BaseView):
         with the share id (e.g. lbl_something_<share_id>) so that
         we can populate them correctly later.
         """
-        share_box = wx.StaticBox(self.window, name='share_box_' + share.id)
+        share_box = wx.StaticBox(self.shares_window,
+                                 name='share_box_' + share.id)
 
         img_share = None
         lbl_share_name = wx.StaticText(
@@ -171,7 +180,7 @@ class ListSharesView(BaseView):
         btn_share_details = wx.Button(
             share_box, name='btn_share_details_' + share.id)
         self.window.Bind(wx.EVT_BUTTON, self.window.btn_share_details_clicked,
-                      btn_share_details)
+                         btn_share_details)
 
         btn_open_local_dir = wx.BitmapButton(
             share_box, bitmap=ListSharesTab.FOLDER_ICON,
@@ -201,7 +210,7 @@ class ListSharesView(BaseView):
         share_box_sizer.Add(share_box_sizer_inside, 1, wx.EXPAND)
 
         self.share_sizer.Add(share_box_sizer, 0, wx.EXPAND)
-        self._share_views.append(share_box)
+        self._share_views.append((share_box, share_box_sizer))
         self.register_many_i18n('SetLabel', {
             lbl_share_status_desc: N_('Status: '),
             # TODO: share status

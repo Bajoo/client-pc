@@ -23,16 +23,16 @@ class CreationShareTab(wx.Panel):
         self._view = CreationShareView(self)
         self.members = {}
 
-        self.Bind(wx.EVT_BUTTON, self.btn_create_clicked, id=wx.ID_OK)
+        self.Bind(wx.EVT_BUTTON, self._btn_create_clicked, id=wx.ID_OK)
         self.Bind(wx.EVT_BUTTON, self._btn_back_clicked,
                   self.FindWindow('btn_back'))
-        self.Bind(MembersShareForm.EVT_SUBMIT, self.on_add_member)
+        self.Bind(MembersShareForm.EVT_SUBMIT, self._on_add_member)
 
     def _btn_back_clicked(self, _event):
         back_event = CreationShareTab.RequestShowListShares(self.GetId())
         wx.PostEvent(self, back_event)
 
-    def btn_create_clicked(self, event):
+    def _btn_create_clicked(self, event):
         share_name = self.FindWindow('txt_share_name').GetValue()
 
         if share_name:
@@ -43,7 +43,7 @@ class CreationShareTab(wx.Panel):
 
             wx.PostEvent(self, request_event)
 
-    def on_add_member(self, event):
+    def _on_add_member(self, event):
         email = event.user_email
         permission = event.permission
         self.members[email] = permission

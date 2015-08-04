@@ -26,7 +26,8 @@ class MainWindow(wx.Frame):
     ADVANCED_SETTINGS_TAB = 4
 
     def __init__(self):
-        wx.Frame.__init__(self, parent=None)
+        wx.Frame.__init__(self, parent=None, size=(800, 600))
+        self.SetMinSize((800, 600))
         self._view = MainWindowListbook(self)
 
         sizer = wx.BoxSizer()
@@ -173,14 +174,6 @@ class MainWindowListbook(wx.Listbook, Translator):
     def on_page_changed(self, event=None):
         self.GetPage(self.GetSelection()).Show()
         self.GetParent().SetTitle(self.GetPageText(self.GetSelection()))
-        page = self.GetCurrentPage()
-
-        if page.GetSizer() and not self.GetParent().IsMaximized():
-            page.GetSizer().SetSizeHints(self)
-
-        if self.GetSizer():
-            self.GetSizer().SetSizeHints(self)
-
         self.GetParent().on_tab_changed(event)
 
 
