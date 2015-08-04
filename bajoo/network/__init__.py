@@ -1,23 +1,41 @@
 # -*- coding: utf-8 -*-
+"""Network module
+
+This module performs HTTPS requests to the Bajoo API. All requests are
+asynchronous, executed in separate threads.
+
+Three main function are available, to upload a file, download a file, or send
+a JSON request. Each of these functions returns a Future instance.
+
+This module uses the `config` module to configure the proxy settings, and
+bandwidths limitation.
+
+In case of error, an Exception is returned ready to be displayed to the user.
+The message is human-readable and marked for translation (but not translated).
+
+The module has a status, who can be disconnected, connected, or error. When an
+error happens many times, the status changes according to this error.
+- ConnectionError and HTTP 503 errors are 'disconnected'
+- ProxyError, HTTP 500 errors are 'error'
+When we are not connected, requests are done periodically, to check if the
+status has changed. As soon as the Bajoo servers responds a 200 OK, the status
+is updated.
+
+"""
 
 import io
 import logging
 import os
 import tempfile
 
-try:
-    from urllib.parse import urlparse
-except ImportError:
-    from urlparse import urlparse
-
 from concurrent.futures import ThreadPoolExecutor, CancelledError
 from requests import Session
 from requests.adapters import HTTPAdapter
 
-from ..common import config
 from ..common.future import patch
 from .request_future import RequestFuture
 from . import errors
+from .proxy import prepare_proxy
 
 
 _logger = logging.getLogger(__name__)
@@ -25,56 +43,6 @@ _logger = logging.getLogger(__name__)
 control_thread_pool = ThreadPoolExecutor(max_workers=2)
 data_thread_pool = ThreadPoolExecutor(max_workers=2)
 # TODO: configurable max_workers
-
-PROXY_MODE_SYSTEM = 'system_settings'
-PROXY_MODE_MANUAL = 'manual_settings'
-PROXY_MODE_NO = 'no_proxy'
-
-
-def _prepare_proxy():
-    proxy_mode = config.get('proxy_mode')
-
-    # mode no proxy
-    if proxy_mode == PROXY_MODE_NO:
-        return {}
-
-    # mode manual proxy
-    if proxy_mode == PROXY_MODE_MANUAL:
-        proxy_type = config.get('proxy_type').lower()
-        proxy_url, proxy_port = \
-            config.get('proxy_url'), config.get('proxy_port')
-        proxy_user, proxy_password = \
-            config.get('proxy_user'), \
-            config.get('proxy_password')
-
-        if not proxy_url:
-            # TODO: config-specific exception
-            raise Exception
-
-        # parse the host name the proxy url
-
-        proxy_string = urlparse(proxy_url).hostname  # any.proxy.addr
-
-        # add the port number
-        if proxy_port:
-            proxy_string = '%s:%s' % (proxy_string, proxy_port)
-
-        # add user & password
-        if proxy_user:
-            user = proxy_user
-
-            if proxy_password:
-                user += ':' + proxy_password + '@'  # user:pass@
-
-            proxy_string = user + proxy_string  # user:pass@any.proxy.addr:port
-
-        # type://user:pass@any.proxy.addr:port
-        proxy_string = proxy_type + "://" + proxy_string
-
-        return {'https': proxy_string}
-
-    # mode system settings (default)
-    return None
 
 
 def _prepare_session(url):
@@ -135,7 +103,7 @@ def json_request(verb, url, **params):
     def _json_request():
         session = _prepare_session(url)
         params.setdefault('timeout', 4)
-        params.setdefault('proxies', _prepare_proxy())
+        params.setdefault('proxies', prepare_proxy())
         response = session.request(method=verb, url=url, **params)
 
         _logger.debug('JSON Request %s %s -> %s',
@@ -182,7 +150,7 @@ def download(verb, url, **params):
     def _download():
         session = _prepare_session(url)
         params.setdefault('timeout', 4)
-        params.setdefault('proxies', _prepare_proxy())
+        params.setdefault('proxies', prepare_proxy())
         response = session.request(method=verb, url=url, stream=True, **params)
 
         _logger.debug("%s downloading from %s -> %s",
@@ -256,7 +224,7 @@ def upload(verb, url, source, **params):
     def _upload():
         session = _prepare_session(url)
         params.setdefault('timeout', 4)
-        params.setdefault('proxies', _prepare_proxy())
+        params.setdefault('proxies', prepare_proxy())
         file = source
 
         try:
@@ -295,7 +263,7 @@ def upload(verb, url, source, **params):
 if __name__ == "__main__":
     logging.basicConfig()
     _logger.setLevel(logging.DEBUG)
-    _logger.debug('get proxy: %s', _prepare_proxy())
+    _logger.debug('get proxy: %s', prepare_proxy())
 
     # Test JSON_request
     json_future = json_request('GET', 'http://ip.jsontest.com/')

@@ -46,6 +46,14 @@ class ConnectTimeoutError(NetworkError):
                               N_("The server did not respond on time."))
 
 
+class ProxyError(NetworkError):
+    def __init__(self, error, message=None):
+        if not message:
+            message = N_('Proxy error')
+        NetworkError.__init__(self, error,
+                              message)
+
+
 class HTTPError(NetworkError):
     """Base class for HTTP errors.
 
