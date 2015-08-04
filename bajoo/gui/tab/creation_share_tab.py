@@ -4,6 +4,7 @@ import wx
 from wx.lib.filebrowsebutton import DirBrowseButton
 from wx.lib.newevent import NewCommandEvent
 
+from ...api.team_share import permission as share_permission
 from ...common.i18n import N_
 from ..base_view import BaseView
 from ..form.members_share_form import MembersShareForm
@@ -44,9 +45,17 @@ class CreationShareTab(wx.Panel):
             wx.PostEvent(self, request_event)
 
     def _on_add_member(self, event):
+        # Retrieve the event data
         email = event.user_email
-        permission = event.permission
-        self.members[email] = permission
+        permission_name = event.permission
+
+        # Create a new member object
+        member_object = dict(share_permission[permission_name])
+        member_object['user'] = email
+
+        # Update the member and reload the members form
+        self.members[email] = member_object
+        self._view.members_share_form.load_members(self.members.values())
 
 
 class CreationShareView(BaseView):
@@ -90,7 +99,8 @@ class CreationShareView(BaseView):
 
         # the members share form
         lbl_members = wx.StaticText(creation_share_tab)
-        members_share_form = MembersShareForm(creation_share_tab)
+        self.members_share_form = MembersShareForm(creation_share_tab)
+        creation_share_tab.members_share_form = self.members_share_form
 
         # the share_options sizer contains options of exclusion & local dir
         share_options_sizer = self.make_sizer(
@@ -107,7 +117,7 @@ class CreationShareView(BaseView):
         main_sizer.AddMany([
             (share_info_sizer, 0, wx.EXPAND | wx.ALL, 15),
             (lbl_members, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 15),
-            (members_share_form, 1, wx.EXPAND | wx.ALL, 15),
+            (self.members_share_form, 1, wx.EXPAND | wx.ALL, 15),
             (share_options_sizer, 0, wx.EXPAND | wx.ALL, 15),
             (buttons_sizer, 0, wx.EXPAND | wx.ALL, 15)])
         creation_share_tab.SetSizer(main_sizer)

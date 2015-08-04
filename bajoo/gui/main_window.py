@@ -6,6 +6,7 @@ import wx
 
 from ..common.i18n import N_
 from ..common.path import resource_filename
+from ..gui.event_future import ensure_gui_thread
 from .tab import ListSharesTab
 from .tab import CreationShareTab
 from .tab import DetailsShareTab
@@ -55,7 +56,6 @@ class MainWindow(wx.Frame):
         self._view.creation_shares_tab = None
 
         self._view.SetSelection(tab_index)
-        self._view.GetPage(tab_index).Show()
 
     def _show_share_tab(self, share_tab):
         """
@@ -106,19 +106,27 @@ class MainWindow(wx.Frame):
         """Make the network settings tab shown on top."""
         self._show_tab(MainWindow.NETWORK_SETTINGS_TAB)
 
+    @ensure_gui_thread
     def load_shares(self, shares):
         """Handle the SHARES_FETCHED message,
         load & display the shares on share list tab. """
         self._view.list_shares_tab.set_data(shares)
 
+    @ensure_gui_thread
     def set_share_details(self, share_details):
         if self._view.details_share_tab:
             self._view.details_share_tab.set_data(share_details)
 
+    @ensure_gui_thread
     def load_config(self, config):
         self._view.general_settings_tab.load_config(config)
         self._view.advanced_settings_tab.load_config(config)
         self._view.network_settings_tab.load_config(config)
+
+    @ensure_gui_thread
+    def on_new_share_created(self, new_share):
+        # TODO: show notification
+        self.show_list_shares_tab()
 
     def _on_request_show_list_shares(self, _event):
         self.show_list_shares_tab()
@@ -189,25 +197,18 @@ def main():
     _logger.setLevel(logging.DEBUG)
 
     from ..api import Session, Container, TeamShare
+    from ..common.future import wait_all
 
-    session = None
-    session_future = Session.create_session(
+    session = Session.create_session(
         'stran+20@bajoo.fr',
-        'stran+20@bajoo.fr')
-
-    def _on_fetch_session(new_session):
-        global session
-        session = new_session
-
-        return Container.list(new_session)
+        'stran+20@bajoo.fr').result()
 
     def _on_shares_fetched(shares):
         _logger.debug("%d shares fetched", len(shares))
         win.load_shares(shares)
 
     def _on_request_shares(_event):
-        session_future \
-            .then(_on_fetch_session) \
+        return Container.list(session) \
             .then(_on_shares_fetched)
 
     def _on_request_share_details(event):
@@ -236,12 +237,21 @@ def main():
         share_name = event.share_name
         members = event.members
 
-        def _on_share_created(new_share):
-            print(new_share)
+        def on_members_added(__):
+            win.on_new_share_created(None)
 
-        global session
+        def on_share_created(share):
+            futures = []
+
+            for member in members:
+                permissions = members[member]
+                permissions.pop('user')
+                futures.append(share.add_member(member, permissions))
+
+            return wait_all(futures).then(on_members_added)
+
         TeamShare.create(session, share_name) \
-            .then(_on_share_created)
+            .then(on_share_created)
 
     app.Bind(ListSharesTab.EVT_DATA_REQUEST,
              _on_request_shares)

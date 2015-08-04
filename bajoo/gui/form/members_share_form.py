@@ -56,6 +56,14 @@ class MembersShareForm(BaseForm):
         self._members.remove(member)
         self._view.remove_member_view(member)
 
+    def get_data(self):
+        data = BaseForm.get_data(self)
+        cmb_permission = self.FindWindow('permission')
+        data['permission'] = cmb_permission.GetClientData(
+            cmb_permission.GetSelection())
+
+        return data
+
 
 class MembersShareView(BaseView):
     def __init__(self, members_share_form):
