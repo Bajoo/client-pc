@@ -128,6 +128,13 @@ class MainWindow(wx.Frame):
         # TODO: show notification
         self.show_list_shares_tab()
 
+    @ensure_gui_thread
+    def on_share_member_added(self, share, email, permission):
+        if self._view.details_share_tab:
+            if self._view.details_share_tab.get_displayed_share() is share:
+                self._view.details_share_tab.add_member_view(
+                    email, permission)
+
     def _on_request_show_list_shares(self, _event):
         self.show_list_shares_tab()
 
@@ -198,6 +205,7 @@ def main():
 
     from ..api import Session, Container, TeamShare
     from ..common.future import wait_all
+    from .form.members_share_form import MembersShareForm
 
     session = Session.create_session(
         'stran+20@bajoo.fr',
@@ -253,6 +261,17 @@ def main():
         TeamShare.create(session, share_name) \
             .then(on_share_created)
 
+    def _on_add_share_member(event):
+        share = event.share
+        email = event.user_email
+        permission = event.permission
+
+        def _on_member_added(__):
+            win.on_share_member_added(share, email, permission)
+
+        share.add_member(email, permission) \
+            .then(_on_member_added)
+
     app.Bind(ListSharesTab.EVT_DATA_REQUEST,
              _on_request_shares)
     app.Bind(ListSharesTab.EVT_SHARE_DETAIL_REQUEST,
@@ -265,6 +284,8 @@ def main():
              _on_request_config)
     app.Bind(AdvancedSettingsTab.EVT_CONFIG_REQUEST,
              _on_request_config)
+    app.Bind(MembersShareForm.EVT_SUBMIT,
+             _on_add_share_member)
 
     win.Show(True)
     app.MainLoop()

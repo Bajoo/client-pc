@@ -6,6 +6,8 @@ import wx
 from wx.lib.filebrowsebutton import DirBrowseButton
 from wx.lib.newevent import NewCommandEvent
 
+from ...api.team_share import permission as share_permission
+
 from ...common.i18n import N_
 from ...common.util import human_readable_bytes
 from ..base_view import BaseView
@@ -30,6 +32,8 @@ class DetailsShareTab(wx.Panel):
         wx.Panel.__init__(self, parent)
         self._share = None
         self._view = DetailsShareView(self)
+
+        self.Bind(MembersShareForm.EVT_SUBMIT, self._on_add_member)
 
     @ensure_gui_thread
     def set_data(self, share):
@@ -74,9 +78,26 @@ class DetailsShareTab(wx.Panel):
 
         self.Layout()
 
+    def get_displayed_share(self):
+        return self._share
+
+    def add_member_view(self, email, permission):
+        member_view_data = dict(permission)
+        member_view_data[u'user'] = email
+
+        self._view.members_share_form.add_member(member_view_data)
+
     def _btn_back_clicked(self, _event):
         back_event = DetailsShareTab.RequestShowListShares(self.GetId())
         wx.PostEvent(self, back_event)
+
+    def _on_add_member(self, event):
+        # Add permission dict & share object to the event, then forward it
+        permission_name = event.permission
+        event.permission = dict(share_permission[permission_name])
+        event.share = self._share
+
+        event.Skip()
 
 
 class DetailsShareView(BaseView):
@@ -121,6 +142,7 @@ class DetailsShareView(BaseView):
         lbl_members = wx.StaticText(details_share_tab)
         members_share_form = MembersShareForm(
             details_share_tab, name='members_share_form')
+        self.members_share_form = members_share_form
 
         chk_exclusion = wx.CheckBox(details_share_tab, name='chk_exclusion')
         btn_browse_location = DirBrowseButton(details_share_tab)
