@@ -33,7 +33,6 @@ class ContainerSyncPool(object):
         Args:
             on_state_change (callable): called when the global state change.
         """
-        self._containers = {}
         self._local_containers = {}
         self._updaters = {}
         self._local_watchers = {}
@@ -57,7 +56,6 @@ class ContainerSyncPool(object):
         container = local_container.container
         _logger.debug('Add container %s to sync list' % container)
 
-        self._containers[container.id] = container
         self._local_containers[container.id] = local_container
 
         last_remote_index = local_container.get_remote_index()
@@ -70,7 +68,6 @@ class ContainerSyncPool(object):
             None, last_remote_index)
 
         self._updaters[container.id] = updater
-        updater.start()
 
         watcher = FileWatcher(local_container,
                               partial(self._added_local_file, container.id),
@@ -79,9 +76,17 @@ class ContainerSyncPool(object):
                               partial(self._moved_local_files, container.id),
                               partial(self._removed_local_files, container.id))
         self._local_watchers[container.id] = watcher
-        watcher.start()
 
-        self._create_task(filesync.sync_folder, container.id, '.')
+        with self._status_lock:
+            is_paused = self._global_status == ContainerSyncPool.STATUS_PAUSE
+
+        if is_paused:
+            local_container.status = local_container.STATUS_PAUSED
+        else:
+            updater.start()
+            watcher.start()
+            self._create_task(filesync.sync_folder, container.id, '.')
+            local_container.status = local_container.STATUS_STARTED
 
     def remove(self, local_container):
         """Remove a container and stop its sync operations.
@@ -102,6 +107,7 @@ class ContainerSyncPool(object):
             # TODO: stop current operations ...
         if watcher:
             watcher.stop()
+        local_container.status = local_container.STATUS_STOPPED
 
     def pause(self):
         """Set all sync operations in pause."""
@@ -111,6 +117,8 @@ class ContainerSyncPool(object):
             # TODO: stop current operations ...
         for w in self._local_watchers:
             w.stop()
+        for lc in self._local_containers:
+            lc.status = lc.STATUS_PAUSED
         with self._status_lock:
             self._global_status = self.STATUS_PAUSE
             self._on_state_change(self._global_status)
@@ -129,8 +137,9 @@ class ContainerSyncPool(object):
                 self._global_status = self.STATUS_SYNCING
             self._on_state_change(self._global_status)
 
-        for container in self._containers:
+        for container in self._local_containers:
             self._create_task(filesync.sync_folder, container.id, '.')
+            container.status = container.STATUS_STARTED
 
     def _increment(self, _arg=None):
         with self._status_lock:
@@ -211,8 +220,8 @@ class ContainerSyncPool(object):
             *args (...): supplementary args passed to the
                 task_factory.
         """
-        container = self._containers[container_id]
         local_container = self._local_containers[container_id]
+        container = local_container.container
 
         self._increment()
         f = task_factory(container, local_container, *args,

@@ -41,6 +41,7 @@ class LocalContainer(object):
     STATUS_ERROR = 2
     STATUS_STOPPED = 3
     STATUS_PAUSED = 4
+    STATUS_STARTED = 5
 
     def __init__(self, id, name, path=None):
         self.id = id
@@ -254,3 +255,14 @@ class LocalContainer(object):
         """
         with self._index_lock:
             return {key: self._index[key][1] for key in self._index}
+
+    def is_up_to_date(self):
+        """
+        Returns:
+            boolean: True if the sync is started and no operation are ongoing;
+                False otherwise.
+        """
+        if self.status != self.STATUS_STARTED:
+            return False
+        with self._index_lock:
+            return bool(self._index_booking)
