@@ -5,7 +5,7 @@ import logging
 import wx
 from wx.lib.newevent import NewCommandEvent
 
-from ...api import MyBajoo, TeamShare
+from ...api import MyBajoo
 from ...common.i18n import N_
 from ..event_future import ensure_gui_thread
 from ..base_view import BaseView
@@ -97,12 +97,25 @@ class ListSharesTab(wx.Panel):
         wx.PostEvent(self, self.NewShareEvent(self.GetId()))
 
     def btn_share_details_clicked(self, event):
-        share = self.get_container_from_button(event, 'btn_share_details_')
+        container = self.get_container_from_button(
+            event, 'btn_share_details_')
 
-        if share:
+        if container:
             new_event = self.ShareDetailRequestEvent(self.GetId())
-            new_event.share = share
+            new_event.share = container
             wx.PostEvent(self, new_event)
+
+    def btn_open_dir_clicked(self, event):
+        container = self.get_container_from_button(
+            event, 'btn_open_local_dir_')
+
+        if container and container.path:
+            from ...common.util import open_folder
+
+            open_folder(container.path)
+            _logger.debug("Open directory %s", container.path)
+        else:
+            _logger.debug("Unknown container or directory to open")
 
     def Show(self, show=True):
         wx.PostEvent(self, self.DataRequestEvent(self.GetId()))
@@ -191,6 +204,9 @@ class ListSharesView(BaseView):
         btn_open_local_dir = wx.BitmapButton(
             share_box, bitmap=ListSharesTab.FOLDER_ICON,
             name='btn_open_local_dir_' + container.id)
+        btn_open_local_dir.Enable(container.path is not None)
+        self.window.Bind(wx.EVT_BUTTON, self.window.btn_open_dir_clicked,
+                         btn_open_local_dir)
 
         if type(container.container) is MyBajoo:
             img_share = ListSharesTab.MY_BAJOO_ICON

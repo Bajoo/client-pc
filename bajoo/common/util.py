@@ -28,6 +28,21 @@ def human_readable_bytes(value):
     return "%.2f%s" % (value, _bytes_units[-1])
 
 
+def open_folder(folder_path):
+    """Open a folder using the platform-specific explorer."""
+
+    import sys
+    import os
+    import subprocess
+
+    if sys.platform.startswith('darwin'):
+        subprocess.call(('open', folder_path))
+    elif os.name == 'nt':
+        os.startfile(folder_path)
+    elif os.name == 'posix':
+        subprocess.call(('xdg-open', folder_path))
+
+
 def main():
     values = [35, 145, 3245, 5434687, 4687465435, 53468768468576]
     print([human_readable_bytes(value) for value in values])
