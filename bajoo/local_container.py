@@ -33,6 +33,8 @@ class LocalContainer(object):
             path is not guaranteed to be valid, and shoudl be checked using
             ``check_folder()``.
         status: One of the 4 status possible. See below.
+        Container (Container): the corresponding API Container object. If the
+            container is not yet loaded, it may be None.
     """
 
     STATUS_UNKNOWN = 1
@@ -49,7 +51,7 @@ class LocalContainer(object):
         self._index = {}
         self._index_lock = RLock()  # Lock both `_index` and `_index_booking`
         self._index_booking = {}
-        self._container = None
+        self.container = None
 
     def check_path(self):
         """Check that the path is the folder corresponding to the container.

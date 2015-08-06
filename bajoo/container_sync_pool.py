@@ -45,7 +45,7 @@ class ContainerSyncPool(object):
         self._counter = 0
         self._status_lock = threading.Lock()
 
-    def add(self, local_container, container):
+    def add(self, local_container):
         """Add a container to sync.
 
         Either the container has been fetched at start of the dynamic container
@@ -53,8 +53,8 @@ class ContainerSyncPool(object):
 
         Args:
             local_container (LocalContainer)
-            container (api.Container)
         """
+        container = local_container.container
         _logger.debug('Add container %s to sync list' % container)
 
         self._containers[container.id] = container

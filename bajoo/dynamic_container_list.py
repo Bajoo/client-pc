@@ -38,9 +38,9 @@ class DynamicContainerList(object):
     },
     { ... }]
 
-    The elements in self._local_list contains one more attribute: 'container'.
-    'container' is set as soon as possible. If it doesn't exists, the element
-    should be considered being loaded.
+    The self._local_list is a list of LocalContainers. theirs 'container'
+    attributes are set as soon as possible. If the attribute doesn't exists,
+    the element should be considered being loaded.
     """
 
     def __init__(self, session, notify, start_container,
@@ -51,7 +51,7 @@ class DynamicContainerList(object):
             notify (callable): Notify the user about an event. take two
                 parameters: the summary and the text body.
             start_container (callable): callback called when the LocalContainer
-                is ready. Receive (LocalContainer, api.Container) in
+                is ready. Receive a fully loaded LocalContainer in
                 parameters.
             stop_container (callable): callback called when a container is
                 removed. Receive LocalContainer in parameters.
@@ -100,30 +100,32 @@ class DynamicContainerList(object):
             _logger.warning("The container list file can't be saved:",
                             exc_info=True)
 
-    def _init_containers(self, containers_list):
-        _logger.debug('Container(s) loaded: %s', containers_list)
+    def _init_containers(self, container_list):
+        _logger.debug('Container(s) loaded: %s', container_list)
 
         with self._list_lock:
             for local_container in self._local_list:
-                for c in containers_list:
-                    if c.id == local_container.id:
-                        if local_container.path is None:
-                            new_path = local_container.create_folder(c.name)
-                            if new_path is None:
-                                self._notify(
-                                    _('Error when adding new share'),
-                                    _('Unable to create a folder for %s:\n%s'
-                                      % (c.name, local_container.error_msg)))
-                            else:
-                                self._start_container(local_container, c)
-                        elif not local_container.check_path():
+                local_id = local_container.id
+                c = next((c for c in container_list if c.id == local_id), None)
+                local_container.container = c
+                if c:
+                    if local_container.path is None:
+                        new_path = local_container.create_folder(c.name)
+                        if new_path is None:
                             self._notify(
-                                _('Error on share sync'),
-                                _('Unable to sync the share %s:\n%s'
+                                _('Error when adding new share'),
+                                _('Unable to create a folder for %s:\n%s'
                                   % (c.name, local_container.error_msg)))
                         else:
-                            self._start_container(local_container, c)
-                        break
+                            self._start_container(local_container)
+                    elif not local_container.check_path():
+                        self._notify(
+                            _('Error on share sync'),
+                            _('Unable to sync the share %s:\n%s'
+                              % (c.name, local_container.error_msg)))
+                    else:
+                        self._start_container(local_container)
+                    break
 
         self._save_local_list()
 
@@ -148,13 +150,14 @@ class DynamicContainerList(object):
         with self._list_lock:
             for c in added_containers:
                 local_container = LocalContainer(c.id, c.name)
+                local_container.container = c
                 c_path = local_container.create_folder(c.name)
                 if c_path is None:
                     self._notify(_('Error when adding new share'),
                                  _('Unable to create a folder for %s:\n%s'
                                    % (c.name, local_container.error_msg)))
                 else:
-                    self._start_container(local_container, c)
+                    self._start_container(local_container)
                 self._local_list.append(local_container)
         self._save_local_list()
 
