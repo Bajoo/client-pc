@@ -194,10 +194,10 @@ class BajooApp(wx.App, SoftwareUpdate):
             pass  # TODO: open window
         elif event.target == TaskBarIcon.OPEN_SETTINGS:
             window = self.get_window('_main_window', MainWindow)
-            # TODO: set selected tab
+            window.show_general_settings_tab()
         elif event.target == TaskBarIcon.OPEN_SHARES:
             window = self.get_window('_main_window', MainWindow)
-            # TODO: set selected tab
+            window.show_list_shares_tab()
         else:
             _logger.error('Unexpected "Open Window" event: %s' % event)
 
