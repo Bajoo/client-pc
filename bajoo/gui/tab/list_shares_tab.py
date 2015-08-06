@@ -155,43 +155,48 @@ class ListSharesView(BaseView):
 
         self._share_views = []
 
-    def _add_share_view(self, share):
+    def _add_share_view(self, container):
         """
         Add a single box for a share item.
         The name of each control element in this box is suffixed
         with the share id (e.g. lbl_something_<share_id>) so that
         we can populate them correctly later.
+
+        Args:
+            container: <LocalContainer>
         """
         share_box = wx.StaticBox(self.shares_window,
-                                 name='share_box_' + share.id)
+                                 name='share_box_' + container.id)
 
-        img_share = None
+        # By default, set it as a team share icon
+        # to prevent unknown container type or, particularly, None.
+        img_share = ListSharesTab.TEAM_SHARE_ICON
+
         lbl_share_name = wx.StaticText(
-            share_box, label=share.name,
-            name='lbl_share_name_' + share.id)
+            share_box, label=container.name,
+            name='lbl_share_name_' + container.id)
         lbl_share_status_desc = wx.StaticText(share_box)
         lbl_share_status = wx.StaticText(
-            share_box, name='lbl_share_status_' + share.id)
+            share_box, name='lbl_share_status_' + container.id)
         share_status_box = self.make_sizer(wx.HORIZONTAL, [
             lbl_share_status_desc, lbl_share_status], outside_border=False)
         lbl_share_description = wx.StaticText(
-            share_box, name='lbl_share_desc_' + share.id)
+            share_box, name='lbl_share_desc_' + container.id)
 
         btn_share_details = wx.Button(
-            share_box, name='btn_share_details_' + share.id)
+            share_box, name='btn_share_details_' + container.id)
         self.window.Bind(wx.EVT_BUTTON, self.window.btn_share_details_clicked,
                          btn_share_details)
 
         btn_open_local_dir = wx.BitmapButton(
             share_box, bitmap=ListSharesTab.FOLDER_ICON,
-            name='btn_open_local_dir_' + share.id)
+            name='btn_open_local_dir_' + container.id)
 
-        if type(share) is MyBajoo:
+        if type(container.container) is MyBajoo:
             img_share = ListSharesTab.MY_BAJOO_ICON
             self.register_i18n(lbl_share_description.SetLabel,
                                N_('encrypted'))
-        elif type(share) is TeamShare:
-            img_share = ListSharesTab.TEAM_SHARE_ICON
+        else:
             # TODO: get number of members
             self.register_i18n(lbl_share_description.SetLabel,
                                N_('%d members'), 18)

@@ -108,8 +108,12 @@ class MainWindow(wx.Frame):
 
     @ensure_gui_thread
     def load_shares(self, shares):
-        """Handle the SHARES_FETCHED message,
-        load & display the shares on share list tab. """
+        """
+        load & display the shares on share list tab.
+
+        Args:
+            shares: list of LocalContainer
+        """
         self._view.list_shares_tab.set_data(shares)
 
     @ensure_gui_thread

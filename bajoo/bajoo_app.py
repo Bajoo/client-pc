@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
-from .gui import wx_compat  # noqa
+
 import wx
 from wx.lib.softwareupdate import SoftwareUpdate
 
@@ -18,6 +18,7 @@ from .gui.message_notifier import MessageNotifier
 from .gui.proxy_window import EVT_PROXY_FORM
 from .gui.task_bar_icon import TaskBarIcon
 from .gui.tab.creation_share_tab import CreationShareTab
+from .gui.tab.list_shares_tab import ListSharesTab
 from .common.i18n import N_
 
 
@@ -186,6 +187,8 @@ class BajooApp(wx.App, SoftwareUpdate):
 
         self.Bind(CreationShareTab.EVT_CREATE_SHARE_REQUEST,
                   self._on_request_create_share)
+        self.Bind(ListSharesTab.EVT_DATA_REQUEST,
+                  self._on_request_share_list)
 
         return True
 
@@ -224,6 +227,11 @@ class BajooApp(wx.App, SoftwareUpdate):
                 self._main_window = MainWindow()
             self._main_window.Show()
             self._main_window.Raise()
+
+    def _on_request_share_list(self, _event):
+        if self._main_window:
+            self._main_window.load_shares(
+                self._container_list.get_list())
 
     def _on_request_create_share(self, event):
         share_name = event.share_name
