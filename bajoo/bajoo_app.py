@@ -17,6 +17,9 @@ from .gui.main_window import MainWindow
 from .gui.message_notifier import MessageNotifier
 from .gui.proxy_window import EVT_PROXY_FORM
 from .gui.task_bar_icon import TaskBarIcon
+from .gui.tab.creation_share_tab import CreationShareTab
+from .common.i18n import N_
+
 
 _logger = logging.getLogger(__name__)
 
@@ -157,6 +160,7 @@ class BajooApp(wx.App, SoftwareUpdate):
         # clean variable when destroyed.
         def clean(_evt):
             setattr(self, attribute, None)
+
         self.Bind(wx.EVT_WINDOW_DESTROY, clean, source=window)
 
         setattr(self, attribute, window)
@@ -179,6 +183,10 @@ class BajooApp(wx.App, SoftwareUpdate):
 
         self.Bind(TaskBarIcon.EVT_OPEN_WINDOW, self._show_window)
         self.Bind(TaskBarIcon.EVT_EXIT, self._exit)
+
+        self.Bind(CreationShareTab.EVT_CREATE_SHARE_REQUEST,
+                  self._on_request_create_share)
+
         return True
 
     def _show_window(self, event):
@@ -216,6 +224,35 @@ class BajooApp(wx.App, SoftwareUpdate):
                 self._main_window = MainWindow()
             self._main_window.Show()
             self._main_window.Raise()
+
+    def _on_request_create_share(self, event):
+        share_name = event.share_name
+        members = event.members
+
+        from .api import TeamShare
+        from .common.future import wait_all
+
+        def on_members_added(__):
+            if self._main_window:
+                self._main_window.on_new_share_created(None)
+
+        def on_share_created(share):
+            futures = []
+
+            self._notifier.send_message(
+                N_('New team share created'),
+                N_('The new team share %s has been successfully created')
+                % share.name)
+
+            for member in members:
+                permissions = members[member]
+                permissions.pop('user')
+                futures.append(share.add_member(member, permissions))
+
+            return wait_all(futures).then(on_members_added)
+
+        TeamShare.create(self._session, share_name) \
+            .then(on_share_created)
 
     def _exit(self, _event):
         """Close all resources and quit the app."""
