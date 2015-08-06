@@ -185,6 +185,15 @@ class DynamicContainerList(object):
     def stop(self):
         self._updater.stop()
 
+    def refresh(self, callback=None):
+        """Force refresh immediately.
+
+        Args:
+            callback (Callable, optional): if set, it will be called without
+                argument as soon as the refresh is done.
+        """
+        self._updater.apply_now(callback)
+
     def get_list(self):
         """returns the list of containers.
 
