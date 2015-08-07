@@ -125,7 +125,6 @@ class DynamicContainerList(object):
                               % (c.name, local_container.error_msg)))
                     else:
                         self._start_container(local_container)
-                    break
 
         self._save_local_list()
 
