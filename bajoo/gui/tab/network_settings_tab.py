@@ -96,7 +96,12 @@ class NetworkSettingsTab(wx.Panel):
             self._config.set('upload_max_speed', upload_max_speed)
 
         proxy_data = self.FindWindow('proxy_form').get_data()
-        _logger.debug("Proxy data: %s", proxy_data)
+        self._config.set('proxy_mode', proxy_data.get('proxy_mode'))
+        self._config.set('proxy_type', proxy_data.get('proxy_type'))
+        self._config.set('proxy_url', proxy_data.get('server_uri'))
+        self._config.set('proxy_port', proxy_data.get('server_port'))
+        self._config.set('proxy_user', proxy_data.get('username'))
+        self._config.set('proxy_password', proxy_data.get('password'))
 
 
 class NetworkSettingsView(BaseView):
