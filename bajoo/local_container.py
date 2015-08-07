@@ -10,6 +10,7 @@ from threading import RLock
 from .common.i18n import _
 from .common.path import default_root_folder
 
+
 _logger = logging.getLogger(__name__)
 
 
@@ -42,6 +43,14 @@ class LocalContainer(object):
     STATUS_STOPPED = 3
     STATUS_PAUSED = 4
     STATUS_STARTED = 5
+
+    _status_textes = {
+        STATUS_UNKNOWN: _('Unknown'),
+        STATUS_ERROR: _('Error'),
+        STATUS_STOPPED: _('Stopped'),
+        STATUS_PAUSED: _('Paused'),
+        STATUS_STARTED: _('Started')
+    }
 
     def __init__(self, id, name, path=None):
         self.id = id
@@ -266,3 +275,7 @@ class LocalContainer(object):
             return False
         with self._index_lock:
             return bool(self._index_booking)
+
+    def get_status_text(self):
+        return LocalContainer._status_textes.get(
+            self.status, _('Unknown'))

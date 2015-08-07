@@ -8,7 +8,6 @@ from wx.lib.newevent import NewCommandEvent
 
 from ...api.team_share import permission as share_permission
 from ...common.i18n import N_
-from ...common.util import human_readable_bytes
 from ..base_view import BaseView
 from ..event_future import ensure_gui_thread
 from ..form.members_share_form import MembersShareForm
@@ -33,6 +32,8 @@ class DetailsShareTab(wx.Panel):
         self._view = DetailsShareView(self)
 
         self.Bind(MembersShareForm.EVT_SUBMIT, self._on_add_member)
+        self.Bind(wx.EVT_BUTTON, self._btn_back_clicked,
+                  self.FindWindow('btn_back'))
 
     @ensure_gui_thread
     def set_data(self, share):
@@ -62,23 +63,23 @@ class DetailsShareTab(wx.Panel):
         self._view.register_many_i18n('SetLabel', {
             self.FindWindow('lbl_share_nb_members'): (
                 N_('%d members'),
-                len(share.members) if has_member_data else 0),
+                len(share.container.members) if has_member_data else 0),
             self.FindWindow('lbl_share_encryption'): N_('encrypted'),
             self.FindWindow('lbl_share_type'): N_('Team share'),
             self.FindWindow('lbl_share_status'): (
-                N_('Status: %s'), share.status),
-            self.FindWindow('lbl_share_files_folders'): (
-                N_('This share contains %d folders and %d files,'),
-                (share.stats['folders'], share.stats['files'])
-            ),
-            self.FindWindow('lbl_local_space'): (
-                N_('which takes the disk space of %s'),
-                human_readable_bytes(share.stats['space'])
-            )
+                N_('Status: %s'), share.get_status_text()),
+            # TODO: stats
+            self.FindWindow('lbl_share_files_folders'): N_(' '),
+            self.FindWindow('lbl_local_space'): N_(' ')
+            # self.FindWindow('lbl_share_files_folders'): (
+            # N_('This share contains %d folders and %d files,'),
+            # (share.stats['folders'], share.stats['files'])
+            # ),
+            # self.FindWindow('lbl_local_space'): (
+            # N_('which takes the disk space of %s'),
+            # human_readable_bytes(share.stats['space'])
+            # )
         })
-
-        self.Bind(wx.EVT_BUTTON, self._btn_back_clicked,
-                  self.FindWindow('btn_back'))
 
         self.Layout()
 

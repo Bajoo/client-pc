@@ -235,8 +235,7 @@ class ListSharesView(BaseView):
         self._share_views.append((share_box, share_box_sizer))
         self.register_many_i18n('SetLabel', {
             lbl_share_status_desc: N_('Status: '),
-            # TODO: share status
-            lbl_share_status: N_('<status>'),
+            lbl_share_status: N_(container.get_status_text()),
             btn_share_details: N_('Details')
         })
 
