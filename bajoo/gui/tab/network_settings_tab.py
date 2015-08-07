@@ -3,6 +3,7 @@ import logging
 
 import wx
 from wx.lib.newevent import NewCommandEvent
+from wx.lib.masked import NumCtrl
 
 from ...common.i18n import N_
 from ..base_view import BaseView
@@ -26,6 +27,11 @@ class NetworkSettingsTab(wx.Panel):
         self._view = NetworkSettingsView(self)
 
         self._config = None
+
+        self.Bind(wx.EVT_CHECKBOX, self._on_limit_download_check_changed,
+                  self.FindWindow('chk_limit_incoming_debit'))
+        self.Bind(wx.EVT_CHECKBOX, self._on_limit_upload_check_changed,
+                  self.FindWindow('chk_limit_outgoing_debit'))
 
         self.Bind(wx.EVT_BUTTON, self._on_finished, id=wx.ID_OK)
         self.Bind(wx.EVT_BUTTON, self._on_cancelled, id=wx.ID_CANCEL)
@@ -52,18 +58,32 @@ class NetworkSettingsTab(wx.Panel):
 
         self.FindWindow('chk_limit_incoming_debit') \
             .SetValue(limit_download)
+        # Default value: 100 KB/s
         self.FindWindow('txt_incoming_limit_value') \
-            .SetValue(str(download_max_speed) if limit_download else '')
+            .SetValue(download_max_speed if limit_download else 100)
         self.FindWindow('txt_incoming_limit_value') \
             .Enable(limit_download)
         self.FindWindow('chk_limit_outgoing_debit') \
             .SetValue(limit_upload)
+        # Default value: 100 KB/s
         self.FindWindow('txt_outgoing_limit_value') \
-            .SetValue(str(upload_max_speed) if limit_upload else '')
+            .SetValue(upload_max_speed if limit_upload else 100)
         self.FindWindow('txt_outgoing_limit_value') \
             .Enable(limit_upload)
 
         self.FindWindow('proxy_form').populate()
+
+    def _on_limit_download_check_changed(self, event):
+        limit_download = self.FindWindow('chk_limit_incoming_debit') \
+            .GetValue()
+        self.FindWindow('txt_incoming_limit_value') \
+            .Enable(limit_download)
+
+    def _on_limit_upload_check_changed(self, event):
+        limit_upload = self.FindWindow('chk_limit_outgoing_debit') \
+            .GetValue()
+        self.FindWindow('txt_outgoing_limit_value') \
+            .Enable(limit_upload)
 
     def _on_finished(self, _event):
         """
@@ -115,8 +135,9 @@ class NetworkSettingsView(BaseView):
             network_settings_screen, name='chk_limit_incoming_debit')
 
         # txt_incoming_limit_value
-        txt_incoming_limit_value = wx.TextCtrl(
-            network_settings_screen, name='txt_incoming_limit_value')
+        txt_incoming_limit_value = NumCtrl(
+            network_settings_screen,
+            name='txt_incoming_limit_value', min=1)
         lbl_incoming_unit = wx.StaticText(network_settings_screen)
 
         # chk_limit_outgoing_debit
@@ -124,8 +145,9 @@ class NetworkSettingsView(BaseView):
             network_settings_screen, name='chk_limit_outgoing_debit')
 
         # txt_outgoing_limit_value
-        txt_outgoing_limit_value = wx.TextCtrl(
-            network_settings_screen, name='txt_outgoing_limit_value')
+        txt_outgoing_limit_value = NumCtrl(
+            network_settings_screen,
+            name='txt_outgoing_limit_value', min=1)
         lbl_outgoing_unit = wx.StaticText(network_settings_screen)
 
         # bandwidth_grid_sizer: Align TextCtrls with other static texts
