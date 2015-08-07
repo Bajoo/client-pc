@@ -22,7 +22,6 @@ from .gui.tab.list_shares_tab import ListSharesTab
 from .gui.tab.general_settings_tab import GeneralSettingsTab
 from .gui.tab.network_settings_tab import NetworkSettingsTab
 from .gui.tab.advanced_settings_tab import AdvancedSettingsTab
-
 from .common.i18n import N_
 
 
@@ -79,7 +78,9 @@ class BajooApp(wx.App, SoftwareUpdate):
         # TODO: Set real value for production.
         base_url = "http://192.168.1.120:8000"
         self.InitUpdates(base_url, base_url + "/" + 'ChangeLog.txt')
-        self.AutoCheckForUpdate(0)
+
+        if config.get('auto_update'):
+            self.AutoCheckForUpdate(0)
 
         # Note: the loop event only works if at least one wx.Window exists. As
         # wx.TaskBarIcon is not a wx.Window, we need to keep this unused frame.
@@ -201,6 +202,8 @@ class BajooApp(wx.App, SoftwareUpdate):
                   self._on_request_config)
         self.Bind(AdvancedSettingsTab.EVT_CONFIG_REQUEST,
                   self._on_request_config)
+        self.Bind(AdvancedSettingsTab.EVT_CHECK_UPDATES_REQUEST,
+                  self._on_request_check_updates)
 
         return True
 
@@ -272,6 +275,10 @@ class BajooApp(wx.App, SoftwareUpdate):
     def _on_request_config(self, _event):
         if self._main_window:
             self._main_window.load_config(config)
+
+    def _on_request_check_updates(self, _event):
+        _logger.debug("Check for updates...")
+        self.CheckForUpdate()
 
     def _on_request_create_share(self, event):
         share_name = event.share_name

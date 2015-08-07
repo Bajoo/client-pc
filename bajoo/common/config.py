@@ -26,6 +26,7 @@ _logger = logging.getLogger(__name__)
 # Default config dict. Values not present in this dict are not valid.
 # Each entry contains the type expected, and the default value.
 _default_config = {
+    'auto_update': {'type': bool, 'default': True},
     'lang': {'type': str, 'default': None},
     # TODO: set default debug_mode to False for stable release
     'debug_mode': {'type': bool, 'default': True},

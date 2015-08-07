@@ -22,16 +22,57 @@ class AdvancedSettingsTab(wx.Panel):
     """
 
     ConfigRequest, EVT_CONFIG_REQUEST = NewCommandEvent()
+    CheckUpdatesRequest, EVT_CHECK_UPDATES_REQUEST = NewCommandEvent()
 
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
         self._view = AdvancedSettingsView(self)
 
+        self._config = None
+
+        self.Bind(wx.EVT_BUTTON, self._on_finished, id=wx.ID_OK)
+        self.Bind(wx.EVT_BUTTON, self._on_cancelled, id=wx.ID_CANCEL)
+        self.Bind(wx.EVT_BUTTON, self._on_applied, id=wx.ID_APPLY)
+
     def Show(self, show=True):
         wx.PostEvent(self, self.ConfigRequest(self.GetId()))
 
     def load_config(self, config):
-        _logger.debug(config)
+        if config:
+            self._config = config
+
+        if self._config is None:
+            _logger.debug("Null config object detected !!!")
+            return
+
+        self.FindWindow('chk_auto_update').SetValue(
+            self._config.get('auto_update'))
+
+        self.Bind(wx.EVT_BUTTON, self._on_check_update,
+                  self.FindWindow('btn_check_updates'))
+
+    def _on_finished(self, _event):
+        """
+        Apply the setting changes & send event to close the window.
+        """
+        self._on_applied(_event)
+        self.GetTopLevelParent().Close()
+
+    def _on_cancelled(self, _event):
+        """
+        Handle the click event on the button Cancel:
+        Reset the UI elements according to the current config.
+        """
+        self.load_config(None)
+
+    def _on_applied(self, _event):
+        self._config.set(
+            'auto_update',
+            self.FindWindow('chk_auto_update').GetValue())
+
+    def _on_check_update(self, _event):
+        event = AdvancedSettingsTab.CheckUpdatesRequest(self.GetId())
+        wx.PostEvent(self, event)
 
 
 class AdvancedSettingsView(BaseView):
@@ -43,6 +84,7 @@ class AdvancedSettingsView(BaseView):
         # chk_send_report
         chk_send_report = wx.CheckBox(
             advanced_settings_screen, name='chk_send_report')
+        chk_send_report.Disable()
 
         # chk_debug_mode
         chk_debug_mode = wx.CheckBox(
@@ -61,7 +103,7 @@ class AdvancedSettingsView(BaseView):
 
         # btn_check_updates
         btn_check_updates = wx.Button(
-            advanced_settings_screen, name='btn_verify_updates')
+            advanced_settings_screen, name='btn_check_updates')
 
         # chk_exclude_hidden_files
         chk_exclude_hidden_files = wx.CheckBox(
