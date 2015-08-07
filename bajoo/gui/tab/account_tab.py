@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import wx
+from wx.lib.newevent import NewCommandEvent
 from wx.lib.agw.hyperlink import HyperLinkCtrl
 
 from ...common.i18n import N_
@@ -20,6 +21,8 @@ class AccountTab(wx.Panel):
     * disconnect
     """
 
+    DataRequestEvent, EVT_DATA_REQUEST = NewCommandEvent()
+
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
         self._view = AccountView(self)
@@ -31,13 +34,18 @@ class AccountTab(wx.Panel):
             'quota_used': 0
         }
 
+        # TODO: disable for next release
+        self.FindWindow('btn_disconnect').Disable()
+        self.FindWindow('btn_reinit_passphrase').Disable()
+        self.FindWindow('btn_change_password').Disable()
+
         self.Bind(wx.EVT_BUTTON, self._on_open_bajoo_folder,
                   self.FindWindowByName('btn_open_bajoo_folder'))
 
     def set_data(self, key, value):
         self._data[key] = value
 
-    def _populate(self):
+    def populate(self):
         quota_str = human_readable_bytes(self._data['quota'])
         quota_used_str = human_readable_bytes(self._data['quota_used'])
         quota_percentage = 0
@@ -70,8 +78,8 @@ class AccountTab(wx.Panel):
         open_folder(path)
 
     def Show(self, show=True):
-        self._populate()
-        wx.Panel.Show(self, show)
+        event = AccountTab.DataRequestEvent(self.GetId())
+        wx.PostEvent(self, event)
 
 
 class AccountView(BaseView):

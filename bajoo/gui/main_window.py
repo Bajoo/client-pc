@@ -106,6 +106,17 @@ class MainWindow(wx.Frame):
         """Make the network settings tab shown on top."""
         self._show_tab(MainWindow.NETWORK_SETTINGS_TAB)
 
+    def set_account_info(self, account_info):
+        """
+        Args:
+            account_info (dict)
+        """
+        if self._view.account_tab:
+            for key, value in account_info.items():
+                self._view.account_tab.set_data(key, value)
+
+            self._view.account_tab.populate()
+
     @ensure_gui_thread
     def load_shares(self, shares):
         """

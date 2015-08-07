@@ -5,6 +5,8 @@ import logging
 import wx
 from wx.lib.softwareupdate import SoftwareUpdate
 
+from .api import User
+
 from .common import config
 from .common.path import get_data_dir
 from .connection_registration_process import connect_or_register
@@ -17,6 +19,7 @@ from .gui.main_window import MainWindow
 from .gui.message_notifier import MessageNotifier
 from .gui.proxy_window import EVT_PROXY_FORM
 from .gui.task_bar_icon import TaskBarIcon
+from .gui.tab.account_tab import AccountTab
 from .gui.tab.creation_share_tab import CreationShareTab
 from .gui.tab.list_shares_tab import ListSharesTab
 from .gui.tab.details_share_tab import DetailsShareTab
@@ -212,6 +215,8 @@ class BajooApp(wx.App, SoftwareUpdate):
                   self._on_request_quit_share)
         self.Bind(DetailsShareTab.EVT_DELETE_SHARE_REQUEST,
                   self._on_request_delete_share)
+        self.Bind(AccountTab.EVT_DATA_REQUEST,
+                  self._on_request_account_info)
 
         return True
 
@@ -369,6 +374,26 @@ class BajooApp(wx.App, SoftwareUpdate):
         # TODO: stop the synchro on this share
         share.container.delete().then(
             _on_share_deleted, _on_delete_share_failed)
+
+    def _on_request_account_info(self, event):
+        def _on_user_loaded(user):
+            return user.get_user_info()
+
+        def _on_user_info_fetched(result):
+            email = result.get('email', '')
+
+            if self._main_window:
+                # TODO: replace stimulated data
+                self._main_window.set_account_info({
+                    'email': email,
+                    'account_type': 'FREE - 2GB',
+                    'n_shares': len(self._container_list.get_list()),
+                    'quota': 2147483648,  # 2GB
+                    'quota_used': 536870912  # 500MB
+                })
+
+        User.load(self._session).then(_on_user_loaded) \
+            .then(_on_user_info_fetched)
 
     def _exit(self, _event):
         """Close all resources and quit the app."""
