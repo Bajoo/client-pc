@@ -19,6 +19,10 @@ from .gui.proxy_window import EVT_PROXY_FORM
 from .gui.task_bar_icon import TaskBarIcon
 from .gui.tab.creation_share_tab import CreationShareTab
 from .gui.tab.list_shares_tab import ListSharesTab
+from .gui.tab.general_settings_tab import GeneralSettingsTab
+from .gui.tab.network_settings_tab import NetworkSettingsTab
+from .gui.tab.advanced_settings_tab import AdvancedSettingsTab
+
 from .common.i18n import N_
 
 
@@ -191,6 +195,12 @@ class BajooApp(wx.App, SoftwareUpdate):
                   self._on_request_share_list)
         self.Bind(ListSharesTab.EVT_CONTAINER_DETAIL_REQUEST,
                   self._on_request_container_details)
+        self.Bind(GeneralSettingsTab.EVT_CONFIG_REQUEST,
+                  self._on_request_config)
+        self.Bind(NetworkSettingsTab.EVT_CONFIG_REQUEST,
+                  self._on_request_config)
+        self.Bind(AdvancedSettingsTab.EVT_CONFIG_REQUEST,
+                  self._on_request_config)
 
         return True
 
@@ -258,6 +268,10 @@ class BajooApp(wx.App, SoftwareUpdate):
         else:
             if self._main_window:
                 self._main_window.set_share_details(l_container)
+
+    def _on_request_config(self, _event):
+        if self._main_window:
+            self._main_window.load_config(config)
 
     def _on_request_create_share(self, event):
         share_name = event.share_name

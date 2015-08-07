@@ -65,7 +65,7 @@ class GeneralSettingsTab(wx.Panel):
         Apply the setting changes & send event to close the window.
         """
         self._on_applied(_event)
-        # TODO: send event to close the window
+        self.GetTopLevelParent().Close()
 
     def _on_cancelled(self, _event):
         """
