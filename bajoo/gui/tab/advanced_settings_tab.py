@@ -47,6 +47,10 @@ class AdvancedSettingsTab(wx.Panel):
 
         self.FindWindow('chk_auto_update').SetValue(
             self._config.get('auto_update'))
+        self.FindWindow('chk_debug_mode').SetValue(
+            self._config.get('debug_mode'))
+        self.FindWindow('chk_exclude_hidden_files').SetValue(
+            self._config.get('exclude_hidden_files'))
 
         self.Bind(wx.EVT_BUTTON, self._on_check_update,
                   self.FindWindow('btn_check_updates'))
@@ -69,6 +73,12 @@ class AdvancedSettingsTab(wx.Panel):
         self._config.set(
             'auto_update',
             self.FindWindow('chk_auto_update').GetValue())
+        self._config.set(
+            'debug_mode',
+            self.FindWindow('chk_debug_mode').GetValue())
+        self._config.set(
+            'exclude_hidden_files',
+            self.FindWindow('chk_exclude_hidden_files').GetValue())
 
     def _on_check_update(self, _event):
         event = AdvancedSettingsTab.CheckUpdatesRequest(self.GetId())
