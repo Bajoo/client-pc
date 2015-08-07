@@ -6,6 +6,8 @@ from wx.lib.agw.hyperlink import HyperLinkCtrl
 from ...common.i18n import N_
 from ...common.util import human_readable_bytes
 from ..base_view import BaseView
+from ...common import config
+from ...common.util import open_folder
 
 
 class AccountTab(wx.Panel):
@@ -28,6 +30,9 @@ class AccountTab(wx.Panel):
             'quota': 1,
             'quota_used': 0
         }
+
+        self.Bind(wx.EVT_BUTTON, self._on_open_bajoo_folder,
+                  self.FindWindowByName('btn_open_bajoo_folder'))
 
     def set_data(self, key, value):
         self._data[key] = value
@@ -59,6 +64,10 @@ class AccountTab(wx.Panel):
         self.FindWindow('gauge_text_min').SetLabelText('0')
         self.FindWindow('gauge_text_value').SetLabelText(quota_used_str)
         self.FindWindow('gauge_text_max').SetLabelText(quota_str)
+
+    def _on_open_bajoo_folder(self, event):
+        path = config.get('root_folder')
+        open_folder(path)
 
     def Show(self, show=True):
         self._populate()
