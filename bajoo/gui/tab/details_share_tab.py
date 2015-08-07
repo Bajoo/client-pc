@@ -34,6 +34,8 @@ class DetailsShareTab(wx.Panel):
         self.Bind(MembersShareForm.EVT_SUBMIT, self._on_add_member)
         self.Bind(wx.EVT_BUTTON, self._btn_back_clicked,
                   self.FindWindow('btn_back'))
+        self.Bind(wx.EVT_BUTTON, self._btn_open_folder_clicked,
+                  self.FindWindow('btn_open_folder'))
 
     @ensure_gui_thread
     def set_data(self, share):
@@ -81,6 +83,7 @@ class DetailsShareTab(wx.Panel):
             # )
         })
 
+        self.FindWindow('btn_open_folder').Enable(share.path is not None)
         self.Layout()
 
     def get_displayed_share(self):
@@ -103,6 +106,15 @@ class DetailsShareTab(wx.Panel):
         event.share = self._share
 
         event.Skip()
+
+    def _btn_open_folder_clicked(self, _event):
+        if self._share and self._share.path:
+            from ...common.util import open_folder
+
+            open_folder(self._share.path)
+            _logger.debug("Open directory %s", self._share.path)
+        else:
+            _logger.debug("Unknown container or directory to open")
 
 
 class DetailsShareView(BaseView):
@@ -204,6 +216,10 @@ class DetailsShareView(BaseView):
             chk_exclusion: N_('Do not synchronize on this PC'),
             btn_browse_location: N_('Location on this PC')
         })
+
+        # TODO: disable for next release
+        chk_exclusion.Disable()
+        btn_browse_location.Disable()
 
 
 def main():
