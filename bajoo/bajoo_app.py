@@ -5,7 +5,7 @@ import logging
 import wx
 from wx.lib.softwareupdate import SoftwareUpdate
 
-from .api import User
+from .api import User, TeamShare
 
 from .common import config
 from .common.path import get_data_dir
@@ -278,7 +278,8 @@ class BajooApp(wx.App, SoftwareUpdate):
             if self._main_window:
                 self._main_window.set_share_details(l_container)
 
-        if l_container.container:
+        if l_container.container \
+                and type(l_container.container) is TeamShare:
             l_container.container.list_members() \
                 .then(_on_members_listed)
         else:
@@ -348,8 +349,14 @@ class BajooApp(wx.App, SoftwareUpdate):
 
             return wait_all(futures).then(on_members_added)
 
+        def on_create_share_failed(__):
+            self._notifier.send_message(
+                N_('Error'),
+                N_('Cannot create share %s')
+                % share_name)
+
         TeamShare.create(self._session, share_name) \
-            .then(on_share_created)
+            .then(on_share_created, on_create_share_failed)
 
     def _on_request_quit_share(self, event):
         share = event.share

@@ -215,8 +215,9 @@ class ListSharesView(BaseView):
                                N_('encrypted'))
         else:
             # TODO: get number of members
-            self.register_i18n(lbl_share_description.SetLabel,
-                               N_('%d members'), 18)
+            # self.register_i18n(lbl_share_description.SetLabel,
+            #                    N_('%d members'), 18)
+            lbl_share_description.SetLabel('')
 
         share_box_sizer = wx.StaticBoxSizer(share_box)
 
