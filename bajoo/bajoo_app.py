@@ -189,6 +189,8 @@ class BajooApp(wx.App, SoftwareUpdate):
                   self._on_request_create_share)
         self.Bind(ListSharesTab.EVT_DATA_REQUEST,
                   self._on_request_share_list)
+        self.Bind(ListSharesTab.EVT_CONTAINER_DETAIL_REQUEST,
+                  self._on_request_container_details)
 
         return True
 
@@ -232,6 +234,30 @@ class BajooApp(wx.App, SoftwareUpdate):
         if self._main_window:
             self._main_window.load_shares(
                 self._container_list.get_list())
+
+    def _on_request_container_details(self, event):
+        l_container = event.container
+
+        # TODO: Replace stimulated data
+        l_container.encrypted = True
+        l_container.stats = {
+            'folders': 4,
+            'files': 168,
+            'space': 260000000
+        }
+
+        def _on_members_listed(members):
+            l_container.container.members = members
+
+            if self._main_window:
+                self._main_window.set_share_details(l_container)
+
+        if l_container.container:
+            l_container.container.list_members() \
+                .then(_on_members_listed)
+        else:
+            if self._main_window:
+                self._main_window.set_share_details(l_container)
 
     def _on_request_create_share(self, event):
         share_name = event.share_name

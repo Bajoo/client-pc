@@ -37,7 +37,7 @@ class MainWindow(wx.Frame):
 
         self.Bind(ListSharesTab.EVT_NEW_SHARE,
                   self._on_request_create_new_share)
-        self.Bind(ListSharesTab.EVT_SHARE_DETAIL_REQUEST,
+        self.Bind(ListSharesTab.EVT_CONTAINER_DETAIL_REQUEST,
                   self._on_request_share_details)
         self.Bind(CreationShareTab.EVT_SHOW_LIST_SHARE_REQUEST,
                   self._on_request_show_list_shares)
@@ -278,7 +278,7 @@ def main():
 
     app.Bind(ListSharesTab.EVT_DATA_REQUEST,
              _on_request_shares)
-    app.Bind(ListSharesTab.EVT_SHARE_DETAIL_REQUEST,
+    app.Bind(ListSharesTab.EVT_CONTAINER_DETAIL_REQUEST,
              _on_request_share_details)
     app.Bind(CreationShareTab.EVT_CREATE_SHARE_REQUEST,
              _on_request_create_share)

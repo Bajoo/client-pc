@@ -7,7 +7,6 @@ from wx.lib.filebrowsebutton import DirBrowseButton
 from wx.lib.newevent import NewCommandEvent
 
 from ...api.team_share import permission as share_permission
-
 from ...common.i18n import N_
 from ...common.util import human_readable_bytes
 from ..base_view import BaseView
@@ -40,7 +39,11 @@ class DetailsShareTab(wx.Panel):
         self._share = share
 
         self.FindWindow('lbl_share_name').SetLabel(share.name)
-        self.FindWindow('members_share_form').load_members(share.members)
+        has_member_data = share.container and share.container.members
+
+        if has_member_data:
+            self.FindWindow('members_share_form') \
+                .load_members(share.container.members)
 
         # Remove all i18n registrations
         self._view.remove_i18n(
@@ -58,7 +61,8 @@ class DetailsShareTab(wx.Panel):
 
         self._view.register_many_i18n('SetLabel', {
             self.FindWindow('lbl_share_nb_members'): (
-                N_('%d members'), len(share.members)),
+                N_('%d members'),
+                len(share.members) if has_member_data else 0),
             self.FindWindow('lbl_share_encryption'): N_('encrypted'),
             self.FindWindow('lbl_share_type'): N_('Team share'),
             self.FindWindow('lbl_share_status'): (

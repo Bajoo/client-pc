@@ -25,7 +25,8 @@ class ListSharesTab(wx.Panel):
 
     DataRequestEvent, EVT_DATA_REQUEST = NewCommandEvent()
     NewShareEvent, EVT_NEW_SHARE = NewCommandEvent()
-    ShareDetailRequestEvent, EVT_SHARE_DETAIL_REQUEST = NewCommandEvent()
+    ContainerDetailRequestEvent, EVT_CONTAINER_DETAIL_REQUEST = \
+        NewCommandEvent()
 
     TEAM_SHARE_ICON = None
     MY_BAJOO_ICON = None
@@ -101,8 +102,8 @@ class ListSharesTab(wx.Panel):
             event, 'btn_share_details_')
 
         if container:
-            new_event = self.ShareDetailRequestEvent(self.GetId())
-            new_event.share = container
+            new_event = self.ContainerDetailRequestEvent(self.GetId())
+            new_event.container = container
             wx.PostEvent(self, new_event)
 
     def btn_open_dir_clicked(self, event):
