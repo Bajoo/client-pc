@@ -78,34 +78,42 @@ class MainWindow(wx.Frame):
             self._view.details_share_tab = None
             self._view.creation_shares_tab = None
 
+    @ensure_gui_thread
     def show_account_tab(self):
         """Make the account tab shown on top."""
         self._show_tab(MainWindow.ACCOUNT_TAB)
 
+    @ensure_gui_thread
     def show_list_shares_tab(self):
         """Make the share list tab shown on top."""
         self._show_tab(MainWindow.LIST_SHARES_TAB)
 
+    @ensure_gui_thread
     def show_creation_shares_tab(self):
         """Make the creation share tab shown on top."""
         self._show_share_tab(self._view.creation_shares_tab)
 
+    @ensure_gui_thread
     def show_details_share_tab(self, share):
         self._show_share_tab(self._view.details_share_tab)
         self._view.details_share_tab.set_data(share)
 
+    @ensure_gui_thread
     def show_general_settings_tab(self):
         """Make the general settings tab shown on top."""
         self._show_tab(MainWindow.GENERAL_SETTINGS_TAB)
 
+    @ensure_gui_thread
     def show_advanced_settings_tab(self):
         """Make the advanced settings tab shown on top."""
         self._show_tab(MainWindow.ADVANCED_SETTINGS_TAB)
 
+    @ensure_gui_thread
     def show_network_settings_tab(self):
         """Make the network settings tab shown on top."""
         self._show_tab(MainWindow.NETWORK_SETTINGS_TAB)
 
+    @ensure_gui_thread
     def set_account_info(self, account_info):
         """
         Args:

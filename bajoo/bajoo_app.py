@@ -332,6 +332,8 @@ class BajooApp(wx.App, SoftwareUpdate):
 
         def on_members_added(__):
             if self._main_window:
+                self._main_window.load_shares(
+                    self._container_list.get_list())
                 self._main_window.on_new_share_created(None)
 
         def on_share_created(share):
@@ -355,6 +357,11 @@ class BajooApp(wx.App, SoftwareUpdate):
                 N_('Cannot create share %s')
                 % share_name)
 
+            if self._main_window:
+                self._main_window.load_shares(
+                    self._container_list.get_list())
+                self._main_window.on_new_share_created(None)
+
         TeamShare.create(self._session, share_name) \
             .then(on_share_created, on_create_share_failed)
 
@@ -366,13 +373,19 @@ class BajooApp(wx.App, SoftwareUpdate):
     def _on_request_delete_share(self, event):
         share = event.share
 
-        def _on_share_deleted():
+        def _on_share_deleted(_):
             self._notifier.send_message(
                 N_('Team share deleted'),
                 N_('Team share %s has been successfully deleted from server.')
                 % share.name)
+            self._container_list.refresh()
 
-        def _on_delete_share_failed():
+            if self._main_window:
+                self._main_window.load_shares(
+                    self._container_list.get_list())
+                self._main_window.show_list_shares_tab()
+
+        def _on_delete_share_failed(_):
             self._notifier.send_message(
                 N_('Error'),
                 N_('Cannot delete team share %s for instant.')
