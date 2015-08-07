@@ -16,7 +16,9 @@ except ImportError:
     import ConfigParser as configparser  # Python2
 import logging
 import os.path
+
 from . import path as bajoo_path
+
 
 _logger = logging.getLogger(__name__)
 
@@ -39,7 +41,9 @@ _default_config = {
     'root_folder': {'type': str, 'default': None},
     'launched_at_startup': {'type': bool, 'default': True},
     'contextual_icon': {'type': bool, 'default': True},
-    'notifications': {'type': bool, 'default': True}
+    'notifications': {'type': bool, 'default': True},
+    'download_max_speed': {'type': float, 'default': None},
+    'upload_max_speed': {'type': float, 'default': None}
 }
 
 # Actual config parser

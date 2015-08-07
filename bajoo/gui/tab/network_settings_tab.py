@@ -25,11 +25,41 @@ class NetworkSettingsTab(wx.Panel):
         wx.Panel.__init__(self, parent)
         self._view = NetworkSettingsView(self)
 
+        self._config = None
+
     def Show(self, show=True):
         wx.PostEvent(self, self.ConfigRequest(self.GetId()))
 
     def load_config(self, config):
-        _logger.debug(config)
+        if config:
+            self._config = config
+
+        if self._config is None:
+            _logger.debug("Null config object detected !!!")
+            return
+
+        # The proxy form config has already been loaded
+        # So load only other fields.
+        download_max_speed = self._config.get('download_max_speed')
+        limit_download = download_max_speed is not None
+
+        upload_max_speed = self._config.get('upload_max_speed')
+        limit_upload = upload_max_speed is not None
+
+        self.FindWindow('chk_limit_incoming_debit') \
+            .SetValue(limit_download)
+        self.FindWindow('txt_incoming_limit_value') \
+            .SetValue(str(download_max_speed) if limit_download else '')
+        self.FindWindow('txt_incoming_limit_value') \
+            .Enable(limit_download)
+        self.FindWindow('chk_limit_outgoing_debit') \
+            .SetValue(limit_upload)
+        self.FindWindow('txt_outgoing_limit_value') \
+            .SetValue(str(upload_max_speed) if limit_upload else '')
+        self.FindWindow('txt_outgoing_limit_value') \
+            .Enable(limit_upload)
+
+        self.FindWindow('proxy_form').populate()
 
 
 class NetworkSettingsView(BaseView):
