@@ -234,7 +234,7 @@ def wait_all(futures):
     _remaining_tasks = [len(futures)]
     results = [None] * len(futures)
 
-    if _remaining_tasks == 0:
+    if _remaining_tasks[0] == 0:
         return Future.resolve([])
 
     def _done_callback(index, value):
