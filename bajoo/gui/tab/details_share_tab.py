@@ -90,7 +90,7 @@ class DetailsShareTab(wx.Panel):
         member_view_data = dict(permission)
         member_view_data[u'user'] = email
 
-        self._view.members_share_form.add_member(member_view_data)
+        self._view.members_share_form.on_add_member(member_view_data)
 
     def _btn_back_clicked(self, _event):
         back_event = DetailsShareTab.RequestShowListShares(self.GetId())

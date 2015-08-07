@@ -22,6 +22,7 @@ from .gui.tab.list_shares_tab import ListSharesTab
 from .gui.tab.general_settings_tab import GeneralSettingsTab
 from .gui.tab.network_settings_tab import NetworkSettingsTab
 from .gui.tab.advanced_settings_tab import AdvancedSettingsTab
+from .gui.form.members_share_form import MembersShareForm
 from .common.i18n import N_
 
 
@@ -204,6 +205,8 @@ class BajooApp(wx.App, SoftwareUpdate):
                   self._on_request_config)
         self.Bind(AdvancedSettingsTab.EVT_CHECK_UPDATES_REQUEST,
                   self._on_request_check_updates)
+        self.Bind(MembersShareForm.EVT_SUBMIT,
+                  self._on_add_share_member)
 
         return True
 
@@ -279,6 +282,35 @@ class BajooApp(wx.App, SoftwareUpdate):
     def _on_request_check_updates(self, _event):
         _logger.debug("Check for updates...")
         self.CheckForUpdate()
+
+    def _on_add_share_member(self, event):
+        share = event.share
+        email = event.user_email
+        permission = event.permission
+
+        def _on_member_added(__):
+            self._notifier.send_message(
+                N_('Member added'),
+                N_('%s has been given access to team share \'%s\'')
+                % (email, share.name))
+
+            if self._main_window:
+                self._main_window.on_share_member_added(
+                    share, email, permission)
+
+        def _on_member_add_error(__):
+            self._notifier.send_message(
+                N_('Error'),
+                N_('Cannot add this member to team share, '
+                   'maybe email does not exist.'))
+
+        if share.container:
+            share.container.add_member(email, permission) \
+                .then(_on_member_added, _on_member_add_error)
+        else:
+            self._notifier.send_message(
+                N_('Error'),
+                N_('Unidentified container, cannot add member'))
 
     def _on_request_create_share(self, event):
         share_name = event.share_name

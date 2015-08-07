@@ -36,7 +36,9 @@ class MembersShareForm(BaseForm):
         self._view = MembersShareView(self)
         self.validators = self._view.get_validators()
         self._members = []
+
         self.Bind(wx.EVT_BUTTON, self.submit, id=wx.ID_APPLY)
+        self.Bind(dv.EVT_DATAVIEW_SELECTION_CHANGED, self._on_select_member)
 
     def _init_icons(self):
         if not MembersShareForm.ADD_ICON:
@@ -56,6 +58,9 @@ class MembersShareForm(BaseForm):
         self._members.remove(member)
         self._view.remove_member_view(member)
 
+    def on_add_member(self, member):
+        self._view.on_add_member(member)
+
     def get_data(self):
         data = BaseForm.get_data(self)
         cmb_permission = self.FindWindow('permission')
@@ -63,6 +68,13 @@ class MembersShareForm(BaseForm):
             cmb_permission.GetSelection())
 
         return data
+
+    def _on_select_member(self, _event):
+        row = self._view._members_list_view.GetSelectedRow()
+
+        if row != wx.NOT_FOUND:
+            email = self._view._members_list_view.GetValue(row, 0)
+            self.FindWindow('user_email').SetValue(email)
 
 
 class MembersShareView(BaseView):
@@ -151,6 +163,20 @@ class MembersShareView(BaseView):
         # TODO: add delete button
         delete = 'Delete'
         self._members_list_view.AppendItem([email, permission, delete])
+
+    def on_add_member(self, member):
+        _logger.debug("on_share_member_added")
+        if self._data:
+            for index, member_data in enumerate(self._data):
+                _logger.debug('%s vs %s', member_data.get(u'user'), member.get(u'user'))
+                if member_data.get(u'user') == member.get(u'user'):
+                    self._data.remove(member_data)
+                    self._data.insert(index, member)
+
+                    self.load_members_view()
+                    return
+
+        self.add_member_view(member)
 
     def remove_member_view(self, member):
         pass
