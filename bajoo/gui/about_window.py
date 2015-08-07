@@ -45,12 +45,11 @@ class AboutBajooView(BaseView):
         BaseView.__init__(self, about_panel)
         from ..__version__ import __version__
 
-        bmp_bajoo = wx.Image(
-            resource_filename('assets/images/home_bajoo_mascot.png')) \
-            .ConvertToBitmap()
+        self.window.SetBackgroundColour(wx.Colour(255, 255, 255))
+
+        banner_path = resource_filename('assets/images/side_banner.png')
+        bmp_bajoo = wx.Image(banner_path).ConvertToBitmap()
         img_view_bajoo = wx.StaticBitmap(about_panel, bitmap=bmp_bajoo)
-        lbl_bajoo2 = wx.StaticText(
-            about_panel, label='Bajoo 2')
         lbl_description = wx.StaticText(
             about_panel, name='lbl_description',
             label=N_('Official client for Bajoo online storage service.\n'
@@ -99,15 +98,16 @@ class AboutBajooView(BaseView):
 
         text_sizer = self.make_sizer(
             wx.VERTICAL, [
-                lbl_bajoo2, lbl_description, lbl_license, source_code_sizer,
-                lbl_trademarks, lbl_home_page_link, libraries_box],
-            outside_border=False)
-        social_buttons_sizer = self.make_sizer(
-            wx.VERTICAL, [None, btn_facebook, btn_twitter, btn_google, None],
-            outside_border=False)
+                None, lbl_description, lbl_license, source_code_sizer,
+                lbl_trademarks, lbl_home_page_link, libraries_box, None
+            ], outside_border=False)
+        social_buttons_sizer = self.make_sizer(wx.VERTICAL, [
+            None, btn_facebook, btn_twitter, btn_google, None
+        ])
 
-        main_sizer = self.make_sizer(
-            wx.HORIZONTAL, [img_view_bajoo, text_sizer, social_buttons_sizer])
+        main_sizer = self.make_sizer(wx.HORIZONTAL, [
+            img_view_bajoo, text_sizer, social_buttons_sizer
+        ], outside_border=False)
         about_panel.SetSizer(main_sizer)
         main_sizer.SetSizeHints(about_panel.GetTopLevelParent())
 

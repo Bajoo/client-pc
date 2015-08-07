@@ -85,13 +85,10 @@ class ConnectionFormView(BaseView):
 
         sizer = self.make_sizer(wx.VERTICAL, [
             self.window.FindWindow('messages'),
-            [
-                self.window.FindWindow('username'),
-                self.window.FindWindow('username_error')
-            ], [
-                self.window.FindWindow('password'),
-                self.window.FindWindow('password_error')
-            ],
+            self.window.FindWindow('username'),
+            self.window.FindWindow('username_error'),
+            self.window.FindWindow('password'),
+            self.window.FindWindow('password_error'),
             forgotten_password_link,
             self.window.FindWindow('submit')
         ])

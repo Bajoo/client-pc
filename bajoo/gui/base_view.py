@@ -2,6 +2,7 @@
 
 import wx
 
+from ..common.path import resource_filename
 from .translator import Translator
 
 
@@ -10,9 +11,14 @@ class BaseView(Translator):
 
     This class come with helper functions to configure the view.
 
+    Class Attributes:
+        LIGHT_GRAY (wx.Colour): Predefined background color.
+
     Attributes:
         window (wx.Window): the window element the view is in charge.
     """
+
+    LIGHT_GRAY = wx.Colour(0xf2, 0xf2, 0xf2)
 
     def __init__(self, window):
         Translator.__init__(self)
@@ -119,3 +125,12 @@ class BaseView(Translator):
         button_box.Realize()
 
         return button_box
+
+    def set_icon(self):
+        """Set the standard Bajoo favicon to the window.
+
+        Note that the window must be an instance of wx.Frame.
+        """
+        icon_path = resource_filename('assets/images/favicon.png')
+        icon = wx.Icon(icon_path)
+        self.window.SetIcon(icon)

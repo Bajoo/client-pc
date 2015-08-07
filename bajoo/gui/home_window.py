@@ -2,6 +2,7 @@
 
 import wx
 
+from ..common.path import resource_filename
 from ..common.future import wait_one
 from ..ui_handler_of_connection import UIHandlerOfConnection
 from .base_view import BaseView
@@ -22,7 +23,9 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
     """
 
     def __init__(self):
-        wx.Frame.__init__(self, parent=None, title='Bajoo')
+        wx.Frame.__init__(self, parent=None, title='Bajoo',
+                          style=(wx.DEFAULT_FRAME_STYLE & ~wx.MAXIMIZE_BOX
+                                 & ~wx.RESIZE_BORDER))
         self._view = HomeWindowView(self)
 
         self.Bind(wx.EVT_CLOSE, self._on_close)
@@ -98,8 +101,16 @@ class HomeWindowView(BaseView):
         BaseView.__init__(self, window)
 
         self.current_screen = None
-        s = wx.BoxSizer(wx.VERTICAL)
+
+        self.set_icon()
+        self.window.SetBackgroundColour(BaseView.LIGHT_GRAY)
+
+        s = wx.BoxSizer(wx.HORIZONTAL)
         window.SetSizer(s)
+
+        img_path = resource_filename('assets/images/side_banner.png')
+        banner_bajoo = wx.Image(img_path).ConvertToBitmap()
+        s.Add(wx.StaticBitmap(self.window, label=banner_bajoo))
 
         # List of all already instantiated screens.
         # The key is the Screen class.
@@ -125,6 +136,7 @@ class HomeWindowView(BaseView):
             self.add_i18n_child(self.current_screen)
 
         sizer.ShowItems(False)
+        sizer.GetItem(0).Show(True)  # show banner
         sizer_item.Show(True)
         sizer.SetSizeHints(self.window)  # Set default and min size of Window
 

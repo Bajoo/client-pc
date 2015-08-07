@@ -5,7 +5,6 @@ import wx
 from wx.lib.agw.hyperlink import HyperLinkCtrl, EVT_HYPERLINK_LEFT
 
 from ...common.i18n import N_
-from ...common.path import resource_filename
 from ..base_view import BaseView
 from ..form import ConnectionForm, RegisterForm
 from ..proxy_window import ProxyWindow
@@ -69,11 +68,9 @@ class HomeScreenView(BaseView):
         BaseView.__init__(self, home_screen)
 
         self.set_frame_title(N_('Bajoo'))
+        self.window.SetBackgroundColour(wx.Colour(255, 255, 255))
+        self.window.SetMinSize((350, -1))
 
-        app_name_txt = wx.StaticText(home_screen)
-        app_name_txt.SetFont(app_name_txt.GetFont().Scaled(3.5))
-        app_subtitle_txt = wx.StaticText(home_screen)
-        app_subtitle_txt.SetFont(app_subtitle_txt.GetFont().Scaled(2.5))
         proxy_settings_link = HyperLinkCtrl(home_screen,
                                             name='proxy_settings_link')
         proxy_settings_link.DoPopup(False)
@@ -91,18 +88,9 @@ class HomeScreenView(BaseView):
                            N_('Make an account'))
 
         self.register_many_i18n('SetLabel', {
-            app_name_txt: N_('Bajoo'),
-            app_subtitle_txt: N_('Your online file storage, secure!'),
             proxy_settings_link: N_('proxy settings'),
             lang_label: N_('Language:')
         })
-
-        title_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        title_sizer.AddStretchSpacer()
-        title_sizer.Add(app_name_txt, flag=wx.RIGHT, border=30)
-        title_sizer.AddStretchSpacer()
-        title_sizer.Add(app_subtitle_txt, flag=wx.ALIGN_BOTTOM)
-        title_sizer.AddStretchSpacer()
 
         settings_sizer = wx.BoxSizer(wx.HORIZONTAL)
         settings_sizer.Add(proxy_settings_link,
@@ -113,29 +101,14 @@ class HomeScreenView(BaseView):
         settings_sizer.Add(wx.ComboBox(home_screen, value="Auto", name='lang'))
 
         notebook_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        notebook_sizer.AddStretchSpacer()
-        notebook_sizer.Add(notebook, flag=wx.EXPAND, proportion=4)
-        notebook_sizer.AddStretchSpacer()
-        right_column = wx.BoxSizer(wx.VERTICAL)
-        right_column.AddStretchSpacer()
-        right_column.Add(notebook_sizer,
-                         flag=wx.ALIGN_CENTER | wx.BOTTOM | wx.EXPAND,
-                         border=15)
-        right_column.AddStretchSpacer()
-        right_column.Add(settings_sizer, flag=wx.EXPAND)
+        notebook_sizer.AddSpacer(15)
+        notebook_sizer.Add(notebook, flag=wx.EXPAND, proportion=1)
+        notebook_sizer.AddSpacer(15)
 
-        content_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        img_path = resource_filename('assets/images/home_bajoo_mascot.png')
-        bmp = wx.Image(img_path).ConvertToBitmap()
-        content_sizer.Add(wx.StaticBitmap(home_screen, label=bmp),
-                          proportion=1, flag=wx.RIGHT | wx.CENTER, border=15)
-        content_sizer.Add(right_column, proportion=1,
-                          flag=wx.EXPAND | wx.CENTER)
+        main_sizer = self.make_sizer(wx.VERTICAL, [
+            None, notebook_sizer, None, settings_sizer
+        ])
 
-        main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(title_sizer, flag=wx.EXPAND | wx.ALL, border=15)
-        main_sizer.Add(content_sizer, proportion=1, border=15,
-                       flag=wx.EXPAND | wx.RIGHT | wx.LEFT | wx.BOTTOM)
         home_screen.SetSizer(main_sizer)
 
     def get_active_form(self):
