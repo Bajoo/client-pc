@@ -7,6 +7,7 @@ from wx.lib.filebrowsebutton import DirBrowseButton
 from wx.lib.newevent import NewCommandEvent
 
 from ...api.team_share import permission as share_permission
+from ...api import MyBajoo
 from ...common.i18n import N_
 from ..base_view import BaseView
 from ..event_future import ensure_gui_thread
@@ -24,6 +25,8 @@ class DetailsShareTab(wx.Panel):
     """
 
     RequestShowListShares, EVT_SHOW_LIST_SHARE_REQUEST = NewCommandEvent()
+    RequestQuitShare, EVT_QUIT_SHARE_REQUEST = NewCommandEvent()
+    RequestDeleteShare, EVT_DELETE_SHARE_REQUEST = NewCommandEvent()
 
     @ensure_gui_thread
     def __init__(self, parent):
@@ -36,6 +39,10 @@ class DetailsShareTab(wx.Panel):
                   self.FindWindow('btn_back'))
         self.Bind(wx.EVT_BUTTON, self._btn_open_folder_clicked,
                   self.FindWindow('btn_open_folder'))
+        self.Bind(wx.EVT_BUTTON, self._btn_quit_share_clicked,
+                  self.FindWindow('btn_quit_share'))
+        self.Bind(wx.EVT_BUTTON, self._btn_delete_share_clicked,
+                  self.FindWindow('btn_delete_share'))
 
     @ensure_gui_thread
     def set_data(self, share):
@@ -83,6 +90,15 @@ class DetailsShareTab(wx.Panel):
             # )
         })
 
+        # If this is the only user, he cannot quit it, but delete it
+        if not has_member_data or len(share.container.members) <= 1:
+            self.FindWindow('btn_quit_share').Disable()
+
+        # Cannot delete/quit MyBajoo folder
+        if share.container is None or share.container is MyBajoo:
+            self.FindWindow('btn_quit_share').Disable()
+            self.FindWindow('btn_delete_share').Disable()
+
         self.FindWindow('btn_open_folder').Enable(share.path is not None)
         self.Layout()
 
@@ -115,6 +131,18 @@ class DetailsShareTab(wx.Panel):
             _logger.debug("Open directory %s", self._share.path)
         else:
             _logger.debug("Unknown container or directory to open")
+
+    def _btn_quit_share_clicked(self, _event):
+        if self._share:
+            event = DetailsShareTab.RequestQuitShare(self.GetId())
+            event.share = self._share
+            wx.PostEvent(self, event)
+
+    def _btn_delete_share_clicked(self, _event):
+        if self._share:
+            event = DetailsShareTab.RequestDeleteShare(self.GetId())
+            event.share = self._share
+            wx.PostEvent(self, event)
 
 
 class DetailsShareView(BaseView):

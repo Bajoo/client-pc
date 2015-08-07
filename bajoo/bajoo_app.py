@@ -19,6 +19,7 @@ from .gui.proxy_window import EVT_PROXY_FORM
 from .gui.task_bar_icon import TaskBarIcon
 from .gui.tab.creation_share_tab import CreationShareTab
 from .gui.tab.list_shares_tab import ListSharesTab
+from .gui.tab.details_share_tab import DetailsShareTab
 from .gui.tab.general_settings_tab import GeneralSettingsTab
 from .gui.tab.network_settings_tab import NetworkSettingsTab
 from .gui.tab.advanced_settings_tab import AdvancedSettingsTab
@@ -207,6 +208,10 @@ class BajooApp(wx.App, SoftwareUpdate):
                   self._on_request_check_updates)
         self.Bind(MembersShareForm.EVT_SUBMIT,
                   self._on_add_share_member)
+        self.Bind(DetailsShareTab.EVT_QUIT_SHARE_REQUEST,
+                  self._on_request_quit_share)
+        self.Bind(DetailsShareTab.EVT_DELETE_SHARE_REQUEST,
+                  self._on_request_delete_share)
 
         return True
 
@@ -340,6 +345,30 @@ class BajooApp(wx.App, SoftwareUpdate):
 
         TeamShare.create(self._session, share_name) \
             .then(on_share_created)
+
+    def _on_request_quit_share(self, event):
+        share = event.share
+        # TODO: retrieve the current user's email
+        # TODO: stop the synchro on this share
+
+    def _on_request_delete_share(self, event):
+        share = event.share
+
+        def _on_share_deleted():
+            self._notifier.send_message(
+                N_('Team share deleted'),
+                N_('Team share %s has been successfully deleted from server.')
+                % share.name)
+
+        def _on_delete_share_failed():
+            self._notifier.send_message(
+                N_('Error'),
+                N_('Cannot delete team share %s for instant.')
+                % share.name)
+
+        # TODO: stop the synchro on this share
+        share.container.delete().then(
+            _on_share_deleted, _on_delete_share_failed)
 
     def _exit(self, _event):
         """Close all resources and quit the app."""
