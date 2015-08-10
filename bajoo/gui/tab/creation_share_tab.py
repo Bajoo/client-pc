@@ -8,9 +8,10 @@ from ...api.team_share import permission as share_permission
 from ...common.i18n import N_
 from ..base_view import BaseView
 from ..form.members_share_form import MembersShareForm
+from ..form.base_form import BaseForm
 
 
-class CreationShareTab(wx.Panel):
+class CreationShareTab(BaseForm):
     """
     The share creation tab in the main window,
     which allows user to create a new share.
@@ -20,7 +21,7 @@ class CreationShareTab(wx.Panel):
     RequestShowListShares, EVT_SHOW_LIST_SHARE_REQUEST = NewCommandEvent()
 
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent)
+        BaseForm.__init__(self, parent)
         self._view = CreationShareView(self)
         self.members = {}
 
@@ -45,6 +46,7 @@ class CreationShareTab(wx.Panel):
             request_event.members = self.members
 
             wx.PostEvent(self, request_event)
+            self.disable()
 
     def _on_add_member(self, event):
         # Retrieve the event data

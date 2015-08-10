@@ -149,6 +149,9 @@ class MainWindow(wx.Frame):
     @ensure_gui_thread
     def on_new_share_created(self, new_share):
         # TODO: show notification
+        if self._view.creation_shares_tab:
+            self._view.creation_shares_tab.enable()
+
         self.show_list_shares_tab()
 
     @ensure_gui_thread
@@ -157,6 +160,25 @@ class MainWindow(wx.Frame):
             if self._view.details_share_tab.get_displayed_share() is share:
                 self._view.details_share_tab.add_member_view(
                     email, permission)
+
+            self._view.details_share_tab.enable()
+
+    def on_quit_or_delete_share(self, share):
+        """
+        After quit or delete successfully a share,
+        navigate back to share list,
+        and reenable the detail share panel.
+        Otherwise, reenable & stay at the detail share panel.
+
+        Args:
+            share (TeamShare): the deleted or quit share.
+                Set it to None if operation failed.
+        """
+        if self._view.details_share_tab:
+            self._view.details_share_tab.enable()
+
+        if share:
+            self.show_list_shares_tab()
 
     def _on_request_show_list_shares(self, _event):
         self.show_list_shares_tab()

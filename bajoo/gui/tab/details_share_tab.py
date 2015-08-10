@@ -12,12 +12,13 @@ from ...common.i18n import N_
 from ..base_view import BaseView
 from ..event_future import ensure_gui_thread
 from ..form.members_share_form import MembersShareForm
+from ..form.base_form import BaseForm
 from ..common import message_box
 
 _logger = logging.getLogger(__name__)
 
 
-class DetailsShareTab(wx.Panel):
+class DetailsShareTab(BaseForm):
     """
     The share details tab in the main window, which display
     name, type & status of a share.
@@ -31,7 +32,7 @@ class DetailsShareTab(wx.Panel):
 
     @ensure_gui_thread
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent)
+        BaseForm.__init__(self, parent)
         self._share = None
         self._view = DetailsShareView(self)
 
@@ -133,6 +134,7 @@ class DetailsShareTab(wx.Panel):
         event.share = self._share
 
         event.Skip()
+        self.disable()
 
     def _btn_open_folder_clicked(self, _event):
         if self._share and self._share.path:
@@ -151,6 +153,8 @@ class DetailsShareTab(wx.Panel):
                 event.share = self._share
                 wx.PostEvent(self, event)
 
+                self.disable()
+
     def _btn_delete_share_clicked(self, _event):
         if self._share:
             if message_box.message_delete_share(self._share.name, self) \
@@ -158,6 +162,8 @@ class DetailsShareTab(wx.Panel):
                 event = DetailsShareTab.RequestDeleteShare(self.GetId())
                 event.share = self._share
                 wx.PostEvent(self, event)
+
+                self.disable()
 
 
 class DetailsShareView(BaseView):

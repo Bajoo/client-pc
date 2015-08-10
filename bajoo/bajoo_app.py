@@ -376,6 +376,7 @@ class BajooApp(wx.App, SoftwareUpdate):
             """
             Notify user & navigate back to share list
             """
+            self._container_list.refresh()
             self._notifier.send_message(
                 N_('Quit team share'),
                 N_('You have no longer access to team share %s.'
@@ -383,7 +384,11 @@ class BajooApp(wx.App, SoftwareUpdate):
             )
 
             if self._main_window:
-                self._main_window.show_list_shares_tab()
+                self._main_window.load_shares(
+                    self._container_list.get_list())
+
+                if self._main_window:
+                    self._main_window.on_quit_or_delete_share(share)
 
         def on_share_quit_error(__):
             self._notifier.send_message(
@@ -391,6 +396,9 @@ class BajooApp(wx.App, SoftwareUpdate):
                 N_('An error occured when trying to quit team share %s.'
                    % share.name)
             )
+
+            if self._main_window:
+                self._main_window.on_quit_or_delete_share(None)
 
         # Check email's existence
         if self._user and self._user.name:
@@ -423,13 +431,19 @@ class BajooApp(wx.App, SoftwareUpdate):
             if self._main_window:
                 self._main_window.load_shares(
                     self._container_list.get_list())
-                self._main_window.show_list_shares_tab()
+
+                if self._main_window:
+                    self._main_window.on_quit_or_delete_share(share)
 
         def _on_delete_share_failed(_):
             self._notifier.send_message(
                 N_('Error'),
                 N_('Cannot delete team share %s for instant.')
-                % share.name)
+                % share.name
+            )
+
+            if self._main_window:
+                self._main_window.on_quit_or_delete_share(None)
 
         # TODO: stop the synchro on this share
         share.container.delete().then(
