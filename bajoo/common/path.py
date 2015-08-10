@@ -70,7 +70,7 @@ def resource_filename(resource):
 
 def default_root_folder():
     """Returns the default emplacement fir the Bajoo root folder."""
-    return os.path.expanduser('~/Bajoo')
+    return os.path.join(os.path.expanduser('~'), 'Bajoo')
 
 
 def main():
