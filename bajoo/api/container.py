@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import logging
+
 from ..common.future import Future, wait_all
 from .. import encryption
 from ..network.errors import HTTPNotFoundError
 from . import User
+
 
 _logger = logging.getLogger(__name__)
 
@@ -130,14 +132,15 @@ class Container(object):
         return cls(session, id, name)
 
     @classmethod
-    def create(cls, session, name, encrypt=True):
+    def create(cls, session, name, encrypted=True):
         """
         Create a new Container on Bajoo server.
 
         Args:
             session (bajoo.api.session.Session): user session
             name (str): the name of the new container to be created.
-            encrypt(boolean, optional): if set the container will be encrypted.
+            encrypted(boolean, optional):
+                if set the container will be encrypted.
 
         Returns Future<Container>: the newly created container.
         """
@@ -145,12 +148,14 @@ class Container(object):
         def _on_create_returned(response):
             container_result = response.get('content', {})
             container = cls(session, container_result.get('id', ''),
-                            container_result.get('name', ''), encrypt=encrypt)
+                            container_result.get('name', ''),
+                            encrypted=encrypted)
             if container.is_encrypted:
                 return container._generate_key().then(lambda _: container)
             return container
 
         return session.send_api_request(
+            # TODO: enable the 'encrypted' flag ({'encrypted': encrypted})
             'POST', '/storages', data={'name': name}) \
             .then(_on_create_returned)
 

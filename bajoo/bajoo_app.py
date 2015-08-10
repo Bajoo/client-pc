@@ -327,6 +327,7 @@ class BajooApp(wx.App, SoftwareUpdate):
 
     def _on_request_create_share(self, event):
         share_name = event.share_name
+        encrypted = event.encrypted
         members = event.members
 
         from .api import TeamShare
@@ -364,7 +365,7 @@ class BajooApp(wx.App, SoftwareUpdate):
                     self._container_list.get_list())
                 self._main_window.on_new_share_created(None)
 
-        TeamShare.create(self._session, share_name) \
+        TeamShare.create(self._session, share_name, encrypted) \
             .then(on_share_created, on_create_share_failed)
 
     def _on_request_quit_share(self, event):

@@ -35,11 +35,13 @@ class CreationShareTab(wx.Panel):
 
     def _btn_create_clicked(self, event):
         share_name = self.FindWindow('txt_share_name').GetValue()
+        encrypted = self.FindWindow('chk_encryption').GetValue()
 
         if share_name:
             request_event = CreationShareTab.RequestCreateShareEvent(
                 self.GetId())
             request_event.share_name = share_name
+            request_event.encrypted = encrypted
             request_event.members = self.members
 
             wx.PostEvent(self, request_event)
@@ -74,6 +76,7 @@ class CreationShareView(BaseView):
             creation_share_tab, name='rbtn_public_share')
         chk_encryption = wx.CheckBox(
             creation_share_tab, name='chk_encryption')
+        chk_encryption.SetValue(True)
         chk_exclusion = wx.CheckBox(
             creation_share_tab, name='chk_exclusion')
         btn_browse_location = DirBrowseButton(creation_share_tab)

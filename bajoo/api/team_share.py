@@ -33,10 +33,13 @@ class TeamShare(Container):
 
     @classmethod
     def create(cls, session, name, encrypted=True):
-        share = super(TeamShare, cls).create(session, name)
+        """
+        Returns: Future<TeamShare>
+        """
+        share_future = super(TeamShare, cls) \
+            .create(session, name, encrypted)
 
-        # TODO: Handle encryption choice
-        return share
+        return share_future
 
     def list_members(self):
         """
