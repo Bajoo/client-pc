@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+from . import wx_compat  # noqa
+
+import webbrowser
 import wx
 from wx.lib.agw.hyperlink import HyperLinkCtrl
 
@@ -27,6 +30,8 @@ class AboutBajooWindow(wx.Frame):
         about_panel = wx.Panel(self)
         self._view = AboutBajooView(about_panel)
 
+        self.Bind(wx.EVT_BUTTON, self._on_click_link)
+
     def _init_icons(self):
         if not AboutBajooWindow.GOOGLE_ICON:
             AboutBajooWindow.GOOGLE_ICON = wx.Image(
@@ -44,6 +49,19 @@ class AboutBajooWindow(wx.Frame):
     def notify_lang_change(self):
         self._view.notify_lang_change()
 
+    def _on_click_link(self, event):
+        print(event.GetEventObject())
+        if event.GetEventObject() == self.FindWindow('btn_google'):
+            webbrowser.open(
+                'https://plus.google.com/100830559069902551396/about')
+        elif event.GetEventObject() == self.FindWindow('btn_twitter'):
+            webbrowser.open('https://twitter.com/mybajoo')
+        elif event.GetEventObject() == self.FindWindow('btn_facebook'):
+            webbrowser.open(
+                'https://www.facebook.com/pages/Bajoo/382879575063022')
+        else:
+            event.Skip()
+
 
 class AboutBajooView(BaseView):
     def __init__(self, about_panel):
@@ -54,7 +72,7 @@ class AboutBajooView(BaseView):
 
         banner_path = resource_filename('assets/images/side_banner.png')
         bmp_bajoo = wx.Image(banner_path).ConvertToBitmap()
-        img_view_bajoo = wx.StaticBitmap(about_panel, bitmap=bmp_bajoo)
+        img_view_bajoo = wx.StaticBitmap(about_panel, label=bmp_bajoo)
         lbl_description = wx.StaticText(
             about_panel, name='lbl_description',
             label=N_('Official client for Bajoo online storage service.\n'
@@ -83,15 +101,15 @@ class AboutBajooView(BaseView):
                      'available under the GNU GPL license.'))
         btn_google = wx.BitmapButton(
             about_panel, bitmap=AboutBajooWindow.GOOGLE_ICON,
-            style=wx.NO_BORDER)
+            style=wx.NO_BORDER, name='btn_google')
         btn_google.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
         btn_facebook = wx.BitmapButton(
             about_panel, bitmap=AboutBajooWindow.FACEBOOK_ICON,
-            style=wx.NO_BORDER)
+            style=wx.NO_BORDER, name='btn_facebook')
         btn_facebook.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
         btn_twitter = wx.BitmapButton(
             about_panel, bitmap=AboutBajooWindow.TWITTER_ICON,
-            style=wx.NO_BORDER)
+            style=wx.NO_BORDER, name='btn_twitter')
         btn_twitter.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
 
         libraries_box = wx.BoxSizer(wx.VERTICAL)
