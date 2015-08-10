@@ -99,10 +99,16 @@ class DetailsShareTab(wx.Panel):
         if not has_member_data or len(share.container.members) <= 1:
             self.FindWindow('btn_quit_share').Disable()
 
-        # Cannot delete/quit MyBajoo folder
-        if share.container is None or share.container is MyBajoo:
-            self.FindWindow('btn_quit_share').Disable()
-            self.FindWindow('btn_delete_share').Disable()
+        # Cannot show members of/delete/quit MyBajoo folder
+        show_share_options = True
+
+        if share.container is None or type(share.container) is MyBajoo:
+            show_share_options = False
+
+        self.FindWindow('lbl_members').Show(show_share_options)
+        self.FindWindow('members_share_form').Show(show_share_options)
+        self.FindWindow('btn_quit_share').Enable(show_share_options)
+        self.FindWindow('btn_delete_share').Enable(show_share_options)
 
         self.FindWindow('btn_open_folder').Enable(share.path is not None)
         self.Layout()
@@ -193,7 +199,7 @@ class DetailsShareView(BaseView):
             details_share_tab, name='btn_open_folder')
 
         # the members share form
-        lbl_members = wx.StaticText(details_share_tab)
+        lbl_members = wx.StaticText(details_share_tab, name='lbl_members')
         members_share_form = MembersShareForm(
             details_share_tab, name='members_share_form')
         self.members_share_form = members_share_form
