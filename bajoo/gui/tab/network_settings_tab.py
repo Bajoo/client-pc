@@ -2,7 +2,6 @@
 import logging
 
 import wx
-from wx.lib.newevent import NewCommandEvent
 from wx.lib.masked import NumCtrl
 
 from ...common.i18n import N_
@@ -20,10 +19,8 @@ class NetworkSettingsTab(wx.Panel):
     * change proxy settings
     """
 
-    ConfigRequest, EVT_CONFIG_REQUEST = NewCommandEvent()
-
-    def __init__(self, parent):
-        wx.Panel.__init__(self, parent)
+    def __init__(self, parent, **kwarg):
+        wx.Panel.__init__(self, parent, **kwarg)
         self._view = NetworkSettingsView(self)
 
         self._config = None
@@ -32,13 +29,6 @@ class NetworkSettingsTab(wx.Panel):
                   self.FindWindow('chk_limit_incoming_debit'))
         self.Bind(wx.EVT_CHECKBOX, self._on_limit_upload_check_changed,
                   self.FindWindow('chk_limit_outgoing_debit'))
-
-        self.Bind(wx.EVT_BUTTON, self._on_finished, id=wx.ID_OK)
-        self.Bind(wx.EVT_BUTTON, self._on_cancelled, id=wx.ID_CANCEL)
-        self.Bind(wx.EVT_BUTTON, self._on_applied, id=wx.ID_APPLY)
-
-    def Show(self, show=True):
-        wx.PostEvent(self, self.ConfigRequest(self.GetId()))
 
     def load_config(self, config):
         if config:
@@ -85,31 +75,16 @@ class NetworkSettingsTab(wx.Panel):
         self.FindWindow('txt_outgoing_limit_value') \
             .Enable(limit_upload)
 
-    def _on_finished(self, _event):
-        """
-        Apply the setting changes & send event to close the window.
-        """
-        self._on_applied(_event)
-        self.GetTopLevelParent().Close()
-
-    def _on_cancelled(self, _event):
-        """
-        Handle the click event on the button Cancel:
-        Reset the UI elements according to the current config.
-        """
-        self.load_config(None)
-
     def _on_applied(self, _event):
-        limit_download = \
-            self.FindWindow('chk_limit_incoming_debit').GetValue()
-        download_max_speed = \
-            float(self.FindWindow('txt_incoming_limit_value').GetValue()) \
-                if limit_download else None
-        limit_upload = \
-            self.FindWindow('chk_limit_outgoing_debit').GetValue()
-        upload_max_speed = \
-            float(self.FindWindow('txt_outgoing_limit_value').GetValue()) \
-                if limit_upload else None
+        download_max_speed = upload_max_speed = None
+
+        txt_incoming_limit = self.FindWindow('txt_incoming_limit_value')
+        if self.FindWindow('chk_limit_incoming_debit').IsChecked():
+            download_max_speed = float(txt_incoming_limit.GetValue())
+
+        txt_outgoing_limit = self.FindWindow('txt_outgoing_limit_value')
+        if self.FindWindow('chk_limit_outgoing_debit').IsChecked():
+            upload_max_speed = float(txt_outgoing_limit.GetValue())
 
         if self._config:
             self._config.set('download_max_speed', download_max_speed)
@@ -172,13 +147,9 @@ class NetworkSettingsView(BaseView):
         # proxy form
         proxy_form = ProxyForm(network_settings_screen, name='proxy_form')
 
-        # Buttons box
-        buttons_box = self.create_settings_button_box(
-            network_settings_screen)
-
         main_sizer = self.make_sizer(
             wx.VERTICAL,
-            [bandwidth_box_sizer, proxy_form, None, buttons_box])
+            [bandwidth_box_sizer, proxy_form])
 
         network_settings_screen.SetSizer(main_sizer)
 

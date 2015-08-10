@@ -7,6 +7,7 @@ from .details_share_tab import DetailsShareTab
 from .general_settings_tab import GeneralSettingsTab
 from .list_shares_tab import ListSharesTab
 from .network_settings_tab import NetworkSettingsTab
+from .settings_tab import SettingsTab
 
 __all__ = [
     AccountTab,
@@ -15,5 +16,6 @@ __all__ = [
     DetailsShareTab,
     GeneralSettingsTab,
     ListSharesTab,
-    NetworkSettingsTab
+    NetworkSettingsTab,
+    SettingsTab
 ]

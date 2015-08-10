@@ -21,21 +21,13 @@ class AdvancedSettingsTab(wx.Panel):
     * enable/disable hidden file synchronization
     """
 
-    ConfigRequest, EVT_CONFIG_REQUEST = NewCommandEvent()
     CheckUpdatesRequest, EVT_CHECK_UPDATES_REQUEST = NewCommandEvent()
 
-    def __init__(self, parent):
-        wx.Panel.__init__(self, parent)
+    def __init__(self, parent, **kwarg):
+        wx.Panel.__init__(self, parent, **kwarg)
         self._view = AdvancedSettingsView(self)
 
         self._config = None
-
-        self.Bind(wx.EVT_BUTTON, self._on_finished, id=wx.ID_OK)
-        self.Bind(wx.EVT_BUTTON, self._on_cancelled, id=wx.ID_CANCEL)
-        self.Bind(wx.EVT_BUTTON, self._on_applied, id=wx.ID_APPLY)
-
-    def Show(self, show=True):
-        wx.PostEvent(self, self.ConfigRequest(self.GetId()))
 
     def load_config(self, config):
         if config:
@@ -54,20 +46,6 @@ class AdvancedSettingsTab(wx.Panel):
 
         self.Bind(wx.EVT_BUTTON, self._on_check_update,
                   self.FindWindow('btn_check_updates'))
-
-    def _on_finished(self, _event):
-        """
-        Apply the setting changes & send event to close the window.
-        """
-        self._on_applied(_event)
-        self.GetTopLevelParent().Close()
-
-    def _on_cancelled(self, _event):
-        """
-        Handle the click event on the button Cancel:
-        Reset the UI elements according to the current config.
-        """
-        self.load_config(None)
 
     def _on_applied(self, _event):
         self._config.set(
@@ -119,10 +97,6 @@ class AdvancedSettingsView(BaseView):
         chk_exclude_hidden_files = wx.CheckBox(
             advanced_settings_screen, name='chk_exclude_hidden_files')
 
-        # buttons_box
-        buttons_box = self.create_settings_button_box(
-            advanced_settings_screen)
-
         # report_debug_box
         report_debug_box = wx.StaticBox(advanced_settings_screen, wx.ID_ANY)
         report_debug_box_sizer = wx.StaticBoxSizer(
@@ -150,7 +124,7 @@ class AdvancedSettingsView(BaseView):
         # main_sizer
         main_sizer = self.make_sizer(
             wx.VERTICAL, [report_debug_box_sizer, updates_box_sizer,
-                          exclude_box_sizer, None, buttons_box])
+                          exclude_box_sizer])
 
         advanced_settings_screen.SetSizer(main_sizer)
 

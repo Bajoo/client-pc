@@ -19,12 +19,11 @@ from .gui.message_notifier import MessageNotifier
 from .gui.proxy_window import EVT_PROXY_FORM
 from .gui.task_bar_icon import TaskBarIcon
 from .gui.tab.account_tab import AccountTab
+from .gui.tab import SettingsTab
 from .gui.tab.creation_share_tab import CreationShareTab
 from .gui.tab.list_shares_tab import ListSharesTab
 from .gui.tab.details_share_tab import DetailsShareTab
-from .gui.tab.general_settings_tab import GeneralSettingsTab
-from .gui.tab.network_settings_tab import NetworkSettingsTab
-from .gui.tab.advanced_settings_tab import AdvancedSettingsTab
+from .gui.tab.advanced_settings_tab import AdvancedSettingsTab  # REMOVE
 from .gui.form.members_share_form import MembersShareForm
 from .common.i18n import N_
 
@@ -201,12 +200,7 @@ class BajooApp(wx.App, SoftwareUpdate):
                   self._on_request_share_list)
         self.Bind(ListSharesTab.EVT_CONTAINER_DETAIL_REQUEST,
                   self._on_request_container_details)
-        self.Bind(GeneralSettingsTab.EVT_CONFIG_REQUEST,
-                  self._on_request_config)
-        self.Bind(NetworkSettingsTab.EVT_CONFIG_REQUEST,
-                  self._on_request_config)
-        self.Bind(AdvancedSettingsTab.EVT_CONFIG_REQUEST,
-                  self._on_request_config)
+        self.Bind(SettingsTab.EVT_CONFIG_REQUEST, self._on_request_config)
         self.Bind(AdvancedSettingsTab.EVT_CHECK_UPDATES_REQUEST,
                   self._on_request_check_updates)
         self.Bind(MembersShareForm.EVT_SUBMIT,
@@ -234,7 +228,7 @@ class BajooApp(wx.App, SoftwareUpdate):
             pass  # TODO: open window
         elif event.target == TaskBarIcon.OPEN_SETTINGS:
             window = self.get_window('_main_window', MainWindow)
-            window.show_general_settings_tab()
+            window.show_settings_tab()
         elif event.target == TaskBarIcon.OPEN_SHARES:
             window = self.get_window('_main_window', MainWindow)
             window.show_list_shares_tab()

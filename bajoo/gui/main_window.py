@@ -11,20 +11,25 @@ from .tab import ListSharesTab
 from .tab import CreationShareTab
 from .tab import DetailsShareTab
 from .tab import AccountTab
-from .tab import GeneralSettingsTab
-from .tab import NetworkSettingsTab
-from .tab import AdvancedSettingsTab
+from .tab import SettingsTab
 from .translator import Translator
 
 _logger = logging.getLogger(__name__)
 
 
 class MainWindow(wx.Frame):
+    """Main window accessible when the user is connected.
+
+    It contains different tabs (from the `bajoo.gui.tab.*` modules) allowing
+    to do almost all Bajoo operations.
+
+    Some actions may generate "temporary" tabs. Theses tabs have no menu entry
+    and so are not directly accessible to the end user. They are located after
+    the normal tabs.
+    """
     LIST_SHARES_TAB = 0
     ACCOUNT_TAB = 1
-    GENERAL_SETTINGS_TAB = 2
-    NETWORK_SETTINGS_TAB = 3
-    ADVANCED_SETTINGS_TAB = 4
+    SETTINGS_TAB = 2
 
     def __init__(self):
         wx.Frame.__init__(self, parent=None, size=(800, 600))
@@ -53,8 +58,8 @@ class MainWindow(wx.Frame):
 
     def _show_tab(self, tab_index):
         # Remove all temperatory tabs
-        while self._view.GetPageCount() > 5:
-            self._view.DeletePage(5)
+        while self._view.GetPageCount() > 3:
+            self._view.DeletePage(3)
 
         self._view.details_share_tab = None
         self._view.creation_shares_tab = None
@@ -67,17 +72,17 @@ class MainWindow(wx.Frame):
         this function will display the share_tab at first place,
         & hide the 2 other ones.
         """
-        if self._view.GetPageCount() > 5:
-            self._view.DeletePage(5)
-            self._view.InsertPage(5, share_tab, "", select=True)
+        if self._view.GetPageCount() > 3:
+            self._view.DeletePage(3)
+            self._view.InsertPage(3, share_tab, "", select=True)
         else:
             self._view.AddPage(share_tab, "", select=True)
 
     def on_tab_changed(self, event):
         if hasattr(self, '_view') \
-                and self._view.GetSelection() < 5:
-            while self._view.GetPageCount() > 5:
-                self._view.DeletePage(5)
+                and self._view.GetSelection() < 3:
+            while self._view.GetPageCount() > 3:
+                self._view.DeletePage(3)
 
             self._view.details_share_tab = None
             self._view.creation_shares_tab = None
@@ -102,20 +107,9 @@ class MainWindow(wx.Frame):
         self._show_share_tab(self._view.details_share_tab)
         self._view.details_share_tab.set_data(share)
 
-    @ensure_gui_thread
-    def show_general_settings_tab(self):
-        """Make the general settings tab shown on top."""
-        self._show_tab(MainWindow.GENERAL_SETTINGS_TAB)
-
-    @ensure_gui_thread
-    def show_advanced_settings_tab(self):
-        """Make the advanced settings tab shown on top."""
-        self._show_tab(MainWindow.ADVANCED_SETTINGS_TAB)
-
-    @ensure_gui_thread
-    def show_network_settings_tab(self):
-        """Make the network settings tab shown on top."""
-        self._show_tab(MainWindow.NETWORK_SETTINGS_TAB)
+    def show_settings_tab(self):
+        """Make the Settings tab shown on top."""
+        self._show_tab(MainWindow.SETTINGS_TAB)
 
     @ensure_gui_thread
     def set_account_info(self, account_info):
@@ -146,9 +140,7 @@ class MainWindow(wx.Frame):
 
     @ensure_gui_thread
     def load_config(self, config):
-        self._view.general_settings_tab.load_config(config)
-        self._view.advanced_settings_tab.load_config(config)
-        self._view.network_settings_tab.load_config(config)
+        self._view.settings_tab.load_config(config)
 
     @ensure_gui_thread
     def on_new_share_created(self, new_share):
@@ -217,20 +209,13 @@ class MainWindowListbook(wx.Listbook, Translator):
         self.creation_shares_tab = None
         self.details_share_tab = None
         self.account_tab = AccountTab(self)
-        self.general_settings_tab = GeneralSettingsTab(self)
-        self.network_settings_tab = NetworkSettingsTab(self)
-        self.advanced_settings_tab = AdvancedSettingsTab(self)
+        self.settings_tab = SettingsTab(self)
 
         self.AddPage(self.list_shares_tab,
                      N_("My Shares"), imageId=0)
         self.AddPage(self.account_tab,
                      N_("My Account"), imageId=0)
-        self.AddPage(self.general_settings_tab,
-                     N_("General Settings"), imageId=0)
-        self.AddPage(self.network_settings_tab,
-                     N_("Network Settings"), imageId=0)
-        self.AddPage(self.advanced_settings_tab,
-                     N_("Advanced Settings"), imageId=0)
+        self.AddPage(self.settings_tab, N_("Settings"), imageId=0)
 
         self.Bind(wx.EVT_LISTBOOK_PAGE_CHANGED, self.on_page_changed)
         self.on_page_changed()
@@ -327,12 +312,7 @@ def main():
              _on_request_share_details)
     app.Bind(CreationShareTab.EVT_CREATE_SHARE_REQUEST,
              _on_request_create_share)
-    app.Bind(GeneralSettingsTab.EVT_CONFIG_REQUEST,
-             _on_request_config)
-    app.Bind(NetworkSettingsTab.EVT_CONFIG_REQUEST,
-             _on_request_config)
-    app.Bind(AdvancedSettingsTab.EVT_CONFIG_REQUEST,
-             _on_request_config)
+    app.Bind(SettingsTab.EVT_CONFIG_REQUEST, _on_request_config)
     app.Bind(MembersShareForm.EVT_SUBMIT,
              _on_add_share_member)
 

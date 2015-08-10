@@ -21,20 +21,11 @@ class GeneralSettingsTab(wx.Panel):
     * change application language
     """
 
-    ConfigRequest, EVT_CONFIG_REQUEST = NewCommandEvent()
-
-    def __init__(self, parent):
-        wx.Panel.__init__(self, parent)
+    def __init__(self, parent, **kwarg):
+        wx.Panel.__init__(self, parent, **kwarg)
         self._view = GeneralSettingsView(self)
 
         self._config = None
-
-        self.Bind(wx.EVT_BUTTON, self._on_finished, id=wx.ID_OK)
-        self.Bind(wx.EVT_BUTTON, self._on_cancelled, id=wx.ID_CANCEL)
-        self.Bind(wx.EVT_BUTTON, self._on_applied, id=wx.ID_APPLY)
-
-    def Show(self, show=True):
-        wx.PostEvent(self, self.ConfigRequest(self.GetId()))
 
     def load_config(self, config):
         """
@@ -60,20 +51,6 @@ class GeneralSettingsTab(wx.Panel):
         self.FindWindow('chk_contextual_icon').SetValue(contextual_icon_shown)
         self.FindWindow('chk_notifications').SetValue(notifications_shown)
         # TODO: change to language button & apply config
-
-    def _on_finished(self, _event):
-        """
-        Apply the setting changes & send event to close the window.
-        """
-        self._on_applied(_event)
-        self.GetTopLevelParent().Close()
-
-    def _on_cancelled(self, _event):
-        """
-        Handle the click event on the button Cancel:
-        Reset the UI elements according to the current config.
-        """
-        self.load_config(None)
 
     def _on_applied(self, _event):
         launched_at_startup = \
@@ -125,13 +102,9 @@ class GeneralSettingsView(BaseView):
         language_box_sizer.Add(language_ctrl, 0,
                                wx.EXPAND | wx.ALL, 10)
 
-        buttons_box = self.create_settings_button_box(
-            general_settings_screen)
-
         # Main sizer
         main_sizer = self.make_sizer(
-            wx.VERTICAL,
-            [options_box_sizer, language_box_sizer, None, buttons_box])
+            wx.VERTICAL, [options_box_sizer, language_box_sizer])
 
         general_settings_screen.SetSizer(main_sizer)
 
