@@ -6,7 +6,6 @@ import wx
 from wx.lib.softwareupdate import SoftwareUpdate
 
 from .api import User, TeamShare
-
 from .common import config
 from .common.path import get_data_dir
 from .connection_registration_process import connect_or_register
@@ -373,12 +372,43 @@ class BajooApp(wx.App, SoftwareUpdate):
         share = event.share
         # TODO: stop the synchro on this share
 
+        def on_share_quit(__):
+            """
+            Notify user & navigate back to share list
+            """
+            self._notifier.send_message(
+                N_('Quit team share'),
+                N_('You have no longer access to team share %s.'
+                   % share.name)
+            )
+
+            if self._main_window:
+                self._main_window.show_list_shares_tab()
+
+        def on_share_quit_error(__):
+            self._notifier.send_message(
+                N_('Error'),
+                N_('An error occured when trying to quit team share %s.'
+                   % share.name)
+            )
+
+        # Check email's existence
         if self._user and self._user.name:
-            # TODO: quit share
-            pass
+            share.container.remove_member(self._user.name) \
+                .then(on_share_quit, on_share_quit_error)
         else:
-            # TODO: get user email & quit share
-            pass
+            def on_user_loaded(__):
+                # Check again email's existence
+                if self._user and self._user.name:
+                    share.container.remove_member(self._user.name) \
+                        .then(on_share_quit, on_share_quit_error)
+                else:
+                    self._notifier.send_message(
+                        N_('Error'),
+                        N_('Cannot retrieve user information')
+                    )
+
+            self._get_user_info().then(on_user_loaded)
 
     def _on_request_delete_share(self, event):
         share = event.share
