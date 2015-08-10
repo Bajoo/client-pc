@@ -5,6 +5,7 @@ import wx
 from wx.lib.newevent import NewCommandEvent
 
 from ...common.i18n import N_
+from ..common.language_box import LanguageBox
 from ..base_view import BaseView
 
 
@@ -106,9 +107,9 @@ class GeneralSettingsView(BaseView):
         chk_notifications = wx.CheckBox(
             general_settings_screen, name='chk_notifications')
 
-        # cmb_language
-        cmb_language = wx.ComboBox(
-            general_settings_screen, style=wx.CB_READONLY, name='cmb_language')
+        # language_ctrl
+        language_ctrl = LanguageBox(general_settings_screen,
+                                    name='language_ctrl')
 
         # Options box
         options_box = wx.StaticBox(general_settings_screen)
@@ -121,7 +122,7 @@ class GeneralSettingsView(BaseView):
         # Language box
         language_box = wx.StaticBox(general_settings_screen)
         language_box_sizer = wx.StaticBoxSizer(language_box, wx.VERTICAL)
-        language_box_sizer.Add(cmb_language, 0,
+        language_box_sizer.Add(language_ctrl, 0,
                                wx.EXPAND | wx.ALL, 10)
 
         buttons_box = self.create_settings_button_box(
