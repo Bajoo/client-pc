@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import logging
 
 import wx
 from wx.lib.newevent import NewCommandEvent
@@ -9,6 +10,9 @@ from ...common.util import human_readable_bytes
 from ..base_view import BaseView
 from ...common import config
 from ...common.util import open_folder
+from ..change_password_window import ChangePasswordWindow
+
+_logger = logging.getLogger(__name__)
 
 
 class AccountTab(wx.Panel):
@@ -26,6 +30,7 @@ class AccountTab(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
         self._view = AccountView(self)
+        self._change_password_window = None
         self._data = {
             'email': '',
             'account_type': '',
@@ -37,10 +42,11 @@ class AccountTab(wx.Panel):
         # TODO: disable for next release
         self.FindWindow('btn_disconnect').Disable()
         self.FindWindow('btn_reinit_passphrase').Disable()
-        self.FindWindow('btn_change_password').Disable()
 
         self.Bind(wx.EVT_BUTTON, self._on_open_bajoo_folder,
-                  self.FindWindowByName('btn_open_bajoo_folder'))
+                  self.FindWindow('btn_open_bajoo_folder'))
+        self.Bind(wx.EVT_BUTTON, self._btn_change_password_clicked,
+                  self.FindWindow('btn_change_password'))
 
     def set_data(self, key, value):
         self._data[key] = value
@@ -77,9 +83,40 @@ class AccountTab(wx.Panel):
         path = config.get('root_folder')
         open_folder(path)
 
+    def _btn_change_password_clicked(self, _event):
+        self.show_change_password_window()
+
     def Show(self, show=True):
+        self.FindWindowByName('lbl_change_password_success').Hide()
+        self.Layout()
         event = AccountTab.DataRequestEvent(self.GetId())
         wx.PostEvent(self, event)
+
+    def show_change_password_window(self, show=True):
+        if show:
+            if self._change_password_window is None:
+                self._change_password_window = ChangePasswordWindow(self)
+
+            self._change_password_window.ShowModal()
+        else:
+            if self._change_password_window is not None:
+                self._change_password_window.EndModal(0)
+                self._change_password_window = None
+
+    def hide_change_password_window(self):
+        """
+        A shortcut to `show_change_password_window(show=False)`
+        """
+        self.show_change_password_window(show=False)
+
+    def on_password_change_success(self):
+        self.hide_change_password_window()
+        self.FindWindowByName('lbl_change_password_success').Show()
+        self.Layout()
+
+    def show_password_change_error(self, message):
+        if self._change_password_window is not None:
+            self._change_password_window.show_error(message)
 
 
 class AccountView(BaseView):
@@ -134,6 +171,11 @@ class AccountView(BaseView):
         btn_reinit_passphrase.SetMinSize(
             (200, btn_reinit_passphrase.GetSize()[1]))
 
+        # lbl_change_password_success
+        lbl_change_password_success = wx.StaticText(
+            account_screen, name='lbl_change_password_success')
+        lbl_change_password_success.SetForegroundColour(wx.BLUE)
+
         # btn_change_password
         btn_change_password = wx.Button(
             account_screen, name='btn_change_password')
@@ -182,6 +224,7 @@ class AccountView(BaseView):
 
         main_sizer = self.make_sizer(
             wx.VERTICAL, [box_sizer, None, btn_reinit_passphrase,
+                          lbl_change_password_success,
                           btn_change_password])
 
         account_screen.SetSizer(main_sizer)
@@ -189,6 +232,8 @@ class AccountView(BaseView):
         self.register_many_i18n('SetLabelText', {
             lbl_email_description: N_('You are connected as:'),
             lbl_account_type_desc: N_('Account type:'),
+            lbl_change_password_success: N_('Your password '
+                                            'has been successfully changed.'),
             btn_change_offer: N_(">>> Move to a higher offer"),
             btn_disconnect: N_("Disconnect my account"),
             btn_open_bajoo_folder: N_("Open my Bajoo folder"),

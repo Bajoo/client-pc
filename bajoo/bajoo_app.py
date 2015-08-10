@@ -5,7 +5,7 @@ import logging
 import wx
 from wx.lib.softwareupdate import SoftwareUpdate
 
-from .api import User, TeamShare
+from .api import User, TeamShare, Session
 from .common import config
 from .common.path import get_data_dir
 from .connection_registration_process import connect_or_register
@@ -25,6 +25,7 @@ from .gui.tab.list_shares_tab import ListSharesTab
 from .gui.tab.details_share_tab import DetailsShareTab
 from .gui.tab.advanced_settings_tab import AdvancedSettingsTab  # REMOVE
 from .gui.form.members_share_form import MembersShareForm
+from .gui.change_password_window import ChangePasswordWindow
 from .common.i18n import N_
 
 
@@ -211,6 +212,8 @@ class BajooApp(wx.App, SoftwareUpdate):
                   self._on_request_delete_share)
         self.Bind(AccountTab.EVT_DATA_REQUEST,
                   self._on_request_account_info)
+        self.Bind(ChangePasswordWindow.EVT_CHANGE_PASSWORD_SUBMIT,
+                  self._on_request_change_password)
 
         return True
 
@@ -471,6 +474,38 @@ class BajooApp(wx.App, SoftwareUpdate):
 
             User.load(self._session).then(_on_user_loaded) \
                 .then(_on_user_info_fetched)
+
+    def _on_request_change_password(self, event):
+        _logger.debug('Change password request received %s:', event.data)
+
+        def change_password(__):
+            if self._user:
+                old_password = event.data[u'old_password']
+                new_password = event.data[u'new_password']
+
+                def on_password_changed(_):
+                    def on_session_reloaded(new_session):
+                        self._session = new_session
+
+                    Session.create_session(self._user.name, new_password) \
+                        .then(on_session_reloaded)
+
+                    if self._main_window:
+                        self._main_window.on_password_changed()
+
+                def on_password_changed_error(_):
+                    if self._main_window:
+                        self._main_window.on_password_change_error(
+                            N_('Failure when attempting to change password.'))
+
+                return self._user \
+                    .change_password(old_password, new_password) \
+                    .then(on_password_changed, on_password_changed_error)
+
+        if self._user is None:
+            self._get_user_info().then(change_password)
+        else:
+            change_password(None)
 
     def _exit(self, _event):
         """Close all resources and quit the app."""

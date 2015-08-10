@@ -159,6 +159,7 @@ class MainWindow(wx.Frame):
 
             self._view.details_share_tab.enable()
 
+    @ensure_gui_thread
     def on_quit_or_delete_share(self, share):
         """
         After quit or delete successfully a share,
@@ -175,6 +176,16 @@ class MainWindow(wx.Frame):
 
         if share:
             self.show_list_shares_tab()
+
+    @ensure_gui_thread
+    def on_password_changed(self):
+        if self._view.account_tab:
+            self._view.account_tab.on_password_change_success()
+
+    @ensure_gui_thread
+    def on_password_change_error(self, message):
+        if self._view.account_tab:
+            self._view.account_tab.show_password_change_error(message)
 
     def _on_request_show_list_shares(self, _event):
         self.show_list_shares_tab()

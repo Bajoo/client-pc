@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import logging
 
 import wx
 from wx.lib.newevent import NewCommandEvent
@@ -7,6 +8,8 @@ from ...common.i18n import N_
 from ..base_view import BaseView
 from ..form.base_form import BaseForm
 from ..validator import NotEmptyValidator
+
+_logger = logging.getLogger(__name__)
 
 
 class ChangePasswordForm(BaseForm):
@@ -23,8 +26,23 @@ class ChangePasswordForm(BaseForm):
         self._view = ChangePasswordView(self)
         self.validators = self._view.get_validators()
 
-        self.Bind(wx.EVT_BUTTON, self.submit,
+        self.Bind(wx.EVT_BUTTON, self._on_submit,
                   self.FindWindowById(wx.ID_APPLY))
+
+    def show_error(self, message):
+        lbl_error = self.FindWindow('lbl_error')
+        self._view.register_i18n(lbl_error.SetLabel, message)
+        lbl_error.Show()
+
+        self.GetTopLevelParent().Layout()
+
+    def hide_error(self):
+        lbl_error = self.FindWindow('lbl_error')
+        lbl_error.Hide()
+
+    def _on_submit(self, event):
+        self.hide_error()
+        self.submit(event)
 
 
 class ChangePasswordView(BaseView):
@@ -88,9 +106,13 @@ class ChangePasswordView(BaseView):
         lbl_confirmation_email = wx.StaticText(
             change_password_form, name='lbl_confirmation_email')
 
+        lbl_error = wx.StaticText(
+            change_password_form, name='lbl_error')
+        lbl_error.SetForegroundColour(wx.RED)
+
         main_sizer = self.make_sizer(
             wx.VERTICAL, [
-                lbl_description, lbl_confirmation_email,
+                lbl_description, lbl_confirmation_email, lbl_error,
                 old_password_sizer, new_password_sizer,
                 confirm_new_password_sizer, buttons_sizer
             ], flag=wx.EXPAND)

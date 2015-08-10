@@ -37,6 +37,9 @@ class ChangePasswordWindow(wx.Dialog):
         event.data = self.form.get_data()
         event.Skip()
 
+    def show_error(self, message):
+        self.form.show_error(message)
+
 
 def main():
     logging.basicConfig()
