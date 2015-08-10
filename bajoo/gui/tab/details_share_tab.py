@@ -12,6 +12,7 @@ from ...common.i18n import N_
 from ..base_view import BaseView
 from ..event_future import ensure_gui_thread
 from ..form.members_share_form import MembersShareForm
+from ..common import message_box
 
 _logger = logging.getLogger(__name__)
 
@@ -138,15 +139,19 @@ class DetailsShareTab(wx.Panel):
 
     def _btn_quit_share_clicked(self, _event):
         if self._share:
-            event = DetailsShareTab.RequestQuitShare(self.GetId())
-            event.share = self._share
-            wx.PostEvent(self, event)
+            if message_box.message_quit_share(self._share.name, self) \
+                    == wx.YES:
+                event = DetailsShareTab.RequestQuitShare(self.GetId())
+                event.share = self._share
+                wx.PostEvent(self, event)
 
     def _btn_delete_share_clicked(self, _event):
         if self._share:
-            event = DetailsShareTab.RequestDeleteShare(self.GetId())
-            event.share = self._share
-            wx.PostEvent(self, event)
+            if message_box.message_delete_share(self._share.name, self) \
+                    == wx.YES:
+                event = DetailsShareTab.RequestDeleteShare(self.GetId())
+                event.share = self._share
+                wx.PostEvent(self, event)
 
 
 class DetailsShareView(BaseView):
