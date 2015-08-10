@@ -184,7 +184,7 @@ else:
                 print('\tpip install http://sourceforge.net/projects/py2exe/'
                       'files/latest/download?source=files')
 
-        icon_path = './bajoo/assets/icons/bajoo.ico'
+        icon_path = './bajoo/assets/images/favicon.ico'
         setup_kwargs['scripts'] = [
             bdist_esky.Executable('start.py', name='Bajoo', gui_only=True,
                                   icon=icon_path)

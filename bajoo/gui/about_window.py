@@ -18,6 +18,11 @@ class AboutBajooWindow(wx.Frame):
             wx.DEFAULT_FRAME_STYLE & ~wx.MAXIMIZE_BOX & ~wx.RESIZE_BORDER
         wx.Frame.__init__(
             self, parent=None, title=N_('About Bajoo'), style=window_style)
+
+        icon_path = resource_filename('assets/images/favicon.png')
+        icon = wx.Icon(icon_path)
+        self.SetIcon(icon)
+
         self._init_icons()
         about_panel = wx.Panel(self)
         self._view = AboutBajooView(about_panel)

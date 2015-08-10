@@ -86,7 +86,7 @@ class Container(object):
         key_name = 'bajoo-storage-%s' % self.id
 
         def extract_key_members(members):
-            return wait_all([User(member.user, self._session).get_public_key()
+            return wait_all([User(member['user'], self._session).get_public_key()
                              for member in members])
 
         def get_owner_key():

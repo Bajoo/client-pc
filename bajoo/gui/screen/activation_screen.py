@@ -34,6 +34,7 @@ class ActivationScreen(wx.Panel):
                   source=self.FindWindow('done_btn'))
 
     def _send_done_event(self, _event):
+        self.FindWindow('form').disable()
         wx.PostEvent(self, self.ActivationDoneEvent(self.GetId()))
 
     def _send_delayed_event(self, _event):
@@ -58,7 +59,7 @@ class ActivationScreenView(BaseView):
         title_txt.SetFont(title_txt.GetFont().Bold())
         content_txt = wx.StaticText(activation_screen)
 
-        form = BaseForm(activation_screen, auto_disable=True, name='form')
+        form = BaseForm(activation_screen, name='form')
         come_back_later_btn = wx.Button(form, name='come_back_btn')
         done_btn = wx.Button(form, name='done_btn')
         form_sizer = self.make_sizer(wx.HORIZONTAL,

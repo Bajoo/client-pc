@@ -31,6 +31,10 @@ class MainWindow(wx.Frame):
         self.SetMinSize((800, 600))
         self._view = MainWindowListbook(self)
 
+        icon_path = resource_filename('assets/images/favicon.png')
+        icon = wx.Icon(icon_path)
+        self.SetIcon(icon)
+
         sizer = wx.BoxSizer()
         sizer.Add(self._view, 1, wx.EXPAND)
         self.SetSizer(sizer)
