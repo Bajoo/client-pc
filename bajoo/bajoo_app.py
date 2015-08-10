@@ -257,6 +257,8 @@ class BajooApp(wx.App, SoftwareUpdate):
             self._main_window.Raise()
 
     def _on_request_share_list(self, _event):
+        self._container_list.refresh()
+
         if self._main_window:
             self._main_window.load_shares(
                 self._container_list.get_list())

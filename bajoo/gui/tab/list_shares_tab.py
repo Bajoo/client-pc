@@ -42,6 +42,8 @@ class ListSharesTab(wx.Panel):
 
         self.Bind(wx.EVT_BUTTON, self._btn_new_share_clicked,
                   self.FindWindow('btn_create_share'))
+        self.Bind(wx.EVT_BUTTON, self._btn_refresh_share_list_clicked,
+                  self.FindWindow('btn_refresh_share_list'))
 
     def _init_images(self):
         if not ListSharesTab.TEAM_SHARE_ICON:
@@ -97,6 +99,9 @@ class ListSharesTab(wx.Panel):
     def _btn_new_share_clicked(self, event):
         wx.PostEvent(self, self.NewShareEvent(self.GetId()))
 
+    def _btn_refresh_share_list_clicked(self, event):
+        wx.PostEvent(self, self.DataRequestEvent(self.GetId()))
+
     def btn_share_details_clicked(self, event):
         container = self.get_container_from_button(
             event, 'btn_share_details_')
@@ -129,7 +134,13 @@ class ListSharesView(BaseView):
         BaseView.__init__(self, list_shares_tab)
         self._share_views = []
 
-        btn_create_share = wx.Button(list_shares_tab, name='btn_create_share')
+        btn_create_share = wx.Button(list_shares_tab,
+                                     name='btn_create_share')
+        btn_refresh_share_list = wx.Button(list_shares_tab,
+                                           name='btn_refresh_share_list')
+        top_box = self.make_sizer(wx.HORIZONTAL, [
+            btn_create_share, None, btn_refresh_share_list
+        ], outside_border=False)
 
         self.shares_window = wx.ScrolledWindow(self.window)
         self.shares_window.SetScrollbars(1, 1, 1, 1)
@@ -140,10 +151,13 @@ class ListSharesView(BaseView):
         self.shares_window.SetSizer(self.share_sizer)
 
         main_sizer = self.make_sizer(
-            wx.VERTICAL, [btn_create_share])
+            wx.VERTICAL, [top_box])
         main_sizer.Add(self.shares_window, 1, wx.EXPAND | wx.ALL, 15)
         self.window.SetSizer(main_sizer)
-        self.register_i18n(btn_create_share.SetLabel, N_("New share"))
+        self.register_i18n(btn_create_share.SetLabel,
+                           N_("New share"))
+        self.register_i18n(btn_refresh_share_list.SetLabel,
+                           N_("Refresh"))
 
     def generate_share_views(self, shares):
         """
