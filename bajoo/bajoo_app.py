@@ -67,6 +67,7 @@ class BajooApp(wx.App, SoftwareUpdate):
         self._task_bar_icon = None
         self._notifier = None
         self._session = None
+        self._user = None
         self._container_list = None
         self._container_sync_pool = ContainerSyncPool(
             self._on_global_status_change, self._on_sync_error)
@@ -370,8 +371,14 @@ class BajooApp(wx.App, SoftwareUpdate):
 
     def _on_request_quit_share(self, event):
         share = event.share
-        # TODO: retrieve the current user's email
         # TODO: stop the synchro on this share
+
+        if self._user and self._user.name:
+            # TODO: quit share
+            pass
+        else:
+            # TODO: get user email & quit share
+            pass
 
     def _on_request_delete_share(self, event):
         share = event.share
@@ -399,24 +406,33 @@ class BajooApp(wx.App, SoftwareUpdate):
             _on_share_deleted, _on_delete_share_failed)
 
     def _on_request_account_info(self, event):
-        def _on_user_loaded(user):
-            return user.get_user_info()
+        if self._user and self._user.name:
+            self._main_window.set_account_info({
+                'email': self._user.name,
+                'account_type': 'FREE - 2GB',
+                'n_shares': len(self._container_list.get_list()),
+                'quota': 2147483648,  # 2GB
+                'quota_used': 536870912  # 500MB
+            })
+        else:
+            def _on_user_loaded(user):
+                return user.get_user_info()
 
-        def _on_user_info_fetched(result):
-            email = result.get('email', '')
+            def _on_user_info_fetched(result):
+                email = result.get('email', '')
 
-            if self._main_window:
-                # TODO: replace stimulated data
-                self._main_window.set_account_info({
-                    'email': email,
-                    'account_type': 'FREE - 2GB',
-                    'n_shares': len(self._container_list.get_list()),
-                    'quota': 2147483648,  # 2GB
-                    'quota_used': 536870912  # 500MB
-                })
+                if self._main_window:
+                    # TODO: replace stimulated data
+                    self._main_window.set_account_info({
+                        'email': email,
+                        'account_type': 'FREE - 2GB',
+                        'n_shares': len(self._container_list.get_list()),
+                        'quota': 2147483648,  # 2GB
+                        'quota_used': 536870912  # 500MB
+                    })
 
-        User.load(self._session).then(_on_user_loaded) \
-            .then(_on_user_info_fetched)
+            User.load(self._session).then(_on_user_loaded) \
+                .then(_on_user_info_fetched)
 
     def _exit(self, _event):
         """Close all resources and quit the app."""
@@ -449,6 +465,8 @@ class BajooApp(wx.App, SoftwareUpdate):
     @ensure_gui_thread
     def _on_connection(self, session):
         self._session = session
+        self._get_user_info()
+
         if self._home_window:
             self._home_window.Destroy()
         _logger.debug('Start DynamicContainerList() ...')
@@ -457,6 +475,16 @@ class BajooApp(wx.App, SoftwareUpdate):
             self._container_sync_pool.add,
             self._container_sync_pool.remove)
         self._task_bar_icon.set_state(TaskBarIcon.SYNC_PROGRESS)
+
+    def _get_user_info(self):
+        if self._session:
+            def _on_user_loaded(user):
+                self._user = user
+                return self._user.get_user_info()
+
+            return User.load(self._session).then(_on_user_loaded)
+        else:
+            return None
 
     @ensure_gui_thread
     def _on_global_status_change(self, status):
