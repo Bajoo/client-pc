@@ -117,7 +117,8 @@ setup_kwargs = {
         'futures>=2.2.0',
         'python-gnupg',
         'watchdog',
-        'pysocks'
+        'pysocks',
+        'psutil>=2.0.0'
     ],
     'tests_require': ['tox'],
     'include_package_data': True,
