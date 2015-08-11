@@ -151,8 +151,8 @@ class ProxyFormView(BaseView):
         sizer_radio = wx.BoxSizer(wx.VERTICAL)
         sizer_radio.AddMany([
             self.window.FindWindow('system_settings'),
-            self.window.FindWindow('no_proxy'),
-            self.window.FindWindow('manual_settings')
+            (self.window.FindWindow('no_proxy'), 0, wx.TOP, 15),
+            (self.window.FindWindow('manual_settings'), 0, wx.TOP, 15)
         ])
 
         # Line "[ server_uri ] : [ server_port ]"
@@ -198,6 +198,7 @@ def main():
     sizer.SetSizeHints(win)
     win.Show(True)
     app.MainLoop()
+
 
 if __name__ == '__main__':
     main()
