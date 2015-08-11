@@ -112,12 +112,12 @@ class ContainerSyncPool(object):
     def pause(self):
         """Set all sync operations in pause."""
         _logger.debug('Pause sync')
-        for u in self._updaters:
+        for u in self._updaters.values():
             u.stop()
             # TODO: stop current operations ...
-        for w in self._local_watchers:
+        for w in self._local_watchers.values():
             w.stop()
-        for lc in self._local_containers:
+        for lc in self._local_containers.values():
             lc.status = lc.STATUS_PAUSED
         with self._status_lock:
             self._global_status = self.STATUS_PAUSE
@@ -126,9 +126,9 @@ class ContainerSyncPool(object):
     def resume(self):
         """Resume sync operations if they are paused."""
         _logger.debug('Resume sync')
-        for u in self._updaters:
+        for u in self._updaters.values():
             u.start()
-        for w in self._local_watchers:
+        for w in self._local_watchers.values():
             w.start()
         with self._status_lock:
             if self._counter == 0:
@@ -137,7 +137,7 @@ class ContainerSyncPool(object):
                 self._global_status = self.STATUS_SYNCING
             self._on_state_change(self._global_status)
 
-        for container in self._local_containers:
+        for container in self._local_containers.values():
             self._create_task(filesync.sync_folder, container.id, '.')
             container.status = container.STATUS_STARTED
 

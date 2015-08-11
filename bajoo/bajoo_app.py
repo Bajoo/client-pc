@@ -5,6 +5,7 @@ import logging
 import wx
 from wx.lib.softwareupdate import SoftwareUpdate
 
+from . import stored_credentials
 from .api import User, TeamShare, Session
 from .common import config
 from .common.path import get_data_dir
@@ -216,6 +217,7 @@ class BajooApp(wx.App, SoftwareUpdate):
                   self._on_request_account_info)
         self.Bind(ChangePasswordWindow.EVT_CHANGE_PASSWORD_SUBMIT,
                   self._on_request_change_password)
+        self.Bind(AccountTab.EVT_DISCONNECT_REQUEST, self.disconnect)
 
         return True
 
@@ -639,3 +641,32 @@ class BajooApp(wx.App, SoftwareUpdate):
 
     def _on_sync_error(self, err):
         self._notifier.send_message('Sync error', err)
+
+    def disconnect(self, _evt):
+        """revoke token and return the the home window."""
+
+        _logger.info('Disconnect user.')
+        if self._home_window:
+            self._home_window.Destroy()
+        if self._main_window:
+            self._main_window.Destroy()
+        stored_credentials.save(self._user.name)
+        self._task_bar_icon.set_state(TaskBarIcon.NOT_CONNECTED)
+
+        def _on_unhandled_exception(_exception):
+            _logger.critical('Uncaught exception on Run process',
+                             exc_info=True)
+
+        def callback(_):
+            _logger.debug('Now restart the connection process...')
+            future = connect_or_register(self.create_home_window)
+            return future.then(self._on_connection)
+
+        self._container_sync_pool.pause()
+        self._container_sync_pool = ContainerSyncPool(
+            self._on_global_status_change, self._on_sync_error)
+        self._container_list.stop()
+        self._container_list = None
+        f = self._session.disconnect().then(callback)
+        f.then(None, _on_unhandled_exception)
+        self._session = None

@@ -26,6 +26,7 @@ class AccountTab(wx.Panel):
     """
 
     DataRequestEvent, EVT_DATA_REQUEST = NewCommandEvent()
+    DisconnectEvent, EVT_DISCONNECT_REQUEST = NewCommandEvent()
 
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
@@ -40,7 +41,8 @@ class AccountTab(wx.Panel):
         }
 
         # TODO: disable for next release
-        self.FindWindow('btn_disconnect').Disable()
+        self.Bind(wx.EVT_BUTTON, self._btn_disconnect,
+                  self.FindWindow('btn_disconnect'))
         self.FindWindow('btn_reinit_passphrase').Disable()
 
         self.Bind(wx.EVT_BUTTON, self._on_open_bajoo_folder,
@@ -85,6 +87,10 @@ class AccountTab(wx.Panel):
 
     def _btn_change_password_clicked(self, _event):
         self.show_change_password_window()
+
+    def _btn_disconnect(self, _event):
+        event = AccountTab.DisconnectEvent(self.GetId())
+        wx.PostEvent(self, event)
 
     def Show(self, show=True):
         self.FindWindowByName('lbl_change_password_success').Hide()
