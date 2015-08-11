@@ -24,9 +24,23 @@ class ListSharesTab(wx.Panel):
     """
 
     DataRequestEvent, EVT_DATA_REQUEST = NewCommandEvent()
+    """
+    Send this event to demand for fetching the container list.
+    """
+
     NewShareEvent, EVT_NEW_SHARE = NewCommandEvent()
+    """
+    Send this event to demand for showing the creation share screen.
+    """
+
     ContainerDetailRequestEvent, EVT_CONTAINER_DETAIL_REQUEST = \
         NewCommandEvent()
+    """
+    Send this event to demand for fetching container details.
+
+    Attrs:
+        container: <bajoo.LocalContainer>
+    """
 
     TEAM_SHARE_ICON = None
     MY_BAJOO_ICON = None

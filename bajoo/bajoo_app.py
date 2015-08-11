@@ -254,6 +254,10 @@ class BajooApp(wx.App, SoftwareUpdate):
             self._main_window.Raise()
 
     def _on_request_share_list(self, _event):
+        """
+        Handle the request `get share list`: refresh the dynamic container
+        list in bajoo_app and give it to the share list tab in main_window.
+        """
         self._container_list.refresh()
 
         if self._main_window:
@@ -261,6 +265,11 @@ class BajooApp(wx.App, SoftwareUpdate):
                 self._container_list.get_list())
 
     def _on_request_container_details(self, event):
+        """
+        Handle the request `get container detail`: fetch the team share's
+        members if neccessary, then give all info of the LocalContainer
+        & Container object to the share detail tab.
+        """
         l_container = event.container
 
         # TODO: Replace stimulated data
@@ -272,15 +281,21 @@ class BajooApp(wx.App, SoftwareUpdate):
         }
 
         def _on_members_listed(members):
+            """
+            After fetching share members,
+            show container details on the screen.
+            """
             l_container.container.members = members
 
             if self._main_window:
                 self._main_window.set_share_details(l_container)
 
+        # If this is a TeamShare, fetch its members.
         if l_container.container \
                 and type(l_container.container) is TeamShare:
             l_container.container.list_members() \
                 .then(_on_members_listed)
+        # If not, show it details immediately.
         else:
             if self._main_window:
                 self._main_window.set_share_details(l_container)
@@ -294,11 +309,18 @@ class BajooApp(wx.App, SoftwareUpdate):
         self.CheckForUpdate()
 
     def _on_add_share_member(self, event):
+        """
+        Handle the request `add/modify a new member of a share`.
+        """
         share = event.share
         email = event.user_email
         permission = event.permission
 
         def _on_member_added(__):
+            """
+            The member has been added/modified successfully. Show a
+            notification and update data on the screen.
+            """
             self._notifier.send_message(
                 N_('Member added'),
                 N_('%s has been given access to team share \'%s\'')
@@ -309,6 +331,10 @@ class BajooApp(wx.App, SoftwareUpdate):
                     share, email, permission)
 
         def _on_member_add_error(__):
+            """
+            Error occurred when attempting to add/modify rights of a member
+            on a share. Show a notification.
+            """
             self._notifier.send_message(
                 N_('Error'),
                 N_('Cannot add this member to team share, '
@@ -323,6 +349,12 @@ class BajooApp(wx.App, SoftwareUpdate):
                 N_('Unidentified container, cannot add member'))
 
     def _on_request_create_share(self, event):
+        """
+        Handle the request `create a new team share`. This function can
+        send multiple API requests to create a new share and then add
+        member(s) to it. Failure when adding a member does not effect
+        other requests, thanks to using Future & wait_all() function.
+        """
         share_name = event.share_name
         encrypted = event.encrypted
         members = event.members
@@ -331,12 +363,20 @@ class BajooApp(wx.App, SoftwareUpdate):
         from .common.future import wait_all
 
         def on_members_added(__):
+            """
+            All members have been added to the share: return
+            to the share list screen.
+            """
             if self._main_window:
                 self._main_window.load_shares(
                     self._container_list.get_list())
                 self._main_window.on_new_share_created(None)
 
         def on_share_created(share):
+            """
+            The share has been created successfully: notify user,
+            then send requests to add member(s) to it if neccessary.
+            """
             futures = []
 
             self._notifier.send_message(
@@ -352,6 +392,10 @@ class BajooApp(wx.App, SoftwareUpdate):
             return wait_all(futures).then(on_members_added)
 
         def on_create_share_failed(__):
+            """
+            Error occurred when attempting to create a new share.
+            Notify user then return to the share list screen.
+            """
             self._notifier.send_message(
                 N_('Error'),
                 N_('Cannot create share %s')
@@ -416,9 +460,18 @@ class BajooApp(wx.App, SoftwareUpdate):
             self._get_user_info().then(on_user_loaded)
 
     def _on_request_delete_share(self, event):
+        """
+        Handle the request `delete a share`. Stop the local synchronization
+        & send the API request.
+        """
         share = event.share
+        # TODO: stop the synchro on this share
 
         def _on_share_deleted(_):
+            """
+            The share has been successfully deleted: notify user then
+            return to the share list screen.
+            """
             self._notifier.send_message(
                 N_('Team share deleted'),
                 N_('Team share %s has been successfully deleted from server.')
@@ -433,6 +486,9 @@ class BajooApp(wx.App, SoftwareUpdate):
                     self._main_window.on_quit_or_delete_share(share)
 
         def _on_delete_share_failed(_):
+            """
+            Error occurred when attempting to delete a share: notify user.
+            """
             self._notifier.send_message(
                 N_('Error'),
                 N_('Cannot delete team share %s for instant.')
@@ -442,7 +498,6 @@ class BajooApp(wx.App, SoftwareUpdate):
             if self._main_window:
                 self._main_window.on_quit_or_delete_share(None)
 
-        # TODO: stop the synchro on this share
         share.container.delete().then(
             _on_share_deleted, _on_delete_share_failed)
 
