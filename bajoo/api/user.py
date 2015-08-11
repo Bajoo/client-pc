@@ -2,6 +2,7 @@
 import logging
 from hashlib import sha256
 
+from ..network.errors import HTTPNotFoundError
 from .. import encryption
 from ..common.future import resolve_dec, wait_all
 from ..encryption import AsymmetricKey
@@ -169,8 +170,13 @@ class User(object):
                 AsymmetricKey.load(tmp_file, main_context=True)
                 return True
 
+        def _download_error(error):
+            if isinstance(error, HTTPNotFoundError):
+                return False  # Key doesn't exists
+            raise
+
         f = self._session.download_storage_file('GET', self._get_key_url())
-        return f.then(_on_download_finished)
+        return f.then(_on_download_finished, _download_error)
 
     def _upload_private_key(self, key_content):
         return self._session.send_storage_request(

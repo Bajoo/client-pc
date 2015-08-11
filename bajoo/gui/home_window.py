@@ -40,6 +40,7 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
     def wait_activation(self):
         self._view.set_screen(ActivationScreen)
         self._view.current_screen.reset_form()
+        self.Show()
 
         self.Bind(ActivationScreen.EVT_ACTIVATION_DELAYED,
                   lambda _evt: self.Close())
@@ -58,6 +59,7 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
         self._view.current_screen.reset_form(
             folder_setting, key_setting,
             root_folder_error=root_folder_error, gpg_error=gpg_error)
+        self.Show()
 
         f = EventFuture(self, SetupConfigScreen.EVT_SUBMIT)
         return f.then(lambda data: (data.bajoo_folder, data.passphrase))

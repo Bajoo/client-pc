@@ -119,6 +119,7 @@ class LocalContainer(object):
                     try:
                         folder_path = '%s (%s)' % (base_path, i)
                         os.mkdir(folder_path)
+                        self._init_index_file(folder_path)
                         break
                     except (OSError, IOError) as e:
                         if e.errno == errno.EEXIST:

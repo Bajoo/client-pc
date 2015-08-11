@@ -3,10 +3,11 @@
 import wx
 from wx.lib.newevent import NewCommandEvent
 
-from ...common.i18n import N_, _
+from ...common.i18n import N_
 from ...common.path import default_root_folder
 from ..base_view import BaseView
 from ..form import BaseForm
+from ..validator import BaseValidator
 from ..validator import ConfirmPasswordValidator, MinLengthValidator
 
 
@@ -30,6 +31,8 @@ class SetupConfigScreen(BaseForm):
         self.add_i18n_child(self._view)
 
         self.validators = [
+            self.FindWindow('gpg_error'),
+            self.FindWindow('root_folder_error'),
             self.FindWindow('passphrase_validator'),
             self.FindWindow('confirmation_validator'),
         ]
@@ -62,20 +65,14 @@ class SetupConfigScreen(BaseForm):
 
         root_folder_error_txt = self.FindWindow('root_folder_error')
         if root_folder_error:
-            root_folder_error_txt.SetLabel(_(root_folder_error))
-            root_folder_error_txt.Show()
-        else:
-            root_folder_error_txt.Hide()
+            root_folder_error_txt.set_msg(root_folder_error)
         self.FindWindow('encryption_section').Show(key_setting)
         self.FindWindow('passphrase').Enable(key_setting)
         self.FindWindow('confirmation').Enable(key_setting)
 
         gpg_error_txt = self.FindWindow('gpg_error')
         if gpg_error:
-            gpg_error_txt.SetLabel(_(gpg_error))
-            gpg_error_txt.Show()
-        else:
-            gpg_error_txt.Hide()
+            gpg_error_txt.set_msg(gpg_error)
         self.FindWindow('bajoo_folder_section').Show(folder_setting)
         self.enable()
 
@@ -93,8 +90,8 @@ class SetupConfigScreenView(BaseView):
 
         encryption_section = wx.StaticBox(self.window,
                                           name='encryption_section')
-        gpg_error = wx.StaticText(encryption_section, name='gpg_error')
-        gpg_error.Show(False)
+        gpg_error = BaseValidator(encryption_section, hide_if_valid=True,
+                                  name='gpg_error')
 
         encryption_txt = wx.StaticText(encryption_section)
         passphrase = wx.TextCtrl(encryption_section, name='passphrase',
@@ -111,9 +108,9 @@ class SetupConfigScreenView(BaseView):
 
         bajoo_folder_section = wx.StaticBox(self.window,
                                             name='bajoo_folder_section')
-        root_folder_error = wx.StaticText(bajoo_folder_section,
+        root_folder_error = BaseValidator(bajoo_folder_section,
+                                          hide_if_valid=True,
                                           name='root_folder_error')
-        root_folder_error.Show(False)
 
         bajoo_folder_label = wx.StaticText(bajoo_folder_section)
         folder_picker = wx.DirPickerCtrl(bajoo_folder_section,
