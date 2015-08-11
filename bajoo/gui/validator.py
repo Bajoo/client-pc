@@ -17,13 +17,15 @@ class BaseValidator(wx.StaticText):
 
     default_error_message = None
 
-    def __init__(self, parent, target, error_message=None, hide_if_valid=False,
-                 **kwargs):
+    def __init__(self, parent, target=None, inform_message=None,
+                 error_message=None, hide_if_valid=False, **kwargs):
         """Constructor of validator.
 
         Args:
             parent (wx.Window): parent
             target: element to check the value.
+            inform_message (str, optional): if set, message to display when
+                they are no error.
             error_message (str, optional): if set, message to display when the
                 validation fails. It will be translated before being displayed.
             hide_if_valid (boolean, optional): If True, this item will be
@@ -33,7 +35,11 @@ class BaseValidator(wx.StaticText):
         wx.StaticText.__init__(self, parent, **kwargs)
         self.target = target
         self.hide_if_valid = hide_if_valid
+        self.inform_message = inform_message
         self.error_message = error_message
+        if hide_if_valid:
+            self.Hide()
+        self.SetLabel(self.inform_message or '')
 
     def validate(self):
         """Check the target's value is valid and display the error if not."""
@@ -64,16 +70,20 @@ class BaseValidator(wx.StaticText):
             message = self.default_error_message
 
         if message is not None:
+            self.SetForegroundColour(wx.Colour(255, 0, 0))
             self.SetLabel(_(message))
             self.Show()
 
         # red color
-        self.target.SetBackgroundColour(wx.Colour(255, 148, 148))
+        if self.target:
+            self.target.SetBackgroundColour(wx.Colour(255, 148, 148))
 
     def reset(self):
         """Clean all error messages."""
-        self.target.SetBackgroundColour(wx.NullColour)
-        self.SetLabel('')
+        if self.target:
+            self.target.SetBackgroundColour(wx.NullColour)
+        self.SetForegroundColour(wx.NullColour)
+        self.SetLabel(self.inform_message or '')
         if self.hide_if_valid:
             self.Hide()
 

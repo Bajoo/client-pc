@@ -6,7 +6,7 @@ from wx.lib.newevent import NewCommandEvent
 
 from ...common.i18n import N_
 from ..base_view import BaseView
-from ..validator import NotEmptyValidator
+from ..validator import BaseValidator, NotEmptyValidator
 from . import BaseForm
 
 
@@ -32,6 +32,7 @@ class ConnectionForm(BaseForm):
         self._view.create_layout()
 
         self.validators = [
+            self.FindWindow('messages'),
             self.FindWindow('username_error'),
             self.FindWindow('password_error')
         ]
@@ -43,8 +44,6 @@ class ConnectionForm(BaseForm):
         BaseForm.set_data(self, password='', username=username or '')
         if errors:
             self._view.display_message(errors)
-        else:
-            self._view.hide_message()
 
 
 class ConnectionFormView(BaseView):
@@ -53,14 +52,14 @@ class ConnectionFormView(BaseView):
     def create_children(self):
         """Create all named children of proxy form."""
 
-        wx.StaticText(self.window, name='messages')
+        BaseValidator(self.window, hide_if_valid=True, name='messages')
         username_txt = wx.TextCtrl(self.window, name='username')
         NotEmptyValidator(self.window, name='username_error',
-                          target=username_txt)
+                          target=username_txt, hide_if_valid=True)
         password_txt = wx.TextCtrl(self.window, name='password',
                                    style=wx.TE_PASSWORD)
         NotEmptyValidator(self.window, name='password_error',
-                          target=password_txt)
+                          target=password_txt, hide_if_valid=True)
 
         submit_btn = wx.Button(self.window, name='submit')
 
@@ -89,21 +88,17 @@ class ConnectionFormView(BaseView):
             self.window.FindWindow('username_error'),
             self.window.FindWindow('password'),
             self.window.FindWindow('password_error'),
+            None,
             forgotten_password_link,
             self.window.FindWindow('submit')
-        ])
+        ], flag=wx.EXPAND)
         self.window.SetSizer(sizer)
 
     def display_message(self, message):
         """Display a message on top of the form."""
         message_text = self.window.FindWindow('messages')
-        message_text.SetLabel(message)
-        message_text.Show()
-        self.window.GetTopLevelParent().Layout()
-
-    def hide_message(self):
-        """Hide the message displayed on top of the form."""
-        self.window.FindWindow('messages').Hide()
+        message_text.set_msg(message)
+        self.window.Layout()
         self.window.GetTopLevelParent().Layout()
 
 

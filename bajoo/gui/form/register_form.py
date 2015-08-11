@@ -5,7 +5,7 @@ from wx.lib.newevent import NewCommandEvent
 
 from ...common.i18n import N_
 from ..base_view import BaseView
-from ..validator import EmailValidator, MinLengthValidator
+from ..validator import BaseValidator, EmailValidator, MinLengthValidator
 from ..validator import ConfirmPasswordValidator
 from . import BaseForm
 
@@ -33,6 +33,7 @@ class RegisterForm(BaseForm):
         self._view.create_layout()
 
         self.validators = [
+            self.FindWindow('messages'),
             self.FindWindow('username_error'),
             self.FindWindow('password_error'),
             self.FindWindow('confirmation_error')
@@ -46,8 +47,6 @@ class RegisterForm(BaseForm):
                           confirmation='')
         if errors:
             self._view.display_message(errors)
-        else:
-            self._view.hide_message()
 
 
 class RegisterFormView(BaseView):
@@ -56,18 +55,20 @@ class RegisterFormView(BaseView):
     def create_children(self):
         """Create all named children of proxy form."""
 
-        wx.StaticText(self.window, name='messages')
+        BaseValidator(self.window, hide_if_valid=True, name='messages')
         username_txt = wx.TextCtrl(self.window, name='username')
         EmailValidator(self.window, name='username_error',
-                       target=username_txt)
+                       target=username_txt, hide_if_valid=True)
         password_txt = wx.TextCtrl(self.window, name='password',
                                    style=wx.TE_PASSWORD)
         MinLengthValidator(self.window, name='password_error',
-                           target=password_txt, min_length=8)
+                           target=password_txt, min_length=8,
+                           inform_message=N_('8 characters minimum'))
         confirm_txt = wx.TextCtrl(self.window, name='confirmation',
                                   style=wx.TE_PASSWORD)
         ConfirmPasswordValidator(self.window, name='confirmation_error',
-                                 target=confirm_txt, ref=password_txt)
+                                 target=confirm_txt, ref=password_txt,
+                                 hide_if_valid=True)
 
         submit_btn = wx.Button(self.window, name='submit')
 
@@ -88,30 +89,22 @@ class RegisterFormView(BaseView):
 
         sizer = self.make_sizer(wx.VERTICAL, [
             self.window.FindWindow('messages'),
-            [
-                self.window.FindWindow('username'),
-                self.window.FindWindow('username_error')
-            ], [
-                self.window.FindWindow('password'),
-                self.window.FindWindow('password_error')
-            ], [
-                self.window.FindWindow('confirmation'),
-                self.window.FindWindow('confirmation_error')
-            ],
+            self.window.FindWindow('username'),
+            self.window.FindWindow('username_error'),
+            self.window.FindWindow('password'),
+            self.window.FindWindow('password_error'),
+            self.window.FindWindow('confirmation'),
+            self.window.FindWindow('confirmation_error'),
+            None,
             self.window.FindWindow('submit')
-        ])
+        ], flag=wx.EXPAND)
         self.window.SetSizer(sizer)
 
     def display_message(self, message):
         """Display a message on top of the form."""
         message_text = self.window.FindWindow('messages')
-        message_text.SetLabel(message)
-        message_text.Show()
-        self.window.GetTopLevelParent().Layout()
-
-    def hide_message(self):
-        """Hide the message displayed on top of the form."""
-        self.window.FindWindow('messages').Hide()
+        message_text.set_msg(message)
+        self.window.Layout()
         self.window.GetTopLevelParent().Layout()
 
 

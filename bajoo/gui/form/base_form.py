@@ -168,7 +168,7 @@ class BaseForm(wx.Panel, Translator):
         result = True
         for v in self.validators:
             v.reset()
-            if not v.target.IsEnabled():
+            if v.target and not v.target.IsEnabled():
                 continue  # We don't check disabled elements.
             if not v.validate():
                 if result:
@@ -190,6 +190,7 @@ class BaseForm(wx.Panel, Translator):
         """
         if not self._apply_validation():
             # Validators may have updated windows, so we need to update layout.
+            self.Layout()
             self.GetTopLevelParent().Layout()
             return
 
