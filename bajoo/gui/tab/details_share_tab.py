@@ -7,7 +7,7 @@ from wx.lib.filebrowsebutton import DirBrowseButton
 from wx.lib.newevent import NewCommandEvent
 
 from ...api.team_share import permission as share_permission
-from ...api import MyBajoo, TeamShare
+from ...api import TeamShare
 from ...common.i18n import N_
 from ..base_view import BaseView
 from ..event_future import ensure_gui_thread
@@ -54,6 +54,10 @@ class DetailsShareTab(BaseForm):
         has_member_data = share.container \
                           and type(share.container) is TeamShare \
                           and share.container.members is not None
+        is_encrypted = share.container and share.container.is_encrypted
+        share_type = N_('Team share') \
+            if share.container and type(share.container) is TeamShare \
+            else N_('Personal folder')
 
         if has_member_data:
             self.FindWindow('members_share_form') \
@@ -78,9 +82,12 @@ class DetailsShareTab(BaseForm):
         self._view.register_many_i18n('SetLabel', {
             self.FindWindow('lbl_share_nb_members'): (
                 N_('%d members'),
-                len(share.container.members) if has_member_data else 0),
-            self.FindWindow('lbl_share_encryption'): N_('encrypted'),
-            self.FindWindow('lbl_share_type'): N_('Team share'),
+                len(share.container.members) if has_member_data else 0
+            ),
+            self.FindWindow('lbl_share_encryption'): (
+                N_('Encrypted') if is_encrypted else N_('Not encrypted')
+            ),
+            self.FindWindow('lbl_share_type'): share_type,
             self.FindWindow('lbl_share_status'): (
                 N_('Status: %s'), share.get_status_text()),
             # TODO: stats
@@ -101,11 +108,10 @@ class DetailsShareTab(BaseForm):
             self.FindWindow('btn_quit_share').Disable()
 
         # Cannot show members of/delete/quit MyBajoo folder
-        show_share_options = True
+        show_share_options = share.container \
+                             and type(share.container) is TeamShare
 
-        if share.container is None or type(share.container) is MyBajoo:
-            show_share_options = False
-
+        self.FindWindow('lbl_share_nb_members').Show(show_share_options)
         self.FindWindow('lbl_members').Show(show_share_options)
         self.FindWindow('members_share_form').Show(show_share_options)
         self.FindWindow('btn_quit_share').Enable(show_share_options)

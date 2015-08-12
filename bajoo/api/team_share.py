@@ -22,8 +22,8 @@ class TeamShare(Container):
     then he/she can add access to this share for other users.
     """
 
-    def __init__(self, session, container_id, name):
-        Container.__init__(self, session, container_id, name)
+    def __init__(self, session, container_id, name, encrypted=True):
+        Container.__init__(self, session, container_id, name, encrypted)
 
     def __repr__(self):
         """

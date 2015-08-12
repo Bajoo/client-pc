@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from functools import partial
+
 import wx
 from wx.lib.newevent import NewCommandEvent
 
@@ -63,7 +64,6 @@ class SettingsTab(wx.Panel):
 
 
 class SettingsTabView(BaseView):
-
     def __init__(self, window):
         BaseView.__init__(self, window)
         notebook = wx.Notebook(self.window)
@@ -87,7 +87,8 @@ class SettingsTabView(BaseView):
         button_sizer_box = self.create_settings_button_box(self.window)
 
         # sizer
-        sizer = self.make_sizer(wx.VERTICAL,
-                                [notebook, None, button_sizer_box],
-                                flag=wx.EXPAND)
+        sizer = self.make_sizer(wx.VERTICAL, [notebook],
+                                proportion=1, flag=wx.EXPAND)
+        sizer.Add(button_sizer_box, 0, wx.EXPAND | wx.ALL, 15)
+
         self.window.SetSizer(sizer)
