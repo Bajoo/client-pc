@@ -130,6 +130,9 @@ class DetailsShareTab(BaseForm):
 
         self._view.members_share_form.on_add_member(member_view_data)
 
+    def remove_member_view(self, email):
+        self._view.members_share_form.on_remove_member(email)
+
     def _btn_back_clicked(self, _event):
         back_event = DetailsShareTab.RequestShowListShares(self.GetId())
         wx.PostEvent(self, back_event)
@@ -146,6 +149,7 @@ class DetailsShareTab(BaseForm):
     def _on_remove_member(self, event):
         event.share = self._share
         event.Skip()
+        self.disable()
 
     def _btn_open_folder_clicked(self, _event):
         if self._share and self._share.path:

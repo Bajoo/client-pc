@@ -159,6 +159,22 @@ class MainWindow(wx.Frame):
 
             self._view.details_share_tab.enable()
 
+    def on_share_member_removed(self, share, email):
+        """
+        React when a member has been removed from the share.
+
+        Args:
+            share: the share from which the member has been removed.
+            email: None if the removal has failed, otherwise email
+                of the member removed.
+        """
+        if self._view.details_share_tab:
+            if self._view.details_share_tab.get_displayed_share() is share \
+                    and email is not None:
+                self._view.details_share_tab.remove_member_view(email)
+
+            self._view.details_share_tab.enable()
+
     @ensure_gui_thread
     def on_quit_or_delete_share(self, share):
         """

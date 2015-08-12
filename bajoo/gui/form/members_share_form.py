@@ -37,7 +37,6 @@ class MembersShareForm(BaseForm):
         self._init_icons()
         self._view = MembersShareView(self)
         self.validators = self._view.get_validators()
-        self._members = []
 
         self.Bind(wx.EVT_BUTTON, self.submit, id=wx.ID_APPLY)
         self.Bind(wx.EVT_BUTTON, self._btn_remove_user_clicked,
@@ -51,16 +50,14 @@ class MembersShareForm(BaseForm):
                 .ConvertToBitmap()
 
     def load_members(self, members):
-        self._members = members
         self._view.load_members_view(members)
 
     def add_member(self, member):
-        self._members.append(member)
         self._view.add_member_view(member)
 
-    def remove_member(self, member):
-        self._members.remove(member)
-        self._view.remove_member_view(member)
+    def on_remove_member(self, email):
+        self.FindWindow('user_email').SetValue('')
+        self._view.remove_member_view(email)
 
     def on_add_member(self, member):
         self._view.on_add_member(member)
@@ -188,10 +185,8 @@ class MembersShareView(BaseView):
         self._members_list_view.AppendItem([email, permission, delete])
 
     def on_add_member(self, member):
-        _logger.debug("on_share_member_added")
         if self._data:
             for index, member_data in enumerate(self._data):
-                _logger.debug('%s vs %s', member_data.get(u'user'), member.get(u'user'))
                 if member_data.get(u'user') == member.get(u'user'):
                     self._data.remove(member_data)
                     self._data.insert(index, member)
@@ -199,10 +194,16 @@ class MembersShareView(BaseView):
                     self.load_members_view()
                     return
 
+        self._data.append(member)
         self.add_member_view(member)
 
-    def remove_member_view(self, member):
-        pass
+    def remove_member_view(self, email):
+        if self._data:
+            for index, member_data in enumerate(self._data):
+                if member_data.get(u'user') == email:
+                    self._data.remove(member_data)
+
+        self.load_members_view()
 
     def get_validators(self):
         return [self._email_error]

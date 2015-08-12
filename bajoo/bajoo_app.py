@@ -7,6 +7,7 @@ from wx.lib.softwareupdate import SoftwareUpdate
 
 from . import stored_credentials
 from .api import User, TeamShare, Session
+
 from .common import config
 from .common.path import get_data_dir
 from .connection_registration_process import connect_or_register
@@ -209,6 +210,8 @@ class BajooApp(wx.App, SoftwareUpdate):
                   self._on_request_check_updates)
         self.Bind(MembersShareForm.EVT_SUBMIT,
                   self._on_add_share_member)
+        self.Bind(MembersShareForm.EVT_REMOVE_MEMBER,
+                  self._on_remove_share_member)
         self.Bind(DetailsShareTab.EVT_QUIT_SHARE_REQUEST,
                   self._on_request_quit_share)
         self.Bind(DetailsShareTab.EVT_DELETE_SHARE_REQUEST,
@@ -351,6 +354,33 @@ class BajooApp(wx.App, SoftwareUpdate):
             self._notifier.send_message(
                 N_('Error'),
                 N_('Unidentified container, cannot add member'))
+
+    def _on_remove_share_member(self, event):
+        share = event.share
+        email = event.email
+
+        if share.container:
+            def _on_member_removed(__):
+                self._notifier.send_message(
+                    N_('Member removed'),
+                    N_('%s\'s access to team share \'%s\' has been removed.')
+                    % (email, share.name))
+
+                if self._main_window:
+                    self._main_window.on_share_member_removed(share, email)
+
+            def _on_member_remove_error(__):
+                self._notifier.send_message(
+                    N_('Error'),
+                    N_('Cannot remove this member from team share.'))
+                self._main_window.on_share_member_removed(share, None)
+
+            share.container.remove_member(email) \
+                .then(_on_member_removed, _on_member_remove_error)
+        else:
+            self._notifier.send_message(
+                N_('Error'),
+                N_('Unidentified container, cannot remove member'))
 
     def _on_lang_changed(self, event):
         """
