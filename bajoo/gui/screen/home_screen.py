@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from functools import partial
+
 import wx
 from wx.lib.agw.hyperlink import HyperLinkCtrl, EVT_HYPERLINK_LEFT
 
@@ -8,6 +9,7 @@ from ...common.i18n import N_
 from ..base_view import BaseView
 from ..form import ConnectionForm, RegisterForm
 from ..proxy_window import ProxyWindow
+from ..common.language_box import LanguageBox
 
 
 class HomeScreen(wx.Panel):
@@ -63,7 +65,6 @@ class HomeScreen(wx.Panel):
 
 
 class HomeScreenView(BaseView):
-
     def __init__(self, home_screen):
         BaseView.__init__(self, home_screen)
 
@@ -98,7 +99,7 @@ class HomeScreenView(BaseView):
         settings_sizer.AddStretchSpacer()
         settings_sizer.Add(lang_label,
                            flag=wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, border=10)
-        settings_sizer.Add(wx.ComboBox(home_screen, value="Auto", name='lang'))
+        settings_sizer.Add(LanguageBox(home_screen, name='lang'))
 
         notebook_sizer = wx.BoxSizer(wx.HORIZONTAL)
         notebook_sizer.AddSpacer(15)
@@ -124,6 +125,7 @@ def main():
     s.GetSizer().SetSizeHints(win)
     win.Show(True)
     app.MainLoop()
+
 
 if __name__ == '__main__':
     main()

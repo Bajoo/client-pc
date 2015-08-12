@@ -11,6 +11,7 @@ from .common.path import get_data_dir
 from .connection_registration_process import connect_or_register
 from .container_sync_pool import ContainerSyncPool
 from .dynamic_container_list import DynamicContainerList
+from .gui.common.language_box import LanguageBox
 from .gui.about_window import AboutBajooWindow
 from .gui.event_future import ensure_gui_thread
 from .gui.home_window import HomeWindow
@@ -26,7 +27,7 @@ from .gui.tab.details_share_tab import DetailsShareTab
 from .gui.tab.advanced_settings_tab import AdvancedSettingsTab  # REMOVE
 from .gui.form.members_share_form import MembersShareForm
 from .gui.change_password_window import ChangePasswordWindow
-from .common.i18n import N_
+from .common.i18n import N_, set_lang
 
 
 _logger = logging.getLogger(__name__)
@@ -194,6 +195,7 @@ class BajooApp(wx.App, SoftwareUpdate):
 
         self.Bind(TaskBarIcon.EVT_OPEN_WINDOW, self._show_window)
         self.Bind(TaskBarIcon.EVT_EXIT, self._exit)
+        self.Bind(LanguageBox.EVT_LANG, self._on_lang_changed)
 
         self.Bind(CreationShareTab.EVT_CREATE_SHARE_REQUEST,
                   self._on_request_create_share)
@@ -347,6 +349,13 @@ class BajooApp(wx.App, SoftwareUpdate):
             self._notifier.send_message(
                 N_('Error'),
                 N_('Unidentified container, cannot add member'))
+
+    def _on_lang_changed(self, event):
+        """
+        Handle the request of changing the application language.
+        """
+        lang = event.lang
+        set_lang(lang)
 
     def _on_request_create_share(self, event):
         """
