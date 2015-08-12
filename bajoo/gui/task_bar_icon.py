@@ -6,6 +6,7 @@ from wx.lib.newevent import NewCommandEvent
 
 from ..common.i18n import N_, _
 from ..common.path import resource_filename
+from ..common.util import open_folder
 from .translator import Translator
 
 
@@ -24,10 +25,13 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
     SYNC_DONE = 3
     SYNC_PROGRESS = 4
     SYNC_PAUSE = 5
+    SYNC_STOP = 6
+    SYNC_ERROR = 7
 
     # OpenWindowEvent(target=OPEN_HOME)
     ExitEvent, EVT_EXIT = NewCommandEvent()
     OpenWindowEvent, EVT_OPEN_WINDOW = NewCommandEvent()
+    RequestContainerStatus, EVT_CONTAINER_STATUS_REQUEST = NewCommandEvent()
 
     # Possible values for OpenWindowEvent
     OPEN_HOME = 1
@@ -60,6 +64,8 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
         self._is_connected = False
         self._state = self.NOT_CONNECTED
 
+        self._container_menu = None
+
         icon_path = 'assets/icons/trayicon-%s.png'
         disconnected_icon = resource_filename(icon_path % 'connecting')
         connecting_icon = resource_filename(icon_path % 'connecting')
@@ -67,12 +73,28 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
         paused_icon = resource_filename(icon_path % 'paused')
         progress_icon = resource_filename(icon_path % 'progress')
 
+        container_status_done = sync_icon
+        container_status_progress = progress_icon
+        container_status_pause = paused_icon
+        container_status_stop = connecting_icon
+        # TODO: set more explicit icon
+        container_status_error = connecting_icon
+
         self._icons = {
             self.NOT_CONNECTED: wx.Icon(disconnected_icon),
             self.CONNECTION_PROGRESS: wx.Icon(connecting_icon),
             self.SYNC_DONE: wx.Icon(sync_icon),
             self.SYNC_PROGRESS: wx.Icon(progress_icon),
             self.SYNC_PAUSE: wx.Icon(paused_icon)
+        }
+
+        self._container_icons = {
+            self.SYNC_DONE: wx.Image(container_status_done).Rescale(16, 16),
+            self.SYNC_PROGRESS: wx.Image(container_status_progress)
+                .Rescale(16, 16),
+            self.SYNC_PAUSE: wx.Image(container_status_pause).Rescale(16, 16),
+            self.SYNC_STOP: wx.Image(container_status_stop).Rescale(16, 16),
+            self.SYNC_ERROR: wx.Image(container_status_error).Rescale(16, 16)
         }
 
         self.set_state(self.NOT_CONNECTED)
@@ -107,24 +129,29 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
             # TODO: set real URL
             webbrowser.open('https://www.bajoo.fr/client_space')
         else:
+            print('Why are we here ?')
             event.Skip()
 
     def CreatePopupMenu(self):
         menu = wx.Menu()
         if self._is_connected:
-            list_shares_menu = wx.Menu()
-            # TODO: list Bajoo shares in the menu.
-            list_shares_menu.Append(
+            wx.PostEvent(self, TaskBarIcon.RequestContainerStatus(-1))
+
+            # The list is set in set_container_status_list()
+            self._container_menu = wx.Menu()
+            self._container_menu.Append(
                 -1, _("Looks like you don't\nhave any share")).Enable(False)
 
             # TODO: add account information.
             menu.AppendSeparator()
-            menu.AppendMenu(-1, _('Shares folder'), list_shares_menu)
-            menu.Append(self.ID_SUSPEND_SYNC, _('Suspend synchronization'))
-            menu.Append(self.ID_SETTINGS, _('Manage my shares...'))
+            menu.AppendMenu(-1, _('Shares folder'), self._container_menu)
+            menu.Append(self.ID_SUSPEND_SYNC, _('Suspend synchronization')) \
+                .Enable(False)
+            menu.Append(self.ID_MANAGE_SHARES, _('Manage my shares...'))
             menu.AppendSeparator()
             menu.Append(self.ID_CLIENT_SPACE, _('My client space'))
-            menu.Append(self.ID_INVITATION, _('Invite a friend on Bajoo'))
+            menu.Append(self.ID_INVITATION, _('Invite a friend on Bajoo')) \
+                .Enable(False)
             menu.Append(self.ID_HELP, _('Online help'))
             menu.AppendSeparator()
             menu.Append(self.ID_SETTINGS, _('Settings ...'))
@@ -149,3 +176,34 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
         self._state = state
         self._is_connected = state is not self.NOT_CONNECTED
         self.SetIcon(self._icons[state], tooltip=self._tooltips[state])
+
+    def set_container_status_list(self, status_list):
+        """Set the list of containers, and theirs status and folder.
+
+        Args:
+            status_list: (list of tuple): list of triplet containing the
+                container's name, the folder path and the status.
+                The status is one of the TaskBarIcon.SYNC_* values.
+                Note that the folder_path can be None.
+        """
+        if not self._container_menu:
+            return
+
+        for item in self._container_menu.GetMenuItems():
+            self._container_menu.DestroyItem(item)
+
+        for name, fpath, status in status_list:
+            item = wx.MenuItem(self._container_menu, -1, name)
+            if not fpath:
+                item.Enable(False)
+            item.SetBitmap(wx.BitmapFromImage(self._container_icons[status]))
+            self._container_menu.AppendItem(item)
+
+            def open_container(_evt, folder_path=fpath):
+                open_folder(folder_path)
+
+            self.Bind(wx.EVT_MENU, open_container, item)
+
+        if not status_list:
+            self._container_menu.Append(
+                -1, _("Looks like you don't\nhave any share")).Enable(False)

@@ -13,6 +13,7 @@ from .connection_registration_process import connect_or_register
 from .container_sync_pool import ContainerSyncPool
 from .dynamic_container_list import DynamicContainerList
 from .gui.common.language_box import LanguageBox
+from .local_container import LocalContainer
 from .gui.about_window import AboutBajooWindow
 from .gui.event_future import ensure_gui_thread
 from .gui.home_window import HomeWindow
@@ -197,6 +198,8 @@ class BajooApp(wx.App, SoftwareUpdate):
         self.Bind(TaskBarIcon.EVT_OPEN_WINDOW, self._show_window)
         self.Bind(TaskBarIcon.EVT_EXIT, self._exit)
         self.Bind(LanguageBox.EVT_LANG, self._on_lang_changed)
+        self.Bind(TaskBarIcon.EVT_CONTAINER_STATUS_REQUEST,
+                  self._container_status_request)
 
         self.Bind(CreationShareTab.EVT_CREATE_SHARE_REQUEST,
                   self._on_request_create_share)
@@ -269,6 +272,33 @@ class BajooApp(wx.App, SoftwareUpdate):
         if self._main_window:
             self._main_window.load_shares(
                 self._container_list.get_list())
+
+    def _container_status_request(self, _event):
+
+        if not self._container_list:
+            _logger.warning('the TaskBarIcon need the container list, '
+                            'but the dynamic list is None')
+            return
+
+        mapping = {
+            LocalContainer.STATUS_ERROR: TaskBarIcon.SYNC_ERROR,
+            LocalContainer.STATUS_PAUSED: TaskBarIcon.SYNC_PAUSE,
+            LocalContainer.STATUS_STOPPED: TaskBarIcon.SYNC_STOP,
+            LocalContainer.STATUS_UNKNOWN: TaskBarIcon.SYNC_PROGRESS
+        }
+        containers_status = []
+        for container in self._container_list.get_list():
+            if container.status == LocalContainer.STATUS_STARTED:
+                if container.is_up_to_date():
+                    status = TaskBarIcon.SYNC_DONE
+                else:
+                    status = TaskBarIcon.SYNC_PROGRESS
+            else:
+                status = mapping[container.status]
+            row = (container.name, container.path, status)
+            containers_status.append(row)
+
+        self._task_bar_icon.set_container_status_list(containers_status)
 
     def _on_request_container_details(self, event):
         """

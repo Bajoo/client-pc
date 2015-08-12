@@ -275,7 +275,7 @@ class LocalContainer(object):
         if self.status != self.STATUS_STARTED:
             return False
         with self._index_lock:
-            return bool(self._index_booking)
+            return not bool(self._index_booking)
 
     def get_status_text(self):
         return LocalContainer._status_textes.get(
