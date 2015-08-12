@@ -26,6 +26,8 @@ class MembersShareForm(BaseForm):
     permission of a user, or kick he/she out of the shared folder.
     """
     SubmitEvent, EVT_SUBMIT = NewCommandEvent()
+    RemoveMemberEvent, EVT_REMOVE_MEMBER = NewCommandEvent()
+
     fields = ['user_email', 'permission']
 
     ADD_ICON = None
@@ -38,6 +40,8 @@ class MembersShareForm(BaseForm):
         self._members = []
 
         self.Bind(wx.EVT_BUTTON, self.submit, id=wx.ID_APPLY)
+        self.Bind(wx.EVT_BUTTON, self._btn_remove_user_clicked,
+                  id=wx.ID_DELETE)
         self.Bind(dv.EVT_DATAVIEW_SELECTION_CHANGED, self._on_select_member)
 
     def _init_icons(self):
@@ -71,10 +75,24 @@ class MembersShareForm(BaseForm):
 
     def _on_select_member(self, _event):
         row = self._view._members_list_view.GetSelectedRow()
+        txt_user_email = self.FindWindow('user_email')
+        btn_remove_user = self.FindWindow('btn_remove_user')
 
-        if row != wx.NOT_FOUND:
+        if row == wx.NOT_FOUND:
+            txt_user_email.SetValue('')
+            btn_remove_user.Disable()
+        else:
+            # TODO: check admin permission
             email = self._view._members_list_view.GetValue(row, 0)
-            self.FindWindow('user_email').SetValue(email)
+            txt_user_email.SetValue(email)
+            btn_remove_user.Enable()
+
+    def _btn_remove_user_clicked(self, event):
+        # TODO: confirmation
+        remove_event = MembersShareForm.RemoveMemberEvent(self.GetId())
+        remove_event.email = self.FindWindow('user_email').GetValue()
+
+        wx.PostEvent(self, remove_event)
 
 
 class MembersShareView(BaseView):
@@ -114,6 +132,10 @@ class MembersShareView(BaseView):
             members_share_form, id=wx.ID_APPLY,
             bitmap=MembersShareForm.ADD_ICON,
             name='btn_add_user')
+        btn_remove_user = wx.Button(
+            members_share_form, id=wx.ID_DELETE,
+            name='btn_remove_user', label=N_('Remove'))
+        btn_remove_user.Disable()
 
         user_sizer = wx.BoxSizer(wx.HORIZONTAL)
         user_sizer.Add(txt_user_email, proportion=2,
@@ -122,6 +144,7 @@ class MembersShareView(BaseView):
         user_sizer.Add(cmb_permission, proportion=1,
                        flag=wx.EXPAND | wx.RIGHT, border=15)
         user_sizer.Add(btn_add_user, proportion=0)
+        user_sizer.Add(btn_remove_user, proportion=0)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(members_list_view,

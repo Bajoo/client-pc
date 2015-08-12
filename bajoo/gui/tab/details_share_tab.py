@@ -37,6 +37,7 @@ class DetailsShareTab(BaseForm):
         self._view = DetailsShareView(self)
 
         self.Bind(MembersShareForm.EVT_SUBMIT, self._on_add_member)
+        self.Bind(MembersShareForm.EVT_REMOVE_MEMBER, self._on_remove_member)
         self.Bind(wx.EVT_BUTTON, self._btn_back_clicked,
                   self.FindWindow('btn_back'))
         self.Bind(wx.EVT_BUTTON, self._btn_open_folder_clicked,
@@ -141,6 +142,10 @@ class DetailsShareTab(BaseForm):
 
         event.Skip()
         self.disable()
+
+    def _on_remove_member(self, event):
+        event.share = self._share
+        event.Skip()
 
     def _btn_open_folder_clicked(self, _event):
         if self._share and self._share.path:
