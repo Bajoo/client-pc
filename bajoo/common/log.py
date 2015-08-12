@@ -109,7 +109,11 @@ class ColoredFormatter(logging.Formatter):
         return self._colorize(result, 'DATE')
 
     def formatException(self, ei):
-        msg = logging.Formatter.formatException(self, ei)
+        if hasattr(ei[1], '_origin_stack'):
+            # Real stacktrace, before being moved by the Futures.
+            msg = ei[1]._origin_stack[:-1]
+        else:
+            msg = logging.Formatter.formatException(self, ei)
         msg_lines = msg.split('\n')
         last_line = msg_lines[-1]
         result = '\n'.join(msg_lines[:-1]) + '\n'

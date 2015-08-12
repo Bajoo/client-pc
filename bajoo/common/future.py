@@ -13,7 +13,9 @@ import concurrent.futures
 from functools import partial
 import logging
 from multiprocessing import Lock as ProcessLock
+import sys
 from threading import Lock as ThreadLock
+import traceback
 import types
 
 _logger = logging.getLogger(__name__)
@@ -40,6 +42,9 @@ def then(original_future, on_success=None, on_error=None):
     If a callback function returns another Future, the result of this generated
     future will be used. It allows to pass Future factory, and so chain futures
     together.
+
+    If an exception is raised, the original stack is stored, as an str into
+    error._origin_stack.
 
     Args:
         original_future: future who will be chained.
@@ -86,6 +91,9 @@ def then(original_future, on_success=None, on_error=None):
             else:
                 new_future.set_result(new_result)
         except Exception as e:
+            exc_info = sys.exc_info()
+            e._origin_stack = ''.join(traceback.format_exception(
+                exc_info[0], exc_info[1], exc_info[2]))
             new_future.set_exception(e)
 
     original_future.add_done_callback(_callback)
