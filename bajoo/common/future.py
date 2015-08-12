@@ -21,7 +21,7 @@ import types
 _logger = logging.getLogger(__name__)
 
 
-def then(original_future, on_success=None, on_error=None):
+def then(original_future, on_success=None, on_error=None, no_arg=False):
     """Chain a callback to a Future instance.
 
     Execute the callback functions right after the future has been resolved.
@@ -52,6 +52,8 @@ def then(original_future, on_success=None, on_error=None):
             of the original future as argument.
         on_on_error (callable, optional): This callback will receive the
             exception raised by the original future as argument.
+        no_arg (boolean, optional): If True, the success callback is called
+            without argument.
     Returns:
         Future<?>: a new future who represents the value returned by the
             callbacks.
@@ -73,18 +75,23 @@ def then(original_future, on_success=None, on_error=None):
         try:
             result = self.result()
             if not on_success:
-                new_future.set_result(result)
+                new_future.set_result(None if no_arg else result)
                 return
             callback = on_success
+            is_error = False
         except Exception as e:  # initial future has failed.
             if not on_error:
                 new_future.set_exception(e)
                 return
             result = e
             callback = on_error
+            is_error = True
 
         try:
-            new_result = callback(result)
+            if no_arg and is_error:
+                new_result = callback()
+            else:
+                new_result = callback(result)
             if isinstance(new_result, concurrent.futures.Future):
                 new_result.then(new_future.set_result,
                                 new_future.set_exception)
@@ -136,8 +143,8 @@ class Future(concurrent.futures.Future):
         future.set_exception(value)
         return future
 
-    def then(self, on_success=None, on_error=None):
-        return then(self, on_success, on_error)
+    def then(self, on_success=None, on_error=None, no_arg=False):
+        return then(self, on_success, on_error, no_arg=no_arg)
 
 
 def resolve_dec(f):
