@@ -31,6 +31,7 @@ class MembersShareForm(BaseForm):
     fields = ['user_email', 'permission']
 
     ADD_ICON = None
+    REMOVE_ICON = None
 
     def __init__(self, parent, auto_disable=False, **kwargs):
         BaseForm.__init__(self, parent, auto_disable, **kwargs)
@@ -47,6 +48,11 @@ class MembersShareForm(BaseForm):
         if not MembersShareForm.ADD_ICON:
             MembersShareForm.ADD_ICON = wx.Image(resource_filename(
                 'assets/images/add.png')) \
+                .ConvertToBitmap()
+
+        if not MembersShareForm.REMOVE_ICON:
+            MembersShareForm.REMOVE_ICON = wx.Image(resource_filename(
+                'assets/images/delete.png')) \
                 .ConvertToBitmap()
 
     def load_members(self, members):
@@ -129,9 +135,10 @@ class MembersShareView(BaseView):
             members_share_form, id=wx.ID_APPLY,
             bitmap=MembersShareForm.ADD_ICON,
             name='btn_add_user')
-        btn_remove_user = wx.Button(
+        btn_remove_user = wx.BitmapButton(
             members_share_form, id=wx.ID_DELETE,
-            name='btn_remove_user', label=N_('Remove'))
+            bitmap=MembersShareForm.REMOVE_ICON,
+            name='btn_remove_user')
         btn_remove_user.Disable()
 
         user_sizer = wx.BoxSizer(wx.HORIZONTAL)

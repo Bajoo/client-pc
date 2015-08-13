@@ -246,7 +246,11 @@ class MainWindowListbook(wx.Listbook, Translator):
         # TODO: Set proper image for each tab
         image_list = wx.ImageList(64, 64)
         image_list.Add(wx.Image(resource_filename(
-            'assets/images/settings.png')).ConvertToBitmap())
+            'assets/images/my-shares.png')).Rescale(64, 64).ConvertToBitmap())
+        image_list.Add(wx.Image(resource_filename(
+            'assets/images/user.png')).Rescale(64, 64).ConvertToBitmap())
+        image_list.Add(wx.Image(resource_filename(
+            'assets/images/settings.png')).Rescale(64, 64).ConvertToBitmap())
         self.AssignImageList(image_list)
 
         self.list_shares_tab = ListSharesTab(self)
@@ -258,8 +262,8 @@ class MainWindowListbook(wx.Listbook, Translator):
         self.AddPage(self.list_shares_tab,
                      N_("My Shares"), imageId=0)
         self.AddPage(self.account_tab,
-                     N_("My Account"), imageId=0)
-        self.AddPage(self.settings_tab, N_("Settings"), imageId=0)
+                     N_("My Account"), imageId=1)
+        self.AddPage(self.settings_tab, N_("Settings"), imageId=2)
 
         self.Bind(wx.EVT_LISTBOOK_PAGE_CHANGED, self.on_page_changed)
         self.on_page_changed()
