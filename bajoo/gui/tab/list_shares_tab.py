@@ -220,8 +220,16 @@ class ListSharesView(BaseView):
         lbl_share_status_desc = wx.StaticText(share_box)
         lbl_share_status = wx.StaticText(
             share_box, name='lbl_share_status_' + container.id)
-        share_status_box = self.make_sizer(wx.HORIZONTAL, [
-            lbl_share_status_desc, lbl_share_status], outside_border=False)
+
+        lbl_error_msg = wx.StaticText(
+            share_box, name='lbl_error_msg_' + container.id)
+        lbl_error_msg.SetForegroundColour(wx.RED)
+        lbl_error_msg.SetLabel(container.error_msg or '')
+
+        share_status_box = self.make_sizer(
+            wx.HORIZONTAL, [
+                lbl_share_status_desc, lbl_share_status, lbl_error_msg
+            ], outside_border=False)
         lbl_share_description = wx.StaticText(
             share_box, name='lbl_share_desc_' + container.id)
 
@@ -244,7 +252,7 @@ class ListSharesView(BaseView):
         else:
             # TODO: get number of members
             # self.register_i18n(lbl_share_description.SetLabel,
-            #                    N_('%d members'), 18)
+            # N_('%d members'), 18)
             lbl_share_description.SetLabel('')
 
         share_box_sizer = wx.StaticBoxSizer(share_box)

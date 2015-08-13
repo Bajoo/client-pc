@@ -119,7 +119,11 @@ class DetailsShareTab(BaseForm):
         self.FindWindow('btn_delete_share').Enable(show_share_options)
         self.FindWindow('btn_open_folder').Enable(share.path is not None)
 
-        self.hide_message()
+        if share.error_msg:
+            self.show_error_message(share.error_msg)
+        else:
+            self.hide_message()
+
         self.Layout()
 
     def Show(self, show=True):
@@ -300,9 +304,9 @@ class DetailsShareView(BaseView):
         main_sizer.AddMany([
             (share_description_box, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 15),
             (share_details_box, 0, wx.EXPAND | wx.LEFT, 15),
+            (lbl_message, 0, wx.EXPAND | wx.ALL, 15),
             (lbl_members, 0, wx.EXPAND | wx.TOP | wx.LEFT | wx.RIGHT, 15),
             (members_share_form, 1, wx.EXPAND | wx.ALL, 15),
-            (lbl_message, 0, wx.EXPAND | wx.ALL, 15),
             (share_options_sizer, 0, wx.EXPAND | wx.ALL, 15),
             (buttons_sizer, 0, wx.EXPAND | wx.ALL, 15)
         ])

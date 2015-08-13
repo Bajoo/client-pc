@@ -93,7 +93,7 @@ class AccountTab(wx.Panel):
         wx.PostEvent(self, event)
 
     def Show(self, show=True):
-        self.FindWindowByName('lbl_change_password_success').Hide()
+        self.FindWindowByName('lbl_message').Hide()
         self.Layout()
         event = AccountTab.DataRequestEvent(self.GetId())
         wx.PostEvent(self, event)
@@ -117,7 +117,7 @@ class AccountTab(wx.Panel):
 
     def on_password_change_success(self):
         self.hide_change_password_window()
-        self.FindWindowByName('lbl_change_password_success').Show()
+        self.FindWindowByName('lbl_message').Show()
         self.Layout()
 
     def show_password_change_error(self, message):
@@ -177,10 +177,10 @@ class AccountView(BaseView):
         btn_reinit_passphrase.SetMinSize(
             (200, btn_reinit_passphrase.GetSize()[1]))
 
-        # lbl_change_password_success
-        lbl_change_password_success = wx.StaticText(
-            account_screen, name='lbl_change_password_success')
-        lbl_change_password_success.SetForegroundColour(wx.BLUE)
+        # lbl_message
+        lbl_message = wx.StaticText(
+            account_screen, name='lbl_message')
+        lbl_message.SetForegroundColour(wx.BLUE)
 
         # btn_change_password
         btn_change_password = wx.Button(
@@ -229,17 +229,16 @@ class AccountView(BaseView):
                       wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
         main_sizer = self.make_sizer(
-            wx.VERTICAL, [box_sizer, None, btn_reinit_passphrase,
-                          lbl_change_password_success,
-                          btn_change_password])
+            wx.VERTICAL, [box_sizer, None, lbl_message, None,
+                          btn_reinit_passphrase, btn_change_password])
 
         account_screen.SetSizer(main_sizer)
 
         self.register_many_i18n('SetLabelText', {
             lbl_email_description: N_('You are connected as:'),
             lbl_account_type_desc: N_('Account type:'),
-            lbl_change_password_success: N_('Your password '
-                                            'has been successfully changed.'),
+            lbl_message: N_('Your password '
+                            'has been successfully changed.'),
             btn_change_offer: N_(">>> Move to a higher offer"),
             btn_disconnect: N_("Disconnect my account"),
             btn_open_bajoo_folder: N_("Open my Bajoo folder"),
