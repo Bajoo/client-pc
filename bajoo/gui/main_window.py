@@ -151,15 +151,24 @@ class MainWindow(wx.Frame):
         self.show_list_shares_tab()
 
     @ensure_gui_thread
-    def on_share_member_added(self, share, email, permission):
+    def on_share_member_added(self, share, email, permission, message=None):
         if self._view.details_share_tab:
-            if self._view.details_share_tab.get_displayed_share() is share:
+            if self._view.details_share_tab.get_displayed_share() is share \
+                    and email is not None:
                 self._view.details_share_tab.add_member_view(
                     email, permission)
 
+                # Show message if neccessary
+                if message:
+                    self._view.details_share_tab.show_message(message)
+            else:
+                # Show error message if neccessary
+                if message:
+                    self._view.details_share_tab.show_error_message(message)
+
             self._view.details_share_tab.enable()
 
-    def on_share_member_removed(self, share, email):
+    def on_share_member_removed(self, share, email, message=None):
         """
         React when a member has been removed from the share.
 
@@ -172,6 +181,14 @@ class MainWindow(wx.Frame):
             if self._view.details_share_tab.get_displayed_share() is share \
                     and email is not None:
                 self._view.details_share_tab.remove_member_view(email)
+
+                # Show message if neccessary
+                if message:
+                    self._view.details_share_tab.show_message(message)
+            else:
+                # Show error message if neccessary
+                if message:
+                    self._view.details_share_tab.show_error_message(message)
 
             self._view.details_share_tab.enable()
 

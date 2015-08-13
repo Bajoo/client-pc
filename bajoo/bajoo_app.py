@@ -7,7 +7,6 @@ from wx.lib.softwareupdate import SoftwareUpdate
 
 from . import stored_credentials
 from .api import User, TeamShare, Session
-
 from .common import config
 from .common.path import get_data_dir
 from .connection_registration_process import connect_or_register
@@ -328,32 +327,32 @@ class BajooApp(wx.App, SoftwareUpdate):
             The member has been added/modified successfully. Show a
             notification and update data on the screen.
             """
-            self._notifier.send_message(
-                N_('Member added'),
-                N_('%s has been given access to team share \'%s\'')
-                % (email, share.name))
 
             if self._main_window:
                 self._main_window.on_share_member_added(
-                    share, email, permission)
+                    share, email, permission,
+                    N_('%s has been given access to team share \'%s\'')
+                    % (email, share.name))
 
         def _on_member_add_error(__):
             """
             Error occurred when attempting to add/modify rights of a member
             on a share. Show a notification.
             """
-            self._notifier.send_message(
-                N_('Error'),
-                N_('Cannot add this member to team share, '
-                   'maybe email does not exist.'))
+            if self._main_window:
+                self._main_window.on_share_member_added(
+                    share, None, None,
+                    N_('Cannot add this member to team share, '
+                       'maybe email does not exist.'))
 
         if share.container:
             share.container.add_member(email, permission) \
                 .then(_on_member_added, _on_member_add_error)
         else:
-            self._notifier.send_message(
-                N_('Error'),
-                N_('Unidentified container, cannot add member'))
+            if self._main_window:
+                self._main_window.on_share_member_added(
+                    share, None, None,
+                    N_('Unidentified container, cannot add member'))
 
     def _on_remove_share_member(self, event):
         share = event.share
@@ -361,26 +360,25 @@ class BajooApp(wx.App, SoftwareUpdate):
 
         if share.container:
             def _on_member_removed(__):
-                self._notifier.send_message(
-                    N_('Member removed'),
-                    N_('%s\'s access to team share \'%s\' has been removed.')
-                    % (email, share.name))
-
                 if self._main_window:
-                    self._main_window.on_share_member_removed(share, email)
+                    self._main_window.on_share_member_removed(
+                        share, email,
+                        N_('%s\'s access to team share \'%s\' '
+                           'has been removed.') % (email, share.name))
 
             def _on_member_remove_error(__):
-                self._notifier.send_message(
-                    N_('Error'),
-                    N_('Cannot remove this member from team share.'))
-                self._main_window.on_share_member_removed(share, None)
+                if self._main_window:
+                    self._main_window.on_share_member_removed(
+                        share, None,
+                        N_('Cannot remove this member from this team share.'))
 
             share.container.remove_member(email) \
                 .then(_on_member_removed, _on_member_remove_error)
         else:
-            self._notifier.send_message(
-                N_('Error'),
-                N_('Unidentified container, cannot remove member'))
+            if self._main_window:
+                self._main_window.on_share_member_removed(
+                    share, None,
+                    N_('Unidentified container, cannot remove member'))
 
     def _on_lang_changed(self, event):
         """

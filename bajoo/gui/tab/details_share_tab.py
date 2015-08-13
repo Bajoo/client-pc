@@ -117,9 +117,14 @@ class DetailsShareTab(BaseForm):
         self.FindWindow('members_share_form').Show(show_share_options)
         self.FindWindow('btn_quit_share').Enable(show_share_options)
         self.FindWindow('btn_delete_share').Enable(show_share_options)
-
         self.FindWindow('btn_open_folder').Enable(share.path is not None)
+
+        self.hide_message()
         self.Layout()
+
+    def Show(self, show=True):
+        BaseForm.Show(self, show)
+        self.hide_message()
 
     def get_displayed_share(self):
         return self._share
@@ -134,10 +139,12 @@ class DetailsShareTab(BaseForm):
         self._view.members_share_form.on_remove_member(email)
 
     def _btn_back_clicked(self, _event):
+        self.hide_message()
         back_event = DetailsShareTab.RequestShowListShares(self.GetId())
         wx.PostEvent(self, back_event)
 
     def _on_add_member(self, event):
+        self.hide_message()
         # Add permission dict & share object to the event, then forward it
         permission_name = event.permission
         event.permission = dict(share_permission[permission_name])
@@ -147,11 +154,14 @@ class DetailsShareTab(BaseForm):
         self.disable()
 
     def _on_remove_member(self, event):
+        self.hide_message()
         event.share = self._share
         event.Skip()
         self.disable()
 
     def _btn_open_folder_clicked(self, _event):
+        self.hide_message()
+
         if self._share and self._share.path:
             from ...common.util import open_folder
 
@@ -161,6 +171,8 @@ class DetailsShareTab(BaseForm):
             _logger.debug("Unknown container or directory to open")
 
     def _btn_quit_share_clicked(self, _event):
+        self.hide_message()
+
         if self._share:
             if message_box.message_quit_share(self._share.name, self) \
                     == wx.YES:
@@ -171,6 +183,8 @@ class DetailsShareTab(BaseForm):
                 self.disable()
 
     def _btn_delete_share_clicked(self, _event):
+        self.hide_message()
+
         if self._share:
             if message_box.message_delete_share(self._share.name, self) \
                     == wx.YES:
@@ -179,6 +193,23 @@ class DetailsShareTab(BaseForm):
                 wx.PostEvent(self, event)
 
                 self.disable()
+
+    def _show_message(self, message, text_color):
+        lbl_message = self.FindWindow('lbl_message')
+        lbl_message.SetLabel(message)
+        lbl_message.SetForegroundColour(text_color)
+        lbl_message.Show()
+        self.Layout()
+
+    def show_message(self, message):
+        self._show_message(message, wx.BLUE)
+
+    def show_error_message(self, message):
+        self._show_message(message, wx.RED)
+
+    def hide_message(self):
+        self.FindWindow('lbl_message').Hide()
+        self.Layout()
 
 
 class DetailsShareView(BaseView):
@@ -254,6 +285,11 @@ class DetailsShareView(BaseView):
         share_details_box = self.make_sizer(
             wx.HORIZONTAL, [share_summary_box, None, btn_open_folder])
 
+        # lbl_member_message
+        lbl_message = wx.StaticText(
+            details_share_tab, name='lbl_message')
+        lbl_message.Hide()
+
         # the share_options sizer contains options of exclusion & local dir
         share_options_sizer = self.make_sizer(
             wx.VERTICAL, [chk_exclusion, btn_browse_location],
@@ -266,6 +302,7 @@ class DetailsShareView(BaseView):
             (share_details_box, 0, wx.EXPAND | wx.LEFT, 15),
             (lbl_members, 0, wx.EXPAND | wx.TOP | wx.LEFT | wx.RIGHT, 15),
             (members_share_form, 1, wx.EXPAND | wx.ALL, 15),
+            (lbl_message, 0, wx.EXPAND | wx.ALL, 15),
             (share_options_sizer, 0, wx.EXPAND | wx.ALL, 15),
             (buttons_sizer, 0, wx.EXPAND | wx.ALL, 15)
         ])
