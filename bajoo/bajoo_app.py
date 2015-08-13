@@ -414,8 +414,8 @@ class BajooApp(wx.App, SoftwareUpdate):
         """
         Handle the request of changing the application language.
         """
-        lang = event.lang
-        set_lang(lang)
+        set_lang(event.lang)
+        self._notify_lang_change()
 
     def _on_request_create_share(self, event):
         """

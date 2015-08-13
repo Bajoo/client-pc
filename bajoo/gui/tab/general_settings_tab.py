@@ -47,9 +47,10 @@ class GeneralSettingsTab(wx.Panel):
         notifications_shown = self._config.get('notifications')
         lang_code = self._config.get('lang')
 
-        self.FindWindow('chk_launch_at_startup').SetValue(launched_at_startup)
-        self.FindWindow('chk_contextual_icon').SetValue(contextual_icon_shown)
-        self.FindWindow('chk_notifications').SetValue(notifications_shown)
+        # TODO: set to real value for next release
+        self.FindWindow('chk_launch_at_startup').SetValue(False)
+        self.FindWindow('chk_contextual_icon').SetValue(False)
+        self.FindWindow('chk_notifications').SetValue(False)
         # TODO: change to language button & apply config
 
     def _on_applied(self, _event):
@@ -83,6 +84,11 @@ class GeneralSettingsView(BaseView):
         # chk_notifications
         chk_notifications = wx.CheckBox(
             general_settings_screen, name='chk_notifications')
+
+        # TODO: disable for next release
+        chk_launch_at_startup.Disable()
+        chk_contextual_icon.Disable()
+        chk_notifications.Disable()
 
         # language_ctrl
         language_ctrl = LanguageBox(general_settings_screen,
