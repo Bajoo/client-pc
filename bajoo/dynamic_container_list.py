@@ -77,8 +77,10 @@ class DynamicContainerList(object):
             _logger.warning('The container list file is not valid:',
                             exc_info=True)
 
-        self._local_list = [LocalContainer(c['id'], c['name'], c['path'])
-                            for c in local_list_data]
+        self._local_list = [
+            LocalContainer(c['id'], c['name'], c['path'],
+                           do_not_sync=c.get('do_not_sync', False))
+            for c in local_list_data]
         local_id_list = [c['id'] for c in local_list_data]
 
         self._updater = container_list_updater(session,
@@ -92,9 +94,12 @@ class DynamicContainerList(object):
         """Save the local list file."""
         try:
             with open(self._list_path, 'w') as list_file, self._list_lock:
-                local_list = [{'id': c.id,
-                               'name': c.name,
-                               'path': c.path} for c in self._local_list]
+                local_list = []
+                for c in self._local_list:
+                    entry = {'id': c.id, 'name': c.name, 'path': c.path}
+                    if c.do_not_sync:
+                        entry['do_not_sync'] = True
+                    local_list.append(entry)
                 json.dump(local_list, list_file)
         except IOError:
             _logger.warning("The container list file can't be saved:",
@@ -117,14 +122,14 @@ class DynamicContainerList(object):
                                 _('Unable to create a folder for %s:\n%s'
                                   % (c.name, local_container.error_msg)))
                         else:
-                            self._start_container(local_container)
+                            self._pre_start_container(local_container)
                     elif not local_container.check_path():
                         self._notify(
                             _('Error on share sync'),
                             _('Unable to sync the share %s:\n%s'
                               % (c.name, local_container.error_msg)))
                     else:
-                        self._start_container(local_container)
+                        self._pre_start_container(local_container)
 
         self._save_local_list()
 
@@ -156,7 +161,7 @@ class DynamicContainerList(object):
                                  _('Unable to create a folder for %s:\n%s'
                                    % (c.name, local_container.error_msg)))
                 else:
-                    self._start_container(local_container)
+                    self._pre_start_container(local_container)
                 self._local_list.append(local_container)
         self._save_local_list()
 
@@ -183,6 +188,12 @@ class DynamicContainerList(object):
                     self._local_list.remove(local_container)
 
         self._save_local_list()
+
+    def _pre_start_container(self, local_container):
+        if local_container.do_not_sync:
+            local_container.status = LocalContainer.STATUS_STOPPED
+        else:
+            self._start_container(local_container)
 
     def stop(self):
         self._updater.stop()

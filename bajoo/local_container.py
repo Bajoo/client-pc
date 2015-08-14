@@ -36,6 +36,8 @@ class LocalContainer(object):
         status: One of the 4 status possible. See below.
         Container (Container): the corresponding API Container object. If the
             container is not yet loaded, it may be None.
+        do_not_sync (boolean): If True, the container should not be synced
+            automatically.
     """
 
     STATUS_UNKNOWN = 1
@@ -52,7 +54,7 @@ class LocalContainer(object):
         STATUS_STARTED: _('Started')
     }
 
-    def __init__(self, id, name, path=None):
+    def __init__(self, id, name, path=None, do_not_sync=False):
         self.id = id
         self.name = name
         self.path = path
@@ -62,6 +64,7 @@ class LocalContainer(object):
         self._index_lock = RLock()  # Lock both `_index` and `_index_booking`
         self._index_booking = {}
         self.container = None
+        self.do_not_sync = do_not_sync
 
     def check_path(self):
         """Check that the path is the folder corresponding to the container.
