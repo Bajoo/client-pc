@@ -8,6 +8,7 @@ from wx.lib.softwareupdate import SoftwareUpdate
 from . import stored_credentials
 from .api import User, TeamShare, Session
 from .common import config
+from .common.future import resolve_dec
 from .common.path import get_data_dir
 from .connection_registration_process import connect_or_register
 from .container_sync_pool import ContainerSyncPool
@@ -357,12 +358,15 @@ class BajooApp(wx.App, SoftwareUpdate):
             The member has been added/modified successfully. Show a
             notification and update data on the screen.
             """
+            # Refresh the member list
+            def on_refresh_members(__):
+                if self._main_window:
+                    self._main_window.on_share_member_added(
+                        share, email, permission,
+                        N_('%s has been given access to team share \'%s\'')
+                        % (email, share.name))
 
-            if self._main_window:
-                self._main_window.on_share_member_added(
-                    share, email, permission,
-                    N_('%s has been given access to team share \'%s\'')
-                    % (email, share.name))
+            share.container.list_members().then(on_refresh_members)
 
         def _on_member_add_error(__):
             """
@@ -390,11 +394,15 @@ class BajooApp(wx.App, SoftwareUpdate):
 
         if share.container:
             def _on_member_removed(__):
-                if self._main_window:
-                    self._main_window.on_share_member_removed(
-                        share, email,
-                        N_('%s\'s access to team share \'%s\' '
-                           'has been removed.') % (email, share.name))
+                # Refresh the member list
+                def on_refresh_members(__):
+                    if self._main_window:
+                        self._main_window.on_share_member_removed(
+                            share, email,
+                            N_('%s\'s access to team share \'%s\' '
+                               'has been removed.') % (email, share.name))
+
+                share.container.list_members().then(on_refresh_members)
 
             def _on_member_remove_error(__):
                 if self._main_window:
@@ -679,6 +687,7 @@ class BajooApp(wx.App, SoftwareUpdate):
             self._container_sync_pool.remove)
         self._task_bar_icon.set_state(TaskBarIcon.SYNC_PROGRESS)
 
+    @resolve_dec
     def _get_user_info(self):
         if self._session:
             def _on_user_loaded(user):
@@ -688,6 +697,13 @@ class BajooApp(wx.App, SoftwareUpdate):
             return User.load(self._session).then(_on_user_loaded)
         else:
             return None
+
+    @resolve_dec
+    def get_user_info(self):
+        if self._user:
+            return self._user.get_user_info()
+        else:
+            return self._get_user_info()
 
     @ensure_gui_thread
     def _on_global_status_change(self, status):

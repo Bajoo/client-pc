@@ -34,10 +34,12 @@ class DetailsShareTab(BaseForm):
     def __init__(self, parent):
         BaseForm.__init__(self, parent)
         self._share = None
+        self._user_email = None
         self._view = DetailsShareView(self)
 
         self.Bind(MembersShareForm.EVT_SUBMIT, self._on_add_member)
         self.Bind(MembersShareForm.EVT_REMOVE_MEMBER, self._on_remove_member)
+        self.Bind(MembersShareForm.EVT_SELECT_MEMBER, self._on_select_member)
         self.Bind(wx.EVT_BUTTON, self._btn_back_clicked,
                   self.FindWindow('btn_back'))
         self.Bind(wx.EVT_BUTTON, self._btn_open_folder_clicked,
@@ -47,14 +49,37 @@ class DetailsShareTab(BaseForm):
         self.Bind(wx.EVT_BUTTON, self._btn_delete_share_clicked,
                   self.FindWindow('btn_delete_share'))
 
+    def _has_member_data(self):
+        return self._share.container \
+               and type(self._share.container) is TeamShare \
+               and self._share.container.members is not None
+
+    def _check_admin_status(self):
+        has_member_data = self._has_member_data()
+        is_admin = False
+        has_other_admins = False
+
+        if has_member_data:
+            for member in self._share.container.members:
+                member_email = member.get(u'user')
+                member_admin = member.get(u'admin')
+
+                if member_admin:
+                    if member_email == self._user_email:
+                        is_admin = True
+                    else:
+                        has_other_admins = True
+
+        is_only_admin = is_admin and not has_other_admins
+
+        return is_admin, is_only_admin
+
     @ensure_gui_thread
     def set_data(self, share):
         self._share = share
 
         self.FindWindow('lbl_share_name').SetLabel(share.name)
-        has_member_data = share.container \
-                          and type(share.container) is TeamShare \
-                          and share.container.members is not None
+        has_member_data = self._has_member_data()
         is_encrypted = share.container and share.container.is_encrypted
         share_type = N_('Team share') \
             if share.container and type(share.container) is TeamShare \
@@ -104,19 +129,11 @@ class DetailsShareTab(BaseForm):
             # )
         })
 
-        # If this is the only user, he cannot quit it, but delete it
-        if not has_member_data or len(share.container.members) <= 1:
-            self.FindWindow('btn_quit_share').Disable()
-
         # Cannot show members of/delete/quit MyBajoo folder
-        show_share_options = share.container \
-                             and type(share.container) is TeamShare
+        show_share_options = \
+            self._share.container and type(self._share.container) is TeamShare
 
         self.FindWindow('lbl_share_nb_members').Show(show_share_options)
-        self.FindWindow('lbl_members').Show(show_share_options)
-        self.FindWindow('members_share_form').Show(show_share_options)
-        self.FindWindow('btn_quit_share').Enable(show_share_options)
-        self.FindWindow('btn_delete_share').Enable(show_share_options)
         self.FindWindow('btn_open_folder').Enable(share.path is not None)
 
         if share.error_msg:
@@ -124,11 +141,39 @@ class DetailsShareTab(BaseForm):
         else:
             self.hide_message()
 
+        def on_get_user(user_info):
+            self._user_email = user_info.get(u'email')
+            self._refresh_admin_controls()
+
+        if show_share_options:
+            wx.GetApp().get_user_info().then(on_get_user)
+
+    @ensure_gui_thread
+    def _refresh_admin_controls(self):
+        show_share_options = \
+            self._share.container and type(self._share.container) is TeamShare
+        is_admin, is_only_admin = self._check_admin_status()
+
+        show_admin = show_share_options and is_admin
+        show_quit = show_share_options and not is_only_admin
+
+        self.FindWindow('lbl_members').Show(show_admin)
+        self.FindWindow('members_share_form').Show(show_admin)
+        self.FindWindow('btn_delete_share').Enable(show_admin)
+        self.FindWindow('btn_quit_share').Enable(show_quit)
+
+        self.Refresh()
         self.Layout()
 
     def Show(self, show=True):
         BaseForm.Show(self, show)
+
+        # Hide administration controls by default
         self.hide_message()
+        self.FindWindow('lbl_members').Hide()
+        self.FindWindow('members_share_form').Hide()
+        self.FindWindow('btn_delete_share').Disable()
+        self.FindWindow('btn_quit_share').Enable()
 
     def get_displayed_share(self):
         return self._share
@@ -138,9 +183,11 @@ class DetailsShareTab(BaseForm):
         member_view_data[u'user'] = email
 
         self._view.members_share_form.on_add_member(member_view_data)
+        self._refresh_admin_controls()
 
     def remove_member_view(self, email):
         self._view.members_share_form.on_remove_member(email)
+        self._refresh_admin_controls()
 
     def _btn_back_clicked(self, _event):
         self.hide_message()
@@ -162,6 +209,17 @@ class DetailsShareTab(BaseForm):
         event.share = self._share
         event.Skip()
         self.disable()
+
+    def _on_select_member(self, event):
+        email = event.email
+        is_admin, is_only_admin = self._check_admin_status()
+
+        if email == self._user_email:
+            self.FindWindow('members_share_form').enable_change_rights(
+                is_admin and not is_only_admin)
+        else:
+            self.FindWindow('members_share_form').enable_change_rights(
+                is_admin)
 
     def _btn_open_folder_clicked(self, _event):
         self.hide_message()

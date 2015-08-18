@@ -26,6 +26,7 @@ class MembersShareForm(BaseForm):
     permission of a user, or kick he/she out of the shared folder.
     """
     SubmitEvent, EVT_SUBMIT = NewCommandEvent()
+    SelectMemberEvent, EVT_SELECT_MEMBER = NewCommandEvent()
     RemoveMemberEvent, EVT_REMOVE_MEMBER = NewCommandEvent()
 
     fields = ['user_email', 'permission']
@@ -82,13 +83,23 @@ class MembersShareForm(BaseForm):
         btn_remove_user = self.FindWindow('btn_remove_user')
 
         if row == wx.NOT_FOUND:
+            self.enable_change_rights()
             txt_user_email.SetValue('')
             btn_remove_user.Disable()
         else:
-            # TODO: check admin permission
             email = self._view._members_list_view.GetValue(row, 0)
             txt_user_email.SetValue(email)
             btn_remove_user.Enable()
+
+            event = MembersShareForm.SelectMemberEvent(self.GetId())
+            event.email = email
+            wx.PostEvent(self, event)
+
+    def enable_change_rights(self, enable=True):
+        self.FindWindow('user_email').Enable(enable)
+        self.FindWindow('permission').Enable(enable)
+        self.FindWindow('btn_add_user').Enable(enable)
+        self.FindWindow('btn_remove_user').Enable(enable)
 
     def _btn_remove_user_clicked(self, event):
         # TODO: confirmation
