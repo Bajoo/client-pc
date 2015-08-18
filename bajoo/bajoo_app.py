@@ -353,6 +353,10 @@ class BajooApp(wx.App, SoftwareUpdate):
         email = event.user_email
         permission = event.permission
 
+        # Check event params
+        if not share or not email or not permission:
+            return
+
         def _on_member_added(__):
             """
             The member has been added/modified successfully. Show a
