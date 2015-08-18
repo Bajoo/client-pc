@@ -20,7 +20,8 @@ class MyBajoo(Container):
         """
         Override the representational string of the container object.
         """
-        return "<MyBajoo (id=%s)>" % self.id
+        return "<MyBajoo (id=%s, encrypted=%s)>" % \
+               (self.id, str(self.is_encrypted))
 
 
 if __name__ == '__main__':

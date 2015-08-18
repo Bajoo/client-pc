@@ -40,7 +40,8 @@ class Container(object):
         """
         Override the representational string of the container object.
         """
-        return "<Container '%s' (id=%s)>" % (self.name, self.id)
+        return "<Container '%s' (id=%s, encrypted=%s)>" % \
+               (self.name, self.id, str(self.is_encrypted))
 
     def _get_encryption_key(self):
         """get the encryption key and returns it.
@@ -86,8 +87,9 @@ class Container(object):
         key_name = 'bajoo-storage-%s' % self.id
 
         def extract_key_members(members):
-            return wait_all([User(member['user'], self._session).get_public_key()
-                             for member in members])
+            return wait_all(
+                [User(member['user'], self._session).get_public_key()
+                 for member in members])
 
         def get_owner_key():
             f = User.load(self._session)
@@ -127,9 +129,10 @@ class Container(object):
         from .team_share import TeamShare
 
         id, name = json_object.get('id', ''), json_object.get('name', '')
+        is_encrypted = json_object.get('is_encrypted', True)
         cls = MyBajoo if name == "MyBajoo" else TeamShare
 
-        return cls(session, id, name)
+        return cls(session, id, name, is_encrypted)
 
     @classmethod
     def create(cls, session, name, encrypted=True):
@@ -149,14 +152,15 @@ class Container(object):
             container_result = response.get('content', {})
             container = cls(session, container_result.get('id', ''),
                             container_result.get('name', ''),
-                            encrypted=encrypted)
+                            encrypted=container_result.get(
+                                'is_encrypted', True))
             if container.is_encrypted:
                 return container._generate_key().then(lambda _: container)
             return container
 
         return session.send_api_request(
-            # TODO: enable the 'encrypted' flag ({'encrypted': encrypted})
-            'POST', '/storages', data={'name': name}) \
+            'POST', '/storages',
+            data={'name': name, 'is_encrypted': encrypted}) \
             .then(_on_create_returned)
 
     @staticmethod

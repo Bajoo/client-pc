@@ -29,7 +29,8 @@ class TeamShare(Container):
         """
         Override the representational string of the container object.
         """
-        return "<TeamShare '%s' (id=%s)>" % (self.name, self.id)
+        return "<TeamShare '%s' (id=%s, encrypted=%s)>" % \
+               (self.name, self.id, str(self.is_encrypted))
 
     @classmethod
     def create(cls, session, name, encrypted=True):
@@ -150,7 +151,9 @@ if __name__ == '__main__':
         return ''.join(choice(ascii_lowercase) for _ in range(length))
 
     new_container_name = gen(16)
-    container_created = TeamShare.create(session1, new_container_name).result()
+    container_created = TeamShare \
+        .create(session1, new_container_name, False) \
+        .result()
     _logger.debug('Created container: %s', container_created)
 
     # Add stran+21@bajoo.fr as admin
