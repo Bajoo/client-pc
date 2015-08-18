@@ -608,8 +608,14 @@ class BajooApp(wx.App, SoftwareUpdate):
                 new_password = event.data[u'new_password']
 
                 def on_password_changed(_):
+                    """
+                    Reload the session (refetch the access token)
+                    after the password change.
+                    """
+
                     def on_session_reloaded(new_session):
-                        self._session = new_session
+                        # Replace the token of the current session
+                        self._session.token = new_session.token
 
                     Session.create_session(self._user.name, new_password) \
                         .then(on_session_reloaded)
