@@ -7,6 +7,7 @@ from .. import encryption
 from ..common.future import resolve_dec, wait_all
 from ..encryption import AsymmetricKey
 
+
 _logger = logging.getLogger(__name__)
 
 
@@ -164,6 +165,7 @@ class User(object):
             Future<boolean>: True if the operation succeeded. False if there is
                 no remote key.
         """
+
         def _on_download_finished(response):
             tmp_file = response.get('content', None)
             with response.get('content', None) as tmp_file:

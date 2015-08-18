@@ -2,6 +2,7 @@
 import logging
 
 from ..network import json_request, download, upload
+from ..network.errors import HTTPUnauthorizedError
 from .user import User
 
 
@@ -217,7 +218,8 @@ class Session(BajooOAuth2Session):
 
         return request_future.then(_on_request_result)
 
-    def _send_bajoo_request(self, request_type, verb, url_path, **params):
+    def _send_bajoo_request(self, request_type, verb, url_path,
+                            will_retry=True, **params):
         """
         Send a json request to Bajoo server.
         The url will be resolved according to the `request_type`
@@ -230,13 +232,20 @@ class Session(BajooOAuth2Session):
 
         Returns (Future<dict>): the future returned by json_request
         """
-        # Add default params if not exist: 'headers' & 'verify'
-        headers = {
-            'Authorization': 'Bearer ' + self.token.get('access_token', '')
-        } if self.token else {}
+        # Replace the old token if neccessary
+        param_headers = params.get('headers', {})
 
-        headers.update(params.get('headers', {}))
-        params['headers'] = headers
+        if 'Authorization' in param_headers and self.token:
+            param_headers['Authorization'] = \
+                'Bearer ' + self.token.get('access_token', '')
+        else:
+            # Add default params if not exist: 'headers' & 'verify'
+            headers = {
+                'Authorization': 'Bearer ' + self.token.get('access_token', '')
+            } if self.token else {}
+
+            headers.update(params.get('headers', {}))
+            params['headers'] = headers
 
         verify = params.get('verify', False)
         params['verify'] = verify
@@ -247,7 +256,32 @@ class Session(BajooOAuth2Session):
             'STORAGE': STORAGE_API_URL + url_path
         }.get(request_type, url_path)
 
-        return json_request(verb, url, **params)
+        def on_error(error):
+            """
+            Refetch the token and retry if the token expired.
+            """
+            # Refresh the token and retry if HTTPUnauthorizedError
+            if type(error) is HTTPUnauthorizedError:
+                try:
+                    error_code = error.response.get('code', 401)
+
+                    if error_code == 401002:  # session expired error
+                        return self.refresh_token().then(
+                            lambda _: self
+                            ._send_bajoo_request(request_type, verb, url_path,
+                                                 False, **params)
+                            .result())
+                except AttributeError:  # there is not response
+                    raise error
+
+            raise error
+
+        request_future = json_request(verb, url, **params)
+
+        if will_retry:
+            request_future = request_future.then(None, on_error)
+
+        return request_future
 
     def send_api_request(self, verb, url_path, **params):
         """
@@ -345,3 +379,12 @@ if __name__ == '__main__':
 
     # This should function correctly
     session2.disconnect().result()
+
+    # Test retry on HTTPUnauthorizedError
+    session1 = Session.create_session('stran+test_api@bajoo.fr',
+                                      'stran+test_api@bajoo.fr').result()
+    # Make the session expired
+    session1.token[u'access_token'] = 'invalid_token'
+    future = User.load(session1).then(
+        lambda _user: _user.get_user_info().result())
+    _logger.debug("User info: %s", future.result())
