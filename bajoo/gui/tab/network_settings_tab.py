@@ -149,7 +149,8 @@ class NetworkSettingsView(BaseView):
 
         main_sizer = self.make_sizer(
             wx.VERTICAL,
-            [bandwidth_box_sizer, proxy_form])
+            [bandwidth_box_sizer, proxy_form],
+            flag=wx.EXPAND)
 
         network_settings_screen.SetSizer(main_sizer)
 
