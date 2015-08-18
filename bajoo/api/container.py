@@ -129,7 +129,12 @@ class Container(object):
         from .team_share import TeamShare
 
         id, name = json_object.get('id', ''), json_object.get('name', '')
-        is_encrypted = json_object.get('is_encrypted', True)
+        is_encrypted = json_object.get('is_encrypted', False)
+
+        # prevent the string 'True' instead of boolean value True
+        if type(is_encrypted) is not bool:
+            is_encrypted = (is_encrypted == 'True')
+
         cls = MyBajoo if name == "MyBajoo" else TeamShare
 
         return cls(session, id, name, is_encrypted)
@@ -150,12 +155,11 @@ class Container(object):
 
         def _on_create_returned(response):
             container_result = response.get('content', {})
-            container = cls(session, container_result.get('id', ''),
-                            container_result.get('name', ''),
-                            encrypted=container_result.get(
-                                'is_encrypted', True))
+            container = Container._from_json(session, container_result)
+
             if container.is_encrypted:
                 return container._generate_key().then(lambda _: container)
+
             return container
 
         return session.send_api_request(

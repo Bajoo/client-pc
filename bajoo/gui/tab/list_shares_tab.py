@@ -5,7 +5,8 @@ import logging
 import wx
 from wx.lib.newevent import NewCommandEvent
 
-from ...api import MyBajoo
+from ...api import TeamShare, MyBajoo
+
 from ...common.i18n import N_
 from ..event_future import ensure_gui_thread
 from ..base_view import BaseView
@@ -232,6 +233,8 @@ class ListSharesView(BaseView):
             ], outside_border=False)
         lbl_share_description = wx.StaticText(
             share_box, name='lbl_share_desc_' + container.id)
+        lbl_share_members = wx.StaticText(
+            share_box, name='lbl_share_members' + container.id)
 
         btn_share_details = wx.Button(
             share_box, name='btn_share_details_' + container.id)
@@ -245,20 +248,38 @@ class ListSharesView(BaseView):
         self.window.Bind(wx.EVT_BUTTON, self.window.btn_open_dir_clicked,
                          btn_open_local_dir)
 
-        if type(container.container) is MyBajoo:
+        if container.container and type(container.container) is MyBajoo:
             img_share = ListSharesTab.MY_BAJOO_ICON
-            self.register_i18n(lbl_share_description.SetLabel,
-                               N_('encrypted'))
-        else:
-            # TODO: get number of members
-            # self.register_i18n(lbl_share_description.SetLabel,
-            # N_('%d members'), 18)
-            lbl_share_description.SetLabel('')
+
+        encrypted_text = 'not encrypted'
+
+        if container.container.is_encrypted:
+            encrypted_text = 'encrypted'
+
+        self.register_i18n(
+            lbl_share_description.SetLabel,
+            N_(encrypted_text))
+
+        if container.container and type(container.container) is TeamShare:
+            share = container.container
+
+            if hasattr(share, 'members'):
+                n_members = len(share.members)
+                self.register_i18n(
+                    lbl_share_members.SetLabel,
+                    '%d members', n_members)
+            else:
+                lbl_share_members.SetLabelText('-')
+
+        # self.register_i18n(lbl_share_description.SetLabel,
+        # N_('%d members'), 18)
 
         share_box_sizer = wx.StaticBoxSizer(share_box)
 
         description_box = self.make_sizer(
-            wx.HORIZONTAL, [lbl_share_name, lbl_share_description], False)
+            wx.HORIZONTAL, [
+                lbl_share_name, lbl_share_description, lbl_share_members
+            ], False)
         description_status_box = self.make_sizer(
             wx.VERTICAL, [description_box, share_status_box], False)
 

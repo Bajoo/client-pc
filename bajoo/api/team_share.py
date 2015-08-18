@@ -24,6 +24,7 @@ class TeamShare(Container):
 
     def __init__(self, session, container_id, name, encrypted=True):
         Container.__init__(self, session, container_id, name, encrypted)
+        self.members = []
 
     def __repr__(self):
         """
@@ -62,9 +63,11 @@ class TeamShare(Container):
         def _on_receive_response(result):
             # Delete 'scope' element in results
             members = result.get('content', [])
+
             for element in members:
                 del element['scope']
 
+            self.members = members
             return members
 
         return self._session.send_api_request('GET', url) \

@@ -7,6 +7,7 @@ from wx.lib.softwareupdate import SoftwareUpdate
 
 from . import stored_credentials
 from .api import User, TeamShare, Session
+from bajoo.common.future import wait_all
 from .common import config
 from .common.future import resolve_dec
 from .common.path import get_data_dir
@@ -270,9 +271,18 @@ class BajooApp(wx.App, SoftwareUpdate):
         """
         self._container_list.refresh()
 
-        if self._main_window:
-            self._main_window.load_shares(
-                self._container_list.get_list())
+        futures = []
+
+        for container in self._container_list.get_list():
+            if container.container and type(container.container) is TeamShare:
+                futures.append(container.container.list_members())
+
+        def _on_members_load(_):
+            if self._main_window:
+                self._main_window.load_shares(
+                    self._container_list.get_list())
+
+        wait_all(futures).then(_on_members_load)
 
     def _container_status_request(self, _event):
 
