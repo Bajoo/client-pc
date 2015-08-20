@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
+from threading import Lock
 
 from ..common.future import Future, wait_all
 from .. import encryption
@@ -36,6 +37,10 @@ class Container(object):
 
         self._encryption_key = None
 
+        # Lock acquired when we need to generate the key. If the lock is
+        # blocking, there will be a new key when releasing.
+        self._key_lock = Lock()
+
     def __repr__(self):
         """
         Override the representational string of the container object.
@@ -51,6 +56,16 @@ class Container(object):
         Returns:
             Future<AsyncKey>: container key
         """
+        self._key_lock.acquire()
+
+        def close_lock(result):
+            self._key_lock.release()
+            return result
+
+        def close_lock_err(error):
+            self._key_lock.release()
+            raise error
+
         if not self._encryption_key:
 
             def dl_key_error(error):
@@ -74,7 +89,8 @@ class Container(object):
             key_url = '/storages/%s/.key' % self.id
             f = self._session.download_storage_file('GET', key_url)
             f = f.then(on_key_downloaded)
-            return f.then(on_key_decrypted, dl_key_error)
+            f = f.then(on_key_decrypted, dl_key_error)
+            return f.then(close_lock, close_lock_err)
 
         return Future.resolve(self._encryption_key)
 
@@ -118,10 +134,21 @@ class Container(object):
         Returns:
             Future
         """
+        self._key_lock.acquire()
+
+        def close_lock(result):
+            self._key_lock.release()
+            return result
+
+        def close_lock_err(error):
+            self._key_lock.release()
+            raise error
+
         key_name = 'bajoo-storage-%s' % self.id
         _logger.debug('generate new key for container #%s ...' % self.id)
         f = encryption.create_key(key_name, None, container=True)
-        return f.then(self._encrypt_and_upload_key)
+        f = f.then(self._encrypt_and_upload_key)
+        return f.then(close_lock, close_lock_err)
 
     def _update_key(self):
         _logger.debug('Update key for container #%s ...' % self.id)
