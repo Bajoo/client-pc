@@ -83,11 +83,15 @@ class TeamShare(Container):
             return result.get('content', {})
 
         # TODO: Handle the 404 error when user email is not found.
-        return self._session.send_api_request(
+        f = self._session.send_api_request(
             'PUT', url,
             headers={'Content-type': 'application/json'},
             data=json.dumps(permissions)) \
             .then(_on_receive_response)
+        if self.is_encrypted:
+            return f.then(lambda _: self._update_key())
+        else:
+            return f
 
     def add_member(self, user, permissions):
         """

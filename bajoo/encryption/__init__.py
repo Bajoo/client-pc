@@ -204,7 +204,7 @@ def import_key(key):
     with key.export(secret=True) as key_content:
         key_buffer += key_content.read()
 
-    _gpg.import_keys(key_content)
+    _gpg.import_keys(key_buffer)
 
 
 def get_key(key_id):

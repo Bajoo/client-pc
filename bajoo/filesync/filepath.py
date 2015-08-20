@@ -17,6 +17,9 @@ def is_path_allowed(file_path):
     if filename.startswith('.bajoo'):
         return False  # Bajoo container index
 
+    if filename == '.key':
+        return False  # Container encryption key
+
     if sys.platform in ['win32', 'cygwin', 'win64']:
         reserved_characters = '<>:"/\|?*' + ''.join(chr(i) for i in range(31))
         reserved_filename = ['CON', 'PRN', 'AUX', 'NUL']

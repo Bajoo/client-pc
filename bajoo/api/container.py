@@ -78,13 +78,7 @@ class Container(object):
 
         return Future.resolve(self._encryption_key)
 
-    def _generate_key(self):
-        """Generate and upload the GPG key
-
-        Returns:
-            Future
-        """
-        key_name = 'bajoo-storage-%s' % self.id
+    def _encrypt_and_upload_key(self, key):
 
         def extract_key_members(members):
             return wait_all(
@@ -96,32 +90,43 @@ class Container(object):
             f = f.then(lambda user: user.get_user_info().then(lambda _: user))
             return f.then(lambda user: user.get_public_key())
 
-        def encrypt_key(key):
-            self._encryption_key = key
-            key_content = key.export(secret=True)
-
-            # TODO: code smell: we shouldn't use methods of child classes.
-            if hasattr(self, 'list_members'):
-                f = self.list_members().then(extract_key_members)
-            else:
-                f = get_owner_key()
-                f = f.then(lambda key: [key])
-
-            def encrypt(recipients):
-                return encryption.encrypt(key_content, recipients)
-
-            return f.then(encrypt)
-
         def upload_key(key_content):
             key_url = '/storages/%s/.key' % self.id
             _logger.debug('Key for container #%s generated.' % self.id)
             return self._session.send_storage_request(
                 'PUT', key_url, data=key_content)
 
+        self._encryption_key = key
+        key_content = key.export(secret=True)
+
+        # TODO: code smell: we shouldn't use methods of child classes.
+        if hasattr(self, 'list_members'):
+            f = self.list_members().then(extract_key_members)
+        else:
+            f = get_owner_key()
+            f = f.then(lambda key: [key])
+
+        def encrypt(recipients):
+            return encryption.encrypt(key_content, recipients)
+
+        f = f.then(encrypt)
+        return f.then(upload_key)
+
+    def _generate_key(self):
+        """Generate and upload the GPG key
+
+        Returns:
+            Future
+        """
+        key_name = 'bajoo-storage-%s' % self.id
         _logger.debug('generate new key for container #%s ...' % self.id)
         f = encryption.create_key(key_name, None, container=True)
-        f = f.then(encrypt_key)
-        return f.then(upload_key)
+        return f.then(self._encrypt_and_upload_key)
+
+    def _update_key(self):
+        _logger.debug('Update key for container #%s ...' % self.id)
+        f = self._get_encryption_key()
+        return f.then(self._encrypt_and_upload_key)
 
     @staticmethod
     def _from_json(session, json_object):

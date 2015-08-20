@@ -382,11 +382,14 @@ class BajooApp(wx.App, SoftwareUpdate):
 
             share.container.list_members().then(on_refresh_members)
 
-        def _on_member_add_error(__):
+        def _on_member_add_error(err):
             """
             Error occurred when attempting to add/modify rights of a member
             on a share. Show a notification.
             """
+            _logger.error('Adding member failed: %s' % err)
+            _logger.warning(err._origin_stack)
+
             if self._main_window:
                 self._main_window.on_share_member_added(
                     share, None, None,
