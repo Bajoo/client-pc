@@ -9,6 +9,7 @@ from threading import RLock
 
 from .common.i18n import _
 from .common.path import default_root_folder
+from .common import config
 
 
 _logger = logging.getLogger(__name__)
@@ -108,7 +109,7 @@ class LocalContainer(object):
         Returns:
             str: the path of the created folder. None if an error occurs
         """
-        folder_path = os.path.join(default_root_folder(), name)
+        folder_path = os.path.join(config.get('root_folder'), name)
 
         try:
             os.mkdir(folder_path)
@@ -279,6 +280,29 @@ class LocalContainer(object):
             return False
         with self._index_lock:
             return not bool(self._index_booking)
+
+    def get_stats(self):
+        """
+        Get the statistics information relating to the local folder.
+
+        Returns <tuple>: (number of folders, number of files, total_size)
+        """
+        total_size = 0
+        n_folders = 0
+        n_files = 0
+
+        if self.path and os.path.exists(self.path):
+            for dir_path, dir_names, files_names in os.walk(self.path):
+                n_folders += 1
+
+                for file_name in files_names:
+                    n_files += 1
+                    file_path = os.path.join(dir_path, file_name)
+                    total_size += os.path.getsize(file_path)
+
+            return n_folders, n_files, total_size
+
+        return 0, 0, 0
 
     def get_status_text(self):
         return LocalContainer._status_textes.get(

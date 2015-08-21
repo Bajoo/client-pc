@@ -14,6 +14,7 @@ from ..event_future import ensure_gui_thread
 from ..form.members_share_form import MembersShareForm
 from ..form.base_form import BaseForm
 from ..common import message_box
+from ...common.util import human_readable_bytes
 
 _logger = logging.getLogger(__name__)
 
@@ -77,6 +78,8 @@ class DetailsShareTab(BaseForm):
     @ensure_gui_thread
     def set_data(self, share):
         self._share = share
+        n_folders, n_files, folder_size = share.get_stats()
+        friendly_folders_size = human_readable_bytes(folder_size)
 
         self.FindWindow('lbl_share_name').SetLabel(share.name)
         has_member_data = self._has_member_data()
@@ -118,15 +121,14 @@ class DetailsShareTab(BaseForm):
                 N_('Status: %s'), share.get_status_text()),
             # TODO: stats
             self.FindWindow('lbl_share_files_folders'): N_(' '),
-            self.FindWindow('lbl_local_space'): N_(' ')
-            # self.FindWindow('lbl_share_files_folders'): (
-            # N_('This share contains %d folders and %d files,'),
-            # (share.stats['folders'], share.stats['files'])
-            # ),
-            # self.FindWindow('lbl_local_space'): (
-            # N_('which takes the disk space of %s'),
-            # human_readable_bytes(share.stats['space'])
-            # )
+            self.FindWindow('lbl_local_space'): N_(' '),
+            self.FindWindow('lbl_share_files_folders'): (
+                N_('This share contains %d folders and %d files,'),
+                (n_folders, n_files)
+            ),
+            self.FindWindow('lbl_local_space'): (
+                N_('which takes the disk space of %s'), friendly_folders_size
+            )
         })
 
         # Cannot show members of/delete/quit MyBajoo folder
