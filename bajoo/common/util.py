@@ -21,7 +21,10 @@ def human_readable_bytes(value):
     # Translate until the second-biggest unit
     for unit in _bytes_units[:-1]:
         if abs(value) < 1024.0:
-            return "%.2f %s" % (value, unit)
+            # if it does not reach kilobytes -> integer format
+            str_format = "%d %s" if unit == _bytes_units[0] else "%.2f %s"
+            return str_format % (value, unit)
+
         value /= 1024.0
 
     # The biggest unit reached: cannot translate anymore
