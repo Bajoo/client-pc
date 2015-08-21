@@ -146,7 +146,12 @@ setup_kwargs = {
                 'dll_excludes': {
                     # Note that users will have to install
                     # VCRedist 2008 by themselves.
-                    'msvcp90.dll'
+                    'msvcp90.dll',
+                    # system lib required by psutil or gnupg
+                    'iphlpapi.dll',
+                    'wtsapi32.dll',
+                    'psapi.dll',
+                    'crypt32.dll'
                 },
                 'skip_archive': True
             }
