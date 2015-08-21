@@ -129,7 +129,6 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
             # TODO: set real URL
             webbrowser.open('https://www.bajoo.fr/client_space')
         else:
-            print('Why are we here ?')
             event.Skip()
 
     def CreatePopupMenu(self):
