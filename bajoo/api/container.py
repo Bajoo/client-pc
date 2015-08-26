@@ -71,7 +71,7 @@ class Container(object):
             def dl_key_error(error):
                 if isinstance(error, HTTPNotFoundError):
                     _logger.debug('Container key not found (404)')
-                    f = self._generate_key()
+                    f = self._generate_key(lock_acquired=True)
                     return f.then(lambda _: self._encryption_key)
                 raise error
 
@@ -128,13 +128,17 @@ class Container(object):
         f = f.then(encrypt)
         return f.then(upload_key)
 
-    def _generate_key(self):
+    def _generate_key(self, lock_acquired=False):
         """Generate and upload the GPG key
 
+        Args:
+            lock_acquired (boolean): If True, don't acquire the lock before
+                generating the key.
         Returns:
             Future
         """
-        self._key_lock.acquire()
+        if not lock_acquired:
+            self._key_lock.acquire()
 
         def close_lock(result):
             self._key_lock.release()
@@ -148,7 +152,9 @@ class Container(object):
         _logger.debug('generate new key for container #%s ...' % self.id)
         f = encryption.create_key(key_name, None, container=True)
         f = f.then(self._encrypt_and_upload_key)
-        return f.then(close_lock, close_lock_err)
+        if not lock_acquired:
+            f = f.then(close_lock, close_lock_err)
+        return f
 
     def _update_key(self):
         _logger.debug('Update key for container #%s ...' % self.id)
