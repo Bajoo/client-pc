@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import logging
 import os
 import sys
 if sys.platform not in ['win32', 'cygwin', 'win64']:
@@ -11,6 +12,8 @@ if sys.platform not in ['win32', 'cygwin', 'win64']:
 
 from ..common.path import resource_filename
 
+_logger = logging.getLogger(__name__)
+
 
 class MessageNotifier(object):
     """Notify messages to the user.
@@ -18,7 +21,7 @@ class MessageNotifier(object):
     Cross-platform way to send a text message to the user.
 
     Under Windows, the `ShowBalloon()` method of the trayIcon is used.
-    Under Linux, ... TODO.
+    Under Linux, the standard notification system is used.
 
     """
 
@@ -41,7 +44,14 @@ class MessageNotifier(object):
             # notify2 need absolute path
             icon_path = os.path.abspath(icon_path)
             n = notify2.Notification(title, message, icon_path)
-            n.show()
+
+            import dbus
+            try:
+                n.show()
+            except dbus.DBusException:
+                _logger.warning('unexpected DBus error when trying to display '
+                                'a notification', exc_info=True)
+                raise
 
 
 def main():
