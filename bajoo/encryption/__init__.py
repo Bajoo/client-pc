@@ -29,6 +29,7 @@ from gnupg import GPG
 from ..common.path import get_data_dir
 from ..common.future import then
 from .asymmetric_key import AsymmetricKey
+from .errors import EncryptionError, KeyGenError, EncryptError, DecryptError
 
 _logger = logging.getLogger(__name__)
 
@@ -49,7 +50,7 @@ def _get_gpg_context():
             _gpg = GPG(verbose=False, gnupghome=gpg_home, use_agent=True)
         except (IOError, OSError) as e:
             if e.errno == errno.ENOENT:
-                raise Exception('GPG binary executable not found.')
+                raise EncryptionError('GPG binary executable not found.')
             raise
     return _gpg
 
@@ -82,8 +83,7 @@ def create_key(email, passphrase, container=False):
     def on_key_generated(data):
         _logger.info('New GPG key created: %s', data.fingerprint)
         if not data:
-            raise Exception('Key generation failed: %s' % data)
-            # TODO: more explicit Exception
+            raise KeyGenError('Key generation failed: %s' % data)
         return AsymmetricKey(gpg, data.fingerprint)
 
     return then(f, on_key_generated)
@@ -134,7 +134,7 @@ def encrypt(source, recipients):
                                       output=dst_path,
                                       armor=False, always_trust=True)
     if not result:
-        raise Exception('Encryption failed', result)
+        raise EncryptError('Encryption failed', result)
 
     # TODO: delete the file when it's closed !
     return io.open(dst_path, mode='rb')
@@ -184,7 +184,16 @@ def decrypt(source, key=None):
 
         result = context.decrypt_file(source, output=dst_path)
         if not result:
-            raise Exception('Decryption failed:', result.status)
+            # pkdecrypt codes are defined in libgpg-error (in err-codes.h)
+            if 'ERROR pkdecrypt_failed 11\n' in result.stderr:
+                if '[GNUPG:] MISSING_PASSPHRASE' in result.stderr:
+                    # It's most probably a "Cancel" action from the user,
+                    # through its gpg agent.
+                    raise DecryptError('Decryption failed: missing passphrase')
+                else:
+                    raise DecryptError('Decryption failed: probably a bad'
+                                       'passphrase')
+            raise DecryptError('Decryption failed: %s' % result.status)
 
         # TODO: delete the file when it's closed !
         return io.open(dst_path, mode='rb')

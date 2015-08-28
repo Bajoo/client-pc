@@ -178,10 +178,16 @@ class _Task(object):
             self._task_errors = []
         self._task_errors.append(self)
 
-        # TODO: format and translate the message
-        self.display_error_cb('Error during sync of "%s" in the "%s" '
-                              'container:\n%s'
-                              % (self.target, self.container.name, error))
+        if self.container.error:
+            self.display_error_cb('Error during the sync of the "%s" container'
+                                  ':\n%s'
+                                  % (self.container.name, error))
+            raise self.container.error
+        else:
+            # TODO: format and translate the message
+            self.display_error_cb('Error during sync of the file "%s" in the'
+                                  ' "%s" container:\n%s'
+                                  % (self.target, self.container.name, error))
         return None
 
     def _apply_task(self):

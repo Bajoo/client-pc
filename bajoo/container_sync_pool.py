@@ -230,6 +230,20 @@ class ContainerSyncPool(object):
         # should be retried and the concerned files should be excluded of
         # the sync for a period of 24h if they keep failing.
         if f:
-            f.then(self._decrement)
+            f.then(self._decrement, self._on_task_failed)
         else:  # The task has been "merged" with another.
             self._decrement()
+
+    def _on_task_failed(self, error):
+        """A task has raised an exception.
+
+        If this happens, it means the container itself is in an error state:
+        the container key is unusable. It can be either a network error or an
+        encryption error (bad .key, missing or wrong passphrase, ...).
+        """
+        self._decrement()
+
+        local_container = self._local_containers[error.container_id]
+        self.remove(local_container)
+        local_container.status = local_container.STATUS_ERROR
+        local_container.error_msg = str(error)

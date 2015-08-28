@@ -17,6 +17,15 @@ class Container(object):
     Represent a Bajoo container, which can be the MyBajoo folder,
     a TeamShare or a PublicShare.
     This should always be used as an abstract class.
+
+    Attributes:
+        id: container id
+        name: container name
+        is_encrypted (boolean): If True, the container has a '.key' item, and
+            all other files are encrypted by this key.
+        error (Exception): if set, the container has failed during the key
+            loading. It can be either a network error or an encryption error.
+            this exception has an attribute 'container_id'.
     """
 
     def __init__(self, session, container_id, name, encrypted=True):
@@ -34,6 +43,7 @@ class Container(object):
         self.id = container_id
         self.name = name
         self.is_encrypted = encrypted
+        self.error = None
 
         self._encryption_key = None
 
@@ -73,6 +83,8 @@ class Container(object):
                     _logger.debug('Container key not found (404)')
                     f = self._generate_key(lock_acquired=True)
                     return f.then(lambda _: self._encryption_key)
+                error.container_id = self.id
+                self.error = error
                 raise error
 
             def on_key_downloaded(result):

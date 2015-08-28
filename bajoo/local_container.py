@@ -8,7 +8,6 @@ import os
 from threading import RLock
 
 from .common.i18n import _
-from .common.path import default_root_folder
 from .common import config
 
 
