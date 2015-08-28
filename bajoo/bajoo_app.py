@@ -665,10 +665,19 @@ class BajooApp(wx.App, SoftwareUpdate):
     def _exit(self, _event):
         """Close all resources and quit the app."""
         _logger.debug('Exiting ...')
+
         if self._home_window:
             self._home_window.Destroy()
+
+        if self._main_window:
+            self._main_window.Destroy()
+
+        if self._about_window:
+            self._about_window.Destroy()
+
         self._task_bar_icon.Destroy()
         self._dummy_frame.Destroy()
+
         if self._container_list:
             self._container_list.stop()
 

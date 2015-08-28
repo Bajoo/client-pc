@@ -242,6 +242,7 @@ class MainWindowListbook(wx.Listbook, Translator):
 
     def __init__(self, parent):
         wx.Listbook.__init__(self, parent, style=wx.BK_LEFT)
+        Translator.__init__(self)
 
         # TODO: Set proper image for each tab
         image_list = wx.ImageList(64, 64)
