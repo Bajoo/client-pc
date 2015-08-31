@@ -36,7 +36,7 @@ class MainWindow(wx.Frame):
         self.SetMinSize((800, 600))
         self._view = MainWindowListbook(self)
 
-        icon_path = resource_filename('assets/images/favicon.png')
+        icon_path = resource_filename('assets/window_icon.png')
         icon = wx.Icon(icon_path)
         self.SetIcon(icon)
 
@@ -247,11 +247,11 @@ class MainWindowListbook(wx.Listbook, Translator):
         # TODO: Set proper image for each tab
         image_list = wx.ImageList(64, 64)
         image_list.Add(wx.Image(resource_filename(
-            'assets/images/my-shares.png')).Rescale(64, 64).ConvertToBitmap())
+            'assets/images/menu_my_shares.png')).Rescale(64, 64).ConvertToBitmap())
         image_list.Add(wx.Image(resource_filename(
-            'assets/images/user.png')).Rescale(64, 64).ConvertToBitmap())
+            'assets/images/menu_user.png')).Rescale(64, 64).ConvertToBitmap())
         image_list.Add(wx.Image(resource_filename(
-            'assets/images/settings.png')).Rescale(64, 64).ConvertToBitmap())
+            'assets/images/menu_settings.png')).Rescale(64, 64).ConvertToBitmap())
         self.AssignImageList(image_list)
 
         self.list_shares_tab = ListSharesTab(self)

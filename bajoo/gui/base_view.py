@@ -131,6 +131,6 @@ class BaseView(Translator):
 
         Note that the window must be an instance of wx.Frame.
         """
-        icon_path = resource_filename('assets/images/favicon.png')
+        icon_path = resource_filename('assets/window_icon.png')
         icon = wx.Icon(icon_path)
         self.window.SetIcon(icon)

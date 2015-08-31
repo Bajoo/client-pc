@@ -8,6 +8,7 @@ from wx.lib.newevent import NewCommandEvent
 from ...api import TeamShare, MyBajoo
 
 from ...common.i18n import N_
+from ...common.path import resource_filename
 from ..event_future import ensure_gui_thread
 from ..base_view import BaseView
 
@@ -62,21 +63,21 @@ class ListSharesTab(wx.Panel):
 
     def _init_images(self):
         if not ListSharesTab.TEAM_SHARE_ICON:
-            ListSharesTab.TEAM_SHARE_ICON = wx.Image(
-                'bajoo/assets/images/favicon-partage.png') \
-                .Scale(64, 64, wx.IMAGE_QUALITY_HIGH) \
-                .ConvertToBitmap()
+            img_path = resource_filename(
+                'assets/images/icon_storage_share.png')
+            img = wx.Image(img_path).Scale(64, 64, wx.IMAGE_QUALITY_HIGH)
+            ListSharesTab.TEAM_SHARE_ICON = img.ConvertToBitmap()
 
         if not ListSharesTab.MY_BAJOO_ICON:
-            ListSharesTab.MY_BAJOO_ICON = wx.Image(
-                'bajoo/assets/images/picto-mon-bajoo.png') \
-                .Scale(64, 64, wx.IMAGE_QUALITY_HIGH) \
-                .ConvertToBitmap()
+            img_path = resource_filename(
+                'assets/images/icon_storage_my_bajoo.png')
+            img = wx.Image(img_path).Scale(64, 64, wx.IMAGE_QUALITY_HIGH)
+            ListSharesTab.MY_BAJOO_ICON = img.ConvertToBitmap()
 
         if not ListSharesTab.FOLDER_ICON:
-            ListSharesTab.FOLDER_ICON = wx.Image(
-                'bajoo/assets/images/folder.png') \
-                .ConvertToBitmap()
+            img_path = resource_filename('assets/images/folder.png')
+            img = wx.Image(img_path)
+            ListSharesTab.FOLDER_ICON = img.ConvertToBitmap()
 
     @ensure_gui_thread
     def set_data(self, shares):

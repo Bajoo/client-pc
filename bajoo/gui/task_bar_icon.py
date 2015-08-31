@@ -66,19 +66,20 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
 
         self._container_menu = None
 
-        icon_path = 'assets/icons/trayicon-%s.png'
-        disconnected_icon = resource_filename(icon_path % 'connecting')
+        icon_path = 'assets/images/trayicon_status/%s.png'
+        disconnected_icon = resource_filename(icon_path % 'disconnected')
         connecting_icon = resource_filename(icon_path % 'connecting')
         sync_icon = resource_filename(icon_path % 'sync')
         paused_icon = resource_filename(icon_path % 'paused')
         progress_icon = resource_filename(icon_path % 'progress')
 
-        container_status_done = sync_icon
-        container_status_progress = progress_icon
-        container_status_pause = paused_icon
-        container_status_stop = connecting_icon
-        # TODO: set more explicit icon
-        container_status_error = connecting_icon
+        icon_container = 'assets/images/container_status/%s.png'
+        container_status_done = resource_filename(icon_container % 'synced')
+        container_status_progress = resource_filename(
+            icon_container % 'progress')
+        container_status_pause = resource_filename(icon_container % 'paused')
+        container_status_stop = resource_filename(icon_container % 'stopped')
+        container_status_error = resource_filename(icon_container % 'error')
 
         self._icons = {
             self.NOT_CONNECTED: wx.Icon(disconnected_icon),
@@ -89,12 +90,11 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
         }
 
         self._container_icons = {
-            self.SYNC_DONE: wx.Image(container_status_done).Rescale(16, 16),
-            self.SYNC_PROGRESS: wx.Image(container_status_progress)
-                .Rescale(16, 16),
-            self.SYNC_PAUSE: wx.Image(container_status_pause).Rescale(16, 16),
-            self.SYNC_STOP: wx.Image(container_status_stop).Rescale(16, 16),
-            self.SYNC_ERROR: wx.Image(container_status_error).Rescale(16, 16)
+            self.SYNC_DONE: wx.Image(container_status_done),
+            self.SYNC_PROGRESS: wx.Image(container_status_progress),
+            self.SYNC_PAUSE: wx.Image(container_status_pause),
+            self.SYNC_STOP: wx.Image(container_status_stop),
+            self.SYNC_ERROR: wx.Image(container_status_error)
         }
 
         self.set_state(self.NOT_CONNECTED)

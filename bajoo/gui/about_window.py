@@ -22,7 +22,7 @@ class AboutBajooWindow(wx.Frame):
         wx.Frame.__init__(
             self, parent=None, title=N_('About Bajoo'), style=window_style)
 
-        icon_path = resource_filename('assets/images/favicon.png')
+        icon_path = resource_filename('assets/window_icon.png')
         icon = wx.Icon(icon_path)
         self.SetIcon(icon)
 
