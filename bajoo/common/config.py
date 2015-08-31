@@ -16,6 +16,7 @@ except ImportError:
     import ConfigParser as configparser  # Python2
 import logging
 import os.path
+import sys
 
 from . import path as bajoo_path
 
@@ -118,7 +119,8 @@ def set(key, value):
 
     Args:
         key (string): the entry key.
-        value: the new value to set. It will be converted to string.
+        value: the new value to set. If unicode (Python 2), it will be
+            converted into str using utf-8 encoding.
     Raises:
         KeyError: if the config entry is not valid.
     """
@@ -127,7 +129,9 @@ def set(key, value):
     if value is None:
         _config_parser.remove_option('config', key)
     else:
-        _config_parser.set('config', key, str(value))
+        if sys.version_info[0] is 2 and isinstance(value, unicode):
+            value = value.encode('utf-8')
+        _config_parser.set('config', key, value)
     config_file_path = _get_config_file_path()
     try:
         # Note: configParser.write use the default string type

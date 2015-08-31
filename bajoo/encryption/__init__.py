@@ -23,6 +23,7 @@ import io
 import logging
 from multiprocessing import cpu_count
 import os.path
+import sys
 import tempfile
 from gnupg import GPG
 
@@ -47,6 +48,8 @@ def _get_gpg_context():
     if not _gpg:
         gpg_home = os.path.join(get_data_dir(), 'gpg')
         try:
+            if sys.version_info[0] is 2 and isinstance(gpg_home, unicode):
+                gpg_home = gpg_home.encode(sys.getfilesystemencoding())
             _gpg = GPG(verbose=False, gnupghome=gpg_home, use_agent=True)
         except (IOError, OSError) as e:
             if e.errno == errno.ENOENT:

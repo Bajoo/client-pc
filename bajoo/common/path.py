@@ -63,10 +63,16 @@ def resource_filename(resource):
 
     # Note: it works only in non-zipped mode.
     if getattr(sys, 'frozen', False) and getattr(sys, 'executable', False):
-        exe_path = unicode(sys.executable, sys.getfilesystemencoding())
-        return os.path.join(os.path.dirname(exe_path), 'bajoo', resource)
-    return pkg_resources.resource_filename('bajoo', resource)
-
+        dir_executable = os.path.dirname(sys.executable)
+        result_path = os.path.join(dir_executable, 'bajoo', resource)
+    else:
+        result_path = pkg_resources.resource_filename('bajoo', resource)
+    if sys.version_info[0] is 2 and isinstance(result_path, str):
+        # pkg_resources.resource_filename don't always returns unicode values.
+        # With Python 2.7 on Windows 10 (french settings), we have a
+        # latin1-encoded result of type 'str'.
+        return result_path.decode(sys.getfilesystemencoding())
+    return result_path
 
 def default_root_folder():
     """Returns the default emplacement fir the Bajoo root folder."""
