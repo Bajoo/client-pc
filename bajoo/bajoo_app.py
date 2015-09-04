@@ -641,6 +641,8 @@ class BajooApp(wx.App, SoftwareUpdate):
                     def on_session_reloaded(new_session):
                         # Replace the token of the current session
                         self._session.token = new_session.token
+                        stored_credentials.save(
+                            self._user.name, new_session.get_refresh_token())
 
                     Session.create_session(self._user.name, new_password) \
                         .then(on_session_reloaded)
