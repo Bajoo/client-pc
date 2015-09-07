@@ -44,7 +44,7 @@ class SetupConfigScreen(BaseForm):
         self.Bind(wx.EVT_BUTTON, self.submit,
                   source=self.FindWindow('validate_btn'))
 
-    def apply_field_constraints(self, _event):
+    def apply_field_constraints(self, _event=None):
         use_passphrase = not self.FindWindow('no_passphrase').IsChecked()
         self.FindWindow('passphrase').Enable(use_passphrase)
         self.FindWindow('confirmation').Enable(use_passphrase)
@@ -67,8 +67,7 @@ class SetupConfigScreen(BaseForm):
         if root_folder_error:
             root_folder_error_txt.set_msg(root_folder_error)
         self.FindWindow('encryption_section').Show(key_setting)
-        self.FindWindow('passphrase').Enable(key_setting)
-        self.FindWindow('confirmation').Enable(key_setting)
+        self.apply_field_constraints()
 
         gpg_error_txt = self.FindWindow('gpg_error')
         if gpg_error:
