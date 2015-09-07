@@ -50,7 +50,7 @@ def _get_gpg_context():
         try:
             if sys.version_info[0] is 2 and isinstance(gpg_home, unicode):
                 gpg_home = gpg_home.encode(sys.getfilesystemencoding())
-            _gpg = GPG(verbose=False, gnupghome=gpg_home, use_agent=True)
+            _gpg = GPG(verbose=False, gnupghome=gpg_home, use_agent=False)
         except (IOError, OSError) as e:
             if e.errno == errno.ENOENT:
                 raise EncryptionError('GPG binary executable not found.')
@@ -185,7 +185,11 @@ def decrypt(source, key=None):
         with tempfile.NamedTemporaryFile(delete=False) as tf:
             dst_path = tf.name
 
-        result = context.decrypt_file(source, output=dst_path)
+        try:
+            context.use_agent = True
+            result = context.decrypt_file(source, output=dst_path)
+        finally:
+            context.use_agent = False
         if not result:
             # pkdecrypt codes are defined in libgpg-error (in err-codes.h)
             if 'ERROR pkdecrypt_failed 11\n' in result.stderr:

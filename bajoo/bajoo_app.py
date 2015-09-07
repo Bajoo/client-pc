@@ -78,7 +78,8 @@ class BajooApp(wx.App, SoftwareUpdate):
 
         if hasattr(wx, 'SetDefaultPyEncoding'):
             # wxPython classic only
-            wx.SetDefaultPyEncoding("utf-8")
+            # wx.SetDefaultPyEncoding("utf-8")
+            pass
 
         # Don't redirect the stdout in a windows.
         wx.App.__init__(self, redirect=False)

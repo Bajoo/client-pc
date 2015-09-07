@@ -71,7 +71,7 @@ def load():
         _logger.warning('Unable to load config file: %s' % config_file_path)
 
 
-def get(key):
+def get(key, unicode=False):
     """Find and return a configuration entry
 
     If the entry is not specified in the config file, a default value is
@@ -79,6 +79,8 @@ def get(key):
 
     Args:
         key (string): the entry key.
+        unicode (boolean): if True, and if the value is a string, it will be
+            returned in unicode. Note that it's only used with Python2.
     Returns:
         The corresponding value found.
     Raises:
@@ -105,6 +107,8 @@ def get(key):
                     pass
             return result
         else:
+            if unicode and sys.version_info[0] is 2:
+                return _config_parser.get('config', key).decode('utf-8')
             return _config_parser.get('config', key)
     except configparser.NoOptionError:
         return _default_config[key]['default']

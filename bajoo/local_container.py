@@ -108,7 +108,8 @@ class LocalContainer(object):
         Returns:
             str: the path of the created folder. None if an error occurs
         """
-        folder_path = os.path.join(config.get('root_folder'), name)
+        folder_path = os.path.join(config.get('root_folder', unicode=True),
+                                   name)
 
         try:
             os.mkdir(folder_path)

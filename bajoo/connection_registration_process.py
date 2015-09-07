@@ -337,7 +337,7 @@ class _ConnectionProcess(object):
         Returns:
             Future<boolean>: True if valid; Otherwise False.
         """
-        root_folder = config.get('root_folder')
+        root_folder = config.get('root_folder', unicode=True)
 
         if not root_folder:
             self._root_folder_error = None
