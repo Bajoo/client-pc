@@ -124,7 +124,8 @@ setup_kwargs = {
     'include_package_data': True,
     'package_data': {
         # Note: esky build doesn't support 'include_package_data'
-        'bajoo': ['locale/*/LC_MESSAGES/*.mo', 'assets/*/*.png']
+        'bajoo': ['locale/*/LC_MESSAGES/*.mo', 'assets/*.png',
+                  'assets/images/*.png', 'assets/images/*/*.png']
     },
     'dependency_links': ['http://wxpython.org/Phoenix/snapshot-builds/'],
     'entry_points': {
