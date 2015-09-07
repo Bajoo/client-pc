@@ -321,7 +321,7 @@ class _ConnectionProcess(object):
                 encoding = locale.getpreferredencoding()
                 if sys.version_info[0] < 3:  # Python 2
                     result = unicode(str(result), encoding)
-            self._gpg_error = N_('Error when during the GPG key check:\n %s' %
+            self._gpg_error = N_('Error during the GPG key check:\n %s' %
                                  result)
             _logger.warning('Error when applying the GPG config: %s' % result)
 

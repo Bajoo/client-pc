@@ -23,7 +23,6 @@ import io
 import logging
 from multiprocessing import cpu_count
 import os.path
-import sys
 import tempfile
 from gnupg import GPG
 
@@ -31,6 +30,7 @@ from ..common.path import get_data_dir
 from ..common.future import then
 from .asymmetric_key import AsymmetricKey
 from .errors import EncryptionError, KeyGenError, EncryptError, DecryptError
+from .errors import PassphraseAbortError
 
 _logger = logging.getLogger(__name__)
 
@@ -141,7 +141,7 @@ def encrypt(source, recipients):
     return io.open(dst_path, mode='rb')
 
 
-def decrypt(source, key=None):
+def decrypt(source, key=None, passphrase_callback=None, _retry=0):
     """Asynchronously decrypt a file.
 
     Decrypt a file using the GPG executable.
@@ -161,6 +161,12 @@ def decrypt(source, key=None):
             have its pointer to the beginning of the file.
         key (AsymmetricKey, optional): If set, use this key for the decryption,
             instead of using the global Bajoo keyring.
+        passphrase_callback (callable, optional): If set, this callback will
+            be used to retrieve the passphrase. This callback takes a boolean
+            argument 'is_retry' (if the callback has already been called for
+            this operation before), and returns either a string or None (if the
+            user don't want to give his passphrase).
+        _retry (int): number of passphrase attempt already done (and failed).
     Returns:
         Future<TemporaryFile>: A Future returning a temporary file of the
             resulting decrypted data.
@@ -183,17 +189,26 @@ def decrypt(source, key=None):
         with tempfile.NamedTemporaryFile(delete=False) as tf:
             dst_path = tf.name
 
-        try:
-            context.use_agent = True
-            result = context.decrypt_file(source, output=dst_path)
-        finally:
-            context.use_agent = False
+        passphrase = None
+        if _retry > 0 and passphrase_callback:
+            # The call to GPG without callback has failed; We retry with a
+            # passphrase.
+            passphrase = passphrase_callback(_retry > 1)
+            if passphrase is None:
+                # The user has refused to give his passphrase.
+                raise PassphraseAbortError()
+
+        result = context.decrypt_file(source, output=dst_path,
+                                      passphrase=passphrase)
         if not result:
             # pkdecrypt codes are defined in libgpg-error (in err-codes.h)
-            if 'ERROR pkdecrypt_failed 11\n' in result.stderr:
-                if '[GNUPG:] MISSING_PASSPHRASE' in result.stderr:
-                    # It's most probably a "Cancel" action from the user,
-                    # through its gpg agent.
+            if '[GNUPG:] ERROR pkdecrypt_failed 11' in result.stderr or \
+                    '[GNUPG:] MISSING_PASSPHRASE' in result.stderr:
+                if passphrase_callback and _retry <= 4:
+                    return decrypt(source, key,
+                                   passphrase_callback=passphrase_callback,
+                                   _retry=_retry+1)
+                elif '[GNUPG:] MISSING_PASSPHRASE' in result.stderr:
                     raise DecryptError('Decryption failed: missing passphrase')
                 else:
                     raise DecryptError('Decryption failed: probably a bad'

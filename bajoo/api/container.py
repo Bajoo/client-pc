@@ -18,6 +18,9 @@ class Container(object):
     a TeamShare or a PublicShare.
     This should always be used as an abstract class.
 
+    Static Attributes:
+        passphrase_callback (callable): callback passed to
+            `encryption.decrypt()` for asking the passphrase.
     Attributes:
         id: container id
         name: container name
@@ -27,6 +30,8 @@ class Container(object):
             loading. It can be either a network error or an encryption error.
             this exception has an attribute 'container_id'.
     """
+
+    passphrase_callback = None
 
     def __init__(self, session, container_id, name, encrypted=True):
         """
@@ -90,7 +95,9 @@ class Container(object):
             def on_key_downloaded(result):
                 key_content = result.get('content')
                 _logger.debug('Key of container #%s downloaded' % self.id)
-                return encryption.decrypt(key_content)
+                return encryption.decrypt(
+                    key_content,
+                    passphrase_callback=Container.passphrase_callback)
 
             def on_key_decrypted(key_content):
                 key = encryption.AsymmetricKey.load(key_content)

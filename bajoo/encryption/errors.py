@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from ..common.i18n import N_
+
 
 class EncryptionError(Exception):
     """Base class for all encryption-related errors."""
@@ -19,3 +21,11 @@ class EncryptError(EncryptionError):
 class DecryptError(EncryptionError):
     """Exception raised during a file decryption."""
     pass
+
+
+class PassphraseAbortError(EncryptionError):
+    """Exception raised when the user refuse to give his passphrase."""
+
+    def __init__(self):
+        EncryptionError.__init__(
+            self, N_('The passphrase request has been rejected by the user.'))

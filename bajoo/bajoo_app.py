@@ -6,7 +6,7 @@ import wx
 from wx.lib.softwareupdate import SoftwareUpdate
 
 from . import stored_credentials
-from .api import User, TeamShare, Session
+from .api import User, TeamShare, Session, Container
 from bajoo.common.future import wait_all
 from .common import config
 from .common.future import resolve_dec
@@ -709,6 +709,10 @@ class BajooApp(wx.App, SoftwareUpdate):
 
         if self._home_window:
             self._home_window.Destroy()
+
+        # TODO: set a real callback, asking the user to give his passphrase.
+        Container.passphrase_callback = lambda is_retry: None
+
         _logger.debug('Start DynamicContainerList() ...')
         self._container_list = DynamicContainerList(
             session, self._notifier.send_message,
