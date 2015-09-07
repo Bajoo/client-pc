@@ -48,7 +48,7 @@ import os
 import psutil
 import re
 import socket
-from subprocess import Popen
+from subprocess import Popen, list2cmdline
 from subprocess import PIPE
 import sys
 import threading
@@ -726,7 +726,10 @@ class GPG(object):
         """
         cmd = [self.gpgbinary, '--status-fd', '2', '--no-tty']
         if self.gnupghome:
-            cmd.extend(['--homedir',  no_quote(self.gnupghome)])
+            gnupghome = self.gnupghome
+            if sys.version_info[0] is 2 and isinstance(gnupghome, unicode):
+                gnupghome = self.gnupghome.encode(sys.getfilesystemencoding())
+            cmd.extend(['--homedir',  no_quote(gnupghome)])
         if self.keyring:
             cmd.append('--no-default-keyring')
             for fn in self.keyring:
@@ -747,6 +750,24 @@ class GPG(object):
         # Internal method: open a pipe to a GPG subprocess and return
         # the file objects for communicating with it.
         cmd = self.make_args(args, passphrase)
+
+        try:
+            if sys.platform == "win32":
+                # Under Linux, "cmd" must be a list.
+                # Under Windows, we concatenate the arguments ourselves,
+                # because Popen doesn't support well unicode characters.
+                cmd = list2cmdline(cmd)
+        except UnicodeError:
+            # list2cmd don't accept unicode entries
+            args = []
+            for arg in cmd:
+                if not isinstance(args, text_type):
+                    arg = arg.decode(sys.getfilesystemencoding())
+                if (" " in arg) or ("\t" in arg) or not arg:
+                    arg = u'"%s"' % arg
+                args.append(arg)
+            cmd = u' '.join(args)
+            cmd = cmd.encode(sys.getfilesystemencoding())
         if self.verbose:
             pcmd = ' '.join(cmd)
             print(pcmd)
