@@ -17,3 +17,6 @@ pip-log.txt
 
 # compiled translation files.
 *.mo
+
+# external GPG executable and dependencies
+gpg/

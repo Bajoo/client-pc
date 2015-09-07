@@ -82,11 +82,16 @@ def _(msg):
     if not _translation:
         set_lang(config.get('lang'))
 
-    if sys.version_info[0] is 3:
-        return _translation.gettext(msg)
-    else:
-        return _translation.ugettext(msg)
-
+    try:
+        if sys.version_info[0] is 3:
+            return _translation.gettext(msg)
+        else:
+            return _translation.ugettext(msg)
+    except UnicodeDecodeError:
+        # gettext don't always accepts non-ascii identifiers.
+        # All identifiers are ascii, so this exception happens when 'msg' is
+        # a non-translated string (probably a generated string).
+        return msg
 
 available_langs = {
     None: {

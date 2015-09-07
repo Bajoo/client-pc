@@ -195,6 +195,7 @@ else:
             bdist_esky.Executable('start.py', name='Bajoo', gui_only=True,
                                   icon=icon_path)
         ]
+        setup_kwargs['data_files'] = [('.', glob('gpg/*.exe') + glob('gpg/*.dll'))]
 
 
 setup(**setup_kwargs)
