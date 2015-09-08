@@ -163,20 +163,23 @@ class ContainerSyncPool(object):
     def _added_remote_file(self, container_id, files):
         print('Added (remote): %s' % files)
         for f in files:
-            self._create_task(filesync.added_remote_files, container_id,
-                              f['name'])
+            if filesync.is_path_allowed(f['name']):
+                self._create_task(filesync.added_remote_files, container_id,
+                                  f['name'])
 
     def _removed_remote_files(self, container_id, files):
         print('Removed (remote): %s' % files)
         for f in files:
-            self._create_task(filesync.removed_remote_files, container_id,
-                              f['name'])
+            if filesync.is_path_allowed(f['name']):
+                self._create_task(filesync.removed_remote_files, container_id,
+                                  f['name'])
 
     def _modified_remote_files(self, container_id, files):
         print('Modified (remote): %s' % files)
         for f in files:
-            self._create_task(filesync.changed_remote_files, container_id,
-                              f['name'])
+            if filesync.is_path_allowed(f['name']):
+                self._create_task(filesync.changed_remote_files, container_id,
+                                  f['name'])
 
     def _added_local_file(self, container_id, file_path):
         print('Added (local): %s for %s' % (file_path, container_id))
