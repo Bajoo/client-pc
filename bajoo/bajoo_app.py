@@ -21,6 +21,7 @@ from .gui.event_future import ensure_gui_thread
 from .gui.home_window import HomeWindow
 from .gui.main_window import MainWindow
 from .gui.message_notifier import MessageNotifier
+from .gui.passphrase_window import PassphraseWindow
 from .gui.proxy_window import EVT_PROXY_FORM
 from .gui.task_bar_icon import TaskBarIcon
 from .gui.tab.account_tab import AccountTab
@@ -75,6 +76,7 @@ class BajooApp(wx.App, SoftwareUpdate):
         self._container_list = None
         self._container_sync_pool = ContainerSyncPool(
             self._on_global_status_change, self._on_sync_error)
+        self._passphrase = None
 
         if hasattr(wx, 'SetDefaultPyEncoding'):
             # wxPython classic only
@@ -710,8 +712,8 @@ class BajooApp(wx.App, SoftwareUpdate):
         if self._home_window:
             self._home_window.Destroy()
 
-        # TODO: set a real callback, asking the user to give his passphrase.
-        Container.passphrase_callback = lambda is_retry: None
+        cb = lambda is_retry: self._get_user_passphrase(is_retry).result()
+        Container.passphrase_callback = staticmethod(cb)
 
         _logger.debug('Start DynamicContainerList() ...')
         self._container_list = DynamicContainerList(
@@ -754,6 +756,27 @@ class BajooApp(wx.App, SoftwareUpdate):
 
     def _on_sync_error(self, err):
         self._notifier.send_message('Sync error', err)
+
+    @ensure_gui_thread
+    def _get_user_passphrase(self, is_retry):
+        """Get the user passphrase, asking to him if needed.
+
+        If the passphrase is already in cache, we returns it. Else we ask the
+        user, using a dedicated windows.
+
+        Args:
+            is_retry (boolean): If True, it's at least the second time this
+                method is called. It means the last passphrase given by the
+                user wasn't valid.
+        Returns:
+            Future<str>: user's passphrase, or None if the user doesn't want
+                to give his passphrase.
+        """
+        window = PassphraseWindow(is_retry)
+        if window.ShowModal():
+            self._passphrase = window.GetValue()
+            return self._passphrase
+        return None
 
     def disconnect(self, _evt):
         """revoke token and return the the home window."""

@@ -205,6 +205,7 @@ def decrypt(source, key=None, passphrase_callback=None, _retry=0):
             if '[GNUPG:] ERROR pkdecrypt_failed 11' in result.stderr or \
                     '[GNUPG:] MISSING_PASSPHRASE' in result.stderr:
                 if passphrase_callback and _retry <= 4:
+                    source.seek(0)
                     return decrypt(source, key,
                                    passphrase_callback=passphrase_callback,
                                    _retry=_retry+1)
