@@ -442,6 +442,7 @@ class BajooApp(wx.App, SoftwareUpdate):
         """
         Handle the request of changing the application language.
         """
+        config.set('lang', event.lang)
         set_lang(event.lang)
         self._notify_lang_change()
 

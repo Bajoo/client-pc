@@ -48,6 +48,10 @@ class RegisterForm(BaseForm):
         if errors:
             self._view.display_message(errors)
 
+    def notify_lang_change(self):
+        BaseForm.notify_lang_change(self)
+        self._view.notify_lang_change()
+
 
 class RegisterFormView(BaseView):
     """View of the RegisterForm"""
@@ -61,9 +65,10 @@ class RegisterFormView(BaseView):
                        target=username_txt, hide_if_valid=True)
         password_txt = wx.TextCtrl(self.window, name='password',
                                    style=wx.TE_PASSWORD)
-        MinLengthValidator(self.window, name='password_error',
-                           target=password_txt, min_length=8,
-                           inform_message=N_('8 characters minimum'))
+        password_validator = MinLengthValidator(
+            self.window, name='password_error',
+            target=password_txt, min_length=8,
+            inform_message=N_('8 characters minimum'))
         confirm_txt = wx.TextCtrl(self.window, name='confirmation',
                                   style=wx.TE_PASSWORD)
         ConfirmPasswordValidator(self.window, name='confirmation_error',
@@ -83,6 +88,8 @@ class RegisterFormView(BaseView):
         self.register_i18n(password_txt.SetHint, N_('Password'))
         self.register_i18n(confirm_txt.SetHint, N_('Password confirmation'))
         self.register_i18n(submit_btn.SetLabel, N_('Create my account'))
+        self.register_i18n(password_validator.SetLabel,
+                           N_('8 characters minimum'))
 
     def create_layout(self):
         """Create appropriate layout and static text for form."""
@@ -128,6 +135,7 @@ def main():
     sizer.SetSizeHints(win)
     win.Show(True)
     app.MainLoop()
+
 
 if __name__ == '__main__':
     main()

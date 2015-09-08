@@ -45,6 +45,10 @@ class ConnectionForm(BaseForm):
         if errors:
             self._view.display_message(errors)
 
+    def notify_lang_change(self):
+        BaseForm.notify_lang_change(self)
+        self._view.notify_lang_change()
+
 
 class ConnectionFormView(BaseView):
     """View of the ConnectionForm"""

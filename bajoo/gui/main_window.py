@@ -17,7 +17,7 @@ from .translator import Translator
 _logger = logging.getLogger(__name__)
 
 
-class MainWindow(wx.Frame):
+class MainWindow(wx.Frame, Translator):
     """Main window accessible when the user is connected.
 
     It contains different tabs (from the `bajoo.gui.tab.*` modules) allowing
@@ -33,6 +33,8 @@ class MainWindow(wx.Frame):
 
     def __init__(self):
         wx.Frame.__init__(self, parent=None, size=(800, 600))
+        Translator.__init__(self)
+
         self.SetMinSize((800, 600))
         self._view = MainWindowListbook(self)
 
@@ -268,6 +270,13 @@ class MainWindowListbook(wx.Listbook, Translator):
 
         self.Bind(wx.EVT_LISTBOOK_PAGE_CHANGED, self.on_page_changed)
         self.on_page_changed()
+
+    def notify_lang_change(self):
+        Translator.notify_lang_change(self)
+
+        self.SetPageText(0, N_("My Shares"))
+        self.SetPageText(1, N_("My Account"))
+        self.SetPageText(2, N_("Settings"))
 
     def on_page_changed(self, event=None):
         self.GetPage(self.GetSelection()).Show()
