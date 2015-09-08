@@ -278,6 +278,10 @@ class MainWindowListbook(wx.Listbook, Translator):
         self.SetPageText(1, N_("My Account"))
         self.SetPageText(2, N_("Settings"))
 
+        self.account_tab.notify_lang_change()
+        self.list_shares_tab.notify_lang_change()
+        self.settings_tab.notify_lang_change()
+
     def on_page_changed(self, event=None):
         self.GetPage(self.GetSelection()).Show()
         self.GetParent().SetTitle(self.GetPageText(self.GetSelection()))

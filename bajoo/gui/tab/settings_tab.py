@@ -7,12 +7,13 @@ from wx.lib.newevent import NewCommandEvent
 
 from ...common.i18n import N_
 from ..base_view import BaseView
+from ..translator import Translator
 from . import AdvancedSettingsTab
 from . import GeneralSettingsTab
 from . import NetworkSettingsTab
 
 
-class SettingsTab(wx.Panel):
+class SettingsTab(wx.Panel, Translator):
     """Panel containing all settings.
 
     The settings are subdivided into 3 categories, each category has a panel
@@ -31,6 +32,7 @@ class SettingsTab(wx.Panel):
 
     def __init__(self, parent, **kwargs):
         wx.Panel.__init__(self, parent, **kwargs)
+        Translator.__init__(self)
 
         self._view = SettingsTabView(self)
 
@@ -62,27 +64,31 @@ class SettingsTab(wx.Panel):
         self._apply_changes(_event)
         self.GetTopLevelParent().Close()
 
+    def notify_lang_change(self):
+        Translator.notify_lang_change(self)
+        self._view.notify_lang_change()
+
 
 class SettingsTabView(BaseView):
     def __init__(self, window):
         BaseView.__init__(self, window)
         notebook = wx.Notebook(self.window)
 
-        general = GeneralSettingsTab(notebook, name='general')
-        network = NetworkSettingsTab(notebook, name='network')
-        advanced = AdvancedSettingsTab(notebook, name='advanced')
-        notebook.AddPage(general, '')
-        notebook.AddPage(network, '')
-        notebook.AddPage(advanced, '')
+        self._general = GeneralSettingsTab(notebook, name='general')
+        self._network = NetworkSettingsTab(notebook, name='network')
+        self._advanced = AdvancedSettingsTab(notebook, name='advanced')
+        notebook.AddPage(self._general, '')
+        notebook.AddPage(self._network, '')
+        notebook.AddPage(self._advanced, '')
 
         # i18n
         set_tab_name = notebook.SetPageText
         self.register_i18n(partial(set_tab_name, 0), N_('General settings'))
         self.register_i18n(partial(set_tab_name, 1), N_('Network settings'))
         self.register_i18n(partial(set_tab_name, 2), N_('Advanced settings'))
-        self.add_i18n_child(general)
-        self.add_i18n_child(network)
-        self.add_i18n_child(advanced)
+        self.add_i18n_child(self._general)
+        self.add_i18n_child(self._network)
+        self.add_i18n_child(self._advanced)
 
         button_sizer_box = self.create_settings_button_box(self.window)
 
@@ -92,3 +98,10 @@ class SettingsTabView(BaseView):
         sizer.Add(button_sizer_box, 0, wx.EXPAND | wx.ALL, 15)
 
         self.window.SetSizer(sizer)
+
+    def notify_lang_change(self):
+        Translator.notify_lang_change(self)
+
+        self._general.notify_lang_change()
+        self._network.notify_lang_change()
+        self._advanced.notify_lang_change()

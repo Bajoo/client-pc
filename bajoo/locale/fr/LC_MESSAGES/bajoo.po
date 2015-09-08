@@ -1,0 +1,838 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Bajoo 2 0.1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2015-07-24 15:06+0200\n"
+"PO-Revision-Date: 2015-09-09 09:40+0100\n"
+"Last-Translator: Bajoo <contact@bajoo.fr>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 1.6.9\n"
+"Language-Team: Bajoo <contact@bajoo.fr>\n"
+"Language: fr\n"
+
+#: bajoo/connection_registration_process.py:199
+msgid "Invalid username or password."
+msgstr "Identifiant ou mot de passe invalide."
+
+#: bajoo/connection_registration_process.py:201
+msgid "There is already an account with this email."
+msgstr "Il y a déjà un compte utilisant cet email."
+
+#: bajoo/connection_registration_process.py:212
+#, python-format
+msgid "An error happened: %s"
+msgstr "Une erreur s'est arrivée : %s"
+
+#: bajoo/connection_registration_process.py:302
+#, python-format
+msgid "Error: %s"
+msgstr "Erreur : %s"
+
+#: bajoo/connection_registration_process.py:305
+#, python-format
+msgid ""
+"Error when applying the Bajoo root folder config:\n"
+" %s"
+msgstr ""
+"Erreur quand appliquer la configuration de dossier racine Bajoo :\n"
+" %s"
+
+#: bajoo/connection_registration_process.py:317
+msgid "You haven't yet registered a GPG key."
+msgstr "Vous n'avez pas encore enregistré une clé GPG."
+
+#: bajoo/connection_registration_process.py:320
+#, python-format
+msgid ""
+"Error when during the GPG key check:\n"
+" %s"
+msgstr ""
+"Erreur dans la vérification de la clé GPG :\n"
+" %s"
+
+#: bajoo/connection_registration_process.py:344
+#, python-format
+msgid "%s doesn't exists, or is not a directory"
+msgstr "%s n'existe plus, ou n'est pas un dossier."
+
+#: bajoo/connection_registration_process.py:349
+#, python-format
+msgid "%s has not the read and/or write permissions."
+msgstr "%s n'a pas de droit de lecture et/ou d'écriture."
+
+#: bajoo/network/errors.py:33
+msgid "A network error has occurred."
+msgstr "Il y a une erreur de réseau."
+
+#: bajoo/network/errors.py:39
+msgid "Unable to connect to the Bajoo servers."
+msgstr "Incapable de connecter aux serveurs Bajoo."
+
+#: bajoo/network/errors.py:45
+msgid "The server did not respond on time."
+msgstr "Le serveur n'a pas répondu à l'heure."
+
+#: bajoo/network/errors.py:73
+#, python-format
+msgid "The server has returned an HTTP error: %s %s"
+msgstr "Le serveur a retourné une erreur HTTP  : %s %s"
+
+#: bajoo/network/errors.py:109
+msgid ""
+"The HTTP request is invalid. This is a bug, either in the client or in the "
+"server. Sorry for the inconvenience :("
+msgstr ""
+"La requête HTTP est invalide. C'était une erreur à côté serveur ou client. "
+"Désolé pour cette inconvénient :("
+
+#: bajoo/network/errors.py:117
+msgid "Your session has expired."
+msgstr "Votre session a expiré."
+
+#: bajoo/network/errors.py:123
+msgid "You don't have the permission to do this operation."
+msgstr "Vous n'avez pas de droit à faire cette opération."
+
+#: bajoo/network/errors.py:130
+msgid "The element you're looking for has not been found."
+msgstr "L'élément que vous cherchez n'est pas trouvé."
+
+#: bajoo/network/errors.py:136
+msgid "The Bajoo servers have encountered an unexpected error :("
+msgstr "Les serveurs Bajoo ont rencontré un erreur inattendue :("
+
+#: bajoo/network/errors.py:143
+msgid "Bajoo service does not understand or does not support this function."
+msgstr "Le service Bajoo ne comprend pas ou ne support pas cette fonction."
+
+#: bajoo/network/errors.py:150
+msgid "The Bajoo servers are temporarily unavailable. Please try again later."
+msgstr ""
+"Les serveurs Bajoo sont inaccessibles temporairement. Veuillez ressayer plus "
+"tard."
+
+#: bajoo/gui/about_window.py:20 bajoo/gui/task_bar_icon.py:134
+msgid "About Bajoo"
+msgstr "À propos de Bajoo"
+
+#: bajoo/gui/about_window.py:56
+msgid ""
+"Official client for Bajoo online storage service.\n"
+"Version: "
+msgstr ""
+"Client officiel pour le service de stockage en ligne Bajoo.\n"
+"Version :"
+
+#: bajoo/gui/about_window.py:60
+msgid ""
+"This software is distributed under the terms of the GPL License. It is "
+"freely redistributable."
+msgstr ""
+"Ce logiciel est distribué sous License GPL. Il est librement redistribuable."
+
+#: bajoo/gui/about_window.py:64
+msgid "Its source code is"
+msgstr "Son code source est"
+
+#: bajoo/gui/about_window.py:66
+msgid "available on GitHub."
+msgstr "disponible sur GitHub"
+
+#: bajoo/gui/about_window.py:70
+msgid "The terms Bajoo and Linéa are registered trademarks."
+msgstr "Les termes Bajoo et Linéa sont des marques déposées."
+
+#: bajoo/gui/about_window.py:72
+msgid "www.bajoo.fr"
+msgstr "www.bajoo.fr"
+
+#: bajoo/gui/about_window.py:75
+msgid "The client Bajoo reuse the following free elements:"
+msgstr "Le client Bajoo réutilise les éléments gratuits suivants :"
+
+#: bajoo/gui/about_window.py:78
+msgid ""
+"* The GPG software, created by XXX, available under the GNU GPL license."
+msgstr "* Le logiciel GPG, créé par XXX, disponible sous la licence GNU GPL."
+
+#: bajoo/gui/screen/setup_config_screen.py:90
+msgid "Bajoo - Configuration"
+msgstr "Bajoo - Configuration"
+
+#: bajoo/gui/screen/setup_config_screen.py:124
+msgid "Encryption"
+msgstr "Chiffrement"
+
+#: bajoo/gui/screen/setup_config_screen.py:125
+msgid ""
+"Your passphrase is known only by yourself. It's used to encrypt your data.\n"
+"It should contains at least 8 characters.You can use a real phrase to "
+"memorize it more easily (ex: MyBajooAccount)."
+msgstr ""
+"Vous êtes le seul qui connaissez cette phrase secrète. C'est utile pour "
+"chiffre vos données.\n"
+"Il doit se compose d'au moins 8 caractères. Vous pouvez utiliser une phrase "
+"réelle pour la mémoriser plus facilement."
+
+#: bajoo/gui/screen/setup_config_screen.py:130
+msgid "Don't use encryption passphrase"
+msgstr "Ne pas utiliser la phrase secrète de chiffrement"
+
+#: bajoo/gui/screen/setup_config_screen.py:131
+msgid "Root folder Bajoo"
+msgstr "Dossier racine Bajoo"
+
+#: bajoo/gui/screen/setup_config_screen.py:132
+msgid "Your Bajoo shares will be deposit here:"
+msgstr "Votre partages Bajoo seront déposés ici :"
+
+#: bajoo/gui/screen/setup_config_screen.py:133
+msgid "Validate"
+msgstr "Valider"
+
+#: bajoo/gui/screen/setup_config_screen.py:137
+msgid "Passphrase"
+msgstr "Phrase secrète"
+
+#: bajoo/gui/screen/setup_config_screen.py:138
+msgid "passphrase confirmation"
+msgstr "Confirmation de la phrase secrète"
+
+#: bajoo/gui/screen/home_screen.py:71 bajoo/gui/screen/home_screen.py:94
+msgid "Bajoo"
+msgstr "Bajoo"
+
+#: bajoo/gui/screen/home_screen.py:87 bajoo/gui/form/connection_form.py:75
+msgid "Connection"
+msgstr "Connexion"
+
+#: bajoo/gui/screen/home_screen.py:91
+msgid "Make an account"
+msgstr "Créer un compte"
+
+#: bajoo/gui/screen/home_screen.py:95
+msgid "Your online file storage, secure!"
+msgstr "Votre stockage en ligne, sécurisé !"
+
+#: bajoo/gui/screen/home_screen.py:96
+msgid "proxy settings"
+msgstr "Paramètres proxy"
+
+#: bajoo/gui/screen/home_screen.py:97
+msgid "Language:"
+msgstr "Langage :"
+
+#: bajoo/gui/screen/activation_screen.py:55
+msgid "Bajoo - Activate your account"
+msgstr "Bajoo - Activer votre compte"
+
+#: bajoo/gui/screen/activation_screen.py:70
+msgid "Your account is not activated."
+msgstr "Votre compte n'est pas encore activé."
+
+#: bajoo/gui/screen/activation_screen.py:72
+msgid ""
+"For continuing, your must activate your account.\n"
+"You should receive in the next minutes, a confirmation email with an "
+"activation link.\n"
+"You should follow that link to continue."
+msgstr ""
+"Pour continuer, vous devez activer votre compte.\n"
+"Vous recevez dans quelques minutes un email de confirmation avec un lien "
+"d'activation.\n"
+"Vous devriez suivre ce lien pour continuer."
+
+#: bajoo/gui/screen/activation_screen.py:77
+msgid "Come back later"
+msgstr "Revenez plus tard"
+
+#: bajoo/gui/screen/activation_screen.py:78
+msgid "It's done!"
+msgstr "C'est fait !"
+
+#: bajoo/gui/proxy_window.py:64
+msgid "Bajoo - Proxy"
+msgstr "Bajoo - Proxy"
+
+#: bajoo/gui/proxy_window.py:70
+msgid "Cancel"
+msgstr "Annuler"
+
+#: bajoo/gui/proxy_window.py:71
+msgid "OK"
+msgstr "OK"
+
+#: bajoo/gui/change_password_window.py:25
+msgid "Bajoo - Change password"
+msgstr "Bajoo - Modification de mot de passe"
+
+#: bajoo/gui/tab/network_settings_tab.py:31
+msgid "Limit incoming debit (download)"
+msgstr "Limiter le téléchargement"
+
+#: bajoo/gui/tab/network_settings_tab.py:42
+msgid "Limit outgoing debit (upload)"
+msgstr "Limiter le téléversement"
+
+#: bajoo/gui/tab/network_settings_tab.py:57
+#: bajoo/gui/tab/network_settings_tab.py:63
+msgid "Kb/s"
+msgstr "Ko/s"
+
+#: bajoo/gui/tab/network_settings_tab.py:69
+msgid "Bandwidth"
+msgstr "Bande passante"
+
+#: bajoo/gui/tab/network_settings_tab.py:89 bajoo/gui/tab/account_tab.py:174
+#: bajoo/gui/main_window.py:46
+msgid "My Account"
+msgstr "Mon compte"
+
+#: bajoo/gui/tab/creation_share_tab.py:30
+#: bajoo/gui/tab/details_share_tab.py:63
+msgid "<< Back to share list"
+msgstr "<< Revenir à la liste de partage"
+
+#: bajoo/gui/tab/creation_share_tab.py:34
+msgid "Create"
+msgstr "Créer"
+
+#: bajoo/gui/tab/creation_share_tab.py:37
+msgid "Share name"
+msgstr "Nom de partage"
+
+#: bajoo/gui/tab/creation_share_tab.py:40
+#: bajoo/gui/tab/details_share_tab.py:41
+msgid "Team share"
+msgstr "Partage collaboratif"
+
+#: bajoo/gui/tab/creation_share_tab.py:43
+msgid "Public share"
+msgstr "Partage public"
+
+#: bajoo/gui/tab/creation_share_tab.py:46
+msgid "Encrypt this share"
+msgstr "Chiffrer ce partage"
+
+#: bajoo/gui/tab/creation_share_tab.py:49
+#: bajoo/gui/tab/details_share_tab.py:106
+msgid "Do not synchronize on this PC"
+msgstr "Ne pas synchroniser sur ce PC"
+
+#: bajoo/gui/tab/creation_share_tab.py:52
+#: bajoo/gui/tab/details_share_tab.py:109
+msgid "Location on this PC"
+msgstr "Emplacement sur ce PC"
+
+#: bajoo/gui/tab/creation_share_tab.py:76
+#: bajoo/gui/tab/details_share_tab.py:101
+msgid "Members having access to this share"
+msgstr "Membres ayant accès à ce partage"
+
+#: bajoo/gui/tab/creation_share_tab.py:102
+msgid "New Share"
+msgstr "Nouveau partage"
+
+#: bajoo/gui/tab/advanced_settings_tab.py:33
+msgid "Send crash reports to Bajoo automatically"
+msgstr "Envoyer rapports d'erreur à Bajoo automatiquement"
+
+#: bajoo/gui/tab/advanced_settings_tab.py:39
+msgid "Activate debug mode"
+msgstr "Activate le mode debug"
+
+#: bajoo/gui/tab/advanced_settings_tab.py:45
+msgid "Actual verion"
+msgstr "Version actuelle"
+
+#: bajoo/gui/tab/advanced_settings_tab.py:51
+msgid "Apply the updates automatically"
+msgstr "Appliquer les mises à jour automatiquement"
+
+#: bajoo/gui/tab/advanced_settings_tab.py:57
+msgid "Check for updates"
+msgstr "Vérifier les mises à jour"
+
+#: bajoo/gui/tab/advanced_settings_tab.py:63
+msgid "Don't synchronize hidden files"
+msgstr "Ne pas synchroniser les fichiers cachés"
+
+#: bajoo/gui/tab/advanced_settings_tab.py:80
+msgid "Updates"
+msgstr "Mises à jour"
+
+#: bajoo/gui/tab/advanced_settings_tab.py:105 bajoo/gui/main_window.py:52
+msgid "Advanced settings"
+msgstr "Paramètres avancés"
+
+#: bajoo/gui/tab/list_shares_tab.py:90
+msgid "New share"
+msgstr "Nouveau partage"
+
+#: bajoo/gui/tab/list_shares_tab.py:131
+msgid "Details"
+msgstr "Détails"
+
+#: bajoo/gui/tab/list_shares_tab.py:139 bajoo/gui/tab/details_share_tab.py:39
+msgid "encrypted"
+msgstr "chiffré"
+
+#: bajoo/gui/tab/list_shares_tab.py:142
+msgid "<number of members>"
+msgstr "<nombre de membres>"
+
+#: bajoo/gui/tab/list_shares_tab.py:168 bajoo/gui/main_window.py:44
+msgid "My Shares"
+msgstr "Mes partages"
+
+#: bajoo/gui/tab/list_shares_tab.py:183
+msgid "Refresh"
+msgstr "Actualiser"
+
+#: bajoo/gui/tab/details_share_tab.py:37
+#, python-format
+msgid "%d members"
+msgstr "%d membres"
+
+#: bajoo/gui/tab/details_share_tab.py:43
+msgid "Status:"
+msgstr "Statut :"
+
+#: bajoo/gui/tab/details_share_tab.py:45
+#, python-format
+msgid "This share contains %d folders and %d files,"
+msgstr "Ce partage contient %d dossiers et %d fichiers,"
+
+#: bajoo/gui/tab/details_share_tab.py:48
+#, python-format
+msgid "which take the disk space of %s"
+msgstr "qui s'occupe un espace de %s sur le disque"
+
+#: bajoo/gui/tab/details_share_tab.py:66
+msgid "Quit this share"
+msgstr "Quitter ce partage"
+
+#: bajoo/gui/tab/details_share_tab.py:69
+msgid "Delete this share"
+msgstr "Supprimer ce partage"
+
+#: bajoo/gui/tab/details_share_tab.py:96
+msgid "Open folder"
+msgstr "Ouvrir le dossier"
+
+#: bajoo/gui/tab/details_share_tab.py:160
+msgid "Share Details"
+msgstr "Détails de partage"
+
+#: bajoo/gui/tab/account_tab.py:48 bajoo/gui/tab/account_tab.py:77
+msgid "You are connected as:"
+msgstr "Vous êtes connecté en tant que :"
+
+#: bajoo/gui/tab/account_tab.py:50 bajoo/gui/tab/account_tab.py:82
+msgid "Account type:"
+msgstr "Type de compte :"
+
+#: bajoo/gui/tab/account_tab.py:52
+#, python-format
+msgid "%d share folders use %s, so %0.2f%% of your Bajoo storage."
+msgstr "%d dossiers partagés utilise %s, donc %0.2f%% de votre stockage."
+
+#: bajoo/gui/tab/account_tab.py:52
+msgid "shares folders use"
+msgstr "dossiers partagés utilise"
+
+#: bajoo/gui/tab/account_tab.py:54
+#, python-format
+msgid "so %0.2f%% of your Bajoo storage."
+msgstr "donc %0.2f%% de votre stockage Bajoo"
+
+#: bajoo/gui/tab/account_tab.py:88
+msgid ">>> Move to a higher offer"
+msgstr ">>> Changer à une offre supérieure"
+
+#: bajoo/gui/tab/account_tab.py:100
+msgid "Disconnect my account"
+msgstr "Déconnecter mon compte"
+
+#: bajoo/gui/tab/account_tab.py:106
+msgid "Open my Bajoo folder"
+msgstr "Ouvrir mon dossier Bajoo"
+
+#: bajoo/gui/tab/account_tab.py:112
+msgid "Reinitialize my passphrase"
+msgstr "Réinitialiser ma phrase secrète"
+
+#: bajoo/gui/tab/account_tab.py:120
+msgid "Change password"
+msgstr "Changer votre mot de passe"
+
+#: bajoo/gui/tab/general_settings_tab.py:32
+msgid "Launch Bajoo at system startup"
+msgstr "Lancer Bajoo au démarrage du système"
+
+#: bajoo/gui/tab/general_settings_tab.py:38
+msgid "Activate status icon and the contextual menu"
+msgstr "Activer l'icône de statut et le menu contextuel"
+
+#: bajoo/gui/tab/general_settings_tab.py:44
+msgid "Display a notification when finish downloading file modifications"
+msgstr ""
+"Afficher une notification après terminer télécharger les modifications de "
+"fichiers"
+
+#: bajoo/gui/tab/general_settings_tab.py:64
+msgid "Language"
+msgstr "Langage"
+
+#: bajoo/gui/tab/general_settings_tab.py:82
+msgid "General Setttings"
+msgstr "Paramètres Générales"
+
+#: bajoo/gui/main_window.py:48
+msgid "General settings"
+msgstr "Paramètres générales"
+
+#: bajoo/gui/main_window.py:50
+msgid "Network settings"
+msgstr "Paramètres réseaux"
+
+#: bajoo/gui/common/message_box.py:20
+msgid ""
+"Your password has been changed.\n"
+"\n"
+"You will be deconnected soon.\n"
+"You can reconnect with your new password."
+msgstr ""
+"Votre nouveau mot de passe a été sauvegardé.\n"
+"\n"
+"Vous serez déconnecté.\n"
+"Vous pouvez vous reconnecter avec le nouveau mot de passe."
+
+#: bajoo/gui/common/message_box.py:23
+msgid "Password changed successfully."
+msgstr "Mot de passe modifié avec succès."
+
+#: bajoo/gui/validator.py:84
+msgid "This field is required."
+msgstr "Ce champ est obligatoire."
+
+#: bajoo/gui/validator.py:92
+msgid "The confirmation differs from the password."
+msgstr "La confirmation est différente du mot de passe."
+
+#: bajoo/gui/validator.py:111
+msgid "This email is not valid."
+msgstr "Cet email n'est pas valide."
+
+#: bajoo/gui/validator.py:131
+#, python-format
+msgid "This field must contains at least %s characters."
+msgstr "Ce champ doit contenir au moins %s caractères."
+
+#: bajoo/gui/task_bar_icon.py:49
+msgid "Not connected"
+msgstr "Déconnecté"
+
+#: bajoo/gui/task_bar_icon.py:50
+msgid "Connection in progress..."
+msgstr "Connexion en cours ..."
+
+#: bajoo/gui/task_bar_icon.py:51
+msgid "Sync up to date"
+msgstr "Synchronisé à jour"
+
+#: bajoo/gui/task_bar_icon.py:52
+msgid "Shares currently syncing..."
+msgstr "Partages en cours d'être synchronisés ..."
+
+#: bajoo/gui/task_bar_icon.py:53
+msgid "Synchronization suspended"
+msgstr "Synchronisation suspendue"
+
+#: bajoo/gui/task_bar_icon.py:118
+msgid ""
+"Looks like you don't\n"
+"have any share"
+msgstr ""
+"Il semble que vous n'avez \n"
+"aucun partage."
+
+#: bajoo/gui/task_bar_icon.py:122
+msgid "Shares folder"
+msgstr "Dossier partagés"
+
+#: bajoo/gui/task_bar_icon.py:123
+msgid "Suspend synchronization"
+msgstr "Mettre la synchronisation en pause"
+
+#: bajoo/gui/task_bar_icon.py:124
+msgid "Manage my shares..."
+msgstr "Gérer mes partages"
+
+#: bajoo/gui/task_bar_icon.py:126
+msgid "My client space"
+msgstr "Mon espace client"
+
+#: bajoo/gui/task_bar_icon.py:127
+msgid "Invite a friend on Bajoo"
+msgstr "Inviter un ami à Bajoo."
+
+#: bajoo/gui/task_bar_icon.py:128
+msgid "Online help"
+msgstr "Support en ligne"
+
+#: bajoo/gui/task_bar_icon.py:130
+msgid "Settings ..."
+msgstr "Paramètres ..."
+
+#: bajoo/gui/task_bar_icon.py:132
+msgid "Login window"
+msgstr "Fenêtre de connexion"
+
+#: bajoo/gui/task_bar_icon.py:133
+msgid "Open the login and registration window"
+msgstr "Ouvrir la fenêtre de connexion / souscription"
+
+#: bajoo/gui/task_bar_icon.py:136
+msgid "Quit"
+msgstr "Quitter"
+
+#: bajoo/gui/task_bar_icon.py:136
+msgid "Quit Bajoo"
+msgstr "Quitter Bajoo"
+
+#: bajoo/gui/form/connection_form.py:73 bajoo/gui/form/register_form.py:72
+msgid "8 characters minimum"
+msgstr "Au moins 8 caractères"
+
+#: bajoo/gui/form/connection_form.py:73 bajoo/gui/form/register_form.py:81
+msgid "Username (email)"
+msgstr "Identifiant (email)"
+
+#: bajoo/gui/form/connection_form.py:74 bajoo/gui/form/register_form.py:82
+#: bajoo/gui/form/proxy_form.py:142
+msgid "Password"
+msgstr "Mot de passe"
+
+#: bajoo/gui/form/connection_form.py:83
+msgid "Password forgotten?"
+msgstr "Mot de passe oublié ?"
+
+#: bajoo/gui/form/register_form.py:83
+msgid "Password confirmation"
+msgstr "Confirmation du mot de passe"
+
+#: bajoo/gui/form/register_form.py:84
+msgid "Create my account"
+msgstr "Créer un nouveau compte"
+
+#: bajoo/gui/form/proxy_form.py:132
+msgid "System settings"
+msgstr "Paramètres système"
+
+#: bajoo/gui/form/proxy_form.py:133
+msgid "Do not use proxy"
+msgstr "Pas de proxy"
+
+#: bajoo/gui/form/proxy_form.py:134
+msgid "Manual settings"
+msgstr "Paramètres manuels"
+
+#: bajoo/gui/form/proxy_form.py:135
+msgid "The server requires an authentication"
+msgstr "Le serveur requiert une authentification"
+
+#: bajoo/gui/form/proxy_form.py:139
+msgid "Server"
+msgstr "Serveur"
+
+#: bajoo/gui/form/proxy_form.py:140
+msgid "Port"
+msgstr "Port"
+
+#: bajoo/gui/form/proxy_form.py:141 bajoo/gui/form/members_share_form.py:66
+msgid "User"
+msgstr "Utilisateur"
+
+#: bajoo/gui/form/proxy_form.py:149
+msgid "Proxy type:"
+msgstr "Type de proxy :"
+
+#: bajoo/gui/form/proxy_form.py:182
+msgid "Proxy"
+msgstr "Proxy"
+
+#: bajoo/gui/form/change_password_form.py:43
+msgid "Current password"
+msgstr "Mot de passe actuel"
+
+#: bajoo/gui/form/change_password_form.py:52
+msgid "New password"
+msgstr "Nouveau mot de passe"
+
+#: bajoo/gui/form/change_password_form.py:61
+msgid "Confirm new password"
+msgstr "Confirmer le nouveau mot de passe"
+
+#: bajoo/gui/form/change_password_form.py:93
+msgid ""
+"You are about to change your password.\n"
+"For this, you need to enter your current password, and the new password that "
+"you want to use."
+msgstr ""
+"Vous êtes sur le point de modifier votre mot de passe.\n"
+"Pour cela, vous devriez entrer votre mot de passe actuel, et le nouveau que "
+"vous voulez utiliser."
+
+#: bajoo/gui/form/change_password_form.py:98
+msgid "Then you will receive a confirmation email.\n"
+msgstr "Puis vous recevez un email de confirmation.\n"
+
+#: bajoo/gui/form/members_share_form.py:67
+msgid "Permission"
+msgstr "Droits"
+
+#: bajoo/gui/form/members_share_form.py:74
+msgid "Email"
+msgstr "Email"
+
+#: bajoo/gui/form/members_share_form.py:81
+#: bajoo/gui/form/members_share_form.py:82
+#: bajoo/gui/form/members_share_form.py:120
+msgid "Admin"
+msgstr "Admin"
+
+#: bajoo/gui/form/members_share_form.py:83
+#: bajoo/gui/form/members_share_form.py:122
+msgid "Read Write"
+msgstr "Lecture, Écriture"
+
+#: bajoo/gui/form/members_share_form.py:84
+#: bajoo/gui/form/members_share_form.py:117
+msgid "Read Only"
+msgstr "Lecture seule"
+
+#: bajoo/common/util.py:7
+msgid "B"
+msgstr "octet"
+
+#: bajoo/common/util.py:7
+msgid "KB"
+msgstr "K"
+
+#: bajoo/common/util.py:7
+msgid "MB"
+msgstr "MO"
+
+#: bajoo/common/util.py:7
+msgid "GB"
+msgstr "GO"
+
+#: bajoo/common/util.py:7
+msgid "TB"
+msgstr "TO"
+
+#: bajoo/common/util.py:8
+msgid "PB"
+msgstr "PO"
+
+#: bajoo/common/util.py:8
+msgid "EB"
+msgstr "EO"
+
+#: bajoo/common/util.py:8
+msgid "ZB"
+msgstr "ZO"
+
+#: bajoo/common/util.py:8
+msgid "YB"
+msgstr "YO"
+
+#: bajoo/dynamic_container_list.py:113 bajoo/dynamic_container_list.py:152
+msgid "Error when adding new share"
+msgstr "Erreur lors de l'ajoute un nouveau partage"
+
+#: bajoo/dynamic_container_list.py:114 bajoo/dynamic_container_list.py:153
+#, python-format
+msgid ""
+"Unable to create a folder for %s:\n"
+"%s"
+msgstr "Impossible à créer un dossier pour %s : %s"
+
+#: bajoo/dynamic_container_list.py:120
+msgid "Error on share sync"
+msgstr "Erreur de synchronisation de partage"
+
+#: bajoo/dynamic_container_list.py:121
+#, python-format
+msgid ""
+"Unable to sync the share %s:\n"
+"%s"
+msgstr "Impossible à synchroniser le partage %s: %s"
+
+#: bajoo/dynamic_container_list.py:133
+msgid "New Bajoo share added"
+msgstr "Nouveau partage Bajoo ajouté"
+
+#: bajoo/dynamic_container_list.py:134
+#, python-format
+msgid ""
+"You have a new Bajoo share:\n"
+"%s"
+msgstr ""
+"Vous avez un nouveau partage Bajoo :\n"
+"%s"
+
+#: bajoo/dynamic_container_list.py:137
+#, python-format
+msgid "You have %s new Bajoo shares:"
+msgstr "Vous avez %s nouveau partages Bajoo :"
+
+#: bajoo/dynamic_container_list.py:144
+#, python-format
+msgid "and %s others"
+msgstr "et %s d'autres"
+
+#: bajoo/dynamic_container_list.py:145
+msgid "New Bajoo shares added"
+msgstr "Nouveau partages Bajoo ajoutés"
+
+#: bajoo/dynamic_container_list.py:164
+msgid "A Bajoo share have been removed."
+msgstr "Un partage Bajoo a été supprimé."
+
+#: bajoo/dynamic_container_list.py:165
+msgid ""
+"Either the share has been deleted or your permissions have been revoked."
+msgstr "Soit le partage a été supprimer, soit votre droits ont été révoqués."
+
+#: bajoo/dynamic_container_list.py:168
+#, python-format
+msgid "%s Bajoo shares have been removed."
+msgstr "%s partages ont été supprimés."
+
+#: bajoo/dynamic_container_list.py:170
+msgid ""
+"Either the shares have been deleted, or your permissions have been revoked."
+msgstr ""
+"Soit les partages ont été supprimer, soit votre droits ont été révoqués."
+
+#: bajoo/local_container.py:72
+msgid "The local folder content seems to have been deleted."
+msgstr "Le contenu du dossier local a été supprimé."
+
+#: bajoo/local_container.py:75
+msgid "The local folder is missing."
+msgstr "Le dossier local n'est pas trouvable."
+
+#: bajoo/local_container.py:117
+#, python-format
+msgid "Folder creation failed: %s"
+msgstr "La création de dossier a échoué : %s"

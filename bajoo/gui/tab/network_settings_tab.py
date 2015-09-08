@@ -6,13 +6,14 @@ from wx.lib.masked import NumCtrl
 
 from ...common.i18n import N_
 from ..base_view import BaseView
+from ..translator import Translator
 from ..form import ProxyForm
 
 
 _logger = logging.getLogger(__name__)
 
 
-class NetworkSettingsTab(wx.Panel):
+class NetworkSettingsTab(wx.Panel, Translator):
     """
     Network settings tab in the main window, which allows user to:
     * change download/upload bandwidth
@@ -21,6 +22,7 @@ class NetworkSettingsTab(wx.Panel):
 
     def __init__(self, parent, **kwarg):
         wx.Panel.__init__(self, parent, **kwarg)
+        Translator.__init__(self)
         self._view = NetworkSettingsView(self)
 
         self._config = None
@@ -98,6 +100,10 @@ class NetworkSettingsTab(wx.Panel):
         self._config.set('proxy_user', proxy_data.get('username'))
         self._config.set('proxy_password', proxy_data.get('password'))
 
+    def notify_lang_change(self):
+        Translator.notify_lang_change(self)
+        self._view.notify_lang_change()
+
 
 class NetworkSettingsView(BaseView):
     """View of the network settings screen"""
@@ -145,11 +151,11 @@ class NetworkSettingsView(BaseView):
         bandwidth_box_sizer.Add(bandwidth_grid_sizer, 1, wx.ALL, 5)
 
         # proxy form
-        proxy_form = ProxyForm(network_settings_screen, name='proxy_form')
+        self._proxy_form = ProxyForm(network_settings_screen, name='proxy_form')
 
         main_sizer = self.make_sizer(
             wx.VERTICAL,
-            [bandwidth_box_sizer, proxy_form],
+            [bandwidth_box_sizer, self._proxy_form],
             flag=wx.EXPAND)
 
         network_settings_screen.SetSizer(main_sizer)
@@ -161,6 +167,10 @@ class NetworkSettingsView(BaseView):
             lbl_outgoing_unit: N_("Kb/s"),
             bandwidth_box: N_("Bandwidth")
         })
+
+    def notify_lang_change(self):
+        Translator.notify_lang_change(self)
+        self._proxy_form.notify_lang_change()
 
 
 def main():

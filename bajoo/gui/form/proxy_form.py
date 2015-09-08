@@ -105,6 +105,10 @@ class ProxyForm(BaseForm):
         data.update(proxy_type=proxy_type, proxy_mode=proxy_mode)
         return data
 
+    def notify_lang_change(self):
+        BaseForm.notify_lang_change(self)
+        self._view.notify_lang_change()
+
 
 class ProxyFormView(BaseView):
     """View of the ProxyForm"""

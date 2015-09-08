@@ -7,12 +7,13 @@ from wx.lib.newevent import NewCommandEvent
 from ...common.i18n import N_
 from ..common.language_box import LanguageBox
 from ..base_view import BaseView
+from ..translator import Translator
 
 
 _logger = logging.getLogger(__name__)
 
 
-class GeneralSettingsTab(wx.Panel):
+class GeneralSettingsTab(wx.Panel, Translator):
     """
     General settings tab in the main window, which allows user to:
     * enable/disable start Bajoo on system startup
@@ -23,6 +24,7 @@ class GeneralSettingsTab(wx.Panel):
 
     def __init__(self, parent, **kwarg):
         wx.Panel.__init__(self, parent, **kwarg)
+        Translator.__init__(self)
         self._view = GeneralSettingsView(self)
 
         self._config = None
@@ -65,6 +67,10 @@ class GeneralSettingsTab(wx.Panel):
             self._config.set('launched_at_startup', launched_at_startup)
             self._config.set('contextual_icon', contextual_icon_shown)
             self._config.set('notifications', notifications_shown)
+
+    def notify_lang_change(self):
+        Translator.notify_lang_change(self)
+        self._view.notify_lang_change()
 
 
 class GeneralSettingsView(BaseView):

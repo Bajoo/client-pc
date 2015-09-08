@@ -11,12 +11,13 @@ from ...common.i18n import N_
 from ...common.path import resource_filename
 from ..event_future import ensure_gui_thread
 from ..base_view import BaseView
+from ..translator import Translator
 
 
 _logger = logging.getLogger(__name__)
 
 
-class ListSharesTab(wx.Panel):
+class ListSharesTab(wx.Panel, Translator):
     """
     List shares tab in the main window, which displays
     the status of user's all shares.
@@ -51,6 +52,8 @@ class ListSharesTab(wx.Panel):
     @ensure_gui_thread
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
+        Translator.__init__(self)
+
         self._init_images()
 
         self._shares = []
@@ -141,6 +144,10 @@ class ListSharesTab(wx.Panel):
 
     def Show(self, show=True):
         wx.PostEvent(self, self.DataRequestEvent(self.GetId()))
+
+    def notify_lang_change(self):
+        Translator.notify_lang_change(self)
+        self._view.notify_lang_change()
 
 
 class ListSharesView(BaseView):

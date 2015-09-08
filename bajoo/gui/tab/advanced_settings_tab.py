@@ -6,13 +6,14 @@ from wx.lib.newevent import NewCommandEvent
 
 from ...common.i18n import N_
 from ..base_view import BaseView
+from ..translator import Translator
 from ...__version__ import __version__
 
 
 _logger = logging.getLogger(__name__)
 
 
-class AdvancedSettingsTab(wx.Panel):
+class AdvancedSettingsTab(wx.Panel, Translator):
     """
     Advanced settings tab in the main window, which allows user to:
     * activate/deactivate debug mode
@@ -25,6 +26,7 @@ class AdvancedSettingsTab(wx.Panel):
 
     def __init__(self, parent, **kwarg):
         wx.Panel.__init__(self, parent, **kwarg)
+        Translator.__init__(self)
         self._view = AdvancedSettingsView(self)
 
         self._config = None
@@ -61,6 +63,10 @@ class AdvancedSettingsTab(wx.Panel):
     def _on_check_update(self, _event):
         event = AdvancedSettingsTab.CheckUpdatesRequest(self.GetId())
         wx.PostEvent(self, event)
+
+    def notify_lang_change(self):
+        Translator.notify_lang_change(self)
+        self._view.notify_lang_change()
 
 
 class AdvancedSettingsView(BaseView):

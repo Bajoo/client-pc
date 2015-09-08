@@ -11,11 +11,12 @@ from ..base_view import BaseView
 from ...common import config
 from ...common.util import open_folder
 from ..change_password_window import ChangePasswordWindow
+from ..translator import Translator
 
 _logger = logging.getLogger(__name__)
 
 
-class AccountTab(wx.Panel):
+class AccountTab(wx.Panel, Translator):
     """
     Account settings tab in the main window, which allows user to:
     * view account information like email, quota
@@ -30,6 +31,7 @@ class AccountTab(wx.Panel):
 
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
+        Translator.__init__(self)
         self._view = AccountView(self)
         self._change_password_window = None
         self._data = {
@@ -70,10 +72,10 @@ class AccountTab(wx.Panel):
             .SetLabelText(self._data['account_type'])
 
         # re-register quota info text
-        self._view.remove_i18n(self.FindWindow('lbl_quota_info').SetLabelText)
+        self._view.remove_i18n(self.FindWindow('lbl_quota_info').SetLabel)
         self._view.register_i18n(
-            self.FindWindow('lbl_quota_info').SetLabelText,
-            N_("%d share folder use %s, so %0.2f%% of your Bajoo storage."),
+            self.FindWindow('lbl_quota_info').SetLabel,
+            N_("%d share folders use %s, so %0.2f%% of your Bajoo storage."),
             (self._data['n_shares'], quota_used_str, quota_percentage))
 
         self.FindWindow('gauge_quota').SetValue(quota_percentage)
@@ -97,6 +99,11 @@ class AccountTab(wx.Panel):
         self.Layout()
         event = AccountTab.DataRequestEvent(self.GetId())
         wx.PostEvent(self, event)
+
+    def notify_lang_change(self):
+        Translator.notify_lang_change(self)
+        self.populate()
+        self._view.notify_lang_change()
 
     def show_change_password_window(self, show=True):
         if show:
@@ -234,7 +241,7 @@ class AccountView(BaseView):
 
         account_screen.SetSizer(main_sizer)
 
-        self.register_many_i18n('SetLabelText', {
+        self.register_many_i18n('SetLabel', {
             lbl_email_description: N_('You are connected as:'),
             lbl_account_type_desc: N_('Account type:'),
             lbl_message: N_('Your password '
@@ -245,6 +252,9 @@ class AccountView(BaseView):
             btn_reinit_passphrase: N_("Reinitialize my passphrase"),
             btn_change_password: N_("Change password")
         })
+
+    def notify_lang_change(self):
+        Translator.notify_lang_change(self)
 
 
 def main():

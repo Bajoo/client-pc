@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
-from .i18n import N_
+from .i18n import _
 
 # All currently known units:
 # bytes, kilobytes, megabytes, gigabytes, terabytes
 # petabytes, exabytes, zettabytes, yottabytes
-_bytes_units = [N_('B'), N_('KB'), N_('MB'), N_('GB'), N_('TB'),
-                N_('PB'), N_('EB'), N_('ZB'), N_('YB')]
+_bytes_units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
 
 
 def human_readable_bytes(value):
@@ -23,12 +22,12 @@ def human_readable_bytes(value):
         if abs(value) < 1024.0:
             # if it does not reach kilobytes -> integer format
             str_format = "%d %s" if unit == _bytes_units[0] else "%.2f %s"
-            return str_format % (value, unit)
+            return str_format % (value, _(unit))
 
         value /= 1024.0
 
     # The biggest unit reached: cannot translate anymore
-    return "%.2f%s" % (value, _bytes_units[-1])
+    return "%.2f%s" % (value, _(_bytes_units[-1]))
 
 
 def open_folder(folder_path):
