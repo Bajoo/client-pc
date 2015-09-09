@@ -260,7 +260,7 @@ class DetailsShareTab(BaseForm):
 
     def _show_message(self, message, text_color):
         lbl_message = self.FindWindow('lbl_message')
-        lbl_message.SetLabel(message)
+        self.register_i18n(lbl_message.SetLabel, message)
         lbl_message.SetForegroundColour(text_color)
         lbl_message.Show()
         self.Layout()

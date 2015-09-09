@@ -6,7 +6,6 @@ import wx
 from wx.lib.newevent import NewCommandEvent
 
 from ...api import TeamShare, MyBajoo
-
 from ...common.i18n import N_
 from ...common.path import resource_filename
 from ..event_future import ensure_gui_thread
@@ -300,7 +299,7 @@ class ListSharesView(BaseView):
         self.share_sizer.Add(share_box_sizer, 0, wx.EXPAND)
         self._share_views.append((share_box, share_box_sizer))
         self.register_many_i18n('SetLabel', {
-            lbl_share_status_desc: N_('Status: '),
+            lbl_share_status_desc: N_('Status:'),
             lbl_share_status: N_(container.get_status_text()),
             btn_share_details: N_('Details')
         })

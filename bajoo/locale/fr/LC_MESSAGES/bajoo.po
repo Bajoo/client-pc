@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: Bajoo 2 0.1\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2015-07-24 15:06+0200\n"
-"PO-Revision-Date: 2015-09-09 09:40+0100\n"
+"PO-Revision-Date: 2015-09-09 15:39+0100\n"
 "Last-Translator: Bajoo <contact@bajoo.fr>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -384,6 +384,10 @@ msgstr "Détails"
 msgid "encrypted"
 msgstr "chiffré"
 
+#: bajoo/gui/tab/list_shares_tab.py:139 bajoo/gui/tab/details_share_tab.py:42
+msgid "not encrypted"
+msgstr "non chiffré"
+
 #: bajoo/gui/tab/list_shares_tab.py:142
 msgid "<number of members>"
 msgstr "<nombre de membres>"
@@ -412,7 +416,7 @@ msgstr "Ce partage contient %d dossiers et %d fichiers,"
 
 #: bajoo/gui/tab/details_share_tab.py:48
 #, python-format
-msgid "which take the disk space of %s"
+msgid "which takes the disk space of %s"
 msgstr "qui s'occupe un espace de %s sur le disque"
 
 #: bajoo/gui/tab/details_share_tab.py:66
@@ -824,6 +828,26 @@ msgid ""
 msgstr ""
 "Soit les partages ont été supprimer, soit votre droits ont été révoqués."
 
+#: bajoo/local_container.py:50
+msgid "Unknown"
+msgstr "Inconnu"
+
+#: bajoo/local_container.py:51
+msgid "Error"
+msgstr "Erreur"
+
+#: bajoo/local_container.py:52
+msgid "Stopped"
+msgstr "Arrêté"
+
+#: bajoo/local_container.py:53
+msgid "Paused"
+msgstr "Suspendu"
+
+#: bajoo/local_container.py:54
+msgid "Started"
+msgstr "Démarré"
+
 #: bajoo/local_container.py:72
 msgid "The local folder content seems to have been deleted."
 msgstr "Le contenu du dossier local a été supprimé."
@@ -836,3 +860,17 @@ msgstr "Le dossier local n'est pas trouvable."
 #, python-format
 msgid "Folder creation failed: %s"
 msgstr "La création de dossier a échoué : %s"
+
+#: bajoo/gui/passphrase_window.py:15
+msgid "Enter your Bajoo pasphrase to start the synchronization"
+" of your encrypted files."
+msgstr "Entrer votre phrase secrète Bajoo pour démarrer la synchronisation"
+" de vos fichiers chiffrés."
+
+#: bajoo/gui/passphrase_window.py:18
+msgid "Invalid passphrase!"
+msgstr "Phrase secrète invalide !"
+
+#: bajoo/gui/passphrase_window.py:22
+msgid "Bajoo - Ask for passphrase"
+msgstr "Bajoo - Demande de la phrase secrète"

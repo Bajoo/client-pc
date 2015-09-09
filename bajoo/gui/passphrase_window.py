@@ -15,7 +15,7 @@ class PassphraseWindow(wx.TextEntryDialog):
         message = _('Enter your Bajoo pasphrase to start the synchronization'
                     ' of your encrypted files.')
         if is_retry:
-            message = _('Invalid passphrase !') + '\n\n' + message
+            message = _('Invalid passphrase!') + '\n\n' + message
         wx.TextEntryDialog.__init__(
             self, parent=None, message=message,
             style=wx.TextEntryDialogStyle | wx.TE_PASSWORD)

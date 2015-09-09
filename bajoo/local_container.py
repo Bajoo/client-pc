@@ -47,11 +47,11 @@ class LocalContainer(object):
     STATUS_STARTED = 5
 
     _status_textes = {
-        STATUS_UNKNOWN: _('Unknown'),
-        STATUS_ERROR: _('Error'),
-        STATUS_STOPPED: _('Stopped'),
-        STATUS_PAUSED: _('Paused'),
-        STATUS_STARTED: _('Started')
+        STATUS_UNKNOWN: 'Unknown',
+        STATUS_ERROR: 'Error',
+        STATUS_STOPPED: 'Stopped',
+        STATUS_PAUSED: 'Paused',
+        STATUS_STARTED: 'Started'
     }
 
     def __init__(self, id, name, path=None, do_not_sync=False):
