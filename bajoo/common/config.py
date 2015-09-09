@@ -133,6 +133,9 @@ def set(key, value):
     if value is None:
         _config_parser.remove_option('config', key)
     else:
+        if type(value) is not str:
+            value = str(value)
+
         if sys.version_info[0] is 2 and isinstance(value, unicode):
             value = value.encode('utf-8')
         _config_parser.set('config', key, value)
