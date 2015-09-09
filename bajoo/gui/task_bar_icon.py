@@ -174,7 +174,7 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
 
         self._state = state
         self._is_connected = state is not self.NOT_CONNECTED
-        self.SetIcon(self._icons[state], tooltip=self._tooltips[state])
+        self.SetIcon(self._icons[state], tooltip=_(self._tooltips[state]))
 
     def set_container_status_list(self, status_list):
         """Set the list of containers, and theirs status and folder.

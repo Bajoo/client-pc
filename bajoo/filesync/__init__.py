@@ -45,6 +45,8 @@ import sys
 from ..network.errors import HTTPNotFoundError
 from ..common.future import Future, patch_dec, wait_all, then, resolve_rec
 from .filepath import is_path_allowed
+from ..common.i18n import _
+
 
 _logger = logging.getLogger(__name__)
 
@@ -179,15 +181,15 @@ class _Task(object):
         self._task_errors.append(self)
 
         if self.container.error:
-            self.display_error_cb('Error during the sync of the "%s" container'
-                                  ':\n%s'
-                                  % (self.container.name, error))
+            self.display_error_cb(
+                _("Error during the sync of the \"%s\" container:\n%s")
+                % (self.container.name, error))
             raise self.container.error
         else:
-            # TODO: format and translate the message
-            self.display_error_cb('Error during sync of the file "%s" in the'
-                                  ' "%s" container:\n%s'
-                                  % (self.target, self.container.name, error))
+            self.display_error_cb(
+                _("Error during sync of the file \"%s\" "
+                  "in the \"%s\" container:\n%s")
+                % (self.target, self.container.name, error))
         return None
 
     def _apply_task(self):

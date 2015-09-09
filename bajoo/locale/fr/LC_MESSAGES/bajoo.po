@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: Bajoo 2 0.1\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2015-07-24 15:06+0200\n"
-"PO-Revision-Date: 2015-09-09 15:39+0100\n"
+"PO-Revision-Date: 2015-09-09 18:23+0100\n"
 "Last-Translator: Bajoo <contact@bajoo.fr>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -779,7 +779,9 @@ msgstr "Erreur de synchronisation de partage"
 msgid ""
 "Unable to sync the share %s:\n"
 "%s"
-msgstr "Impossible à synchroniser le partage %s: %s"
+msgstr ""
+"Impossible à synchroniser le partage %s:\n"
+"%s"
 
 #: bajoo/dynamic_container_list.py:133
 msgid "New Bajoo share added"
@@ -862,10 +864,12 @@ msgid "Folder creation failed: %s"
 msgstr "La création de dossier a échoué : %s"
 
 #: bajoo/gui/passphrase_window.py:15
-msgid "Enter your Bajoo pasphrase to start the synchronization"
-" of your encrypted files."
-msgstr "Entrer votre phrase secrète Bajoo pour démarrer la synchronisation"
-" de vos fichiers chiffrés."
+msgid ""
+"Enter your Bajoo pasphrase to start the synchronization of your encrypted "
+"files."
+msgstr ""
+"Entrer votre phrase secrète Bajoo pour démarrer la synchronisation de vos "
+"fichiers chiffrés."
 
 #: bajoo/gui/passphrase_window.py:18
 msgid "Invalid passphrase!"
@@ -874,3 +878,63 @@ msgstr "Phrase secrète invalide !"
 #: bajoo/gui/passphrase_window.py:22
 msgid "Bajoo - Ask for passphrase"
 msgstr "Bajoo - Demande de la phrase secrète"
+
+#: bajoo/bajoo_app.py:481
+msgid "New team share created"
+msgstr "Nouveau partage collaboratif créé"
+
+#: bajoo/bajoo_app.py:482
+msgid "The new team share %s has been successfully created"
+msgstr "Le nouveau partage collaboratif %s a été créé avec succès."
+
+#: bajoo/bajoo_app.py:499
+msgid "Cannot create share %s"
+msgstr "Impossible de créer le partage %s."
+
+#: bajoo/bajoo_app.py:520
+msgid "Quit team share"
+msgstr "Quitter d'un partage collaboratif"
+
+#: bajoo/bajoo_app.py:521
+msgid "You have no longer access to team share %s."
+msgstr "Vous n'avez plus d'accès au partage collaboratif %s."
+
+#: bajoo/bajoo_app.py:535
+msgid "An error occured when trying to quit team share %s."
+msgstr "Erreur lors de l'essai de quitter partage %s."
+
+#: bajoo/bajoo_app.py:555
+msgid "Cannot retrieve user information"
+msgstr "Impossible d'obtenir les informations utilisateur."
+
+#: bajoo/bajoo_app.py:574
+msgid "Team share deleted"
+msgstr "Partage collaboratif supprimé"
+
+#: bajoo/bajoo_app.py:575
+msgid "Team share %s has been successfully deleted from server."
+msgstr ""
+"Le partage collaboratif %s a été supprimé sur notre serveur avec succès."
+
+#: bajoo/bajoo_app.py:592
+msgid "Cannot delete team share %s for instant."
+msgstr "Impossible de supprimer le partage collaboratif %s pour l'instant."
+
+#: bajoo/bajoo_app.py:759
+msgid "Sync error"
+msgstr "Erreur de synchronisation"
+
+#: bajoo/filesync/__init__.py:186
+msgid ""
+"Error during the sync of the \"%s\" container:\n"
+"%s"
+msgstr ""
+"Erreur lors de la synchronisation du dossier \"%s\":\n"
+"%s"
+
+#: bajoo/filesync/__init__.py:192
+msgid ""
+"Error during sync of the file \"%s\" in the \"%s\" container:\n"
+"%s"
+msgstr ""
+"Erreur lors de la synchronisation du fichier \"%s\" dans le dossier \"%s\":%s"

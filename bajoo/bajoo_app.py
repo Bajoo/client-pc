@@ -32,7 +32,7 @@ from .gui.tab.details_share_tab import DetailsShareTab
 from .gui.tab.advanced_settings_tab import AdvancedSettingsTab  # REMOVE
 from .gui.form.members_share_form import MembersShareForm
 from .gui.change_password_window import ChangePasswordWindow
-from .common.i18n import N_, set_lang
+from .common.i18n import _, N_, set_lang
 
 
 _logger = logging.getLogger(__name__)
@@ -478,8 +478,8 @@ class BajooApp(wx.App, SoftwareUpdate):
             futures = []
 
             self._notifier.send_message(
-                N_('New team share created'),
-                N_('The new team share %s has been successfully created')
+                _('New team share created'),
+                _('The new team share %s has been successfully created')
                 % share.name)
 
             for member in members:
@@ -495,8 +495,8 @@ class BajooApp(wx.App, SoftwareUpdate):
             Notify user then return to the share list screen.
             """
             self._notifier.send_message(
-                N_('Error'),
-                N_('Cannot create share %s')
+                _('Error'),
+                _('Cannot create share %s')
                 % share_name)
 
             if self._main_window:
@@ -517,8 +517,8 @@ class BajooApp(wx.App, SoftwareUpdate):
             """
             self._container_list.refresh()
             self._notifier.send_message(
-                N_('Quit team share'),
-                N_('You have no longer access to team share %s.'
+                _('Quit team share'),
+                _('You have no longer access to team share %s.'
                    % share.name)
             )
 
@@ -531,8 +531,8 @@ class BajooApp(wx.App, SoftwareUpdate):
 
         def on_share_quit_error(__):
             self._notifier.send_message(
-                N_('Error'),
-                N_('An error occured when trying to quit team share %s.'
+                _('Error'),
+                _('An error occured when trying to quit team share %s.'
                    % share.name)
             )
 
@@ -551,8 +551,8 @@ class BajooApp(wx.App, SoftwareUpdate):
                         .then(on_share_quit, on_share_quit_error)
                 else:
                     self._notifier.send_message(
-                        N_('Error'),
-                        N_('Cannot retrieve user information')
+                        _('Error'),
+                        _('Cannot retrieve user information')
                     )
 
             self._get_user_info().then(on_user_loaded)
@@ -571,8 +571,8 @@ class BajooApp(wx.App, SoftwareUpdate):
             return to the share list screen.
             """
             self._notifier.send_message(
-                N_('Team share deleted'),
-                N_('Team share %s has been successfully deleted from server.')
+                _('Team share deleted'),
+                _('Team share %s has been successfully deleted from server.')
                 % share.name)
             self._container_list.refresh()
 
@@ -588,8 +588,8 @@ class BajooApp(wx.App, SoftwareUpdate):
             Error occurred when attempting to delete a share: notify user.
             """
             self._notifier.send_message(
-                N_('Error'),
-                N_('Cannot delete team share %s for instant.')
+                _('Error'),
+                _('Cannot delete team share %s for instant.')
                 % share.name
             )
 
@@ -721,7 +721,7 @@ class BajooApp(wx.App, SoftwareUpdate):
             session, self._notifier.send_message,
             self._container_sync_pool.add,
             self._container_sync_pool.remove)
-        self._task_bar_icon.set_state(TaskBarIcon.SYNC_PROGRESS)
+        self._task_bar_icon.set_state(_(TaskBarIcon.SYNC_PROGRESS))
 
     @resolve_dec
     def _get_user_info(self):
@@ -753,10 +753,10 @@ class BajooApp(wx.App, SoftwareUpdate):
             ContainerSyncPool.STATUS_UP_TO_DATE: TaskBarIcon.SYNC_DONE
         }
         if self._task_bar_icon:
-            self._task_bar_icon.set_state(mapping[status])
+            self._task_bar_icon.set_state(_(mapping[status]))
 
     def _on_sync_error(self, err):
-        self._notifier.send_message('Sync error', err)
+        self._notifier.send_message(_('Sync error'), _(err))
 
     @ensure_gui_thread
     def _get_user_passphrase(self, is_retry):
@@ -788,7 +788,7 @@ class BajooApp(wx.App, SoftwareUpdate):
         if self._main_window:
             self._main_window.Destroy()
         stored_credentials.save(self._user.name)
-        self._task_bar_icon.set_state(TaskBarIcon.NOT_CONNECTED)
+        self._task_bar_icon.set_state(_(TaskBarIcon.NOT_CONNECTED))
 
         def _on_unhandled_exception(_exception):
             _logger.critical('Uncaught exception on Run process',

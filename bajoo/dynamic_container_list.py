@@ -12,6 +12,7 @@ from .common.path import get_data_dir
 from .api.sync import container_list_updater
 from .local_container import LocalContainer
 
+
 _logger = logging.getLogger(__name__)
 
 
@@ -126,8 +127,8 @@ class DynamicContainerList(object):
                     elif not local_container.check_path():
                         self._notify(
                             _('Error on share sync'),
-                            _('Unable to sync the share %s:\n%s'
-                              % (c.name, local_container.error_msg)))
+                            _("Unable to sync the share %s:\n%s")
+                            % (c.name, local_container.error_msg))
                     else:
                         self._pre_start_container(local_container)
 
