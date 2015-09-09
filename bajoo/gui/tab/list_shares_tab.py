@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
+from os import path
 
 import wx
 from wx.lib.newevent import NewCommandEvent
@@ -251,7 +252,9 @@ class ListSharesView(BaseView):
         btn_open_local_dir = wx.BitmapButton(
             share_box, bitmap=ListSharesTab.FOLDER_ICON,
             name='btn_open_local_dir_' + container.id)
-        btn_open_local_dir.Enable(container.path is not None)
+        btn_open_local_dir.Enable(
+            container.path is not None and
+            path.exists(container.path))
         self.window.Bind(wx.EVT_BUTTON, self.window.btn_open_dir_clicked,
                          btn_open_local_dir)
 

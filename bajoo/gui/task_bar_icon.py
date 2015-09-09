@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import webbrowser
+from os import path
+
 import wx
 from wx.lib.newevent import NewCommandEvent
 
@@ -196,10 +198,12 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
             if not fpath:
                 item.Enable(False)
             item.SetBitmap(wx.BitmapFromImage(self._container_icons[status]))
-            self._container_menu.AppendItem(item)
+            self._container_menu.AppendItem(item) \
+                .Enable(path.exists(fpath))
 
             def open_container(_evt, folder_path=fpath):
-                open_folder(folder_path)
+                if path.exists(folder_path):
+                    open_folder(folder_path)
 
             self.Bind(wx.EVT_MENU, open_container, item)
 

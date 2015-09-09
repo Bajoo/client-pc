@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
+from os import path
 
 import wx
 from wx.lib.filebrowsebutton import DirBrowseButton
@@ -94,7 +95,7 @@ class DetailsShareTab(BaseForm):
         else:
             self.FindWindow('members_share_form').Disable()
 
-            # Remove all i18n registrations
+        # Remove all i18n registrations
         self._view.remove_i18n(
             self.FindWindow('lbl_share_nb_members').SetLabel)
         self._view.remove_i18n(
@@ -136,7 +137,9 @@ class DetailsShareTab(BaseForm):
             self._share.container and type(self._share.container) is TeamShare
 
         self.FindWindow('lbl_share_nb_members').Show(show_share_options)
-        self.FindWindow('btn_open_folder').Enable(share.path is not None)
+        self.FindWindow('btn_open_folder').Enable(
+            share.path is not None and
+            path.exists(share.path))
 
         if share.error_msg:
             self.show_error_message(share.error_msg)
