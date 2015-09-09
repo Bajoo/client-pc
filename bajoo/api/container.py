@@ -110,8 +110,9 @@ class Container(object):
             f = f.then(on_key_downloaded)
             f = f.then(on_key_decrypted, dl_key_error)
             return f.then(close_lock, close_lock_err)
-
-        return Future.resolve(self._encryption_key)
+        else:
+            self._key_lock.release()
+            return Future.resolve(self._encryption_key)
 
     def _encrypt_and_upload_key(self, key):
 
