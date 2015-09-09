@@ -56,6 +56,7 @@ class MainWindow(wx.Frame, Translator):
                   self._on_request_show_list_shares)
 
     def notify_lang_change(self):
+        Translator.notify_lang_change(self)
         self._view.notify_lang_change()
 
     def _show_tab(self, tab_index):
@@ -278,9 +279,22 @@ class MainWindowListbook(wx.Listbook, Translator):
         self.SetPageText(1, N_("My Account"))
         self.SetPageText(2, N_("Settings"))
 
+        # Notify permanent tabs
         self.account_tab.notify_lang_change()
         self.list_shares_tab.notify_lang_change()
         self.settings_tab.notify_lang_change()
+
+        # Notify temporary tabs.
+        # Normally we don't have to do this because
+        # when user changes the language,
+        # it means that the "General settings" tab is currently shown,
+        # and the temporary tabs are destroyed.
+        # This is done just in case, so we can be assured.
+        if self.creation_shares_tab:
+            self.creation_shares_tab.notify_lang_change()
+
+        if self.details_share_tab:
+            self.details_share_tab.notify_lang_change()
 
     def on_page_changed(self, event=None):
         self.GetPage(self.GetSelection()).Show()

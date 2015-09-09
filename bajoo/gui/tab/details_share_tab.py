@@ -275,6 +275,10 @@ class DetailsShareTab(BaseForm):
         self.FindWindow('lbl_message').Hide()
         self.Layout()
 
+    def notify_lang_change(self):
+        BaseForm.notify_lang_change(self)
+        self._view.notify_lang_change()
+
 
 class DetailsShareView(BaseView):
     """View of the details share screen"""

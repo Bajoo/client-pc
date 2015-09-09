@@ -105,6 +105,9 @@ class AccountTab(wx.Panel, Translator):
         self.populate()
         self._view.notify_lang_change()
 
+        if self._change_password_window is not None:
+            self._change_password_window.notify_lang_change()
+
     def show_change_password_window(self, show=True):
         if show:
             if self._change_password_window is None:

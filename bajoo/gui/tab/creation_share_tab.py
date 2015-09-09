@@ -61,6 +61,10 @@ class CreationShareTab(BaseForm):
         self.members[email] = member_object
         self._view.members_share_form.load_members(self.members.values())
 
+    def notify_lang_change(self):
+        BaseForm.notify_lang_change(self)
+        self._view.notify_lang_change()
+
 
 class CreationShareView(BaseView):
     """View of the creation share screen"""

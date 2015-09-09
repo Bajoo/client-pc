@@ -6,12 +6,13 @@ import wx
 
 from ..common.i18n import N_
 from .form.change_password_form import ChangePasswordForm
+from .translator import Translator
 
 
 _logger = logging.getLogger(__name__)
 
 
-class ChangePasswordWindow(wx.Dialog):
+class ChangePasswordWindow(wx.Dialog, Translator):
     """
     Allows user to change password.
     """
@@ -22,7 +23,8 @@ class ChangePasswordWindow(wx.Dialog):
         wx.Dialog.__init__(
             self, parent,
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER | wx.MAXIMIZE_BOX)
-        self.SetTitle(N_('Bajoo - Change password'))
+        Translator.__init__(self)
+        self.register_i18n(self.SetTitle, N_('Bajoo - Change password'))
         self.form = ChangePasswordForm(self)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -39,6 +41,10 @@ class ChangePasswordWindow(wx.Dialog):
 
     def show_error(self, message):
         self.form.show_error(message)
+
+    def notify_lang_change(self):
+        Translator.notify_lang_change(self)
+        self.form.notify_lang_change()
 
 
 def main():

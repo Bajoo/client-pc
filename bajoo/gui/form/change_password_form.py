@@ -44,6 +44,10 @@ class ChangePasswordForm(BaseForm):
         self.hide_error()
         self.submit(event)
 
+    def notify_lang_change(self):
+        BaseForm.notify_lang_change(self)
+        self._view.notify_lang_change()
+
 
 class ChangePasswordView(BaseView):
     """
@@ -124,7 +128,9 @@ class ChangePasswordView(BaseView):
                                 "your current password, "
                                 "and the new password that you want to use."),
             lbl_confirmation_email: N_("Then you will receive "
-                                       "a confirmation email.\n")
+                                       "a confirmation email.\n"),
+            self._btn_cancel: N_("Cancel"),
+            self._btn_ok: N_("OK")
         })
 
         self.register_many_i18n('SetHint', {

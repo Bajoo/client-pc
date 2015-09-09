@@ -11,7 +11,7 @@ from ..event_future import ensure_gui_thread
 from ..base_view import BaseView
 from .base_form import BaseForm
 from ..validator import EmailValidator
-from ...common.i18n import N_
+from ...common.i18n import N_, _
 from ...common.path import resource_filename
 
 _logger = logging.getLogger(__name__)
@@ -108,6 +108,10 @@ class MembersShareForm(BaseForm):
 
         wx.PostEvent(self, remove_event)
 
+    def notify_lang_change(self):
+        BaseForm.notify_lang_change(self)
+        self._view.notify_lang_change()
+
 
 class MembersShareView(BaseView):
     def __init__(self, members_share_form):
@@ -135,10 +139,10 @@ class MembersShareView(BaseView):
 
         cmb_permission = wx.ComboBox(
             members_share_form, name='permission',
-            style=wx.CB_READONLY, value=N_('Admin'))
-        cmb_permission.Append(N_('Admin'), 'ADMIN')
-        cmb_permission.Append(N_('Read Write'), 'READ_WRITE')
-        cmb_permission.Append(N_('Read Only'), 'READ_ONLY')
+            style=wx.CB_READONLY, value=_('Admin'))
+        cmb_permission.Append(_('Admin'), 'ADMIN')
+        cmb_permission.Append(_('Read Write'), 'READ_WRITE')
+        cmb_permission.Append(_('Read Only'), 'READ_ONLY')
         cmb_permission.SetSelection(0)
         self._cmb_permission = cmb_permission
 
@@ -173,9 +177,9 @@ class MembersShareView(BaseView):
     def notify_lang_change(self):
         Translator.notify_lang_change(self)
         self.load_members_view()
-        self._cmb_permission.SetString(0, N_('Admin'))
-        self._cmb_permission.SetString(1, N_('Read Write'))
-        self._cmb_permission.SetString(2, N_('Read Only'))
+        self._cmb_permission.SetString(0, _('Admin'))
+        self._cmb_permission.SetString(1, _('Read Write'))
+        self._cmb_permission.SetString(2, _('Read Only'))
 
     @ensure_gui_thread
     def load_members_view(self, members=None):
@@ -191,12 +195,12 @@ class MembersShareView(BaseView):
 
     def add_member_view(self, member):
         email = member.get('user', '<unknown>')
-        permission = N_('Read Only')
+        permission = _('Read Only')
 
         if member.get('admin'):
-            permission = N_('Admin')
+            permission = _('Admin')
         elif member.get('write'):
-            permission = N_('Read Write')
+            permission = _('Read Write')
 
         # TODO: add delete button
         delete = 'Delete'
