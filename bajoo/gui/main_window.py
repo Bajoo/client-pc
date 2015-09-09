@@ -4,7 +4,7 @@ import logging
 
 import wx
 
-from ..common.i18n import N_
+from ..common.i18n import _
 from ..common.path import resource_filename
 from ..gui.event_future import ensure_gui_thread
 from .tab import ListSharesTab
@@ -264,10 +264,10 @@ class MainWindowListbook(wx.Listbook, Translator):
         self.settings_tab = SettingsTab(self)
 
         self.AddPage(self.list_shares_tab,
-                     N_("My Shares"), imageId=0)
+                     _("My Shares"), imageId=0)
         self.AddPage(self.account_tab,
-                     N_("My Account"), imageId=1)
-        self.AddPage(self.settings_tab, N_("Settings"), imageId=2)
+                     _("My Account"), imageId=1)
+        self.AddPage(self.settings_tab, _("Settings"), imageId=2)
 
         self.Bind(wx.EVT_LISTBOOK_PAGE_CHANGED, self.on_page_changed)
         self.on_page_changed()
@@ -275,9 +275,9 @@ class MainWindowListbook(wx.Listbook, Translator):
     def notify_lang_change(self):
         Translator.notify_lang_change(self)
 
-        self.SetPageText(0, N_("My Shares"))
-        self.SetPageText(1, N_("My Account"))
-        self.SetPageText(2, N_("Settings"))
+        self.SetPageText(0, _("My Shares"))
+        self.SetPageText(1, _("My Account"))
+        self.SetPageText(2, _("Settings"))
 
         # Notify permanent tabs
         self.account_tab.notify_lang_change()
@@ -295,6 +295,9 @@ class MainWindowListbook(wx.Listbook, Translator):
 
         if self.details_share_tab:
             self.details_share_tab.notify_lang_change()
+
+        # Change the title of the window
+        self.GetParent().SetTitle(self.GetPageText(self.GetSelection()))
 
     def on_page_changed(self, event=None):
         self.GetPage(self.GetSelection()).Show()

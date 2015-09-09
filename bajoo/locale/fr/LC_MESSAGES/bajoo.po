@@ -295,6 +295,10 @@ msgstr "Bande passante"
 msgid "My Account"
 msgstr "Mon compte"
 
+#: bajoo/gui/main_window.py:270
+msgid "Settings"
+msgstr "Paramètres"
+
 #: bajoo/gui/tab/creation_share_tab.py:30
 #: bajoo/gui/tab/details_share_tab.py:63
 msgid "<< Back to share list"
