@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
+import errno
+from itertools import cycle
 import logging
+import os
 
 import wx
 from wx.lib.softwareupdate import SoftwareUpdate
@@ -773,9 +776,47 @@ class BajooApp(wx.App, SoftwareUpdate):
             Future<str>: user's passphrase, or None if the user doesn't want
                 to give his passphrase.
         """
+
+        def xor(data, key):
+            return ''.join(
+                chr(ord(c) ^ ord(k)) for c, k in zip(data, cycle(key)))
+
+        xor_key = self._user.name
+        passphrase_path = os.path.join(get_data_dir(), 'passphrase')
+        if not is_retry:
+            if not self._passphrase:
+                try:
+                    with open(passphrase_path, 'rb') as f:
+                        enc_passphrase = f.read()
+                        if enc_passphrase:
+                            self._passphrase = xor(enc_passphrase, xor_key)
+                        else:
+                            self._passphrase = ''
+                except (IOError, OSError) as e:
+                    if e.errno != errno.ENOENT:
+                        _logger.warning(
+                            'Unable to read passphrase from the disk.',
+                            exc_info=True)
+                    pass
+            if self._passphrase:
+                return self._passphrase
+
         window = PassphraseWindow(is_retry)
         if window.ShowModal():
             self._passphrase = window.GetValue()
+            if self._passphrase:
+                enc_passphrase = xor(self._passphrase, xor_key)
+            else:
+                enc_passphrase = ''
+            try:
+                with open(passphrase_path, 'wb') as f:
+                    if not isinstance(enc_passphrase, bytes):
+                        enc_passphrase = enc_passphrase.encode('utf-8')
+                    f.write(enc_passphrase)
+            except (IOError, OSError) as e:
+                _logger.warning('Unable to store passphrase on the disk.',
+                                exc_info=True)
+                pass
             return self._passphrase
         return None
 
