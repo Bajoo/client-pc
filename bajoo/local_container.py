@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 
+import ctypes
 import errno
 import io
 import json
 import logging
 import os
+import sys
 from threading import RLock
 
 from .common.i18n import _
@@ -151,6 +153,16 @@ class LocalContainer(object):
         index_path = os.path.join(path, '.bajoo-%s.idx' % self.id)
         with io.open(index_path, "w", encoding='utf-8') as index_file:
             index_file.write(u'{}')
+        if sys.platform == 'win32':
+            try:
+                # Set HIDDEN_FILE_ATTRIBUTE (0x02)
+                ret = ctypes.windll.kernel32.SetFileAttributesW(index_path,
+                                                                0x02)
+                if not ret:
+                    raise ctypes.WinError()
+            except:
+                _logger.warning('Tentative to set HIDDEN file attribute to '
+                                '%s failed' % index_path, exc_info=True)
 
     def _save_index(self):
         index_path = os.path.join(self.path, '.bajoo-%s.idx' % self.id)
