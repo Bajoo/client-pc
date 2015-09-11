@@ -9,7 +9,7 @@ from wx.lib.newevent import NewCommandEvent
 
 from ...api.team_share import permission as share_permission
 from ...api import TeamShare
-from ...common.i18n import N_
+from ...common.i18n import N_, _
 from ..base_view import BaseView
 from ..event_future import ensure_gui_thread
 from ..form.members_share_form import MembersShareForm
@@ -298,26 +298,26 @@ class DetailsShareView(BaseView):
 
         lbl_share_name = wx.StaticText(
             details_share_tab,
-            label='<share_name>', name='lbl_share_name')
+            label=_('Loading ...'), name='lbl_share_name')
         lbl_share_nb_members = wx.StaticText(
             details_share_tab,
-            label='# <nb_share_members>', name='lbl_share_nb_members')
+            label='', name='lbl_share_nb_members')
         lbl_share_encryption = wx.StaticText(
             details_share_tab,
-            label='<is_encrypted>', name='lbl_share_encryption')
+            label='', name='lbl_share_encryption')
 
         lbl_share_type = wx.StaticText(
             details_share_tab,
-            label='<share_type>', name='lbl_share_type')
+            label='', name='lbl_share_type')
         lbl_share_status = wx.StaticText(
             details_share_tab,
-            label='<share_status>', name='lbl_share_status')
+            label='', name='lbl_share_status')
         lbl_share_files_folders = wx.StaticText(
             details_share_tab,
-            label='<nb files & folders>', name='lbl_share_files_folders')
+            label='', name='lbl_share_files_folders')
         lbl_local_space = wx.StaticText(
             details_share_tab,
-            label='<storage_space_taken>', name='lbl_local_space')
+            label='', name='lbl_local_space')
         btn_open_folder = wx.Button(
             details_share_tab, name='btn_open_folder')
 
