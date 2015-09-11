@@ -20,7 +20,7 @@ class LanguageBox(wx.ComboBox):
                 by default the system language.
             Other arguments are like in wx.ComboBox.__init__()
         """
-        if not 'style' in kwargs:
+        if 'style' not in kwargs:
             kwargs['style'] = wx.CB_READONLY
 
         current_lang_code = kwargs.pop('current_lang_code', None)

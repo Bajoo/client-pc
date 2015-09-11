@@ -74,6 +74,7 @@ def resource_filename(resource):
         return result_path.decode(sys.getfilesystemencoding())
     return result_path
 
+
 def default_root_folder():
     """Returns the default emplacement fir the Bajoo root folder."""
     return os.path.join(os.path.expanduser('~'), 'Bajoo')

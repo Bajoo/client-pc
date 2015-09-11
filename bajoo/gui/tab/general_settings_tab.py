@@ -2,7 +2,6 @@
 import logging
 
 import wx
-from wx.lib.newevent import NewCommandEvent
 
 from ...common.i18n import N_
 from ..common.language_box import LanguageBox
@@ -44,10 +43,10 @@ class GeneralSettingsTab(wx.Panel, Translator):
             _logger.debug("Null config object detected !!!")
             return
 
-        launched_at_startup = self._config.get('launched_at_startup')
-        contextual_icon_shown = self._config.get('contextual_icon')
-        notifications_shown = self._config.get('notifications')
-        lang_code = self._config.get('lang')
+        # launched_at_startup = self._config.get('launched_at_startup')
+        # contextual_icon_shown = self._config.get('contextual_icon')
+        # notifications_shown = self._config.get('notifications')
+        # lang_code = self._config.get('lang')
 
         # TODO: set to real value for next release
         self.FindWindow('chk_launch_at_startup').SetValue(False)

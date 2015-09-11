@@ -522,7 +522,7 @@ class BajooApp(wx.App, SoftwareUpdate):
             self._notifier.send_message(
                 _('Quit team share'),
                 _('You have no longer access to team share %s.'
-                   % share.name)
+                  % share.name)
             )
 
             if self._main_window:
@@ -536,7 +536,7 @@ class BajooApp(wx.App, SoftwareUpdate):
             self._notifier.send_message(
                 _('Error'),
                 _('An error occured when trying to quit team share %s.'
-                   % share.name)
+                  % share.name)
             )
 
             if self._main_window:

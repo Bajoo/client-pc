@@ -157,7 +157,8 @@ class NetworkSettingsView(BaseView):
             w.Enable(False)
 
         # proxy form
-        self._proxy_form = ProxyForm(network_settings_screen, name='proxy_form')
+        self._proxy_form = ProxyForm(network_settings_screen,
+                                     name='proxy_form')
 
         main_sizer = self.make_sizer(
             wx.VERTICAL,

@@ -80,7 +80,8 @@ class HomeScreenView(BaseView):
 
         notebook = wx.Notebook(home_screen, name='notebook')
 
-        self._connection_form = ConnectionForm(notebook, name='connection_form')
+        self._connection_form = ConnectionForm(notebook,
+                                               name='connection_form')
         notebook.AddPage(self._connection_form, '')
         self.register_i18n(partial(notebook.SetPageText, 0), N_('Connection'))
         self._register_form = RegisterForm(notebook, name='register_form')

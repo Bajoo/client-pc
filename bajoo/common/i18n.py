@@ -65,7 +65,7 @@ def set_lang(lang):
 
     _translation = _get_translation_instance(lang)
 
-    locale_codes = [locale.normalize(lang), ''] if lang else ['']
+    # locale_codes = [locale.normalize(lang), ''] if lang else ['']
     # for locale_code in locale_codes:
     #    try:
     #        locale.setlocale(locale.LC_ALL, locale_code)

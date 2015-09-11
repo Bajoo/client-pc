@@ -247,14 +247,12 @@ class MainWindowListbook(wx.Listbook, Translator):
         wx.Listbook.__init__(self, parent, style=wx.BK_LEFT)
         Translator.__init__(self)
 
-        # TODO: Set proper image for each tab
         image_list = wx.ImageList(64, 64)
-        image_list.Add(wx.Image(resource_filename(
-            'assets/images/menu_my_shares.png')).Rescale(64, 64).ConvertToBitmap())
-        image_list.Add(wx.Image(resource_filename(
-            'assets/images/menu_user.png')).Rescale(64, 64).ConvertToBitmap())
-        image_list.Add(wx.Image(resource_filename(
-            'assets/images/menu_settings.png')).Rescale(64, 64).ConvertToBitmap())
+        for img_path in ('assets/images/menu_my_shares.png',
+                         'assets/images/menu_user.png',
+                         'assets/images/menu_settings.png'):
+            img = wx.Image(resource_filename(img_path)).Rescale(64, 64)
+            image_list.Add(img.ConvertToBitmap())
         self.AssignImageList(image_list)
 
         self.list_shares_tab = ListSharesTab(self)

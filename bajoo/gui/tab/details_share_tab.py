@@ -52,9 +52,11 @@ class DetailsShareTab(BaseForm):
                   self.FindWindow('btn_delete_share'))
 
     def _has_member_data(self):
-        return self._share.container \
-               and type(self._share.container) is TeamShare \
-               and self._share.container.members is not None
+        if not self._share.container:
+            return False
+        if type(self._share.container) is not TeamShare:
+            return False
+        return self._share.container.members is not None
 
     def _check_admin_status(self):
         has_member_data = self._has_member_data()
