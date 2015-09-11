@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import errno
-from itertools import cycle
 import logging
 import os
 
@@ -14,6 +13,7 @@ from bajoo.common.future import wait_all
 from .common import config
 from .common.future import resolve_dec
 from .common.path import get_data_dir
+from .common.util import xor
 from .connection_registration_process import connect_or_register
 from .container_sync_pool import ContainerSyncPool
 from .dynamic_container_list import DynamicContainerList
@@ -776,10 +776,6 @@ class BajooApp(wx.App, SoftwareUpdate):
             Future<str>: user's passphrase, or None if the user doesn't want
                 to give his passphrase.
         """
-
-        def xor(data, key):
-            return ''.join(
-                chr(ord(c) ^ ord(k)) for c, k in zip(data, cycle(key)))
 
         xor_key = self._user.name
         passphrase_path = os.path.join(get_data_dir(), 'passphrase')

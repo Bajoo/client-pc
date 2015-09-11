@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+
+from itertools import cycle
+
 from .i18n import _
 
 # All currently known units:
@@ -45,9 +48,34 @@ def open_folder(folder_path):
         subprocess.call(('xdg-open', folder_path))
 
 
+def xor(data, key):
+    """Apply xor operation over data and key.
+
+    The output value will have the same size as data. If key is shorter than
+    data, then the key is repeated.
+
+    Args:
+        data (bytes/str/unicode): data to "encrypt".
+        key (bytes/str/unicode): key used to apply xor.
+    Returns:
+        bytes: resulting binary data
+    """
+    if not isinstance(data, bytes):
+        data = data.encode('utf-8')
+    if not isinstance(key, bytes):
+        key = key.encode('utf-8')
+
+    data = list(bytearray(data))
+    key = list(bytearray(key))
+    return bytes(bytearray([c ^ k for c, k in zip(data, cycle(key))]))
+
+
 def main():
     values = [35, 145, 3245, 5434687, 4687465435, 53468768468576]
     print([human_readable_bytes(value) for value in values])
+
+    print('xor() of "foo bar" with key "baz":')
+    print('\t%s' % repr(xor('foo bar', 'baz')))
 
 
 if __name__ == '__main__':
