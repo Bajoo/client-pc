@@ -150,6 +150,12 @@ class NetworkSettingsView(BaseView):
         bandwidth_box_sizer = wx.StaticBoxSizer(bandwidth_box)
         bandwidth_box_sizer.Add(bandwidth_grid_sizer, 1, wx.ALL, 5)
 
+        # TODO: to enable when the features will be implemented.
+        for w in (chk_limit_incoming_debit, txt_incoming_limit_value,
+                  chk_limit_outgoing_debit, txt_outgoing_limit_value,
+                  lbl_incoming_unit, lbl_outgoing_unit, bandwidth_box):
+            w.Enable(False)
+
         # proxy form
         self._proxy_form = ProxyForm(network_settings_screen, name='proxy_form')
 
