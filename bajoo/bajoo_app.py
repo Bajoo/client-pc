@@ -399,8 +399,8 @@ class BajooApp(wx.App, SoftwareUpdate):
             if self._main_window:
                 self._main_window.on_share_member_added(
                     share, None, None,
-                    N_('Cannot add this member to team share, '
-                       'maybe email does not exist.'))
+                    N_('Cannot add this member to team share; '
+                       'maybe this account does not exist.'))
 
         if share.container:
             share.container.add_member(email, permission) \

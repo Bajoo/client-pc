@@ -86,9 +86,11 @@ class LocalContainer(object):
             self.status = self.STATUS_ERROR
 
             if e.errno == errno.ENOENT:
+                # TODO: Add a specific message if the folder is empty (or not)
                 if os.path.isdir(self.path):
-                    self.error_msg = _('The local folder content seems to have'
-                                       ' been deleted.')
+                    self.error_msg = _(
+                        'The corresponding folder exists, but the Bajoo index '
+                        'file is missing.')
                 else:
                     self.error_msg = _('The local folder is missing.')
             else:
