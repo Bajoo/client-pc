@@ -121,13 +121,13 @@ class MembersShareView(BaseView):
         members_list_view = dv.DataViewListCtrl(members_share_form)
         user_col = members_list_view.AppendTextColumn('', width=200)
         permission_col = members_list_view.AppendTextColumn('', width=100)
-        actions_col = members_list_view.AppendTextColumn('', width=50)
+        # actions_col = members_list_view.AppendTextColumn('', width=50)
         members_list_view.SetMinSize((400, 100))
         self._members_list_view = members_list_view
         self.register_many_i18n('SetTitle', {
             user_col: N_('User'),
             permission_col: N_('Permission'),
-            actions_col: N_('-')
+            # actions_col: N_('-')
         })
 
         txt_user_email = wx.TextCtrl(
@@ -203,8 +203,7 @@ class MembersShareView(BaseView):
             permission = _('Read Write')
 
         # TODO: add delete button
-        delete = 'Delete'
-        self._members_list_view.AppendItem([email, permission, delete])
+        self._members_list_view.AppendItem([email, permission])
 
     def on_add_member(self, member):
         if self._data:
