@@ -9,6 +9,7 @@ import os
 import sys
 from threading import RLock
 
+from .api.team_share import TeamShare
 from .common.i18n import _
 from .common import config
 
@@ -112,11 +113,16 @@ class LocalContainer(object):
         Returns:
             str: the path of the created folder. None if an error occurs
         """
-        folder_path = os.path.join(config.get('root_folder', unicode=True),
-                                   name)
+
+        if isinstance(self.container, TeamShare):
+            folder_path = os.path.join(config.get('root_folder', unicode=True),
+                                       _('Shares'), name)
+        else:
+            folder_path = os.path.join(config.get('root_folder', unicode=True),
+                                       name)
 
         try:
-            os.mkdir(folder_path)
+            os.makedirs(folder_path)
             self._init_index_file(folder_path)
         except (OSError, IOError) as e:
             if e.errno == errno.EEXIST:

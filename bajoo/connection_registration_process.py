@@ -10,7 +10,7 @@ from . import stored_credentials
 from .api import register, User
 from .api.session import Session
 from .common import config
-from .common.i18n import N_
+from .common.i18n import N_, _
 from .common.future import Future, resolve_dec, wait_all
 from .network.errors import HTTPError
 
@@ -395,6 +395,7 @@ class _ConnectionProcess(object):
         """
         try:
             os.makedirs(root_folder_path)
+            os.makedirs(os.path.join(root_folder_path, _('Shares')))
             _logger.debug('Create Bajoo root folder "%s"' % root_folder_path)
         except OSError as e:
             if e.errno == errno.EEXIST and os.path.isdir(root_folder_path):
