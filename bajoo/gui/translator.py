@@ -23,6 +23,7 @@ class Translator(object):
     def __init__(self):
         self._i18n_child = []
         self._i18n_methods = []  # List of tuple (widget, callable, str)
+        self._callbacks = []  # List of functions
 
     def notify_lang_change(self):
         """Notify this class that the language has changed."""
@@ -33,6 +34,9 @@ class Translator(object):
 
         for translator in self._i18n_child:
             translator.notify_lang_change()
+
+        for (cb, instance) in self._callbacks:
+            cb(instance)
 
     def register_i18n(self, method, value, format_arg=None):
         """Register a method to call when the language changes.
@@ -86,3 +90,22 @@ class Translator(object):
             if isinstance(text, tuple):
                 text, format_arg = text
             self.register_i18n(getattr(window, method_name), text, format_arg)
+
+    @staticmethod
+    def i18n_callback(f):
+        """Decorator who call the method each time the language changes.
+
+        The first the f method is called, its registered in the i18n methods.
+        Each time the language changes, the f method is called.
+
+        Args:
+            f (callable): must take one argument `self`, instance of
+                Translator.
+        """
+        def wrapper(self):
+            if (f, self) not in self._callbacks:
+                self._callbacks.append((f, self))
+
+            return f(self)
+
+        return wrapper
