@@ -815,21 +815,22 @@ class BajooApp(wx.App, SoftwareUpdate):
                 return self._passphrase
 
         window = PassphraseWindow(is_retry)
-        if window.ShowModal():
-            self._passphrase = window.GetValue()
-            if self._passphrase:
-                enc_passphrase = xor(self._passphrase, xor_key)
-            else:
-                enc_passphrase = ''
-            try:
-                with open(passphrase_path, 'wb') as f:
-                    if not isinstance(enc_passphrase, bytes):
-                        enc_passphrase = enc_passphrase.encode('utf-8')
-                    f.write(enc_passphrase)
-            except (IOError, OSError) as e:
-                _logger.warning('Unable to store passphrase on the disk.',
-                                exc_info=True)
-                pass
+        if window.ShowModal() == wx.ID_OK:
+            self._passphrase = window.get_passphrase()
+            if window.allow_save_on_disk():
+                if self._passphrase:
+                    enc_passphrase = xor(self._passphrase, xor_key)
+                else:
+                    enc_passphrase = ''
+                try:
+                    with open(passphrase_path, 'wb') as f:
+                        if not isinstance(enc_passphrase, bytes):
+                            enc_passphrase = enc_passphrase.encode('utf-8')
+                        f.write(enc_passphrase)
+                except (IOError, OSError) as e:
+                    _logger.warning('Unable to store passphrase on the disk.',
+                                    exc_info=True)
+                    pass
             return self._passphrase
         return None
 
