@@ -323,8 +323,8 @@ class Container(object):
 
         def decrypt_file(data):
             metadata, encrypted_file = data
-            return (metadata,
-                    encryption.decrypt(encrypted_file, self._encryption_key))
+            f = encryption.decrypt(encrypted_file, self._encryption_key)
+            return f.then(lambda clear_file: (metadata, clear_file))
 
         if self.is_encrypted:
             f = self._get_encryption_key()

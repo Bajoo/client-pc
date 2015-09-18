@@ -118,7 +118,15 @@ def encrypt(source, recipients):
         if isinstance(source, str):
             source = io.open(source, 'rb')
 
-    with source:
+    def close_source(result):
+        source.close()
+        return result
+
+    def close_source_err(error):
+        source.close()
+        raise error
+
+    try:
         if len(recipients) == 1:
             context = recipients[0]._context
         else:
@@ -130,15 +138,23 @@ def encrypt(source, recipients):
         with tempfile.NamedTemporaryFile(delete=False) as tf:
             dst_path = tf.name
 
-        result = context.encrypt_file(source,
-                                      [key.fingerprint for key in recipients],
-                                      output=dst_path,
-                                      armor=False, always_trust=True)
-    if not result:
-        raise EncryptError('Encryption failed', result)
+        f = _thread_pool.submit(context.encrypt_file, source,
+                                [key.fingerprint for key in recipients],
+                                output=dst_path,
+                                armor=False, always_trust=True)
 
-    # TODO: delete the file when it's closed !
-    return io.open(dst_path, mode='rb')
+        def _on_file_encrypted(result):
+            if not result:
+                raise EncryptError('Encryption failed', result)
+            # TODO: delete the file when it's closed !
+            return io.open(dst_path, mode='rb')
+
+        f = then(f, _on_file_encrypted)
+        f.then(close_source, close_source_err)
+        return f
+    except:
+        source.close()
+        raise
 
 
 def decrypt(source, key=None, passphrase_callback=None, _retry=0):
@@ -184,7 +200,15 @@ def decrypt(source, key=None, passphrase_callback=None, _retry=0):
         if isinstance(source, str):
             source = io.open(source, 'rb')
 
-    with source:
+    def close_source(result):
+        source.close()
+        return result
+
+    def close_source_err(error):
+        source.close()
+        raise error
+
+    try:
         # TODO: find a better way to create this temporary file.
         with tempfile.NamedTemporaryFile(delete=False) as tf:
             dst_path = tf.name
@@ -198,26 +222,36 @@ def decrypt(source, key=None, passphrase_callback=None, _retry=0):
                 # The user has refused to give his passphrase.
                 raise PassphraseAbortError()
 
-        result = context.decrypt_file(source, output=dst_path,
-                                      passphrase=passphrase)
-        if not result:
-            # pkdecrypt codes are defined in libgpg-error (in err-codes.h)
-            if '[GNUPG:] ERROR pkdecrypt_failed 11' in result.stderr or \
-                    '[GNUPG:] MISSING_PASSPHRASE' in result.stderr:
-                if passphrase_callback and _retry <= 4:
-                    source.seek(0)
-                    return decrypt(source, key,
-                                   passphrase_callback=passphrase_callback,
-                                   _retry=_retry+1)
-                elif '[GNUPG:] MISSING_PASSPHRASE' in result.stderr:
-                    raise DecryptError('Decryption failed: missing passphrase')
-                else:
-                    raise DecryptError('Decryption failed: probably a bad'
-                                       'passphrase')
-            raise DecryptError('Decryption failed: %s' % result.status)
+        f = _thread_pool.submit(context.decrypt_file, source, output=dst_path,
+                                passphrase=passphrase)
 
-        # TODO: delete the file when it's closed !
-        return io.open(dst_path, mode='rb')
+        def on_file_decrypted(result):
+            if not result:
+                # pkdecrypt codes are defined in libgpg-error (in err-codes.h)
+                if '[GNUPG:] ERROR pkdecrypt_failed 11' in result.stderr \
+                        or '[GNUPG:] MISSING_PASSPHRASE' in result.stderr:
+                    if passphrase_callback and _retry <= 4:
+                        source.seek(0)
+                        return decrypt(source, key,
+                                       passphrase_callback=passphrase_callback,
+                                       _retry=_retry+1)
+                    elif '[GNUPG:] MISSING_PASSPHRASE' in result.stderr:
+                        raise DecryptError('Decryption failed: '
+                                           'missing passphrase')
+                    else:
+                        raise DecryptError('Decryption failed: probably a bad'
+                                           'passphrase')
+                raise DecryptError('Decryption failed: %s' % result.status)
+
+            # TODO: delete the file when it's closed !
+            return io.open(dst_path, mode='rb')
+
+        f = then(f, on_file_decrypted)
+        f = f.then(close_source, close_source_err)
+        return f
+    except:
+        source.close()
+        raise
 
 
 def import_key(key):
