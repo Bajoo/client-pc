@@ -17,8 +17,10 @@ All the heavy operations are executed asynchronously, and use ``Future`` to
 communicate the result.
 """
 
+import atexit
 from concurrent.futures import ThreadPoolExecutor
 import errno
+from functools import partial
 import io
 import logging
 from multiprocessing import cpu_count
@@ -26,7 +28,7 @@ import os.path
 import tempfile
 from gnupg import GPG
 
-from ..common.path import get_data_dir
+from ..common.path import get_data_dir, get_cache_dir
 from ..common.future import then
 from .asymmetric_key import AsymmetricKey
 from .errors import EncryptionError, KeyGenError, EncryptError, DecryptError
@@ -39,6 +41,24 @@ _thread_pool = ThreadPoolExecutor(max_workers=cpu_count())
 
 # main GPG() instance
 _gpg = None
+
+_tmp_dir = None
+try:
+    _tmp_dir = tempfile.mkdtemp(dir=get_cache_dir())
+except:
+    _logger.warning('Error when creating tmp dir for encryption files',
+                    exc_info=True)
+    pass
+
+
+@atexit.register
+def _clean_tmp():
+    global _tmp_dir
+    try:
+        os.removedirs(_tmp_dir)
+        _tmp_dir = None
+    except:
+        pass
 
 
 def _get_gpg_context():
@@ -54,6 +74,30 @@ def _get_gpg_context():
                 raise EncryptionError('GPG binary executable not found.')
             raise
     return _gpg
+
+
+def _patch_remove_path(method, path, *args, **kwargs):
+    ret = method(*args, **kwargs)
+    try:
+        os.remove(path)
+    except (IOError, OSError):
+        _logger.warning('Unable to delete tmp file: %s' % path, exc_info=True)
+    return ret
+
+
+def _patch_autodelete_file(file_stream, path):
+    """Patch the file-like object, so it will remove the file on close.
+
+    Args:
+        file_stream (File-like): object to patch
+        path (str): path of the file to remove.
+    """
+
+    if file_stream.close is not file_stream.__exit__:
+        file_stream.close = partial(_patch_remove_path, file_stream.close,
+                                    path)
+    file_stream.__exit__ = partial(_patch_remove_path, file_stream.__exit__,
+                                   path)
 
 
 def create_key(email, passphrase, container=False):
@@ -107,7 +151,8 @@ def encrypt(source, recipients):
             to read the resulting encrypted file.
     Returns:
         Future<TemporaryFile>: A Future returning a temporary file of the
-            resulting encrypted data.
+            resulting encrypted data. The file will be erased from the disk as
+            soon as it will be closed.
     """
 
     # If 'source' is a filename, open it
@@ -134,8 +179,7 @@ def encrypt(source, recipients):
             for key in recipients:
                 import_key(key)
 
-        # TODO: find a better way to create this temporary file.
-        with tempfile.NamedTemporaryFile(delete=False) as tf:
+        with tempfile.NamedTemporaryFile(delete=False, dir=_tmp_dir) as tf:
             dst_path = tf.name
 
         f = _thread_pool.submit(context.encrypt_file, source,
@@ -146,8 +190,9 @@ def encrypt(source, recipients):
         def _on_file_encrypted(result):
             if not result:
                 raise EncryptError('Encryption failed', result)
-            # TODO: delete the file when it's closed !
-            return io.open(dst_path, mode='rb')
+            result_file = io.open(dst_path, mode='rb')
+            _patch_autodelete_file(result_file, dst_path)
+            return result_file
 
         f = then(f, _on_file_encrypted)
         f.then(close_source, close_source_err)
@@ -185,7 +230,8 @@ def decrypt(source, key=None, passphrase_callback=None, _retry=0):
         _retry (int): number of passphrase attempt already done (and failed).
     Returns:
         Future<TemporaryFile>: A Future returning a temporary file of the
-            resulting decrypted data.
+            resulting decrypted data. The file will be erased from the disk as
+            soon as it will be closed.
     """
 
     if key:
@@ -209,8 +255,7 @@ def decrypt(source, key=None, passphrase_callback=None, _retry=0):
         raise error
 
     try:
-        # TODO: find a better way to create this temporary file.
-        with tempfile.NamedTemporaryFile(delete=False) as tf:
+        with tempfile.NamedTemporaryFile(delete=False, dir=_tmp_dir) as tf:
             dst_path = tf.name
 
         passphrase = None
@@ -243,8 +288,9 @@ def decrypt(source, key=None, passphrase_callback=None, _retry=0):
                                            'passphrase')
                 raise DecryptError('Decryption failed: %s' % result.status)
 
-            # TODO: delete the file when it's closed !
-            return io.open(dst_path, mode='rb')
+            result_file = io.open(dst_path, mode='rb')
+            _patch_autodelete_file(result_file, dst_path)
+            return result_file
 
         f = then(f, on_file_decrypted)
         f = f.then(close_source, close_source_err)
