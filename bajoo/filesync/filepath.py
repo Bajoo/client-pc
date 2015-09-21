@@ -1,7 +1,13 @@
 # -*- coding: utf-8 -*-
 
+import ctypes
+import logging
 import os.path
 import sys
+if sys.platform == "darwin":
+    import Foundation
+
+_logger = logging.getLogger(__name__)
 
 
 def is_path_allowed(file_path):
@@ -33,3 +39,44 @@ def is_path_allowed(file_path):
             return False
 
     return True
+
+
+def is_hidden(path):
+    """Portable way to check whether a file is hidden.
+
+    Args:
+        path (str): file path to check.
+    Returns:
+        boolean: True or False whether the file is file
+    """
+    abs_path = os.path.abspath(path)
+    name = os.path.basename(abs_path)
+
+    if sys.platform == 'win32':
+        return _is_hidden_under_windows(abs_path)
+    else:
+        if name.startswith('.'):
+            return True
+        if sys.platform == 'darwin':
+            return _is_hidden_under_darwin(abs_path)
+    return False
+
+
+def _is_hidden_under_windows(path):
+    try:
+        res = ctypes.windll.kernel32.GetFileAttributesW(path)
+        if not res or res == -1:
+            raise ctypes.WinError()
+        return bool(res & 0x02)
+    except:
+        _logger.warning('Check file attributes of %s failed' % path,
+                        exc_info=True)
+        return False
+
+
+def _is_hidden_under_darwin(path):
+    # see http://stackoverflow.com/a/15236292/1109005
+    url = Foundation.NSURL.fileURLWithPath_(path)
+    res = url.getResourceValue_forKey_error_(
+        None, Foundation.NSURLIsHiddenKey, None)
+    return res[1]
