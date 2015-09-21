@@ -5,6 +5,7 @@ import wx
 
 from ..common.i18n import _, N_
 from .base_view import BaseView
+from .event_future import ensure_gui_thread
 
 _logger = logging.getLogger(__name__)
 
@@ -15,7 +16,10 @@ class PassphraseWindow(wx.Dialog):
     Modal window who ask the user to enter his passphrase. It also offers the
     user to memorize his passphrase.
 
-    This window should be called has a modal window:
+    The simplest way to use it is to call the class method `ask_passphrase()`,
+    who create and destroy the window.
+
+    If created manually, this window should be called as a modal window:
 
     >>> window = PassphraseWindow(False)
     >>> if window.ShowModal() == wx.ID_OK  # Can be either ID_OK or ID_CANCEL
@@ -56,6 +60,32 @@ class PassphraseWindow(wx.Dialog):
             boolean: True if the user allow us to save his passphrase.
         """
         return self._allow_save_on_disk_checkbox.GetValue()
+
+    @classmethod
+    def ask_passphrase(cls, is_retry):
+        """Ask the user to enter his passphrase, and returns it;
+
+        As we wait for the user, this method is blocking.
+
+        Args:
+            is_retry (boolean):
+        Returns:
+            str, boolean: the passphrase itself (or None if the user hasn't
+                responded), and a boolean indicating if the user allow us to
+                remember his passphrase.
+        """
+        return cls._ask_passphrase(is_retry).result()
+
+    @classmethod
+    @ensure_gui_thread
+    def _ask_passphrase(cls, is_retry):
+        window = cls(is_retry)
+        passphrase = None
+        remember_passphrase = False
+        if window.ShowModal() == wx.ID_OK:
+            passphrase = window.get_passphrase()
+            remember_passphrase = window.allow_save_on_disk()
+        return passphrase, remember_passphrase
 
 
 class PassphraseWindowView(BaseView):

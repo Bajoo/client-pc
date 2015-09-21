@@ -15,6 +15,11 @@ without importing it.
 
 All the heavy operations are executed asynchronously, and use ``Future`` to
 communicate the result.
+
+Note: there is currently one thread per simultaneous call to GPG, and one
+process for each GPG call. The gnupg library block the caller thread until the
+end of the GPG process.
+Ideally, one thread to manage all GPG process would be sufficient.
 """
 
 import atexit

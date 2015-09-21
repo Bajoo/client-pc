@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import errno
+from functools import partial
 import logging
-import os
 
 import wx
 from wx.lib.softwareupdate import SoftwareUpdate
@@ -13,7 +12,6 @@ from bajoo.common.future import wait_all
 from .common import config
 from .common.future import resolve_dec
 from .common.path import get_data_dir
-from .common.util import xor
 from .connection_registration_process import connect_or_register
 from .container_sync_pool import ContainerSyncPool
 from .dynamic_container_list import DynamicContainerList
@@ -36,7 +34,7 @@ from .gui.tab.advanced_settings_tab import AdvancedSettingsTab  # REMOVE
 from .gui.form.members_share_form import MembersShareForm
 from .gui.change_password_window import ChangePasswordWindow
 from .common.i18n import _, N_, set_lang
-
+from .passphrase_manager import PassphraseManager
 
 _logger = logging.getLogger(__name__)
 
@@ -79,7 +77,7 @@ class BajooApp(wx.App, SoftwareUpdate):
         self._container_list = None
         self._container_sync_pool = ContainerSyncPool(
             self._on_global_status_change, self._on_sync_error)
-        self._passphrase = None
+        self._passphrase_manager = None
 
         if hasattr(wx, 'SetDefaultPyEncoding'):
             # wxPython classic only
@@ -728,13 +726,21 @@ class BajooApp(wx.App, SoftwareUpdate):
     @ensure_gui_thread
     def _on_connection(self, session):
         self._session = session
-        self._get_user_info()
+        self._get_user_info().result()
+        # TODO: remove the result() call when possible.
+        # The passwordManager below need it, and probably the container list
+        # too.
 
         if self._home_window:
             self._home_window.Destroy()
 
-        cb = lambda is_retry: self._get_user_passphrase(is_retry).result()
-        Container.passphrase_callback = staticmethod(cb)
+        if not self._passphrase_manager:
+            self._passphrase_manager = PassphraseManager()
+            self._passphrase_manager.set_user_input_callback(
+                PassphraseWindow.ask_passphrase)
+            cb = partial(self._passphrase_manager.get_passphrase,
+                         self._user.name)
+            Container.passphrase_callback = staticmethod(cb)
 
         _logger.debug('Start DynamicContainerList() ...')
         self._container_list = DynamicContainerList(
@@ -778,62 +784,6 @@ class BajooApp(wx.App, SoftwareUpdate):
     def _on_sync_error(self, err):
         self._notifier.send_message(_('Sync error'), _(err))
 
-    @ensure_gui_thread
-    def _get_user_passphrase(self, is_retry):
-        """Get the user passphrase, asking to him if needed.
-
-        If the passphrase is already in cache, we returns it. Else we ask the
-        user, using a dedicated windows.
-
-        Args:
-            is_retry (boolean): If True, it's at least the second time this
-                method is called. It means the last passphrase given by the
-                user wasn't valid.
-        Returns:
-            Future<str>: user's passphrase, or None if the user doesn't want
-                to give his passphrase.
-        """
-
-        xor_key = self._user.name
-        passphrase_path = os.path.join(get_data_dir(), 'passphrase')
-        if not is_retry:
-            if not self._passphrase:
-                try:
-                    with open(passphrase_path, 'rb') as f:
-                        enc_passphrase = f.read()
-                        if enc_passphrase:
-                            self._passphrase = xor(enc_passphrase, xor_key)
-                        else:
-                            self._passphrase = ''
-                except (IOError, OSError) as e:
-                    if e.errno != errno.ENOENT:
-                        _logger.warning(
-                            'Unable to read passphrase from the disk.',
-                            exc_info=True)
-                    pass
-            if self._passphrase:
-                return self._passphrase
-
-        window = PassphraseWindow(is_retry)
-        if window.ShowModal() == wx.ID_OK:
-            self._passphrase = window.get_passphrase()
-            if window.allow_save_on_disk():
-                if self._passphrase:
-                    enc_passphrase = xor(self._passphrase, xor_key)
-                else:
-                    enc_passphrase = ''
-                try:
-                    with open(passphrase_path, 'wb') as f:
-                        if not isinstance(enc_passphrase, bytes):
-                            enc_passphrase = enc_passphrase.encode('utf-8')
-                        f.write(enc_passphrase)
-                except (IOError, OSError) as e:
-                    _logger.warning('Unable to store passphrase on the disk.',
-                                    exc_info=True)
-                    pass
-            return self._passphrase
-        return None
-
     def disconnect(self, _evt):
         """revoke token and return the the home window."""
 
@@ -842,8 +792,12 @@ class BajooApp(wx.App, SoftwareUpdate):
             self._home_window.Destroy()
         if self._main_window:
             self._main_window.Destroy()
+        email = self._user.name
         stored_credentials.save(self._user.name)
         self._task_bar_icon.set_state(_(TaskBarIcon.NOT_CONNECTED))
+        if self._passphrase_manager:
+            self._passphrase_manager.set_passphrase(email, None,
+                                                    remember_on_disk=True)
 
         def _on_unhandled_exception(_exception):
             _logger.critical('Uncaught exception on Run process',
