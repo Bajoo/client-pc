@@ -761,7 +761,7 @@ class GPG(object):
             # list2cmd don't accept unicode entries
             args = []
             for arg in cmd:
-                if not isinstance(args, text_type):
+                if not isinstance(arg, bytes):
                     arg = arg.decode(sys.getfilesystemencoding())
                 if (" " in arg) or ("\t" in arg) or not arg:
                     arg = u'"%s"' % arg
