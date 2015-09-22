@@ -43,8 +43,9 @@ import shutil
 import sys
 
 from ..network.errors import HTTPNotFoundError
+from ..common import config
 from ..common.future import Future, patch_dec, wait_all, then, resolve_rec
-from .filepath import is_path_allowed
+from .filepath import is_path_allowed, is_hidden
 from ..common.i18n import _
 
 
@@ -269,6 +270,9 @@ class _Task(object):
                 abs_path = os.path.join(src_path, name)
                 rel_path = os.path.relpath(abs_path, self.local_path)
                 task = None
+
+                if config.get('exclude_hidden_files') and is_hidden(abs_path):
+                    continue
                 if os.path.isdir(abs_path):
                     self.index_fragment = {
                         k: v for (k, v) in self.index_fragment.items()

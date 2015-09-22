@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 
+import os.path
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
-from .filesync.filepath import is_path_allowed
+from .filesync.filepath import is_path_allowed, is_hidden
+from .common import config
 
 
 class FileWatcher(FileSystemEventHandler):
@@ -40,22 +42,43 @@ class FileWatcher(FileSystemEventHandler):
     def on_moved(self, event):
         if event.is_directory or not is_path_allowed(event.src_path):
             return
+        if self._is_ignored_target(event.dest_path):
+            return
         self._on_moved_files(event.src_path, event.dest_path)
 
     def on_created(self, event):
         if event.is_directory or not is_path_allowed(event.src_path):
+            return
+        if self._is_ignored_target(event.src_path):
             return
         self._on_new_files(event.src_path)
 
     def on_deleted(self, event):
         if event.is_directory or not is_path_allowed(event.src_path):
             return
+        if self._is_ignored_target(event.src_path):
+            return
         self._on_deleted_files(event.src_path)
 
     def on_modified(self, event):
         if event.is_directory or not is_path_allowed(event.src_path):
             return
+        if self._is_ignored_target(event.src_path):
+            return
         self._on_changed_files(event.src_path)
+
+    def _is_ignored_target(self, file_path):
+        if not config.get('exclude_hidden_files'):
+            return False
+
+        container_path = os.path.normpath(self._local_container.path)
+
+        p = file_path
+        while p != container_path:
+            if is_hidden(p):
+                return True
+            p = os.path.normpath(os.path.join(p, '..'))
+        return False
 
 
 def main():
