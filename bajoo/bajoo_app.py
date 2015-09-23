@@ -552,7 +552,8 @@ class BajooApp(wx.App, SoftwareUpdate):
             self._notifier.send_message(
                 _('Error'),
                 _('An error occured when trying to quit team share %s.'
-                  % share.name)
+                  % share.name),
+                is_error=True
             )
 
             if self._main_window:
@@ -571,7 +572,8 @@ class BajooApp(wx.App, SoftwareUpdate):
                 else:
                     self._notifier.send_message(
                         _('Error'),
-                        _('Cannot retrieve user information')
+                        _('Cannot retrieve user information'),
+                        is_error=True
                     )
 
             self._get_user_info().then(on_user_loaded)
@@ -782,7 +784,7 @@ class BajooApp(wx.App, SoftwareUpdate):
             self._task_bar_icon.set_state(_(mapping[status]))
 
     def _on_sync_error(self, err):
-        self._notifier.send_message(_('Sync error'), _(err))
+        self._notifier.send_message(_('Sync error'), _(err), is_error=True)
 
     def disconnect(self, _evt):
         """revoke token and return the the home window."""

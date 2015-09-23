@@ -32,15 +32,35 @@ class MessageNotifier(object):
             notify2.init('Bajoo')
             self._need_escape = 'body-markup' in notify2.get_server_caps()
 
-    def send_message(self, title, message):
+    def send_message(self, title, message, is_error=False):
+        """Display a notification.
+
+        Args:
+            title (str):
+            message (str):
+            is_error (boolean): Change the displayed icon, to indicate if
+                it's an error message or an informative message.
+        """
+        if is_error:
+            icon_path = resource_filename(
+                'assets/images/icon_notification_error.png')
+        else:
+            icon_path = resource_filename(
+                'assets/images/trayicon_status/sync.png')
+
         if sys.platform in ['win32', 'cygwin', 'win64']:
+            # Before Windows 10, the balloon has no icon visible.
+            # On Windows 10, the icon from the TrayIcon is used.
+            # Unfortunately, no matter what is the size of the original icon,
+            # the icon is resized to fit in the task bar (probably 32x32),
+            # then resized again to display the notification. The result is
+            # ugly, but wxPython offers no ways to fix it.
+            # TODO: use an alternative notification method.
             self._tray_icon.ShowBalloon(title, message)
         else:
             if self._need_escape:
                 message = escape(message)
 
-            # TODO: set real icons
-            icon_path = resource_filename('assets/icons/bajoo.ico')
             # notify2 need absolute path
             icon_path = os.path.abspath(icon_path)
             n = notify2.Notification(title, message, icon_path)

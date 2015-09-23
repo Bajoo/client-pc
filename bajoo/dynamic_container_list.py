@@ -49,8 +49,9 @@ class DynamicContainerList(object):
         """
         Args:
             session (Session)
-            notify (callable): Notify the user about an event. take two
-                parameters: the summary and the text body.
+            notify (callable): Notify the user about an event. take three
+                parameters: the summary, the text body, and a boolean to
+                specify if it's an error.
             start_container (callable): callback called when the LocalContainer
                 is ready. Receive a fully loaded LocalContainer in
                 parameters.
@@ -121,14 +122,16 @@ class DynamicContainerList(object):
                             self._notify(
                                 _('Error when adding new share'),
                                 _('Unable to create a folder for %s:\n%s'
-                                  % (c.name, local_container.error_msg)))
+                                  % (c.name, local_container.error_msg)),
+                                is_error=True)
                         else:
                             self._pre_start_container(local_container)
                     elif not local_container.check_path():
                         self._notify(
                             _('Error on share sync'),
                             _("Unable to sync the share %s:\n%s")
-                            % (c.name, local_container.error_msg))
+                            % (c.name, local_container.error_msg),
+                            is_error=True)
                     else:
                         self._pre_start_container(local_container)
 
@@ -160,7 +163,8 @@ class DynamicContainerList(object):
                 if c_path is None:
                     self._notify(_('Error when adding new share'),
                                  _('Unable to create a folder for %s:\n%s'
-                                   % (c.name, local_container.error_msg)))
+                                   % (c.name, local_container.error_msg)),
+                                 is_error=True)
                 else:
                     self._pre_start_container(local_container)
                 self._local_list.append(local_container)
@@ -227,8 +231,8 @@ def main():
 
     logging.basicConfig()
 
-    def notify(summary, body):
-        print('NOTIFICATION: %s' % summary)
+    def notify(summary, body, is_error):
+        print('NOTIF %s: %s' % ('ERROR' if is_error else 'INFO', summary))
         print(body)
 
     def start_container(local, container):
