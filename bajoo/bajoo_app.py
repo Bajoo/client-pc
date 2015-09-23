@@ -460,18 +460,42 @@ class BajooApp(wx.App, SoftwareUpdate):
         encrypted = event.encrypted
         members = event.members
 
-        from .api import TeamShare
-        from .common.future import wait_all
+        def share_creation_finally(refresh, success_msg=None, error_msg=None):
+            """
+            This function needs to be called after all operations in the
+            share creation process. This will recollect data if neccessary
+            and show the share list tab.
+            """
+
+            def on_refresh():
+                if self._main_window:
+                    self._main_window.load_shares(
+                        self._container_list.get_list(),
+                        success_msg, error_msg)
+
+            if refresh:
+                self._container_list.refresh(on_refresh)
+            else:
+                on_refresh()
 
         def on_members_added(__):
             """
             All members have been added to the share: return
             to the share list screen.
             """
-            if self._main_window:
-                self._main_window.load_shares(
-                    self._container_list.get_list())
-                self._main_window.on_new_share_created(None)
+            share_creation_finally(
+                True, _('Team share %s has been successfully created') %
+                share_name)
+
+        def on_members_added_error(__):
+            """
+            One or some members were not added: show error message.
+            """
+            share_creation_finally(
+                True,
+                _('Team share %s has been successfully created') % share_name,
+                N_('Some members cannot be added to this team share. '
+                   'Please verify the email addresses.'))
 
         def on_share_created(share):
             """
@@ -480,32 +504,24 @@ class BajooApp(wx.App, SoftwareUpdate):
             """
             futures = []
 
-            self._notifier.send_message(
-                _('New team share created'),
-                _('The new team share %s has been successfully created')
-                % share.name)
-
             for member in members:
                 permissions = members[member]
                 permissions.pop('user')
                 futures.append(share.add_member(member, permissions))
 
-            return wait_all(futures).then(on_members_added)
+            if len(futures) > 0:
+                return wait_all(futures).then(
+                    on_members_added, on_members_added_error)
+            else:
+                on_members_added(None)
 
         def on_create_share_failed(__):
             """
             Error occurred when attempting to create a new share.
             Notify user then return to the share list screen.
             """
-            self._notifier.send_message(
-                _('Error'),
-                _('Cannot create share %s')
-                % share_name)
-
-            if self._main_window:
-                self._main_window.load_shares(
-                    self._container_list.get_list())
-                self._main_window.on_new_share_created(None)
+            share_creation_finally(
+                False, None, _('Cannot create share %s') % share_name)
 
         TeamShare.create(self._session, share_name, encrypted) \
             .then(on_share_created, on_create_share_failed)
@@ -527,7 +543,9 @@ class BajooApp(wx.App, SoftwareUpdate):
 
             if self._main_window:
                 self._main_window.load_shares(
-                    self._container_list.get_list())
+                    self._container_list.get_list(),
+                    _('You have no longer access to team share %s.'
+                      % share.name))
 
                 if self._main_window:
                     self._main_window.on_quit_or_delete_share(share)
@@ -568,36 +586,35 @@ class BajooApp(wx.App, SoftwareUpdate):
         share = event.share
         # TODO: stop the synchro on this share
 
-        def _on_share_deleted(_):
+        def share_deleted_finally(refresh, success_msg=None, error_msg=None):
+            def on_refresh():
+                if self._main_window:
+                    self._main_window.load_shares(
+                        self._container_list.get_list(),
+                        success_msg, error_msg)
+
+            if refresh:
+                self._container_list.refresh(on_refresh)
+            else:
+                on_refresh()
+
+        def _on_share_deleted(__):
             """
             The share has been successfully deleted: notify user then
             return to the share list screen.
             """
-            self._notifier.send_message(
-                _('Team share deleted'),
-                _('Team share %s has been successfully deleted from server.')
-                % share.name)
-            self._container_list.refresh()
-
-            if self._main_window:
-                self._main_window.load_shares(
-                    self._container_list.get_list())
-
-                if self._main_window:
-                    self._main_window.on_quit_or_delete_share(share)
+            success_msg = _(
+                'A team share has been successfully deleted from server.')
+            share_deleted_finally(True, success_msg)
 
         def _on_delete_share_failed(_):
             """
             Error occurred when attempting to delete a share: notify user.
             """
-            self._notifier.send_message(
-                _('Error'),
-                _('Cannot delete team share %s for instant.')
-                % share.name
-            )
-
-            if self._main_window:
-                self._main_window.on_quit_or_delete_share(None)
+            share_deleted_finally(
+                True, None,
+                _('Team share %s cannot be '
+                  'deleted from server.') % share.name)
 
         share.container.delete().then(
             _on_share_deleted, _on_delete_share_failed)

@@ -55,11 +55,13 @@ class MainWindow(wx.Frame, Translator):
         self.Bind(DetailsShareTab.EVT_SHOW_LIST_SHARE_REQUEST,
                   self._on_request_show_list_shares)
 
+        self.show_list_shares_tab()
+
     def notify_lang_change(self):
         Translator.notify_lang_change(self)
         self._view.notify_lang_change()
 
-    def _show_tab(self, tab_index):
+    def _show_tab(self, tab_index, data=None):
         # Remove all temperatory tabs
         while self._view.GetPageCount() > 3:
             self._view.DeletePage(3)
@@ -68,6 +70,10 @@ class MainWindow(wx.Frame, Translator):
         self._view.creation_shares_tab = None
 
         self._view.SetSelection(tab_index)
+
+        if tab_index == MainWindow.LIST_SHARES_TAB:
+            if data.get('refresh', False):
+                self._view.list_shares_tab.send_data_request()
 
     def _show_share_tab(self, share_tab):
         """
@@ -96,9 +102,9 @@ class MainWindow(wx.Frame, Translator):
         self._show_tab(MainWindow.ACCOUNT_TAB)
 
     @ensure_gui_thread
-    def show_list_shares_tab(self):
+    def show_list_shares_tab(self, refresh=True):
         """Make the share list tab shown on top."""
-        self._show_tab(MainWindow.LIST_SHARES_TAB)
+        self._show_tab(MainWindow.LIST_SHARES_TAB, {'refresh': refresh})
 
     @ensure_gui_thread
     def show_creation_shares_tab(self):
@@ -127,14 +133,19 @@ class MainWindow(wx.Frame, Translator):
             self._view.account_tab.populate()
 
     @ensure_gui_thread
-    def load_shares(self, shares):
+    def load_shares(self, shares, success_msg=None, error_msg=None):
         """
         load & display the shares on share list tab.
 
         Args:
             shares: list of LocalContainer
         """
-        self._view.list_shares_tab.set_data(shares)
+        self.show_list_shares_tab(False)
+        self._view.list_shares_tab.set_data({
+            'shares': shares,
+            'success_msg': success_msg,
+            'error_msg': error_msg
+        })
 
     @ensure_gui_thread
     def set_share_details(self, share_details):
@@ -147,10 +158,6 @@ class MainWindow(wx.Frame, Translator):
 
     @ensure_gui_thread
     def on_new_share_created(self, new_share):
-        # TODO: show notification
-        if self._view.creation_shares_tab:
-            self._view.creation_shares_tab.enable()
-
         self.show_list_shares_tab()
 
     @ensure_gui_thread

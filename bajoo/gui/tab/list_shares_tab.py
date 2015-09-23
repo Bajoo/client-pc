@@ -83,9 +83,12 @@ class ListSharesTab(wx.Panel, Translator):
             ListSharesTab.FOLDER_ICON = img.ConvertToBitmap()
 
     @ensure_gui_thread
-    def set_data(self, shares):
-        self._shares = shares
-        self._view.generate_share_views(shares)
+    def set_data(self, data):
+        self._shares = data.get('shares', [])
+        self._view.generate_share_views(self._shares)
+        self.show_message(
+            data.get('success_msg', None),
+            data.get('error_msg', None))
         self._view.end_wait()
         self.Layout()
 
@@ -120,7 +123,7 @@ class ListSharesTab(wx.Panel, Translator):
         wx.PostEvent(self, self.NewShareEvent(self.GetId()))
 
     def _btn_refresh_share_list_clicked(self, event):
-        self._send_data_request()
+        self.send_data_request()
 
     def btn_share_details_clicked(self, event):
         container = self.get_container_from_button(
@@ -143,14 +146,42 @@ class ListSharesTab(wx.Panel, Translator):
         else:
             _logger.debug("Unknown container or directory to open")
 
-    def _send_data_request(self):
-        self.set_data([])
+    def send_data_request(self):
+        self.set_data({
+            'shares': [],
+            'success_msg': None,
+            'error_msg': None
+        })
         wx.PostEvent(self, self.DataRequestEvent(self.GetId()))
         self._view.begin_wait()
         self.Layout()
 
     def Show(self, show=True):
-        self._send_data_request()
+        # self._send_data_request()
+        pass
+
+    def show_message(self, msg=None, error_msg=None):
+        lbl_message = self.FindWindow('lbl_message')
+        lbl_error_message = self.FindWindow('lbl_error_message')
+
+        if msg:
+            self.register_i18n(lbl_message.SetLabel, msg)
+            lbl_message.Show()
+        else:
+            lbl_message.Hide()
+
+        if error_msg:
+            self.register_i18n(lbl_error_message.SetLabel, error_msg)
+            lbl_error_message.Show()
+        else:
+            lbl_error_message.Hide()
+
+        self.Layout()
+
+    def hide_messages(self):
+        self.FindWindow('lbl_message').Hide()
+        self.FindWindow('lbl_error_message').Hide()
+        self.Layout()
 
     def notify_lang_change(self):
         Translator.notify_lang_change(self)
@@ -178,6 +209,16 @@ class ListSharesView(BaseView):
             btn_create_share, None, btn_refresh_share_list
         ], outside_border=False)
 
+        lbl_message = wx.StaticText(
+            self.window, name='lbl_message')
+        lbl_message.SetForegroundColour(wx.BLUE)
+        lbl_message.Hide()
+
+        lbl_error_message = wx.StaticText(
+            self.window, name='lbl_error_message')
+        lbl_error_message.SetForegroundColour(wx.RED)
+        lbl_error_message.Hide()
+
         self.shares_window = wx.ScrolledWindow(self.window)
         self.shares_window.SetScrollbars(1, 1, 1, 1)
         self.shares_window.SetScrollRate(5, 20)
@@ -187,7 +228,7 @@ class ListSharesView(BaseView):
         self.shares_window.SetSizer(self.share_sizer)
 
         main_sizer = self.make_sizer(
-            wx.VERTICAL, [top_box])
+            wx.VERTICAL, [top_box, lbl_message, lbl_error_message])
         main_sizer.Add(self.shares_window, 1, wx.EXPAND | wx.ALL, 15)
         main_sizer.Add(self._wait, 0, wx.EXPAND | wx.ALL, 0)
         self.window.SetSizer(main_sizer)
@@ -350,7 +391,11 @@ def main():
         return Container.list(session)
 
     def _on_fetch_shares(shares):
-        tab.set_data(shares)
+        tab.set_data({
+            'shares': shares,
+            'success_msg': None,
+            'error_msg': None
+        })
 
     def _on_request_data(event):
         Session.create_session(
