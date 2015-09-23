@@ -86,6 +86,7 @@ class ListSharesTab(wx.Panel, Translator):
     def set_data(self, shares):
         self._shares = shares
         self._view.generate_share_views(shares)
+        self._view.end_wait()
         self.Layout()
 
     def find_share_by_id(self, id):
@@ -119,7 +120,7 @@ class ListSharesTab(wx.Panel, Translator):
         wx.PostEvent(self, self.NewShareEvent(self.GetId()))
 
     def _btn_refresh_share_list_clicked(self, event):
-        wx.PostEvent(self, self.DataRequestEvent(self.GetId()))
+        self._send_data_request()
 
     def btn_share_details_clicked(self, event):
         container = self.get_container_from_button(
@@ -142,8 +143,14 @@ class ListSharesTab(wx.Panel, Translator):
         else:
             _logger.debug("Unknown container or directory to open")
 
-    def Show(self, show=True):
+    def _send_data_request(self):
+        self.set_data([])
         wx.PostEvent(self, self.DataRequestEvent(self.GetId()))
+        self._view.begin_wait()
+        self.Layout()
+
+    def Show(self, show=True):
+        self._send_data_request()
 
     def notify_lang_change(self):
         Translator.notify_lang_change(self)
@@ -161,6 +168,12 @@ class ListSharesView(BaseView):
                                      name='btn_create_share')
         btn_refresh_share_list = wx.Button(list_shares_tab,
                                            name='btn_refresh_share_list')
+        self._wait = wx.Gauge(self.window)
+        self._wait.Hide()
+        self._waiting_timer = wx.Timer(self.window)
+        self.window.Bind(wx.EVT_TIMER, self._waiting_timer_handler,
+                         self._waiting_timer)
+
         top_box = self.make_sizer(wx.HORIZONTAL, [
             btn_create_share, None, btn_refresh_share_list
         ], outside_border=False)
@@ -176,6 +189,7 @@ class ListSharesView(BaseView):
         main_sizer = self.make_sizer(
             wx.VERTICAL, [top_box])
         main_sizer.Add(self.shares_window, 1, wx.EXPAND | wx.ALL, 15)
+        main_sizer.Add(self._wait, 0, wx.EXPAND | wx.ALL, 0)
         self.window.SetSizer(main_sizer)
         self.register_i18n(btn_create_share.SetLabel,
                            N_("New share"))
@@ -306,6 +320,17 @@ class ListSharesView(BaseView):
             lbl_share_status: N_(container.get_status_text()),
             btn_share_details: N_('Details')
         })
+
+    def _waiting_timer_handler(self, _event):
+        self._wait.Pulse()
+
+    def begin_wait(self):
+        self._waiting_timer.Start(100)
+        self._wait.Show()
+
+    def end_wait(self):
+        self._waiting_timer.Stop()
+        self._wait.Hide()
 
 
 def main():
