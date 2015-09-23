@@ -47,7 +47,6 @@ class ListSharesTab(wx.Panel, Translator):
 
     TEAM_SHARE_ICON = None
     MY_BAJOO_ICON = None
-    FOLDER_ICON = None
 
     @ensure_gui_thread
     def __init__(self, parent):
@@ -76,11 +75,6 @@ class ListSharesTab(wx.Panel, Translator):
                 'assets/images/icon_storage_my_bajoo.png')
             img = wx.Image(img_path).Scale(64, 64, wx.IMAGE_QUALITY_HIGH)
             ListSharesTab.MY_BAJOO_ICON = img.ConvertToBitmap()
-
-        if not ListSharesTab.FOLDER_ICON:
-            img_path = resource_filename('assets/images/folder.png')
-            img = wx.Image(img_path)
-            ListSharesTab.FOLDER_ICON = img.ConvertToBitmap()
 
     @ensure_gui_thread
     def set_data(self, data):
@@ -304,17 +298,17 @@ class ListSharesView(BaseView):
         self.window.Bind(wx.EVT_BUTTON, self.window.btn_share_details_clicked,
                          btn_share_details)
 
+        if container.container and type(container.container) is MyBajoo:
+            img_share = ListSharesTab.MY_BAJOO_ICON
+
         btn_open_local_dir = wx.BitmapButton(
-            share_box, bitmap=ListSharesTab.FOLDER_ICON,
+            share_box, bitmap=img_share,
             name='btn_open_local_dir_' + container.id)
         btn_open_local_dir.Enable(
             container.path is not None and
             path.exists(container.path))
         self.window.Bind(wx.EVT_BUTTON, self.window.btn_open_dir_clicked,
                          btn_open_local_dir)
-
-        if container.container and type(container.container) is MyBajoo:
-            img_share = ListSharesTab.MY_BAJOO_ICON
 
         encrypted_text = 'not encrypted'
 
@@ -349,9 +343,9 @@ class ListSharesView(BaseView):
             wx.VERTICAL, [description_box, share_status_box], False)
 
         share_box_sizer_inside = self.make_sizer(wx.HORIZONTAL, [
-            wx.StaticBitmap(share_box, label=img_share),
+            btn_open_local_dir,
             description_status_box, None,
-            btn_share_details, btn_open_local_dir])
+            btn_share_details])
         share_box_sizer.Add(share_box_sizer_inside, 1, wx.EXPAND)
 
         self.share_sizer.Add(share_box_sizer, 0, wx.EXPAND)
