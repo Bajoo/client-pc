@@ -133,19 +133,22 @@ class MainWindow(wx.Frame, Translator):
             self._view.account_tab.populate()
 
     @ensure_gui_thread
-    def load_shares(self, shares, success_msg=None, error_msg=None):
+    def load_shares(self, shares, success_msg=None, error_msg=None,
+                    show_tab=True):
         """
         load & display the shares on share list tab.
 
         Args:
             shares: list of LocalContainer
         """
-        self.show_list_shares_tab(False)
         self._view.list_shares_tab.set_data({
             'shares': shares,
             'success_msg': success_msg,
             'error_msg': error_msg
         })
+
+        if show_tab:
+            self.show_list_shares_tab(False)
 
     @ensure_gui_thread
     def set_share_details(self, share_details):

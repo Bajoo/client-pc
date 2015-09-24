@@ -286,7 +286,7 @@ class BajooApp(wx.App, SoftwareUpdate):
         def _on_members_load(_):
             if self._main_window:
                 self._main_window.load_shares(
-                    self._container_list.get_list())
+                    self._container_list.get_list(), show_tab=False)
 
         wait_all(futures).then(_on_members_load)
 
