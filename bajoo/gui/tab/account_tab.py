@@ -97,7 +97,7 @@ class AccountTab(wx.Panel, Translator):
         wx.PostEvent(self, event)
 
     def Show(self, show=True):
-        self.FindWindowByName('lbl_message').Hide()
+        self.FindWindow('lbl_message').Hide()
         self.Layout()
         event = AccountTab.DataRequestEvent(self.GetId())
         wx.PostEvent(self, event)
@@ -129,7 +129,7 @@ class AccountTab(wx.Panel, Translator):
 
     def on_password_change_success(self):
         self.hide_change_password_window()
-        self.FindWindowByName('lbl_message').Show()
+        self.FindWindow('lbl_message').Show()
         self.Layout()
 
     def show_password_change_error(self, message):
