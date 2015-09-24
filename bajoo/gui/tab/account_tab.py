@@ -168,6 +168,10 @@ class AccountView(BaseView):
             account_screen, URL="https://www.bajoo.fr",
             name='btn_change_offer')
 
+        # See bug http://trac.wxwidgets.org/ticket/17145
+        bg_color = account_screen.GetBackgroundColour()
+        btn_change_offer.SetBackgroundColour(bg_color)
+
         # lbl_quota_info
         lbl_quota_info = wx.StaticText(
             account_screen, wx.ID_ANY,

@@ -86,6 +86,9 @@ class ConnectionFormView(BaseView):
                            N_('Password forgotten?'))
         forgotten_password_link.DoPopup(False)
 
+        # See bug http://trac.wxwidgets.org/ticket/17145
+        forgotten_password_link.SetBackgroundColour(wx.Colour(255, 255, 255))
+
         sizer = self.make_sizer(wx.VERTICAL, [
             self.window.FindWindow('messages'),
             self.window.FindWindow('username'),

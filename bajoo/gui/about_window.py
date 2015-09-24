@@ -112,6 +112,11 @@ class AboutBajooView(BaseView):
             style=wx.NO_BORDER, name='btn_twitter')
         btn_twitter.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
 
+        # See bug http://trac.wxwidgets.org/ticket/17145
+        bg_color = about_panel.GetBackgroundColour()
+        lbl_source_code_link.SetBackgroundColour(bg_color)
+        lbl_home_page_link.SetBackgroundColour(bg_color)
+
         libraries_box = wx.BoxSizer(wx.VERTICAL)
         libraries_box.AddMany([lbl_libraries, lbl_gpg])
 

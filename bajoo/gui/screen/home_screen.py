@@ -78,6 +78,10 @@ class HomeScreenView(BaseView):
         proxy_settings_link.AutoBrowse(False)
         lang_label = wx.StaticText(home_screen)
 
+        # See bug http://trac.wxwidgets.org/ticket/17145
+        bg_color = home_screen.GetBackgroundColour()
+        proxy_settings_link.SetBackgroundColour(bg_color)
+
         notebook = wx.Notebook(home_screen, name='notebook')
 
         self._connection_form = ConnectionForm(notebook,
