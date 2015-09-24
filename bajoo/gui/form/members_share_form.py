@@ -24,6 +24,12 @@ class MembersShareForm(BaseForm):
     The form contains a list of users their permissions on this share.
     The admin can share it with another user, or can modify the current
     permission of a user, or kick he/she out of the shared folder.
+
+    Attrs:
+        excluded_emails (list):
+            A list of emails should not be filled in the email control.
+            Once user enters an email in this list,
+            the button 'add' will be disabled.
     """
     SubmitEvent, EVT_SUBMIT = NewCommandEvent()
     SelectMemberEvent, EVT_SELECT_MEMBER = NewCommandEvent()
@@ -38,12 +44,15 @@ class MembersShareForm(BaseForm):
         BaseForm.__init__(self, parent, auto_disable, **kwargs)
         self._init_icons()
         self._view = MembersShareView(self)
+        self.excluded_emails = []
         self.validators = self._view.get_validators()
 
         self.Bind(wx.EVT_BUTTON, self.submit, id=wx.ID_APPLY)
         self.Bind(wx.EVT_BUTTON, self._btn_remove_user_clicked,
                   id=wx.ID_DELETE)
         self.Bind(dv.EVT_DATAVIEW_SELECTION_CHANGED, self._on_select_member)
+        self.Bind(wx.EVT_TEXT, self._on_email_changed,
+                  self.FindWindow('user_email'))
 
     def _init_icons(self):
         if not MembersShareForm.ADD_ICON:
@@ -77,6 +86,10 @@ class MembersShareForm(BaseForm):
 
         return data
 
+    def _on_email_changed(self, event):
+        email = self.FindWindow('user_email').GetValue()
+        self.enable_add_remove_user(email not in self.excluded_emails)
+
     def _on_select_member(self, _event):
         row = self._view._members_list_view.GetSelectedRow()
         txt_user_email = self.FindWindow('user_email')
@@ -98,6 +111,10 @@ class MembersShareForm(BaseForm):
     def enable_change_rights(self, enable=True):
         self.FindWindow('user_email').Enable(enable)
         self.FindWindow('permission').Enable(enable)
+        self.FindWindow('btn_add_user').Enable(enable)
+        self.FindWindow('btn_remove_user').Enable(enable)
+
+    def enable_add_remove_user(self, enable=True):
         self.FindWindow('btn_add_user').Enable(enable)
         self.FindWindow('btn_remove_user').Enable(enable)
 

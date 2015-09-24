@@ -23,12 +23,20 @@ class CreationShareTab(BaseForm):
     def __init__(self, parent):
         BaseForm.__init__(self, parent)
         self._view = CreationShareView(self)
+        self._user_email = ''
         self.members = {}
 
         self.Bind(wx.EVT_BUTTON, self._btn_create_clicked, id=wx.ID_OK)
         self.Bind(wx.EVT_BUTTON, self._btn_back_clicked,
                   self.FindWindow('btn_back'))
         self.Bind(MembersShareForm.EVT_SUBMIT, self._on_add_member)
+
+        def on_get_user(user_info):
+            self._user_email = user_info.get(u'email')
+            self._view.members_share_form.excluded_emails\
+                .append(self._user_email)
+
+        wx.GetApp().get_user_info().then(on_get_user)
 
     def _btn_back_clicked(self, _event):
         back_event = CreationShareTab.RequestShowListShares(self.GetId())
