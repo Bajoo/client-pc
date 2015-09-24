@@ -60,7 +60,6 @@ class AccountTab(wx.Panel, Translator):
         quota_used_str = human_readable_bytes(self._data['quota_used'])
         quota_percentage = 0
 
-        # TODO: human readable size
         if 'quota' in self._data.keys() \
                 and 'quota_used' in self._data.keys():
             quota_percentage = \
@@ -69,7 +68,10 @@ class AccountTab(wx.Panel, Translator):
         self.FindWindow('lbl_email') \
             .SetLabelText(self._data['email'])
         self.FindWindow('lbl_account_type') \
-            .SetLabelText(self._data['account_type'])
+            .SetLabelText('%s - %s' % (self._data['account_type'], quota_str))
+
+        self.FindWindow('btn_change_offer').Show(
+            not self._data['is_best_account_type'])
 
         # re-register quota info text
         self._view.remove_i18n(self.FindWindow('lbl_quota_info').SetLabel)
@@ -167,6 +169,7 @@ class AccountView(BaseView):
         btn_change_offer = HyperLinkCtrl(
             account_screen, URL="https://www.bajoo.fr",
             name='btn_change_offer')
+        btn_change_offer.Hide()
 
         # See bug http://trac.wxwidgets.org/ticket/17145
         bg_color = account_screen.GetBackgroundColour()

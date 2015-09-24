@@ -620,33 +620,31 @@ class BajooApp(wx.App, SoftwareUpdate):
             _on_share_deleted, _on_delete_share_failed)
 
     def _on_request_account_info(self, event):
+
+        def _send_account_info(quota_info):
+            used_quota, allowed_quota = quota_info
+
+            # user.name must be set.
+            if self._main_window:
+                self._main_window.set_account_info({
+                    'email': self._user.name,
+                    'account_type': _('Beta tester account'),
+                    # Note: In beta, there is only one account type.
+                    'is_best_account_type': True,
+                    'n_shares': len(self._container_list.get_list()),
+                    'quota': allowed_quota,  # 2GB
+                    'quota_used': used_quota  # 500MB
+                })
+
         if self._user and self._user.name:
-            self._main_window.set_account_info({
-                'email': self._user.name,
-                'account_type': 'FREE - 2GB',
-                'n_shares': len(self._container_list.get_list()),
-                'quota': 2147483648,  # 2GB
-                'quota_used': 536870912  # 500MB
-            })
+            f = self._user.get_quota()
         else:
             def _on_user_loaded(user):
                 return user.get_user_info()
 
-            def _on_user_info_fetched(result):
-                email = result.get('email', '')
-
-                if self._main_window:
-                    # TODO: replace stimulated data
-                    self._main_window.set_account_info({
-                        'email': email,
-                        'account_type': 'FREE - 2GB',
-                        'n_shares': len(self._container_list.get_list()),
-                        'quota': 2147483648,  # 2GB
-                        'quota_used': 536870912  # 500MB
-                    })
-
-            User.load(self._session).then(_on_user_loaded) \
-                .then(_on_user_info_fetched)
+            f = User.load(self._session).then(_on_user_loaded)
+            f = f.then(lambda _: self._user.get_quota())
+        f.then(_send_account_info)
 
     def _on_request_change_password(self, event):
         _logger.debug('Change password request received %s:', event.data)

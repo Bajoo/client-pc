@@ -78,7 +78,14 @@ class User(object):
         """
         Returns Future<(int, int)>: used & total storage space.
         """
-        raise NotImplemented
+        f = self._session.send_storage_request('GET', '/quota')
+
+        def extract_quota(response):
+            content = response['content']
+
+            return (int(content.get('used_space', 0)),
+                    int(content.get('allowed', 0)))
+        return f.then(extract_quota)
 
     def get_user_info(self):
         """
@@ -175,7 +182,7 @@ class User(object):
         def _download_error(error):
             if isinstance(error, HTTPNotFoundError):
                 return False  # Key doesn't exists
-            raise
+            raise error
 
         f = self._session.download_storage_file('GET', self._get_key_url())
         return f.then(_on_download_finished, _download_error)
