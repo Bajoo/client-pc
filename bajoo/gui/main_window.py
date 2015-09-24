@@ -75,7 +75,7 @@ class MainWindow(wx.Frame, Translator):
             if data.get('refresh', False):
                 self._view.list_shares_tab.send_data_request()
 
-    def _show_share_tab(self, share_tab):
+    def _show_share_tab(self, share_tab, title=''):
         """
         We have 3 share-related tabs,
         this function will display the share_tab at first place,
@@ -83,9 +83,9 @@ class MainWindow(wx.Frame, Translator):
         """
         if self._view.GetPageCount() > 3:
             self._view.DeletePage(3)
-            self._view.InsertPage(3, share_tab, "", select=True)
+            self._view.InsertPage(3, share_tab, title, select=True)
         else:
-            self._view.AddPage(share_tab, "", select=True)
+            self._view.AddPage(share_tab, title, select=True)
 
     def on_tab_changed(self, event):
         if hasattr(self, '_view') \
@@ -109,11 +109,13 @@ class MainWindow(wx.Frame, Translator):
     @ensure_gui_thread
     def show_creation_shares_tab(self):
         """Make the creation share tab shown on top."""
-        self._show_share_tab(self._view.creation_shares_tab)
+        self._show_share_tab(self._view.creation_shares_tab,
+                             _('Create new share'))
 
     @ensure_gui_thread
     def show_details_share_tab(self, share):
-        self._show_share_tab(self._view.details_share_tab)
+        self._show_share_tab(self._view.details_share_tab,
+                             _('Folder detail: %s') % share.name)
         self._view.details_share_tab.set_data(share)
 
     def show_settings_tab(self):
@@ -243,8 +245,14 @@ class MainWindow(wx.Frame, Translator):
         self.show_creation_shares_tab()
 
     def _on_request_share_details(self, event):
+        try:
+            container_name = event.container.name
+        except AttributeError:
+            container_name = ''
+
         self._view.details_share_tab = DetailsShareTab(self._view)
-        self._show_share_tab(self._view.details_share_tab)
+        self._show_share_tab(self._view.details_share_tab,
+                             _('Folder detail: %s') % container_name)
         event.Skip()
 
 
