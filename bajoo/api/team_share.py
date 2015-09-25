@@ -20,6 +20,17 @@ class TeamShare(Container):
     This class represent a private share folder between some specific users.
     The user who creates this share will be set as its admin by default,
     then he/she can add access to this share for other users.
+
+    Attributes:
+        members (list): list of sharing members with the following format:
+            [{
+                'user' (str): <user_email>
+                'admin' (bool): True/False
+                'write' (bool): True/False
+                'read' (bool): True/False
+            }]
+            Note that the list is not loaded at Container creation. It's must
+            be loaded with a call to list_members() before any use.
     """
 
     def __init__(self, session, container_id, name, encrypted=True):
@@ -46,6 +57,8 @@ class TeamShare(Container):
     def list_members(self):
         """
         Get the list of users who have access to this container.
+
+        This method will set or update the `self.members` attributes.
 
         Returns (Future<array>):
             The array of user permissions associated with this container,

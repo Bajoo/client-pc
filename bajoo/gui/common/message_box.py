@@ -1,19 +1,7 @@
 # -*- coding: utf-8 -*-
 import wx
 
-from ...common.i18n import N_
-
-
-def _show_success_message(message, caption, parent=None):
-    return wx.MessageBox(message, caption,
-                         style=wx.OK | wx.ICON_INFORMATION,
-                         parent=parent)
-
-
-def _show_error_message(message, caption, parent=None):
-    return wx.MessageBox(message, caption,
-                         style=wx.OK | wx.ICON_ERROR,
-                         parent=parent)
+from ...common.i18n import _
 
 
 def _show_confirmation_box(message, caption, parent=None):
@@ -22,24 +10,25 @@ def _show_confirmation_box(message, caption, parent=None):
                          parent=parent)
 
 
-def message_change_password_success(parent=None):
-    message = N_("Your password has been changed.\n\n"
-                 "You will be deconnected soon.\n"
-                 "You can reconnect with your new password.")
-    caption = N_("Password changed successfully.")
+def message_box_delete_share(share_name, parent=None):
+    """Ask the user his confirmation about deleting a sharing, in a modal box.
 
-    return _show_success_message(message, caption, parent)
-
-
-def message_delete_share(share_name, parent=None):
-    message = N_("Are you sure to delete the team share %s?" % share_name)
-    caption = N_("Delete team share")
+    Returns:
+        wx.YES if the user confirms, wx.NO if he don't.
+    """
+    message = _("Are you sure to delete the team share %s?") % share_name
+    caption = _("Delete team share")
 
     return _show_confirmation_box(message, caption, parent)
 
 
-def message_quit_share(share_name, parent=None):
-    message = N_("Are you sure to remove %s from your shares?" % share_name)
-    caption = N_("Quit team share")
+def message_box_quit_share(share_name, parent=None):
+    """Ask the user his confirmation about leaving a sharing, in a modal box.
+
+    Returns:
+        wx.YES if the user confirms, wx.NO if he don't.
+    """
+    message = _("Are you sure to remove %s from your shares?") % share_name
+    caption = _("Quit team share")
 
     return _show_confirmation_box(message, caption, parent)

@@ -319,38 +319,24 @@ class BajooApp(wx.App, SoftwareUpdate):
     def _on_request_container_details(self, event):
         """
         Handle the request `get container detail`: fetch the team share's
-        members if neccessary, then give all info of the LocalContainer
+        members if necessary, then give all info of the LocalContainer
         & Container object to the share detail tab.
+
+        Args:
+            event.container (LocalContainer)
         """
         l_container = event.container
 
-        # TODO: Replace stimulated data
-        l_container.encrypted = True
-        l_container.stats = {
-            'folders': 4,
-            'files': 168,
-            'space': 260000000
-        }
-
-        def _on_members_listed(members):
-            """
-            After fetching share members,
-            show container details on the screen.
-            """
-            l_container.container.members = members
-
+        def send_data_to_window(data):
             if self._main_window:
-                self._main_window.set_share_details(l_container)
+                self._main_window.set_share_details(data)
 
         # If this is a TeamShare, fetch its members.
-        if l_container.container \
-                and type(l_container.container) is TeamShare:
-            l_container.container.list_members() \
-                .then(_on_members_listed)
-        # If not, show it details immediately.
+        if isinstance(l_container.container, TeamShare):
+            f = l_container.container.list_members()
+            f.then(lambda _members: send_data_to_window(l_container))
         else:
-            if self._main_window:
-                self._main_window.set_share_details(l_container)
+            send_data_to_window(l_container)
 
     def _on_request_config(self, _event):
         if self._main_window:

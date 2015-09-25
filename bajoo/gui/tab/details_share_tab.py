@@ -80,6 +80,11 @@ class DetailsShareTab(BaseForm):
 
     @ensure_gui_thread
     def set_data(self, share):
+        """Display data received about the container.
+
+        Args:
+            share (LocalContainer)
+        """
         self._share = share
         n_folders, n_files, folder_size = share.get_stats()
         friendly_folders_size = human_readable_bytes(folder_size)
@@ -240,7 +245,7 @@ class DetailsShareTab(BaseForm):
         self.hide_message()
 
         if self._share:
-            if message_box.message_quit_share(self._share.name, self) \
+            if message_box.message_box_quit_share(self._share.name, self) \
                     == wx.YES:
                 event = DetailsShareTab.RequestQuitShare(self.GetId())
                 event.share = self._share
@@ -252,7 +257,7 @@ class DetailsShareTab(BaseForm):
         self.hide_message()
 
         if self._share:
-            if message_box.message_delete_share(self._share.name, self) \
+            if message_box.message_box_delete_share(self._share.name, self) \
                     == wx.YES:
                 event = DetailsShareTab.RequestDeleteShare(self.GetId())
                 event.share = self._share
