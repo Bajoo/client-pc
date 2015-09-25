@@ -43,7 +43,8 @@ def connect_or_register(ui_factory):
             UIHandlerOfConnection. This function will never be called more
             than one.
     Returns:
-        Future<session>: A connected, valid session.
+        Future<session, user>: A connected, valid session, and the user
+            associated.
     """
 
     p = _ConnectionProcess(ui_factory)
@@ -57,6 +58,8 @@ class _ConnectionProcess(object):
         self.ui_handler = None
 
         self.is_new_account = False
+
+        self.user = None
 
         # Last used credentials, modified by log_user()
         self._username = None
@@ -105,6 +108,7 @@ class _ConnectionProcess(object):
             f = self.ask_user_credentials(username)
 
         f = f.then(self.save_credentials)
+        f = f.then(self.load_user_info)
 
         # Phase 2: configuration
         f = f.then(self.check_user_configuration)
@@ -226,6 +230,22 @@ class _ConnectionProcess(object):
         stored_credentials.save(self._username, session.get_refresh_token())
         self._clear_credentials()
         return session
+
+    def load_user_info(self, session):
+        """Load ths user info of the session's user.
+
+        When done, the self.user atgtribute will be a fully-loaded user.
+
+        Returns:
+            Future<Session>
+        """
+
+        def _fetch_user_info(user):
+            self.user = user
+            return user.get_user_info()
+
+        f = User.load(session).then(_fetch_user_info)
+        return f.then(lambda _: session)
 
     def check_user_configuration(self, session):
         """
@@ -367,11 +387,7 @@ class _ConnectionProcess(object):
         Returns:
             Future<boolean>: True if the GPG config is valid; Otherwise None.
         """
-        def _load_user_info(user):
-            return user.get_user_info().then(lambda _: user)
-
-        f = User.load(self._session).then(_load_user_info)
-        return f.then(lambda user: user.check_remote_key())
+        return self.user.check_remote_key()
 
     def create_gpg_key(self, passphrase):
         """Create a new GPG key and upload it.
@@ -380,11 +396,7 @@ class _ConnectionProcess(object):
             Future<None>: resolve when the user has a valid GPG key,
                 synchronized with the server.
         """
-        def _load_user_info(user):
-            return user.get_user_info().then(lambda _: user)
-
-        f = User.load(self._session).then(_load_user_info)
-        return f.then(lambda user: user.create_encryption_key(passphrase))
+        return self.user.create_encryption_key(passphrase)
 
     @resolve_dec
     def set_root_folder(self, root_folder_path):
@@ -417,4 +429,4 @@ class _ConnectionProcess(object):
         if self.ui_handler:
             self.ui_handler.inform_user_is_connected()
 
-        return session
+        return session, self.user

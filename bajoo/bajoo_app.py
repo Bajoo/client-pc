@@ -7,10 +7,9 @@ import wx
 from wx.lib.softwareupdate import SoftwareUpdate
 
 from . import stored_credentials
-from .api import User, TeamShare, Session, Container
+from .api import TeamShare, Session, Container
 from bajoo.common.future import wait_all
 from .common import config
-from .common.future import resolve_dec
 from .common.path import get_data_dir
 from .connection_registration_process import connect_or_register
 from .container_sync_pool import ContainerSyncPool
@@ -63,6 +62,8 @@ class BajooApp(wx.App, SoftwareUpdate):
         _home_window (HomeWindow): if exists, the main window in not connected
             mode. This attribute is used to gives it the focus when the user
             interacts with the tray icon.
+        _user (User): When we are connected, _user is guaranted to exists and
+            to be fully loaded (ie: with _user.name defined)
     """
 
     def __init__(self):
@@ -559,24 +560,8 @@ class BajooApp(wx.App, SoftwareUpdate):
             if self._main_window:
                 self._main_window.on_quit_or_delete_share(None)
 
-        # Check email's existence
-        if self._user and self._user.name:
-            share.container.remove_member(self._user.name) \
-                .then(on_share_quit, on_share_quit_error)
-        else:
-            def on_user_loaded(__):
-                # Check again email's existence
-                if self._user and self._user.name:
-                    share.container.remove_member(self._user.name) \
-                        .then(on_share_quit, on_share_quit_error)
-                else:
-                    self._notifier.send_message(
-                        _('Error'),
-                        _('Cannot retrieve user information'),
-                        is_error=True
-                    )
-
-            self._get_user_info().then(on_user_loaded)
+        share.container.remove_member(self._user.name) \
+            .then(on_share_quit, on_share_quit_error)
 
     def _on_request_delete_share(self, event):
         """
@@ -636,55 +621,40 @@ class BajooApp(wx.App, SoftwareUpdate):
                     'quota_used': used_quota  # 500MB
                 })
 
-        if self._user and self._user.name:
-            f = self._user.get_quota()
-        else:
-            def _on_user_loaded(user):
-                return user.get_user_info()
-
-            f = User.load(self._session).then(_on_user_loaded)
-            f = f.then(lambda _: self._user.get_quota())
-        f.then(_send_account_info)
+        self._user.get_quota().then(_send_account_info)
 
     def _on_request_change_password(self, event):
         _logger.debug('Change password request received %s:', event.data)
 
-        def change_password(__):
-            if self._user:
-                old_password = event.data[u'old_password']
-                new_password = event.data[u'new_password']
+        old_password = event.data[u'old_password']
+        new_password = event.data[u'new_password']
 
-                def on_password_changed(_):
-                    """
-                    Reload the session (refetch the access token)
-                    after the password change.
-                    """
+        def on_password_changed(_):
+            """
+            Reload the session (refetch the access token)
+            after the password change.
+            """
 
-                    def on_session_reloaded(new_session):
-                        # Replace the token of the current session
-                        self._session.token = new_session.token
-                        stored_credentials.save(
-                            self._user.name, new_session.get_refresh_token())
+            def on_session_reloaded(new_session):
+                # Replace the token of the current session
+                self._session.token = new_session.token
+                stored_credentials.save(
+                    self._user.name, new_session.get_refresh_token())
 
-                    Session.create_session(self._user.name, new_password) \
-                        .then(on_session_reloaded)
+            Session.create_session(self._user.name, new_password) \
+                .then(on_session_reloaded)
 
-                    if self._main_window:
-                        self._main_window.on_password_changed()
+            if self._main_window:
+                self._main_window.on_password_changed()
 
-                def on_password_changed_error(_):
-                    if self._main_window:
-                        self._main_window.on_password_change_error(
-                            N_('Failure when attempting to change password.'))
+        def on_password_changed_error(_):
+            if self._main_window:
+                self._main_window.on_password_change_error(
+                    N_('Failure when attempting to change password.'))
 
-                return self._user \
-                    .change_password(old_password, new_password) \
-                    .then(on_password_changed, on_password_changed_error)
-
-        if self._user is None:
-            self._get_user_info().then(change_password)
-        else:
-            change_password(None)
+        return self._user \
+            .change_password(old_password, new_password) \
+            .then(on_password_changed, on_password_changed_error)
 
     def _exit(self, _event):
         """Close all resources and quit the app."""
@@ -724,12 +694,8 @@ class BajooApp(wx.App, SoftwareUpdate):
         self.MainLoop()
 
     @ensure_gui_thread
-    def _on_connection(self, session):
-        self._session = session
-        self._get_user_info().result()
-        # TODO: remove the result() call when possible.
-        # The passwordManager below need it, and probably the container list
-        # too.
+    def _on_connection(self, session_and_user):
+        self._session, self._user = session_and_user
 
         if self._home_window:
             self._home_window.Destroy()
@@ -744,28 +710,10 @@ class BajooApp(wx.App, SoftwareUpdate):
 
         _logger.debug('Start DynamicContainerList() ...')
         self._container_list = DynamicContainerList(
-            session, self._notifier.send_message,
+            self._session, self._notifier.send_message,
             self._container_sync_pool.add,
             self._container_sync_pool.remove)
         self._task_bar_icon.set_state(_(TaskBarIcon.SYNC_PROGRESS))
-
-    @resolve_dec
-    def _get_user_info(self):
-        if self._session:
-            def _on_user_loaded(user):
-                self._user = user
-                return self._user.get_user_info()
-
-            return User.load(self._session).then(_on_user_loaded)
-        else:
-            return None
-
-    @resolve_dec
-    def get_user_info(self):
-        if self._user:
-            return self._user.get_user_info()
-        else:
-            return self._get_user_info()
 
     @ensure_gui_thread
     def _on_global_status_change(self, status):
@@ -792,8 +740,9 @@ class BajooApp(wx.App, SoftwareUpdate):
             self._home_window.Destroy()
         if self._main_window:
             self._main_window.Destroy()
-        email = self._user.name
         stored_credentials.save(self._user.name)
+        email = self._user.name
+        self._user = None
         self._task_bar_icon.set_state(_(TaskBarIcon.NOT_CONNECTED))
         if self._passphrase_manager:
             self._passphrase_manager.set_passphrase(email, None,

@@ -148,12 +148,9 @@ class DetailsShareTab(BaseForm):
         else:
             self.hide_message()
 
-        def on_get_user(user_info):
-            self._user_email = user_info.get(u'email')
-            self._refresh_admin_controls()
-
         if show_share_options:
-            wx.GetApp().get_user_info().then(on_get_user)
+            self._user_email = wx.GetApp()._user.name
+            self._refresh_admin_controls()
 
     @ensure_gui_thread
     def _refresh_admin_controls(self):

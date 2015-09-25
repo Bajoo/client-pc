@@ -52,6 +52,11 @@ class User(object):
         """
         Create a user object from an existing session.
 
+        Note: by default, the data associated to this class are not loaded.
+        Before using it, you should call `get_user_info()`
+        It include s`self.name`
+
+
         Args:
             session (bajoo.api.Session): an authorized session
 
@@ -89,7 +94,10 @@ class User(object):
 
     def get_user_info(self):
         """
-        Get user's public profile.
+        Get user's public profile and load infos in this class.
+
+        returns:
+            Future<dict>: user infos.
         """
 
         def _on_request_result(response):

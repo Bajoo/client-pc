@@ -31,12 +31,8 @@ class CreationShareTab(BaseForm):
                   self.FindWindow('btn_back'))
         self.Bind(MembersShareForm.EVT_SUBMIT, self._on_add_member)
 
-        def on_get_user(user_info):
-            self._user_email = user_info.get(u'email')
-            self._view.members_share_form.excluded_emails\
-                .append(self._user_email)
-
-        wx.GetApp().get_user_info().then(on_get_user)
+        self._user_email = wx.GetApp()._user.name
+        self._view.members_share_form.excluded_emails.append(self._user_email)
 
     def _btn_back_clicked(self, _event):
         back_event = CreationShareTab.RequestShowListShares(self.GetId())
