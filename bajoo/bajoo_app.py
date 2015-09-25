@@ -713,7 +713,7 @@ class BajooApp(wx.App, SoftwareUpdate):
             self._session, self._notifier.send_message,
             self._container_sync_pool.add,
             self._container_sync_pool.remove)
-        self._task_bar_icon.set_state(_(TaskBarIcon.SYNC_PROGRESS))
+        self._task_bar_icon.set_state(TaskBarIcon.SYNC_PROGRESS)
 
     @ensure_gui_thread
     def _on_global_status_change(self, status):
@@ -721,13 +721,16 @@ class BajooApp(wx.App, SoftwareUpdate):
 
         We update the tray icon.
         """
+        if not self._user:
+            return  # We are in a disconnection phase.
+
         mapping = {
             ContainerSyncPool.STATUS_PAUSE: TaskBarIcon.SYNC_PAUSE,
             ContainerSyncPool.STATUS_SYNCING: TaskBarIcon.SYNC_PROGRESS,
             ContainerSyncPool.STATUS_UP_TO_DATE: TaskBarIcon.SYNC_DONE
         }
         if self._task_bar_icon:
-            self._task_bar_icon.set_state(_(mapping[status]))
+            self._task_bar_icon.set_state(mapping[status])
 
     def _on_sync_error(self, err):
         self._notifier.send_message(_('Sync error'), _(err), is_error=True)
@@ -743,7 +746,7 @@ class BajooApp(wx.App, SoftwareUpdate):
         stored_credentials.save(self._user.name)
         email = self._user.name
         self._user = None
-        self._task_bar_icon.set_state(_(TaskBarIcon.NOT_CONNECTED))
+        self._task_bar_icon.set_state(TaskBarIcon.NOT_CONNECTED)
         if self._passphrase_manager:
             self._passphrase_manager.set_passphrase(email, None,
                                                     remember_on_disk=True)

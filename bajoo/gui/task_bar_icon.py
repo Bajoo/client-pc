@@ -56,7 +56,9 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
         CONNECTION_PROGRESS: N_('Connection in progress...'),
         SYNC_DONE: N_('Sync up to date'),
         SYNC_PROGRESS: N_('Shares currently syncing...'),
-        SYNC_PAUSE: N_('Synchronization suspended')
+        SYNC_PAUSE: N_('Synchronization suspended'),
+        SYNC_STOP: N_('Synchronization is not active'),
+        SYNC_ERROR: N_('An error happened :(')
     }
 
     def __init__(self):
