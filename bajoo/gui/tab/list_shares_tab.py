@@ -321,14 +321,15 @@ class ListSharesView(BaseView):
 
         if container.container and type(container.container) is TeamShare:
             share = container.container
+            lbl_share_members.Hide()
 
-            if hasattr(share, 'members'):
+            if hasattr(share, 'members') and share.members:
                 n_members = len(share.members)
+
                 self.register_i18n(
                     lbl_share_members.SetLabel,
                     '%d members', n_members)
-            else:
-                lbl_share_members.SetLabelText('-')
+                lbl_share_members.Show()
 
         # self.register_i18n(lbl_share_description.SetLabel,
         # N_('%d members'), 18)

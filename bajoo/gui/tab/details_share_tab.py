@@ -143,7 +143,8 @@ class DetailsShareTab(BaseForm):
         show_share_options = \
             self._share.container and type(self._share.container) is TeamShare
 
-        self.FindWindow('lbl_share_nb_members').Show(show_share_options)
+        self.FindWindow('lbl_share_nb_members').Show(
+            show_share_options and has_member_data)
         self.FindWindow('btn_open_folder').Enable(
             share.path is not None and
             path.exists(share.path))
