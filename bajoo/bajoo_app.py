@@ -64,6 +64,7 @@ class BajooApp(wx.App, SoftwareUpdate):
             interacts with the tray icon.
         _user (User): When we are connected, _user is guaranted to exists and
             to be fully loaded (ie: with _user.name defined)
+        profile (UserProfile)
     """
 
     def __init__(self):
@@ -79,6 +80,8 @@ class BajooApp(wx.App, SoftwareUpdate):
         self._container_sync_pool = ContainerSyncPool(
             self._on_global_status_change, self._on_sync_error)
         self._passphrase_manager = None
+
+        self.user_profile = None
 
         if hasattr(wx, 'SetDefaultPyEncoding'):
             # wxPython classic only
@@ -681,7 +684,7 @@ class BajooApp(wx.App, SoftwareUpdate):
 
     @ensure_gui_thread
     def _on_connection(self, session_and_user):
-        self._session, self._user = session_and_user
+        self._session, self._user, self.user_profile = session_and_user
 
         if self._home_window:
             self._home_window.Destroy()
@@ -723,6 +726,9 @@ class BajooApp(wx.App, SoftwareUpdate):
 
     def disconnect(self, _evt):
         """revoke token and return the the home window."""
+
+        # TODO: erase profile file
+        self.user_profile = None
 
         _logger.info('Disconnect user.')
         if self._home_window:

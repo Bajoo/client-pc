@@ -6,13 +6,13 @@ import logging
 import os
 import sys
 
-from . import stored_credentials
 from .api import register, User
 from .api.session import Session
 from .common import config
 from .common.i18n import N_, _
 from .common.future import Future, resolve_dec, wait_all
 from .network.errors import HTTPError
+from .user_profile import UserProfile
 
 _logger = logging.getLogger(__name__)
 
@@ -59,6 +59,7 @@ class _ConnectionProcess(object):
 
         self.is_new_account = False
 
+        self.profile = None
         self.user = None
 
         # Last used credentials, modified by log_user()
@@ -97,7 +98,12 @@ class _ConnectionProcess(object):
         Returns:
             Future<session>: A connected, valid session.
         """
-        username, refresh_token = stored_credentials.load()
+        self.profile = UserProfile.get_last_profile()
+
+        username = refresh_token = None
+        if self.profile:
+            username = self.profile.email
+            refresh_token = self.profile.refresh_token
 
         _logger.debug('Connection process phase 1: LogIn')
 
@@ -227,7 +233,10 @@ class _ConnectionProcess(object):
         Returns:
             Session: the session received in argument.
         """
-        stored_credentials.save(self._username, session.get_refresh_token())
+        if not self.profile or self.profile.email != self._username:
+            self.profile = UserProfile(self._username)
+        self.profile.refresh_token = session.get_refresh_token()
+
         self._clear_credentials()
         return session
 
@@ -429,4 +438,4 @@ class _ConnectionProcess(object):
         if self.ui_handler:
             self.ui_handler.inform_user_is_connected()
 
-        return session, self.user
+        return session, self.user, self.profile
