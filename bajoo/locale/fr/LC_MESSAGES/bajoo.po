@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: Bajoo 2 0.1\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2015-07-24 15:06+0200\n"
-"PO-Revision-Date: 2015-09-09 18:23+0100\n"
+"PO-Revision-Date: 2015-09-29 16:34+0100\n"
 "Last-Translator: Bajoo <contact@bajoo.fr>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -942,3 +942,42 @@ msgid ""
 "%s"
 msgstr ""
 "Erreur lors de la synchronisation du fichier \"%s\" dans le dossier \"%s\":%s"
+
+#: bajoo/gui/tab/details_share_tab.py
+msgid "Loading ..."
+msgstr "Chargement..."
+
+#: bajoo/bajoo_app.py
+msgid ""
+"Cannot add this member to team share; maybe this account does not exist."
+msgstr ""
+"Impossible d'ajouter ce membre au partage collaboratif; peut-être ce compte "
+"n'existe pas."
+
+#: bajoo/bajoo_app.py
+msgid "Team share %s has been successfully created."
+msgstr "Le partage collaboratif %s a été créé avec succès."
+
+#: bajoo/bajoo_app.py
+msgid ""
+"Some members cannot be added to this team share. Please verify the email "
+"addresses."
+msgstr ""
+"Quelques membres ne peuvent être ajoutés au partage collaboratif. Merci de "
+"vérifier les adresses email."
+
+#: bajoo/bajoo_app.py
+msgid "A team share has been successfully deleted from server."
+msgstr "Un partage collaboratif a été supprimé du serveur avec succès."
+
+#: bajoo/bajoo_app.py
+msgid "Team share %s cannot be deleted from server."
+msgstr "Impossible de supprimer le partage collaboratif %s sur le serveur."
+
+#: bajoo/gui/main_window.py
+msgid "Create new share"
+msgstr "Créer un nouveau partage"
+
+#: bajoo/gui/main_window.py
+msgid "Folder detail: %s"
+msgstr "Détail du dossier : %s"
