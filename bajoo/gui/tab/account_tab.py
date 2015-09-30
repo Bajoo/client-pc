@@ -8,7 +8,6 @@ from wx.lib.agw.hyperlink import HyperLinkCtrl
 from ...common.i18n import N_
 from ...common.util import human_readable_bytes
 from ..base_view import BaseView
-from ...common import config
 from ...common.util import open_folder
 from ..change_password_window import ChangePasswordWindow
 from ..translator import Translator
@@ -85,9 +84,8 @@ class AccountTab(wx.Panel, Translator):
         self.FindWindow('gauge_text_value').SetLabelText(quota_used_str)
         self.FindWindow('gauge_text_max').SetLabelText(quota_str)
 
-    def _on_open_bajoo_folder(self, event):
-        path = config.get('root_folder')
-        open_folder(path)
+    def _on_open_bajoo_folder(self, _event):
+        open_folder(self.profile.root_folder_path)
 
     def _btn_change_password_clicked(self, _event):
         self.show_change_password_window()

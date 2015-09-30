@@ -44,11 +44,13 @@ class DynamicContainerList(object):
     the element should be considered being loaded.
     """
 
-    def __init__(self, session, notify, start_container,
+    def __init__(self, session, user_profile, notify, start_container,
                  stop_container):
         """
         Args:
             session (Session)
+            user_profile (UserProfile): user's profile. Used to remember
+                containers (and theirs settings) between executions.
             notify (callable): Notify the user about an event. take three
                 parameters: the summary, the text body, and a boolean to
                 specify if it's an error.
@@ -58,6 +60,7 @@ class DynamicContainerList(object):
             stop_container (callable): callback called when a container is
                 removed. Receive LocalContainer in parameters.
         """
+        self.user_profile = user_profile
         self._notify = notify
         self._list_path = os.path.join(get_data_dir(), 'container_list.json')
         self._local_list = []
@@ -117,7 +120,8 @@ class DynamicContainerList(object):
                 local_container.container = c
                 if c:
                     if local_container.path is None:
-                        new_path = local_container.create_folder(c.name)
+                        new_path = local_container.create_folder(
+                            self.user_profile.root_folder_path, c.name)
                         if new_path is None:
                             self._notify(
                                 _('Error when adding new share'),
@@ -159,7 +163,8 @@ class DynamicContainerList(object):
             for c in added_containers:
                 local_container = LocalContainer(c.id, c.name)
                 local_container.container = c
-                c_path = local_container.create_folder(c.name)
+                c_path = local_container.create_folder(
+                    self.user_profile.root_folder_path, c.name)
                 if c_path is None:
                     self._notify(_('Error when adding new share'),
                                  _('Unable to create a folder for %s:\n%s'
@@ -227,15 +232,16 @@ class DynamicContainerList(object):
 
 def main():
     import time
+    from collections import namedtuple
     from .api.session import Session
 
     logging.basicConfig()
 
-    def notify(summary, body, is_error):
+    def notify(summary, body, is_error=False):
         print('NOTIF %s: %s' % ('ERROR' if is_error else 'INFO', summary))
         print(body)
 
-    def start_container(local, container):
+    def start_container(container):
         print('Start container %s' % container)
 
     def stop_container(local):
@@ -243,7 +249,10 @@ def main():
 
     session = Session.create_session('stran+20@bajoo.fr',
                                      'stran+20@bajoo.fr').result()
-    dyn_list = DynamicContainerList(session, notify,
+
+    UserProfile = namedtuple('UserProfile', ['root_folder_path'])
+    user_profile = UserProfile(os.path.expanduser('~/Bajoo'))
+    dyn_list = DynamicContainerList(session, user_profile, notify,
                                     start_container, stop_container)
     try:
         while True:

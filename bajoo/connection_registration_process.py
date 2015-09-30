@@ -8,7 +8,6 @@ import sys
 
 from .api import register, User
 from .api.session import Session
-from .common import config
 from .common.i18n import N_, _
 from .common.future import Future, resolve_dec, wait_all
 from .network.errors import HTTPError
@@ -366,7 +365,7 @@ class _ConnectionProcess(object):
         Returns:
             Future<boolean>: True if valid; Otherwise False.
         """
-        root_folder = config.get('root_folder', unicode=True)
+        root_folder = self.profile.root_folder_path
 
         if not root_folder:
             self._root_folder_error = None
@@ -427,7 +426,7 @@ class _ConnectionProcess(object):
                                 % root_folder_path, exc_info=True)
                 raise
 
-        config.set('root_folder', root_folder_path)
+        self.profile.root_folder_path = root_folder_path
 
     def inform_user(self, session):
         """Informs the user interface if it's been used.

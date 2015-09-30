@@ -701,7 +701,7 @@ class BajooApp(wx.App, SoftwareUpdate):
 
         _logger.debug('Start DynamicContainerList() ...')
         self._container_list = DynamicContainerList(
-            self._session, self._notifier.send_message,
+            self._session, self.user_profile, self._notifier.send_message,
             self._container_sync_pool.add,
             self._container_sync_pool.remove)
         self._task_bar_icon.set_state(TaskBarIcon.SYNC_PROGRESS)

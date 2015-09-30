@@ -41,7 +41,6 @@ _default_config = {
     'proxy_port': {'type': int, 'default': None},
     'proxy_user': {'type': str, 'default': None},
     'proxy_password': {'type': str, 'default': None},
-    'root_folder': {'type': str, 'default': None},
     'launched_at_startup': {'type': bool, 'default': True},
     'contextual_icon': {'type': bool, 'default': True},
     'notifications': {'type': bool, 'default': True},

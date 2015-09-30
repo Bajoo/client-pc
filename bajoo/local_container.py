@@ -11,7 +11,6 @@ from threading import RLock
 
 from .api.team_share import TeamShare
 from .common.i18n import _
-from .common import config
 
 
 _logger = logging.getLogger(__name__)
@@ -105,7 +104,7 @@ class LocalContainer(object):
         self.status = self.STATUS_STOPPED
         return True
 
-    def create_folder(self, name):
+    def create_folder(self, root_folder_path, name):
         """Create a new folder for storing the container's files.
 
         Set the ``self.path`` attribute.
@@ -115,11 +114,9 @@ class LocalContainer(object):
         """
 
         if isinstance(self.container, TeamShare):
-            folder_path = os.path.join(config.get('root_folder', unicode=True),
-                                       _('Shares'), name)
+            folder_path = os.path.join(root_folder_path, _('Shares'), name)
         else:
-            folder_path = os.path.join(config.get('root_folder', unicode=True),
-                                       name)
+            folder_path = os.path.join(root_folder_path, name)
 
         try:
             os.makedirs(folder_path)
