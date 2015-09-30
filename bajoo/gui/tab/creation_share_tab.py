@@ -6,6 +6,7 @@ from wx.lib.newevent import NewCommandEvent
 
 from ...api.team_share import permission as share_permission
 from ...common.i18n import N_
+from ..common.pictos import get_bitmap
 from ..base_view import BaseView
 from ..form.members_share_form import MembersShareForm
 from ..form.base_form import BaseForm
@@ -22,6 +23,7 @@ class CreationShareTab(BaseForm):
 
     def __init__(self, parent):
         BaseForm.__init__(self, parent)
+        self._init_images()
         self._view = CreationShareView(self)
         self._user_email = ''
         self.members = {}
@@ -33,6 +35,10 @@ class CreationShareTab(BaseForm):
 
         self._user_email = wx.GetApp()._user.name
         self._view.members_share_form.excluded_emails.append(self._user_email)
+
+    def _init_images(self):
+        self.IMG_MEMBERS = get_bitmap('group.png', False)
+        self.IMG_BACK = get_bitmap('previous.png', False)
 
     def _btn_back_clicked(self, _event):
         back_event = CreationShareTab.RequestShowListShares(self.GetId())
@@ -76,7 +82,9 @@ class CreationShareView(BaseView):
     def __init__(self, creation_share_tab):
         BaseView.__init__(self, creation_share_tab)
 
-        btn_back = wx.Button(creation_share_tab, name='btn_back')
+        btn_back = wx.BitmapButton(
+            creation_share_tab, name='btn_back',
+            bitmap=creation_share_tab.IMG_BACK)
         btn_cancel = wx.Button(creation_share_tab, wx.ID_CANCEL)
         btn_create = wx.Button(creation_share_tab, wx.ID_OK)
         txt_share_name = wx.TextCtrl(creation_share_tab, name='txt_share_name')
@@ -111,7 +119,13 @@ class CreationShareView(BaseView):
             flag=wx.EXPAND, outside_border=False)
 
         # the members share form
-        lbl_members = wx.StaticText(creation_share_tab)
+        img_members = wx.StaticBitmap(
+            creation_share_tab, bitmap=creation_share_tab.IMG_MEMBERS,
+            name='img_members')
+        lbl_members = wx.StaticText(creation_share_tab, name='lbl_members')
+        lbl_members_box = self.make_sizer(
+            wx.HORIZONTAL, [img_members, lbl_members],
+            outside_border=False, flag=wx.ALIGN_CENTER)
         self.members_share_form = MembersShareForm(creation_share_tab)
         creation_share_tab.members_share_form = self.members_share_form
 
@@ -129,14 +143,13 @@ class CreationShareView(BaseView):
         main_sizer = self.make_sizer(wx.VERTICAL, [top_sizer])
         main_sizer.AddMany([
             (share_info_sizer, 0, wx.EXPAND | wx.ALL, 15),
-            (lbl_members, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 15),
+            (lbl_members_box, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 15),
             (self.members_share_form, 1, wx.EXPAND | wx.ALL, 15),
             (share_options_sizer, 0, wx.EXPAND | wx.ALL, 15),
             (buttons_sizer, 0, wx.EXPAND | wx.ALL, 15)])
         creation_share_tab.SetSizer(main_sizer)
 
         self.register_many_i18n('SetLabel', {
-            btn_back: N_('<< Back to share list'),
             btn_create: N_('Create'),
             rbtn_team_share: N_("Team share"),
             rbtn_public_share: N_("Public share"),
@@ -148,6 +161,10 @@ class CreationShareView(BaseView):
 
         self.register_many_i18n('SetHint', {
             txt_share_name: N_('Share name')
+        })
+
+        self.register_many_i18n('SetToolTipString', {
+            btn_back: N_('<< Back to share list'),
         })
 
 

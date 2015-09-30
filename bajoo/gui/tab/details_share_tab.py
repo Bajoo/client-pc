@@ -9,13 +9,16 @@ from wx.lib.newevent import NewCommandEvent
 
 from ...api.team_share import permission as share_permission
 from ...api import TeamShare
+from ...local_container import LocalContainer
 from ...common.i18n import N_, _
 from ..base_view import BaseView
 from ..event_future import ensure_gui_thread
 from ..form.members_share_form import MembersShareForm
 from ..form.base_form import BaseForm
 from ..common import message_box
+from ..common.pictos import get_bitmap
 from ...common.util import human_readable_bytes
+
 
 _logger = logging.getLogger(__name__)
 
@@ -35,6 +38,7 @@ class DetailsShareTab(BaseForm):
     @ensure_gui_thread
     def __init__(self, parent):
         BaseForm.__init__(self, parent)
+        self._init_images()
         self._share = None
         self._user_email = None
         self._view = DetailsShareView(self)
@@ -50,6 +54,28 @@ class DetailsShareTab(BaseForm):
                   self.FindWindow('btn_quit_share'))
         self.Bind(wx.EVT_BUTTON, self._btn_delete_share_clicked,
                   self.FindWindow('btn_delete_share'))
+
+    def _init_images(self):
+        self.IMG_ENCRYPTED = get_bitmap('lock.png')
+        self.IMG_NOT_ENCRYPTED = get_bitmap('unlock.png')
+        self.IMG_MEMBERS = get_bitmap('group.png', False)
+        self.IMG_BACK = get_bitmap('previous.png', False)
+        self.IMG_QUIT_SHARE = get_bitmap('quit-share.png', False)
+        self.IMG_DELETE_SHARE = get_bitmap('delete-share.png', False)
+        self.IMG_OPEN_FOLDER = get_bitmap('open-folder.png', False)
+
+        self.IMG_CONTAINER_STATUS = {
+            LocalContainer.STATUS_ERROR:
+                get_bitmap('container_status/error.png'),
+            LocalContainer.STATUS_PAUSED:
+                get_bitmap('container_status/paused.png'),
+            LocalContainer.STATUS_STARTED:
+                get_bitmap('container_status/synced.png'),
+            LocalContainer.STATUS_STOPPED:
+                get_bitmap('container_status/stopped.png'),
+            LocalContainer.STATUS_UNKNOWN:
+                get_bitmap('container_status/error.png')
+        }
 
     def _has_member_data(self):
         if not self._share.container:
@@ -102,6 +128,9 @@ class DetailsShareTab(BaseForm):
         else:
             self.FindWindow('members_share_form').Disable()
 
+        self.FindWindow('img_share_encryption').SetBitmap(
+            self.IMG_ENCRYPTED if is_encrypted else self.IMG_NOT_ENCRYPTED)
+
         # Remove all i18n registrations
         self._view.remove_i18n(
             self.FindWindow('lbl_share_nb_members').SetLabel)
@@ -139,6 +168,9 @@ class DetailsShareTab(BaseForm):
             )
         })
 
+        self.FindWindow('img_share_status').SetBitmap(
+            self.IMG_CONTAINER_STATUS[share.status])
+
         # Cannot show members of/delete/quit MyBajoo folder
         show_share_options = \
             self._share.container and type(self._share.container) is TeamShare
@@ -168,6 +200,7 @@ class DetailsShareTab(BaseForm):
         show_quit = show_share_options and not is_only_admin
 
         self.FindWindow('lbl_members').Show(show_admin)
+        self.FindWindow('img_members').Show(show_admin)
         self.FindWindow('members_share_form').Show(show_admin)
         self.FindWindow('btn_delete_share').Enable(show_admin)
         self.FindWindow('btn_quit_share').Enable(show_quit)
@@ -181,6 +214,7 @@ class DetailsShareTab(BaseForm):
         # Hide administration controls by default
         self.hide_message()
         self.FindWindow('lbl_members').Hide()
+        self.FindWindow('img_members').Hide()
         self.FindWindow('members_share_form').Hide()
         self.FindWindow('btn_delete_share').Disable()
         self.FindWindow('btn_quit_share').Enable()
@@ -294,12 +328,15 @@ class DetailsShareView(BaseView):
     def __init__(self, details_share_tab):
         BaseView.__init__(self, details_share_tab)
 
-        btn_back = wx.Button(
-            details_share_tab, name='btn_back')
-        btn_quit_share = wx.Button(
-            details_share_tab, name='btn_quit_share')
-        btn_delete_share = wx.Button(
-            details_share_tab, name='btn_delete_share')
+        btn_back = wx.BitmapButton(
+            details_share_tab, name='btn_back',
+            bitmap=details_share_tab.IMG_BACK)
+        btn_quit_share = wx.BitmapButton(
+            details_share_tab, name='btn_quit_share',
+            bitmap=details_share_tab.IMG_QUIT_SHARE)
+        btn_delete_share = wx.BitmapButton(
+            details_share_tab, name='btn_delete_share',
+            bitmap=details_share_tab.IMG_DELETE_SHARE)
 
         lbl_share_name = wx.StaticText(
             details_share_tab,
@@ -307,6 +344,8 @@ class DetailsShareView(BaseView):
         lbl_share_nb_members = wx.StaticText(
             details_share_tab,
             label='', name='lbl_share_nb_members')
+        img_share_encryption = wx.StaticBitmap(
+            details_share_tab, name='img_share_encryption')
         lbl_share_encryption = wx.StaticText(
             details_share_tab,
             label='', name='lbl_share_encryption')
@@ -314,20 +353,32 @@ class DetailsShareView(BaseView):
         lbl_share_type = wx.StaticText(
             details_share_tab,
             label='', name='lbl_share_type')
+        img_share_status = wx.StaticBitmap(
+            details_share_tab, name='img_share_status')
         lbl_share_status = wx.StaticText(
             details_share_tab,
             label='', name='lbl_share_status')
+        lbl_share_status_box = self.make_sizer(
+            wx.HORIZONTAL, [lbl_share_status, img_share_status],
+            outside_border=False, flag=wx.ALIGN_CENTER)
         lbl_share_files_folders = wx.StaticText(
             details_share_tab,
             label='', name='lbl_share_files_folders')
         lbl_local_space = wx.StaticText(
             details_share_tab,
             label='', name='lbl_local_space')
-        btn_open_folder = wx.Button(
-            details_share_tab, name='btn_open_folder')
+        btn_open_folder = wx.BitmapButton(
+            details_share_tab, name='btn_open_folder',
+            bitmap=details_share_tab.IMG_OPEN_FOLDER)
 
         # the members share form
+        img_members = wx.StaticBitmap(
+            details_share_tab, bitmap=details_share_tab.IMG_MEMBERS,
+            name='img_members')
         lbl_members = wx.StaticText(details_share_tab, name='lbl_members')
+        lbl_members_box = self.make_sizer(
+            wx.HORIZONTAL, [img_members, lbl_members],
+            outside_border=False, flag=wx.ALIGN_CENTER)
         members_share_form = MembersShareForm(
             details_share_tab, name='members_share_form')
         self.members_share_form = members_share_form
@@ -345,15 +396,16 @@ class DetailsShareView(BaseView):
         # the share description box contains share's name,
         # number of members & whether it is encrypted
         share_description_box = self.make_sizer(
-            wx.HORIZONTAL,
-            [lbl_share_name, lbl_share_nb_members, lbl_share_encryption],
-            outside_border=False)
+            wx.HORIZONTAL, [
+                lbl_share_name, lbl_share_nb_members,
+                img_share_encryption, lbl_share_encryption
+            ], outside_border=False, flag=wx.ALIGN_CENTER)
 
         # the share summary box contains share type, status,
         # number of files & folders & storage space taken
         share_summary_box = wx.BoxSizer(wx.VERTICAL)
         share_summary_box.AddMany(
-            [lbl_share_type, lbl_share_status,
+            [lbl_share_type, lbl_share_status_box,
              lbl_share_files_folders, lbl_local_space])
 
         # the share details box contains the summary
@@ -377,7 +429,7 @@ class DetailsShareView(BaseView):
             (share_description_box, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 15),
             (share_details_box, 0, wx.EXPAND | wx.LEFT, 15),
             (lbl_message, 0, wx.EXPAND | wx.ALL, 15),
-            (lbl_members, 0, wx.EXPAND | wx.TOP | wx.LEFT | wx.RIGHT, 15),
+            (lbl_members_box, 0, wx.EXPAND | wx.TOP | wx.LEFT | wx.RIGHT, 15),
             (members_share_form, 1, wx.EXPAND | wx.ALL, 15),
             (share_options_sizer, 0, wx.EXPAND | wx.ALL, 15),
             (buttons_sizer, 0, wx.EXPAND | wx.ALL, 15)
@@ -385,13 +437,16 @@ class DetailsShareView(BaseView):
         details_share_tab.SetSizer(main_sizer)
 
         self.register_many_i18n('SetLabel', {
+            lbl_members: N_('Members having access to this share'),
+            chk_exclusion: N_('Do not synchronize on this PC'),
+            btn_browse_location: N_('Location on this PC')
+        })
+
+        self.register_many_i18n('SetToolTipString', {
             btn_back: N_('<< Back to share list'),
             btn_quit_share: N_('Quit this share'),
             btn_delete_share: N_('Delete this share'),
             btn_open_folder: N_('Open folder'),
-            lbl_members: N_('Members having access to this share'),
-            chk_exclusion: N_('Do not synchronize on this PC'),
-            btn_browse_location: N_('Location on this PC')
         })
 
         # TODO: disable for next release

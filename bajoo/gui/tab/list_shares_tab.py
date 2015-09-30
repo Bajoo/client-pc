@@ -7,8 +7,9 @@ import wx
 from wx.lib.newevent import NewCommandEvent
 
 from ...api import TeamShare, MyBajoo
+from ...local_container import LocalContainer
 from ...common.i18n import N_
-from ...common.path import resource_filename
+from ..common.pictos import get_bitmap
 from ..event_future import ensure_gui_thread
 from ..base_view import BaseView
 from ..translator import Translator
@@ -45,9 +46,6 @@ class ListSharesTab(wx.Panel, Translator):
         container: <bajoo.LocalContainer>
     """
 
-    TEAM_SHARE_ICON = None
-    MY_BAJOO_ICON = None
-
     @ensure_gui_thread
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
@@ -64,17 +62,29 @@ class ListSharesTab(wx.Panel, Translator):
                   self.FindWindow('btn_refresh_share_list'))
 
     def _init_images(self):
-        if not ListSharesTab.TEAM_SHARE_ICON:
-            img_path = resource_filename(
-                'assets/images/icon_storage_share.png')
-            img = wx.Image(img_path).Scale(64, 64, wx.IMAGE_QUALITY_HIGH)
-            ListSharesTab.TEAM_SHARE_ICON = img.ConvertToBitmap()
+        self.IMG_TEAM_SHARE = get_bitmap(
+            'icon_storage_share.png', True, 64, 64)
+        self.IMG_MY_BAJOO = get_bitmap(
+            'icon_storage_my_bajoo.png', True, 64, 64)
+        self.IMG_CONTAINER_DETAILS = get_bitmap(
+            'edit-share.png', True, 32, 32)
+        self.IMG_ENCRYPTED = get_bitmap('lock.png')
+        self.IMG_NOT_ENCRYPTED = get_bitmap('unlock.png')
+        self.IMG_MEMBERS = get_bitmap('group.png')
+        self.IMG_REFRESH = get_bitmap('refresh.png', False)
 
-        if not ListSharesTab.MY_BAJOO_ICON:
-            img_path = resource_filename(
-                'assets/images/icon_storage_my_bajoo.png')
-            img = wx.Image(img_path).Scale(64, 64, wx.IMAGE_QUALITY_HIGH)
-            ListSharesTab.MY_BAJOO_ICON = img.ConvertToBitmap()
+        self.IMG_CONTAINER_STATUS = {
+            LocalContainer.STATUS_ERROR:
+                get_bitmap('container_status/error.png'),
+            LocalContainer.STATUS_PAUSED:
+                get_bitmap('container_status/paused.png'),
+            LocalContainer.STATUS_STARTED:
+                get_bitmap('container_status/synced.png'),
+            LocalContainer.STATUS_STOPPED:
+                get_bitmap('container_status/stopped.png'),
+            LocalContainer.STATUS_UNKNOWN:
+                get_bitmap('container_status/error.png')
+        }
 
     @ensure_gui_thread
     def set_data(self, data):
@@ -191,8 +201,9 @@ class ListSharesView(BaseView):
 
         btn_create_share = wx.Button(list_shares_tab,
                                      name='btn_create_share')
-        btn_refresh_share_list = wx.Button(list_shares_tab,
-                                           name='btn_refresh_share_list')
+        btn_refresh_share_list = wx.BitmapButton(
+            list_shares_tab, name='btn_refresh_share_list',
+            bitmap=self.window.IMG_REFRESH)
         self._wait = wx.Gauge(self.window)
         self._wait.Hide()
         self._waiting_timer = wx.Timer(self.window)
@@ -228,7 +239,7 @@ class ListSharesView(BaseView):
         self.window.SetSizer(main_sizer)
         self.register_i18n(btn_create_share.SetLabel,
                            N_("New share"))
-        self.register_i18n(btn_refresh_share_list.SetLabel,
+        self.register_i18n(btn_refresh_share_list.SetToolTipString,
                            N_("Refresh"))
 
     def generate_share_views(self, shares):
@@ -270,12 +281,14 @@ class ListSharesView(BaseView):
 
         # By default, set it as a team share icon
         # to prevent unknown container type or, particularly, None.
-        img_share = ListSharesTab.TEAM_SHARE_ICON
+        img_share = self.window.IMG_TEAM_SHARE
 
         lbl_share_name = wx.StaticText(
             share_box, label=container.name,
             name='lbl_share_name_' + container.id)
         lbl_share_status_desc = wx.StaticText(share_box)
+        img_share_status = wx.StaticBitmap(
+            share_box, name='img_share_status_' + container.id)
         lbl_share_status = wx.StaticText(
             share_box, name='lbl_share_status_' + container.id)
 
@@ -286,20 +299,27 @@ class ListSharesView(BaseView):
 
         share_status_box = self.make_sizer(
             wx.HORIZONTAL, [
-                lbl_share_status_desc, lbl_share_status, lbl_error_msg
+                lbl_share_status_desc, img_share_status,
+                lbl_share_status, lbl_error_msg
             ], outside_border=False)
+        img_share_encryption = wx.StaticBitmap(
+            share_box, name='img_share_encryption_' + container.id)
         lbl_share_description = wx.StaticText(
             share_box, name='lbl_share_desc_' + container.id)
+        img_share_members = wx.StaticBitmap(
+            share_box, name='img_share_members_' + container.id,
+            bitmap=self.window.IMG_MEMBERS)
         lbl_share_members = wx.StaticText(
-            share_box, name='lbl_share_members' + container.id)
+            share_box, name='lbl_share_members_' + container.id)
 
-        btn_share_details = wx.Button(
-            share_box, name='btn_share_details_' + container.id)
+        btn_share_details = wx.BitmapButton(
+            share_box, name='btn_share_details_' + container.id,
+            bitmap=self.window.IMG_CONTAINER_DETAILS)
         self.window.Bind(wx.EVT_BUTTON, self.window.btn_share_details_clicked,
                          btn_share_details)
 
         if container.container and type(container.container) is MyBajoo:
-            img_share = ListSharesTab.MY_BAJOO_ICON
+            img_share = self.window.IMG_MY_BAJOO
 
         btn_open_local_dir = wx.BitmapButton(
             share_box, bitmap=img_share,
@@ -318,10 +338,15 @@ class ListSharesView(BaseView):
         self.register_i18n(
             lbl_share_description.SetLabel,
             N_(encrypted_text))
+        img_share_encryption.SetBitmap(
+            self.window.IMG_ENCRYPTED if container.container.is_encrypted
+            else self.window.IMG_NOT_ENCRYPTED)
+
+        lbl_share_members.Hide()
+        img_share_members.Hide()
 
         if container.container and type(container.container) is TeamShare:
             share = container.container
-            lbl_share_members.Hide()
 
             if hasattr(share, 'members') and share.members:
                 n_members = len(share.members)
@@ -330,6 +355,7 @@ class ListSharesView(BaseView):
                     lbl_share_members.SetLabel,
                     '%d members', n_members)
                 lbl_share_members.Show()
+                img_share_members.Show()
 
         # self.register_i18n(lbl_share_description.SetLabel,
         # N_('%d members'), 18)
@@ -338,7 +364,8 @@ class ListSharesView(BaseView):
 
         description_box = self.make_sizer(
             wx.HORIZONTAL, [
-                lbl_share_name, lbl_share_description, lbl_share_members
+                lbl_share_name, img_share_encryption,
+                lbl_share_description, img_share_members, lbl_share_members
             ], False)
         description_status_box = self.make_sizer(
             wx.VERTICAL, [description_box, share_status_box], False)
@@ -356,6 +383,14 @@ class ListSharesView(BaseView):
             lbl_share_status: N_(container.get_status_text()),
             btn_share_details: N_('Details')
         })
+
+        self.register_many_i18n('SetToolTipString', {
+            btn_open_local_dir: N_('Open folder'),
+            btn_share_details: N_('Details')
+        })
+
+        img_share_status.SetBitmap(
+            self.window.IMG_CONTAINER_STATUS[container.status])
 
     def _waiting_timer_handler(self, _event):
         self._wait.Pulse()
