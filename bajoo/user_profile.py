@@ -189,7 +189,9 @@ class UserProfile(object):
                 self._fingerprint_key = data.get('fingerprint_key', None)
                 encrypted_passphrase = data.get('passphrase', None)
                 if encrypted_passphrase:
-                    self._passphrase = xor(encrypted_passphrase, self.email)
+                    passphrase = xor(encrypted_passphrase, self.email)
+                    self._passphrase = passphrase.decode('utf-8')
+
         except (OSError, IOError, UnicodeError, ValueError):
             _logger.info('Failed to open last_profile file', exc_info=True)
 

@@ -1,26 +1,29 @@
 #  -*- coding:utf-8 -*-
 
-import errno
 import logging
-import os.path
-from .common.path import get_data_dir
-from .common.util import xor
 
 _logger = logging.getLogger(__name__)
 
 
 class PassphraseManager(object):
-    """Store the passphrase(s) and transmit them to the encryption module.
+    """Keep passphrase(s) in memory and transmit them to the encryption module.
 
     If the user doesn't want to gives his passphrase, the `_rejected` flags is
     set to True, and any subsequenty call are ignored. This state is
     reinitialized with a call to `set_passphrase()`.
     """
 
-    def __init__(self):
+    def __init__(self, user_profile):
+        """
+        Args:
+            user_profile (UserProfile): profile used to persistently stores
+                the passphrase.
+        """
         self._user_input_callback = None
         self._passphrase = None
         self._rejected = False
+
+        self._user_profile = user_profile
 
     def set_user_input_callback(self, callback):
         """Set the callback used to ask the user his passphrase.
@@ -32,7 +35,7 @@ class PassphraseManager(object):
         """
         self._user_input_callback = callback
 
-    def get_passphrase(self, email, is_retry):
+    def get_passphrase(self, is_retry):
         """Retrieve the passphrase either from cache or by asking the user
 
         If there is already a passphrase value in memory, it's returned.
@@ -54,7 +57,7 @@ class PassphraseManager(object):
         if not is_retry:
             if self._passphrase:
                 return self._passphrase
-            self._passphrase = self._load_passphrase_from_disk(email)
+            self._passphrase = self._user_profile.passphrase
             if self._passphrase:
                 return self._passphrase
 
@@ -63,11 +66,11 @@ class PassphraseManager(object):
             self._passphrase = passphrase
             self._rejected = passphrase is None
             if remember_it:
-                self._save_passphrase_on_disk(passphrase, email)
+                self._user_profile.passphrase = passphrase
             return passphrase
         return None
 
-    def set_passphrase(self, email, passphrase, remember_on_disk=False):
+    def set_passphrase(self, passphrase, remember_on_disk=False):
         """Set the passphrase.
 
         It also reinitialize the "rejected" status.
@@ -82,53 +85,13 @@ class PassphraseManager(object):
         self._passphrase = passphrase
         self._rejected = False
         if remember_on_disk:
-            self._save_passphrase_on_disk(passphrase, email)
+            self._user_profile.passphrase = passphrase
 
-    @staticmethod
-    def _save_passphrase_on_disk(passphrase, key):
-        """Write the passphrase on the disk.
+    def remove_passphrase(self):
+        """Forgot the passphrase an erase it from disk.
 
-        Args:
-            passphrase (bytes/text): passphrase to save. If None, the
-                previously saved passphrase is deleted.
-            key (bytes/text): key used to performs basic encryption.
+        It also reinitialize the "rejected" status.
         """
-        passphrase_path = os.path.join(get_data_dir(), 'passphrase')
-
-        if passphrase is None:
-            try:
-                os.remove(passphrase_path)
-            except (OSError, IOError) as e:
-                if e.errno != errno.ENOENT:
-                    _logger.warning('Remove the passphrase file has failed.',
-                                    exc_info=True)
-            return
-
-        enc_passphrase = xor(passphrase, key)
-        try:
-            with open(passphrase_path, 'wb') as f:
-                f.write(enc_passphrase)
-        except (IOError, OSError):
-            _logger.warning('Unable to store passphrase on the disk.',
-                            exc_info=True)
-
-    @staticmethod
-    def _load_passphrase_from_disk(key):
-        """Load and returns the passprhase stored on the disk.
-
-        Args:
-            key (bytes/text): key used to decrypt the file.
-        Returns:
-            passphrase (text); None if there is none.
-        """
-        passphrase_path = os.path.join(get_data_dir(), 'passphrase')
-
-        try:
-            with open(passphrase_path, 'rb') as f:
-                enc_passphrase = f.read()
-                return xor(enc_passphrase, key).decode('utf-8')
-        except (IOError, OSError) as e:
-            if e.errno != errno.ENOENT:
-                _logger.warning('Unable to read passphrase from the disk',
-                                exc_info=True)
-        return None
+        self._passphrase = None
+        self._rejected = False
+        self._user_profile.passphrase = None

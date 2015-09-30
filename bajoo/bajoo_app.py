@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from functools import partial
 import logging
 
 import wx
@@ -694,11 +693,10 @@ class BajooApp(wx.App, SoftwareUpdate):
             self._home_window.Destroy()
 
         if not self._passphrase_manager:
-            self._passphrase_manager = PassphraseManager()
+            self._passphrase_manager = PassphraseManager(self.user_profile)
             self._passphrase_manager.set_user_input_callback(
                 PassphraseWindow.ask_passphrase)
-            cb = partial(self._passphrase_manager.get_passphrase,
-                         self._user.name)
+            cb = self._passphrase_manager.get_passphrase
             Container.passphrase_callback = staticmethod(cb)
 
         _logger.debug('Start DynamicContainerList() ...')
@@ -740,12 +738,10 @@ class BajooApp(wx.App, SoftwareUpdate):
         if self._main_window:
             self._main_window.Destroy()
         stored_credentials.save(self._user.name)
-        email = self._user.name
         self._user = None
         self._task_bar_icon.set_state(TaskBarIcon.NOT_CONNECTED)
         if self._passphrase_manager:
-            self._passphrase_manager.set_passphrase(email, None,
-                                                    remember_on_disk=True)
+            self._passphrase_manager.remove_passphrase()
 
         def _on_unhandled_exception(_exception):
             _logger.critical('Uncaught exception on Run process',
