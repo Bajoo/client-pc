@@ -228,6 +228,10 @@ class BajooApp(wx.App, SoftwareUpdate):
                   self._on_request_quit_share)
         self.Bind(DetailsShareTab.EVT_DELETE_SHARE_REQUEST,
                   self._on_request_delete_share)
+        self.Bind(ListSharesTab.EVT_QUIT_SHARE_REQUEST,
+                  self._on_request_quit_share)
+        self.Bind(ListSharesTab.EVT_DELETE_SHARE_REQUEST,
+                  self._on_request_delete_share)
         self.Bind(AccountTab.EVT_DATA_REQUEST,
                   self._on_request_account_info)
         self.Bind(ChangePasswordWindow.EVT_CHANGE_PASSWORD_SUBMIT,
