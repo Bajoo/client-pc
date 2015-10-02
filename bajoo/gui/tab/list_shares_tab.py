@@ -68,6 +68,10 @@ class ListSharesTab(wx.Panel, Translator):
             'icon_storage_my_bajoo.png', True, 64, 64)
         self.IMG_CONTAINER_DETAILS = get_bitmap(
             'edit-share.png', True, 32, 32)
+        self.IMG_QUIT_SHARE = get_bitmap(
+            'quit-share.png', True, 32, 32)
+        self.IMG_DELETE_SHARE = get_bitmap(
+            'delete-share.png', True, 32, 32)
         self.IMG_ENCRYPTED = get_bitmap('lock.png')
         self.IMG_NOT_ENCRYPTED = get_bitmap('unlock.png')
         self.IMG_MEMBERS = get_bitmap('group.png')
@@ -315,8 +319,21 @@ class ListSharesView(BaseView):
         btn_share_details = wx.BitmapButton(
             share_box, name='btn_share_details_' + container.id,
             bitmap=self.window.IMG_CONTAINER_DETAILS)
+        btn_quit_share = wx.BitmapButton(
+            share_box, name='btn_share_details_' + container.id,
+            bitmap=self.window.IMG_QUIT_SHARE)
+        btn_quit_share.Hide()
+        btn_delete_share = wx.BitmapButton(
+            share_box, name='btn_share_details_' + container.id,
+            bitmap=self.window.IMG_DELETE_SHARE)
+        btn_delete_share.Hide()
         self.window.Bind(wx.EVT_BUTTON, self.window.btn_share_details_clicked,
                          btn_share_details)
+
+        action_box = self.make_sizer(
+            wx.HORIZONTAL, [
+                btn_quit_share, btn_delete_share, btn_share_details
+            ], outside_border=False)
 
         if container.container and type(container.container) is MyBajoo:
             img_share = self.window.IMG_MY_BAJOO
@@ -345,18 +362,6 @@ class ListSharesView(BaseView):
         lbl_share_members.Hide()
         img_share_members.Hide()
 
-        if container.container and type(container.container) is TeamShare:
-            share = container.container
-
-            if hasattr(share, 'members') and share.members:
-                n_members = len(share.members)
-
-                self.register_i18n(
-                    lbl_share_members.SetLabel,
-                    '%d members', n_members)
-                lbl_share_members.Show()
-                img_share_members.Show()
-
         # self.register_i18n(lbl_share_description.SetLabel,
         # N_('%d members'), 18)
 
@@ -373,7 +378,7 @@ class ListSharesView(BaseView):
         share_box_sizer_inside = self.make_sizer(wx.HORIZONTAL, [
             btn_open_local_dir,
             description_status_box, None,
-            btn_share_details])
+            action_box])
         share_box_sizer.Add(share_box_sizer_inside, 1, wx.EXPAND)
 
         self.share_sizer.Add(share_box_sizer, 0, wx.EXPAND)
@@ -386,11 +391,44 @@ class ListSharesView(BaseView):
 
         self.register_many_i18n('SetToolTipString', {
             btn_open_local_dir: N_('Open folder'),
-            btn_share_details: N_('Details')
+            btn_share_details: N_('Details'),
+            btn_quit_share: N_('Quit this share'),
+            btn_delete_share: N_('Delete this share')
         })
 
         img_share_status.SetBitmap(
             self.window.IMG_CONTAINER_STATUS[container.status])
+
+        if container.container and type(container.container) is TeamShare:
+            share = container.container
+
+            if hasattr(share, 'members') and share.members:
+                n_members = len(share.members)
+
+                self.register_i18n(
+                    lbl_share_members.SetLabel,
+                    '%d members', n_members)
+                lbl_share_members.Show()
+                img_share_members.Show()
+
+                is_admin = False
+                has_other_admins = False
+
+                for member in share.members:
+                    member_email = member.get(u'user')
+                    member_admin = member.get(u'admin')
+
+                    if member_admin:
+                        if member_email == wx.GetApp().user_profile.email:
+                            is_admin = True
+                        else:
+                            has_other_admins = True
+
+                is_only_admin = is_admin and not has_other_admins
+
+                btn_delete_share.Show(is_admin)
+                btn_quit_share.Show(not is_only_admin)
+                share_box_sizer.Layout()
 
     def _waiting_timer_handler(self, _event):
         self._wait.Pulse()
