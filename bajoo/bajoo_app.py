@@ -294,7 +294,16 @@ class BajooApp(wx.App, SoftwareUpdate):
                 self._main_window.load_shares(
                     self._container_list.get_list(), show_tab=False)
 
-        wait_all(futures).then(_on_members_load)
+        def _on_members_load_error(error):
+            _logger.error(error)
+
+            if self._main_window:
+                self._main_window.load_shares(
+                    self._container_list.get_list(),
+                    error_msg=_('Error occurred: %s.') % error,
+                    show_tab=False)
+
+        wait_all(futures).then(_on_members_load, _on_members_load_error)
 
     def _container_status_request(self, _event):
 
