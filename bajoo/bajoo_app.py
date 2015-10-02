@@ -281,29 +281,32 @@ class BajooApp(wx.App, SoftwareUpdate):
         Handle the request `get share list`: refresh the dynamic container
         list in bajoo_app and give it to the share list tab in main_window.
         """
-        self._container_list.refresh()
 
-        futures = []
+        def on_refreshed():
+            futures = []
 
-        for container in self._container_list.get_list():
-            if container.container and type(container.container) is TeamShare:
-                futures.append(container.container.list_members())
+            for container in self._container_list.get_list():
+                if container.container and \
+                                type(container.container) is TeamShare:
+                    futures.append(container.container.list_members())
 
-        def _on_members_load(_):
-            if self._main_window:
-                self._main_window.load_shares(
-                    self._container_list.get_list(), show_tab=False)
+            def _on_members_load(_):
+                if self._main_window:
+                    self._main_window.load_shares(
+                        self._container_list.get_list(), show_tab=False)
 
-        def _on_members_load_error(error):
-            _logger.error(error)
+            def _on_members_load_error(error):
+                _logger.error(error)
 
-            if self._main_window:
-                self._main_window.load_shares(
-                    self._container_list.get_list(),
-                    error_msg=_('Error occurred: %s.') % error,
-                    show_tab=False)
+                if self._main_window:
+                    self._main_window.load_shares(
+                        self._container_list.get_list(),
+                        error_msg=_('Error occurred: %s.') % error,
+                        show_tab=False)
 
-        wait_all(futures).then(_on_members_load, _on_members_load_error)
+            wait_all(futures).then(_on_members_load, _on_members_load_error)
+
+        self._container_list.refresh(on_refreshed)
 
     def _container_status_request(self, _event):
 
@@ -552,21 +555,22 @@ class BajooApp(wx.App, SoftwareUpdate):
             """
             Notify user & navigate back to share list
             """
-            self._container_list.refresh()
-            self._notifier.send_message(
-                _('Quit team share'),
-                _('You have no longer access to team share %s.'
-                  % share.name)
-            )
-
-            if self._main_window:
-                self._main_window.load_shares(
-                    self._container_list.get_list(),
+            def on_refreshed():
+                self._notifier.send_message(
+                    _('Quit team share'),
                     _('You have no longer access to team share %s.'
                       % share.name))
 
                 if self._main_window:
-                    self._main_window.on_quit_or_delete_share(share)
+                    self._main_window.load_shares(
+                        self._container_list.get_list(),
+                        _('You have no longer access to team share %s.'
+                          % share.name))
+
+                    if self._main_window:
+                        self._main_window.on_quit_or_delete_share(share)
+
+            self._container_list.refresh(on_refreshed)
 
         def on_share_quit_error(__):
             self._notifier.send_message(
