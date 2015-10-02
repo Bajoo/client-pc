@@ -373,7 +373,7 @@ class DetailsShareView(BaseView):
 
         # the members share form
         img_members = wx.StaticBitmap(
-            details_share_tab, bitmap=details_share_tab.IMG_MEMBERS,
+            details_share_tab, label=details_share_tab.IMG_MEMBERS,
             name='img_members')
         lbl_members = wx.StaticText(details_share_tab, name='lbl_members')
         lbl_members_box = self.make_sizer(

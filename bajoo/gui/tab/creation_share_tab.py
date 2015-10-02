@@ -120,7 +120,7 @@ class CreationShareView(BaseView):
 
         # the members share form
         img_members = wx.StaticBitmap(
-            creation_share_tab, bitmap=creation_share_tab.IMG_MEMBERS,
+            creation_share_tab, label=creation_share_tab.IMG_MEMBERS,
             name='img_members')
         lbl_members = wx.StaticText(creation_share_tab, name='lbl_members')
         lbl_members_box = self.make_sizer(

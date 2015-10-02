@@ -312,7 +312,7 @@ class ListSharesView(BaseView):
             share_box, name='lbl_share_desc_' + container.id)
         img_share_members = wx.StaticBitmap(
             share_box, name='img_share_members_' + container.id,
-            bitmap=self.window.IMG_MEMBERS)
+            label=self.window.IMG_MEMBERS)
         lbl_share_members = wx.StaticText(
             share_box, name='lbl_share_members_' + container.id)
 
