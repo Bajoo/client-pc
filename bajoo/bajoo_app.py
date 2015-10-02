@@ -34,6 +34,7 @@ from .gui.change_password_window import ChangePasswordWindow
 from .common.i18n import _, N_, set_lang
 from .passphrase_manager import PassphraseManager
 
+
 _logger = logging.getLogger(__name__)
 
 
@@ -451,43 +452,6 @@ class BajooApp(wx.App, SoftwareUpdate):
         encrypted = event.encrypted
         members = event.members
 
-        def share_creation_finally(refresh, success_msg=None, error_msg=None):
-            """
-            This function needs to be called after all operations in the
-            share creation process. This will recollect data if neccessary
-            and show the share list tab.
-            """
-
-            def on_refresh():
-                if self._main_window:
-                    self._main_window.load_shares(
-                        self._container_list.get_list(),
-                        success_msg, error_msg)
-
-            if refresh:
-                self._container_list.refresh(on_refresh)
-            else:
-                on_refresh()
-
-        def on_members_added(__):
-            """
-            All members have been added to the share: return
-            to the share list screen.
-            """
-            share_creation_finally(
-                True, _('Team share %s has been successfully created') %
-                share_name)
-
-        def on_members_added_error(__):
-            """
-            One or some members were not added: show error message.
-            """
-            share_creation_finally(
-                True,
-                _('Team share %s has been successfully created') % share_name,
-                N_('Some members cannot be added to this team share. '
-                   'Please verify the email addresses.'))
-
         def on_share_created(share):
             """
             The share has been created successfully: notify user,
@@ -500,6 +464,58 @@ class BajooApp(wx.App, SoftwareUpdate):
                 permissions.pop('user')
                 futures.append(share.add_member(member, permissions))
 
+            def share_creation_finally(refresh, success_msg=None,
+                                       error_msg=None):
+                """
+                This function needs to be called after all operations in the
+                share creation process. This will recollect data if neccessary
+                and show the share list tab.
+                """
+
+                def on_refreshed():
+                    def load_shares(__):
+                        if self._main_window:
+                            self._main_window.load_shares(
+                                self._container_list.get_list(),
+                                success_msg, error_msg)
+
+                    loaded = False
+
+                    for container in self._container_list.get_list():
+                        if container.id == share.id:
+                            container.container.list_members() \
+                                .then(load_shares)
+                            loaded = True
+                            break
+
+                    if not loaded:
+                        load_shares(None)
+
+                if refresh:
+                    self._container_list.refresh(on_refreshed)
+                else:
+                    on_refreshed()
+
+            def on_members_added(__):
+                """
+                All members have been added to the share: return
+                to the share list screen.
+                """
+                share_creation_finally(
+                    True, _('Team share %s has been successfully created') %
+                    share_name)
+
+            def on_members_added_error(__):
+                """
+                One or some members were not added: show error message.
+                """
+                share_creation_finally(
+                    True,
+                    _('Team share %s has been successfully created')
+                    % share_name,
+                    N_('Some members cannot be added to this team share. '
+                       'Please verify the email addresses.'))
+
             if len(futures) > 0:
                 return wait_all(futures).then(
                     on_members_added, on_members_added_error)
@@ -511,8 +527,10 @@ class BajooApp(wx.App, SoftwareUpdate):
             Error occurred when attempting to create a new share.
             Notify user then return to the share list screen.
             """
-            share_creation_finally(
-                False, None, _('Cannot create share %s') % share_name)
+            if self._main_window:
+                self._main_window.load_shares(
+                    self._container_list.get_list(),
+                    None, _('Cannot create share %s') % share_name)
 
         TeamShare.create(self._session, share_name, encrypted) \
             .then(on_share_created, on_create_share_failed)
