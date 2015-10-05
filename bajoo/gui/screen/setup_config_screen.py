@@ -75,11 +75,23 @@ class SetupConfigScreen(BaseForm):
         self.FindWindow('bajoo_folder_section').Show(folder_setting)
         self.enable()
 
+        self._reset_validators(key_setting, folder_setting)
         self.GetTopLevelParent().Layout()
+
+    def _reset_validators(self, key_setting, folder_setting):
+        # Reset validators
+        self.validators = []
+
+        if key_setting:
+            self.validators.append(self.FindWindow('gpg_error'))
+            self.validators.append(self.FindWindow('passphrase_validator'))
+            self.validators.append(self.FindWindow('confirmation_validator'))
+
+        if folder_setting:
+            self.validators.append(self.FindWindow('root_folder_error'))
 
 
 class SetupConfigScreenView(BaseView):
-
     def __init__(self, screen):
         BaseView.__init__(self, screen)
 
@@ -176,6 +188,7 @@ def main():
     screen.GetSizer().SetSizeHints(win)
     win.Show(True)
     app.MainLoop()
+
 
 if __name__ == '__main__':
     main()
