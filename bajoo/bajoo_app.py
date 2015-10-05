@@ -7,7 +7,7 @@ from wx.lib.softwareupdate import SoftwareUpdate
 
 from . import stored_credentials
 from .api import TeamShare, Session, Container
-from bajoo.common.future import wait_all
+from .common.future import wait_all
 from .common import config
 from .common.path import get_data_dir
 from .connection_registration_process import connect_or_register

@@ -10,6 +10,7 @@ from .api import register, User
 from .api.session import Session
 from .common.i18n import N_, _
 from .common.future import Future, resolve_dec, wait_all
+from .encryption import set_gpg_home_dir
 from .network.errors import HTTPError
 from .user_profile import UserProfile
 
@@ -395,6 +396,7 @@ class _ConnectionProcess(object):
         Returns:
             Future<boolean>: True if the GPG config is valid; Otherwise None.
         """
+        set_gpg_home_dir(self.profile.gpg_folder_path)
         return self.user.check_remote_key()
 
     def create_gpg_key(self, passphrase):

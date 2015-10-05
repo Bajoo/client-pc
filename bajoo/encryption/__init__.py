@@ -7,7 +7,8 @@ It supports two main features:
 - The encryption and decryption of arbitrary files.
 - The creation and use of asymmetric GPG keys.
 
-The initialisation of GPG, is done transparently for the caller.
+The initialisation of GPG, must be done by setting the gpg home dir
+(see `set_gpg_home_dir()`).
 A global keyring is instantiated (and kept between executions), for storing
 keys regularly used.
 It's also possible to use a GPG key which is not in the global keyring,
@@ -33,7 +34,7 @@ import os.path
 import tempfile
 from gnupg import GPG
 
-from ..common.path import get_data_dir, get_cache_dir
+from ..common.path import get_cache_dir
 from ..common.future import then
 from .asymmetric_key import AsymmetricKey
 from .errors import EncryptionError, KeyGenError, EncryptError, DecryptError
@@ -46,6 +47,7 @@ _thread_pool = ThreadPoolExecutor(max_workers=cpu_count())
 
 # main GPG() instance
 _gpg = None
+_gpg_home_dir = None
 
 _tmp_dir = None
 try:
@@ -71,9 +73,8 @@ def _get_gpg_context():
     global _gpg
 
     if not _gpg:
-        gpg_home = os.path.join(get_data_dir(), 'gpg')
         try:
-            _gpg = GPG(verbose=False, gnupghome=gpg_home, use_agent=False)
+            _gpg = GPG(verbose=False, gnupghome=_gpg_home_dir, use_agent=False)
         except (IOError, OSError) as e:
             if e.errno == errno.ENOENT:
                 raise EncryptionError('GPG binary executable not found.')
@@ -103,6 +104,22 @@ def _patch_autodelete_file(file_stream, path):
                                     path)
     file_stream.__exit__ = partial(_patch_remove_path, file_stream.__exit__,
                                    path)
+
+
+def set_gpg_home_dir(gpg_home_dir):
+    """Set, or change, the GPG homedir path.
+
+    This function MUST be called before any use of this module !
+
+    If there is already a GPG instance, it will be replaced by a new one.
+
+    Args:
+        _gpg_home_dir (unicode):
+    """
+    global _gpg, _gpg_home_dir
+    _gpg = None
+    _gpg_home_dir = gpg_home_dir
+    _get_gpg_context()
 
 
 def create_key(email, passphrase, container=False):

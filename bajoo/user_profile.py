@@ -83,7 +83,7 @@ class UserProfile(object):
             profile. It should not be modified.
         refresh_token
         root_folder_path (unicode)
-        gpg_folder_path (unicode)
+        gpg_folder_path (unicode): read-only attribute.
 
     """
 
@@ -111,7 +111,6 @@ class UserProfile(object):
         self.email = user_email
 
         self._refresh_token = None
-        self._gpg_folder_path = None
         self._root_folder_path = None
         self._fingerprint_key = None
         self._passphrase = None
@@ -190,7 +189,6 @@ class UserProfile(object):
 
                 self.email = email
                 self._refresh_token = data.get('refresh_token', None)
-                self._gpg_folder_path = data.get('gpg_folder_path', None)
                 self._root_folder_path = data.get('root_folder_path', None)
                 self._fingerprint_key = data.get('fingerprint_key', None)
                 encrypted_passphrase = data.get('passphrase', None)
@@ -222,7 +220,6 @@ class UserProfile(object):
         data = {
             'email': self.email,
             'refresh_token': self._refresh_token,
-            'gpg_folder_path': self._gpg_folder_path,
             'root_folder_path': self._root_folder_path,
             'fingerprint_key': self._fingerprint_key,
             'passphrase': passphrase,
@@ -247,9 +244,13 @@ class UserProfile(object):
 
     refresh_token = _write_action_attr('_refresh_token', _save_data)
     root_folder_path = _write_action_attr('_root_folder_path', _save_data)
-    gpg_folder_path = _write_action_attr('_gpg_folder_path', _save_data)
     fingerprint_key = _write_action_attr('_fingerprint_key', _save_data)
     passphrase = _write_action_attr('_passphrase', _save_data)
+
+    @property
+    def gpg_folder_path(self):
+        p = u'%s-gpg' % hashlib.md5(self.email.encode('utf-8')).hexdigest()
+        return os.path.join(get_data_dir(), p)
 
     def get_all_containers(self):
         """Returns all containers saved.
