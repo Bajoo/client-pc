@@ -203,10 +203,9 @@ class UserProfile(object):
         except (OSError, IOError, UnicodeError, ValueError):
             _logger.info('Failed to open last_profile file', exc_info=True)
 
-        self._update_last_profile()
-
         if self.email is None:
             raise _InvalidUserProfile()
+        self._update_last_profile()
 
     def _save_data(self):
         """Save all the data into the profile file."""
