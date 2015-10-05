@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from copy import deepcopy
 import errno
 import hashlib
 import json
@@ -7,6 +8,7 @@ import logging
 import os.path
 from .common.path import get_data_dir
 from .common.util import xor
+from .container_model import ContainerModel
 
 _logger = logging.getLogger(__name__)
 
@@ -50,7 +52,9 @@ def _write_action_attr(attr, callback):
 
 
 class _InvalidUserProfile(Exception):
-    pass
+    """Raised when an expected user profile is not valid (can't be loaded).
+
+    Internal used only."""
 
 
 class UserProfile(object):
@@ -111,6 +115,8 @@ class UserProfile(object):
         self._root_folder_path = None
         self._fingerprint_key = None
         self._passphrase = None
+
+        self._containers = {}
 
         if _profile_file_path:
             self._load_profile(_profile_file_path)
@@ -192,6 +198,10 @@ class UserProfile(object):
                     passphrase = xor(encrypted_passphrase, self.email)
                     self._passphrase = passphrase.decode('utf-8')
 
+                for c in data.get('containers', []):
+                    self._containers[c['id']] = ContainerModel(
+                        c['id'], name=c['name'], path=c.get('path', None))
+
         except (OSError, IOError, UnicodeError, ValueError):
             _logger.info('Failed to open last_profile file', exc_info=True)
 
@@ -215,7 +225,9 @@ class UserProfile(object):
             'gpg_folder_path': self._gpg_folder_path,
             'root_folder_path': self._root_folder_path,
             'fingerprint_key': self._fingerprint_key,
-            'passphrase': passphrase
+            'passphrase': passphrase,
+            'containers': [dict(id=c.id, name=c.name, path=c.path)
+                           for c in self._containers.values()]
         }
 
         with open(profile_file_path, 'w')as profile_file:
@@ -238,3 +250,55 @@ class UserProfile(object):
     gpg_folder_path = _write_action_attr('_gpg_folder_path', _save_data)
     fingerprint_key = _write_action_attr('_fingerprint_key', _save_data)
     passphrase = _write_action_attr('_passphrase', _save_data)
+
+    def get_all_containers(self):
+        """Returns all containers saved.
+
+        This function is NOT thread-safe. Don't use several container-related
+        methods at the same time !
+
+        Returns:
+            dict of ContainerModel: list of all containers, of the form:
+                {container_id: container_model)
+        """
+        return deepcopy(self._containers)
+
+    def get_container(self, id):
+        """Get the container model.
+
+        This function is NOT thread-safe. Don't use several container-related
+        methods at the same time !
+
+        Returns:
+            ContainerModel: model of the container. None if it doesn't exists.
+        """
+        return deepcopy(self._containers.get(id, None))
+
+    def set_container(self, id, container_model):
+        """Add or update a container's data.
+
+        This function is NOT thread-safe. Don't use several container-related
+        methods at the same time !
+
+        Args:
+            container_model (ContainerModel): container's data
+        """
+        self._containers[id] = container_model
+        self._save_data()
+
+    def remove_container(self, id):
+        """Remove a container from the list.
+
+        This function is NOT thread-safe. Don't use several container-related
+        methods at the same time !
+
+        Returns:
+            True if the container has been deleted; False if not found.
+        """
+        try:
+            del self._containers[id]
+        except KeyError:
+            return False
+
+        self._save_data()
+        return True

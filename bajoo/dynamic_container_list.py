@@ -1,16 +1,14 @@
 # -*- coding: utf-8 -*-
 
-import io
-import json
 import logging
 from threading import Lock as Lock
 import os
-import errno
 
 from .common.i18n import _
 from .common.path import get_data_dir
 from .api.sync import container_list_updater
 from .local_container import LocalContainer
+from .user_profile import ContainerModel
 
 
 _logger = logging.getLogger(__name__)
@@ -68,25 +66,15 @@ class DynamicContainerList(object):
         self._start_container = start_container
         self._stop_container = stop_container
 
-        local_list_data = []
-        try:
-            with io.open(self._list_path, encoding='utf-8') as list_file:
-                local_list_data = json.load(list_file)
-        except IOError as e:
-            if e.errno is errno.ENOENT:
-                _logger.debug('Container list file not found.')
-            else:
-                _logger.warning('Unable to open the container list file:',
-                                exc_info=True)
-        except ValueError:
-            _logger.warning('The container list file is not valid:',
-                            exc_info=True)
-
+        # NOTE: since user_profile is not tread-safe, all calls to user_profile
+        # methods must be done using the Lock `self._list_lock`.
+        local_list_data = self.user_profile.get_all_containers()
         self._local_list = [
-            LocalContainer(c['id'], c['name'], c['path'],
-                           do_not_sync=c.get('do_not_sync', False))
-            for c in local_list_data]
-        local_id_list = [c['id'] for c in local_list_data]
+            LocalContainer(c.id, c.name, c.path,
+                           do_not_sync=c.do_not_sync)
+            for c in local_list_data.values()]
+
+        local_id_list = list(local_list_data)
 
         self._updater = container_list_updater(session,
                                                self._on_added_containers,
@@ -95,22 +83,13 @@ class DynamicContainerList(object):
                                                local_id_list)
         self._updater.start()
 
-    def _save_local_list(self):
-        """Save the local list file."""
-        try:
-            with open(self._list_path, 'w') as list_file, self._list_lock:
-                local_list = []
-                for c in self._local_list:
-                    entry = {'id': c.id, 'name': c.name, 'path': c.path}
-                    if c.do_not_sync:
-                        entry['do_not_sync'] = True
-                    local_list.append(entry)
-                json.dump(local_list, list_file)
-        except IOError:
-            _logger.warning("The container list file can't be saved:",
-                            exc_info=True)
-
     def _init_containers(self, container_list):
+        """Called by the updater at start with a list of unchanged containers.
+
+        Args:
+            list of Container: the list fo all containers who were already
+                present during the last Bajoo execution.
+        """
         _logger.debug('Container(s) loaded: %s', container_list)
 
         with self._list_lock:
@@ -129,6 +108,11 @@ class DynamicContainerList(object):
                                   % (c.name, local_container.error_msg)),
                                 is_error=True)
                         else:
+                            # As we've a LocalContainer, model cant be None.
+                            model = self.user_profile.get_container(local_id)
+                            model.path = new_path
+                            self.user_profile.set_container(model)
+
                             self._pre_start_container(local_container)
                     elif not local_container.check_path():
                         self._notify(
@@ -138,8 +122,6 @@ class DynamicContainerList(object):
                             is_error=True)
                     else:
                         self._pre_start_container(local_container)
-
-        self._save_local_list()
 
     def _on_added_containers(self, added_containers):
         _logger.info('New container(s) detected: %s', added_containers)
@@ -165,6 +147,11 @@ class DynamicContainerList(object):
                 local_container.container = c
                 c_path = local_container.create_folder(
                     self.user_profile.root_folder_path, c.name)
+
+                model = ContainerModel(c.id, name=c.name,
+                                       path=local_container.path)
+                self.user_profile.set_container(model.id, model)
+
                 if c_path is None:
                     self._notify(_('Error when adding new share'),
                                  _('Unable to create a folder for %s:\n%s'
@@ -173,7 +160,6 @@ class DynamicContainerList(object):
                 else:
                     self._pre_start_container(local_container)
                 self._local_list.append(local_container)
-        self._save_local_list()
 
     def _on_removed_containers(self, removed_containers):
         _logger.info('container(s) removed: %s', removed_containers)
@@ -191,15 +177,17 @@ class DynamicContainerList(object):
 
         with self._list_lock:
             for container_id in removed_containers:
+                self.user_profile.remove_container(container_id)
+
                 to_remove = [c for c in self._local_list
                              if c.id == container_id]
                 for local_container in to_remove:
                     self._stop_container(local_container)
                     self._local_list.remove(local_container)
 
-        self._save_local_list()
-
     def _pre_start_container(self, local_container):
+        # TODO: remove do_not_sync from LocalContainer.
+        # Should be easy; don't create LC if it shouldn't be sync !
         if local_container.do_not_sync:
             local_container.status = LocalContainer.STATUS_STOPPED
         else:
@@ -232,8 +220,8 @@ class DynamicContainerList(object):
 
 def main():
     import time
-    from collections import namedtuple
     from .api.session import Session
+    from .user_profile import UserProfile
 
     logging.basicConfig()
 
@@ -250,8 +238,10 @@ def main():
     session = Session.create_session('stran+20@bajoo.fr',
                                      'stran+20@bajoo.fr').result()
 
-    UserProfile = namedtuple('UserProfile', ['root_folder_path'])
-    user_profile = UserProfile(os.path.expanduser('~/Bajoo'))
+    user_profile = UserProfile('stran+20@bajoo.fr')
+    if not user_profile.root_folder_path:
+        # DynamicContainerList need it to load new containers
+        user_profile.root_folder_path = './tmp'
     dyn_list = DynamicContainerList(session, user_profile, notify,
                                     start_container, stop_container)
     try:
