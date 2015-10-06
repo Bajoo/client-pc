@@ -5,6 +5,7 @@ import logging
 import wx
 from wx.lib.softwareupdate import SoftwareUpdate
 
+from . import promise
 from .api import TeamShare, Session, Container
 from .common.future import wait_all
 from .common import config
@@ -646,38 +647,28 @@ class BajooApp(wx.App, SoftwareUpdate):
 
         self._user.get_quota().then(_send_account_info)
 
+    @promise.reduce_coroutine()
     def _on_request_change_password(self, event):
         _logger.debug('Change password request received %s:', event.data)
 
         old_password = event.data[u'old_password']
         new_password = event.data[u'new_password']
 
-        def on_password_changed(_):
-            """
-            Reload the session (refetch the access token)
-            after the password change.
-            """
-
-            def on_session_reloaded(new_session):
-                # Replace the token of the current session
-                self._session.token = new_session.token
-                refresh_token = new_session.get_refresh_token()
-                self.user_profile.refresh_token = refresh_token
-
-            Session.create_session(self._user.name, new_password) \
-                .then(on_session_reloaded)
-
-            if self._main_window:
-                self._main_window.on_password_changed()
-
-        def on_password_changed_error(_):
+        try:
+            yield self._user.change_password(old_password, new_password)
+        except:
+            _logger.warning('Change password failed', exc_info=True)
             if self._main_window:
                 self._main_window.on_password_change_error(
                     N_('Failure when attempting to change password.'))
+        else:
+            new_session = yield Session.create_session(self._user.name,
+                                                       new_password)
+            self._session.token = new_session.token
+            self.user_profile.refresh_token = new_session.get_refresh_token()
 
-        return self._user \
-            .change_password(old_password, new_password) \
-            .then(on_password_changed, on_password_changed_error)
+            if self._main_window:
+                self._main_window.on_password_changed()
 
     def _exit(self, _event):
         """Close all resources and quit the app."""
