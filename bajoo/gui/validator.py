@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import re
+
 import wx
 
 from ..common.i18n import _, N_
@@ -94,7 +95,7 @@ class NotEmptyValidator(BaseValidator):
     default_error_message = N_('This field is required.')
 
     def check(self):
-        return not self.target.GetValue() == ''
+        return not self.target.GetValue().strip() == ''
 
 
 class ConfirmPasswordValidator(BaseValidator):
@@ -126,6 +127,7 @@ class EmailValidator(BaseValidator):
 
 class MinLengthValidator(BaseValidator):
     """Check the value as a minimum length"""
+
     def __init__(self, parent, target, min_length, **kwargs):
         """
         Args:

@@ -6,7 +6,7 @@ from wx.lib.newevent import NewCommandEvent
 
 from ...common.i18n import N_
 from ..base_view import BaseView
-from ..validator import BaseValidator, NotEmptyValidator
+from ..validator import BaseValidator, NotEmptyValidator, EmailValidator
 from . import BaseForm
 
 
@@ -58,8 +58,8 @@ class ConnectionFormView(BaseView):
 
         BaseValidator(self.window, hide_if_valid=True, name='messages')
         username_txt = wx.TextCtrl(self.window, name='username')
-        NotEmptyValidator(self.window, name='username_error',
-                          target=username_txt, hide_if_valid=True)
+        EmailValidator(self.window, name='username_error',
+                       target=username_txt, hide_if_valid=True)
         password_txt = wx.TextCtrl(self.window, name='password',
                                    style=wx.TE_PASSWORD)
         NotEmptyValidator(self.window, name='password_error',
@@ -129,6 +129,7 @@ def main():
     sizer.SetSizeHints(win)
     win.Show(True)
     app.MainLoop()
+
 
 if __name__ == '__main__':
     main()
