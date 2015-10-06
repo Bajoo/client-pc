@@ -5,7 +5,6 @@ import logging
 import wx
 from wx.lib.softwareupdate import SoftwareUpdate
 
-from . import stored_credentials
 from .api import TeamShare, Session, Container
 from .common.future import wait_all
 from .common import config
@@ -286,8 +285,7 @@ class BajooApp(wx.App, SoftwareUpdate):
             futures = []
 
             for container in self._container_list.get_list():
-                if container.container and \
-                                type(container.container) is TeamShare:
+                if isinstance(container.container, TeamShare):
                     futures.append(container.container.list_members())
 
             def _on_members_load(_):
@@ -661,8 +659,8 @@ class BajooApp(wx.App, SoftwareUpdate):
             def on_session_reloaded(new_session):
                 # Replace the token of the current session
                 self._session.token = new_session.token
-                stored_credentials.save(
-                    self._user.name, new_session.get_refresh_token())
+                refresh_token = new_session.get_refresh_token()
+                self.user_profile.refresh_token = refresh_token
 
             Session.create_session(self._user.name, new_password) \
                 .then(on_session_reloaded)
@@ -768,7 +766,7 @@ class BajooApp(wx.App, SoftwareUpdate):
             self._home_window.Destroy()
         if self._main_window:
             self._main_window.Destroy()
-        stored_credentials.save(self._user.name)
+
         self._user = None
         self._task_bar_icon.set_state(TaskBarIcon.NOT_CONNECTED)
         if self._passphrase_manager:
