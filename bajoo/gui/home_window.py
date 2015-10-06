@@ -2,6 +2,7 @@
 
 import wx
 
+from ..common.i18n import _
 from ..common.path import resource_filename
 from ..common.future import wait_one
 from ..ui_handler_of_connection import UIHandlerOfConnection
@@ -22,11 +23,12 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
     The default screen is the HomeScreen, containing the connexion form.
     """
 
-    def __init__(self):
+    def __init__(self, notify):
         wx.Frame.__init__(self, parent=None, title='Bajoo',
                           style=(wx.DEFAULT_FRAME_STYLE & ~wx.MAXIMIZE_BOX
                                  & ~wx.RESIZE_BORDER))
         self._view = HomeWindowView(self)
+        self._notify = notify
 
         self.Bind(wx.EVT_CLOSE, self._on_close)
 
@@ -86,7 +88,8 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
 
     @ensure_gui_thread
     def inform_user_is_connected(self):
-        pass
+        self._notify(_('connection successful'),
+                     _("You've been successfully connected."))
 
     def notify_lang_change(self):
         self._view.notify_lang_change()

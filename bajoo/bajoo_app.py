@@ -161,7 +161,8 @@ class BajooApp(wx.App, SoftwareUpdate):
                 'This is not supposed to happen.')
             return self._home_window
 
-        return self.get_window('_home_window', HomeWindow)
+        window_ctor = lambda: HomeWindow(self._notifier.send_message)
+        return self.get_window('_home_window', window_ctor)
 
     def get_window(self, attribute, cls):
         """Get a window, or create it if it's not instantiated yet.
