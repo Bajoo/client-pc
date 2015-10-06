@@ -12,6 +12,7 @@ from .common.i18n import N_, _
 from .common.future import Future, resolve_dec, wait_all
 from .encryption import set_gpg_home_dir
 from .network.errors import HTTPError
+from . import promise
 from .user_profile import UserProfile
 
 _logger = logging.getLogger(__name__)
@@ -62,10 +63,7 @@ class _ConnectionProcess(object):
         self.profile = None
         self.user = None
 
-        # Last used credentials, modified by log_user()
         self._username = None
-        self._password = None
-        self._refresh_token = None
 
         self._need_root_folder_config = False
         self._need_gpg_config = False
@@ -84,11 +82,7 @@ class _ConnectionProcess(object):
             self.ui_handler = Future.resolve(self.ui_factory()).result()
         return self.ui_handler
 
-    def _clear_credentials(self):
-        self._username = None
-        self._refresh_token = None
-        self._password = None
-
+    @promise.reduce_coroutine()
     def run(self):
         """Entry point of the connection process.
 
@@ -108,21 +102,22 @@ class _ConnectionProcess(object):
         _logger.debug('Connection process phase 1: LogIn')
 
         # Phase 1: connection
-        if refresh_token:
-            f = self.log_user(username, refresh_token=refresh_token)
-        else:
-            f = self.ask_user_credentials(username)
+        session = yield self.connection(username, refresh_token=refresh_token)
 
-        f = f.then(self.save_credentials)
-        f = f.then(self.load_user_info)
+        self.save_credentials(session)
+        yield self.load_user_info(session)
 
         # Phase 2: configuration
-        f = f.then(self.check_user_configuration)
+        yield self.check_user_configuration(session)
 
         # Phase 3: prevent the user and returns the token.
-        return f.then(self.inform_user)
+        self.inform_user()
 
-    def log_user(self, username, refresh_token=None, password=None):
+        yield session, self.user, self.profile
+
+    @promise.reduce_coroutine()
+    def connection(self, username, password=None, refresh_token=None,
+                   error_msg=None):
         """Connect the user from the credentials given.
 
         Either refresh_token or password must be set.
@@ -131,77 +126,86 @@ class _ConnectionProcess(object):
         If the user account is not activated, It will informs the user, and try
         again.
 
+        Note: error_msg is ignored if refresh_token is set, as we don't
+        communicate with the user.
+
         Args:
             username (str): user email.
-            refresh_token (str, optional): valid refresh_token
             password (str, optional): user password
+            refresh_token (str, optional): valid refresh_token
+            error_msg (str, optional): if set, message of a previous error that
+                will be displayed to the user.
         Returns:
-            Future<Session>: the user session.
+            Promise<Session>
         """
         self._username = username
-        self._password = password
-        self._refresh_token = refresh_token
 
-        if username and password:
-            _logger.debug('Log user "%s" using password ...' % username)
-            f = Session.create_session(username, password)
-        else:
+        if refresh_token:  # Login automatic
             _logger.debug('Log user "%s" using refresh token ...' % username)
-            f = Session.load_session(refresh_token)
-        return f.then(None, self._on_login_error)
+            try:
+                yield Session.load_session(refresh_token)
+            except Exception as error:
+                yield self._connection_error_handler(
+                    error, username, refresh_token=refresh_token)
 
-    def ask_user_credentials(self, username, errors=None):
-        """Ask the user if he want to connect or to register an account."""
-        ui_handler = self._get_ui_handler()
-
-        f = ui_handler.get_register_or_connection_credentials(
-            last_username=username, errors=errors)
-        return f.then(self._use_credentials)
-
-    def _use_credentials(self, credentials):
-        """Callback called on submission of the register or connection form.
-
-        It will use the given credentials to login, or to register the user.
-
-        Returns:
-            Future<Session>: the user session.
-        """
-        action, username, password = credentials
-
-        _logger.debug('User has given username "%s" to performs action: %s'
-                      % (username, action))
-
-        def _on_register(_):
-            self.is_new_account = True
-            return self.log_user(username, password=password)
-
-        if action is 'register':
-            f = register(username, password)
-            return f.then(_on_register, self._on_login_error)
         else:
-            return self.log_user(username, password=password)
+            if not password:
+                ui_handler = self._get_ui_handler()
+                credentials = yield \
+                    ui_handler.get_register_or_connection_credentials(
+                        last_username=username, errors=error_msg)
+                action, username, password = credentials
+                self._username = username
 
-    def _on_login_error(self, error):
-        """Callback called when the API has returned an error on connexion.
+                _logger.debug('User has given username "%s" to performs action'
+                              ': %s' % (username, action))
+            else:
+                action = 'login'
+
+            try:
+                if action == 'register':
+                    yield register(username, password)
+                    self.is_new_account = True
+
+                _logger.debug('Log user "%s" using password ...' % username)
+                yield Session.create_session(username, password)
+            except Exception as error:
+                yield self._connection_error_handler(error, username,
+                                                     password=password)
+
+    @promise.reduce_coroutine()
+    def _connection_error_handler(self, error, username, password=None,
+                                  refresh_token=None):
+        """Error handler of the `self.connection` method.
+
+        This handler catch error related to the connection or the registering.
+        These are usually network error or API errors.
 
         Depending of the error, we should informs the user, or retry latter.
-        In any case, the returned future will resolve only when the user will
+        In any case, the returned Promise will resolve only when the user will
         be connected.
 
+        In any case, the `self.connection` method is called again, with an
+        error message if needed.
+
+        Args:
+            error (Exception)
+            username (str): user email.
+            password (str, optional): user password
+            refresh_token (str, optional): valid refresh_token
         Returns:
             Future<Session>: the user session.
         """
-        ui_handler = self._get_ui_handler()
 
         if isinstance(error, HTTPError):
 
             if error.err_code == 'account_not_activated':
                 _logger.debug('login failed: the account is not activated.')
-                log_user = lambda __: self.log_user(
-                    self._username, password=self._password,
-                    refresh_token=self._refresh_token)
-                f = ui_handler.wait_activation()
-                return f.then(log_user)
+                ui_handler = self._get_ui_handler()
+                yield ui_handler.wait_activation()
+                yield self.connection(username, password=password,
+                                      refresh_token=refresh_token)
+                return
 
             _logger.debug('login failed due to error: %s (%s)' %
                           (error.err_code, error.code))
@@ -215,14 +219,13 @@ class _ConnectionProcess(object):
 
             # Note: error.err_description is more accurate, but actually not
             # translated, and not always comprehensible for the end-user.
-            return self.ask_user_credentials(self._username,
-                                             errors=message)
+            yield self.connection(username, error_msg=message)
         else:  # network error
             _logger.debug('login failed due to error: %s' % error)
             message = getattr(error, 'message',
                               N_('An error happened: %s') % error)
-            return self.ask_user_credentials(self._username,
-                                             errors=message)
+
+            yield self.connection(username, error_msg=message)
 
             # TODO: detect network errors (like no internet)
             # and retry after a delay.
@@ -237,24 +240,20 @@ class _ConnectionProcess(object):
             self.profile = UserProfile(self._username)
         self.profile.refresh_token = session.get_refresh_token()
 
-        self._clear_credentials()
         return session
 
+    @promise.reduce_coroutine()
     def load_user_info(self, session):
-        """Load ths user info of the session's user.
+        """Load the user info of the session's user.
 
         When done, the self.user atgtribute will be a fully-loaded user.
 
         Returns:
             Future<Session>
         """
-
-        def _fetch_user_info(user):
-            self.user = user
-            return user.get_user_info()
-
-        f = User.load(session).then(_fetch_user_info)
-        return f.then(lambda _: session)
+        user = yield User.load(session)
+        self.user = user
+        yield user.get_user_info()
 
     def check_user_configuration(self, session):
         """
@@ -278,7 +277,7 @@ class _ConnectionProcess(object):
             ])
             f = f.then(self._ask_config_if_flags)
 
-        return f.then(lambda __: session)
+        return f
 
     def _get_settings_and_apply(self):
         """Ask settings from the user, then apply them."""
@@ -313,7 +312,7 @@ class _ConnectionProcess(object):
             f1 = f1.then(self._set_folder_flag, self._set_folder_flag)
             futures.append(f1)
         if self._need_gpg_config:
-            f2 = self.create_gpg_key(gpg_passphrase)
+            f2 = self.user.create_encryption_key(gpg_passphrase)
             f2 = f2.then(self.check_gpg_config)
             f2 = f2.then(self._set_gpg_flag, self._set_gpg_flag)
             futures.append(f2)
@@ -399,15 +398,6 @@ class _ConnectionProcess(object):
         set_gpg_home_dir(self.profile.gpg_folder_path)
         return self.user.check_remote_key()
 
-    def create_gpg_key(self, passphrase):
-        """Create a new GPG key and upload it.
-
-        Returns:
-            Future<None>: resolve when the user has a valid GPG key,
-                synchronized with the server.
-        """
-        return self.user.create_encryption_key(passphrase)
-
     @resolve_dec
     def set_root_folder(self, root_folder_path):
         """Create the Bajoo root folder.
@@ -430,7 +420,7 @@ class _ConnectionProcess(object):
 
         self.profile.root_folder_path = root_folder_path
 
-    def inform_user(self, session):
+    def inform_user(self):
         """Informs the user interface if it's been used.
 
         At this point, the user is successfully logged. The UI should act in
@@ -438,5 +428,3 @@ class _ConnectionProcess(object):
         """
         if self.ui_handler:
             self.ui_handler.inform_user_is_connected()
-
-        return session, self.user, self.profile
