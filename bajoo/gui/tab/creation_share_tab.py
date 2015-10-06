@@ -6,6 +6,7 @@ from wx.lib.newevent import NewCommandEvent
 
 from ...api.team_share import permission as share_permission
 from ...common.i18n import N_
+from ..common import message_box
 from ..common.pictos import get_bitmap
 from ..base_view import BaseView
 from ..form.members_share_form import MembersShareForm
@@ -45,6 +46,15 @@ class CreationShareTab(BaseForm):
         wx.PostEvent(self, back_event)
 
     def _btn_create_clicked(self, event):
+        confirmed = False
+
+        if self._view.members_share_form.has_changes:
+            confirmed = \
+                message_box.message_box_members_changed(self) == wx.YES
+
+        if not confirmed:
+            return
+
         share_name = self.FindWindow('txt_share_name').GetValue()
         encrypted = self.FindWindow('chk_encryption').GetValue()
 
