@@ -104,6 +104,7 @@ class PassphraseWindowView(BaseView):
         button_box.SetCancelButton(self.window.FindWindow("btn_cancel"))
         button_box.Realize()
 
+        self.window.FindWindow("btn_ok").SetDefault()
         error_msg = self.window.FindWindow('error_msg')
 
         sizer_items = []
