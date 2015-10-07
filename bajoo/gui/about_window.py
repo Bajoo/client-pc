@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-
 from . import wx_compat  # noqa
 
 import webbrowser
+
 import wx
 from wx.lib.agw.hyperlink import HyperLinkCtrl
 
@@ -19,8 +19,7 @@ class AboutBajooWindow(wx.Frame):
     def __init__(self):
         window_style = \
             wx.DEFAULT_FRAME_STYLE & ~wx.MAXIMIZE_BOX & ~wx.RESIZE_BORDER
-        wx.Frame.__init__(
-            self, parent=None, title=N_('About Bajoo'), style=window_style)
+        wx.Frame.__init__(self, parent=None, style=window_style)
 
         icon_path = resource_filename('assets/window_icon.png')
         icon = wx.Icon(icon_path)
@@ -70,9 +69,17 @@ class AboutBajooView(BaseView):
 
         self.window.SetBackgroundColour(wx.Colour(255, 255, 255))
 
+        title_font = wx.Font(
+            28, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
+            wx.FONTWEIGHT_BOLD, False)
+
         banner_path = resource_filename('assets/images/side_banner.png')
         bmp_bajoo = wx.Image(banner_path).ConvertToBitmap()
         img_view_bajoo = wx.StaticBitmap(about_panel, label=bmp_bajoo)
+
+        lbl_title = wx.StaticText(about_panel, label='Bajoo 2')
+        lbl_title.SetFont(title_font)
+
         lbl_description = wx.StaticText(
             about_panel, name='lbl_description',
             label=N_('Official client for Bajoo online storage service.\n'
@@ -124,11 +131,23 @@ class AboutBajooView(BaseView):
         source_code_sizer.AddMany(
             [lbl_source_code, (lbl_source_code_link, 0, wx.LEFT, 3)])
 
+        # Add all left-aligned elements
         text_sizer = self.make_sizer(
             wx.VERTICAL, [
-                None, lbl_description, lbl_license, source_code_sizer,
-                lbl_trademarks, lbl_home_page_link, libraries_box, None
+                None, lbl_description, lbl_license,
+                source_code_sizer, lbl_trademarks, None,
+                libraries_box, None
             ], outside_border=False)
+
+        # Insert the title at the top of the page
+        # with a top space of 15 and center alignment
+        text_sizer.Insert(
+            0, lbl_title,
+            flag=wx.ALIGN_CENTER_HORIZONTAL | wx.TOP, border=15)
+        # The home page link is also center-aligned.
+        text_sizer.Insert(
+            6, lbl_home_page_link, flag=wx.ALIGN_CENTER_HORIZONTAL)
+
         social_buttons_sizer = self.make_sizer(wx.VERTICAL, [
             None, btn_facebook, btn_twitter, btn_google, None
         ])
@@ -138,6 +157,9 @@ class AboutBajooView(BaseView):
         ], outside_border=False)
         about_panel.SetSizer(main_sizer)
         main_sizer.SetSizeHints(about_panel.GetTopLevelParent())
+
+        self.register_i18n(about_panel.GetTopLevelParent().SetTitle,
+                           N_('About Bajoo'))
 
 
 def main():
