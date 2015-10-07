@@ -3,12 +3,11 @@
 from copy import deepcopy
 import errno
 import hashlib
-import json
 import logging
 import os.path
+import pickle
 from .common.path import get_data_dir
 from .common.util import xor
-from .container_model import ContainerModel
 
 _logger = logging.getLogger(__name__)
 
@@ -139,7 +138,7 @@ class UserProfile(object):
         except (OSError, IOError, UnicodeError) as error:
             if getattr(error, 'errno') == errno.ENOENT:
                 return None  # there is no last profile
-            _logger.info('Failed to open last_profile file', exc_info=True)
+            _logger.info('Failed to open last_profile file: %s' % repr(error))
             return None
 
         UserProfile._last_profile = email_hash
@@ -151,8 +150,7 @@ class UserProfile(object):
             return UserProfile(None, _profile_file_path=profile_path)
         except _InvalidUserProfile:
             _logger.info('Failed to open the profile file "%s", '
-                         'referenced in last_profile' % profile_file_name,
-                         exc_info=True)
+                         'referenced in last_profile' % profile_file_name)
             return None
 
     def _get_profile_path(self):
@@ -179,8 +177,8 @@ class UserProfile(object):
                 by default.
         """
         try:
-            with open(file_path, mode='r') as profile_file:
-                data = json.load(profile_file)
+            with open(file_path, mode='rb') as profile_file:
+                data = pickle.load(profile_file)
 
                 email = data.get('email', None)
                 if self.email and self.email != email:
@@ -196,12 +194,12 @@ class UserProfile(object):
                     passphrase = xor(encrypted_passphrase, self.email)
                     self._passphrase = passphrase.decode('utf-8')
 
-                for c in data.get('containers', []):
-                    self._containers[c['id']] = ContainerModel(
-                        c['id'], name=c['name'], path=c.get('path', None))
+                self._containers = data.get('containers', {})
 
-        except (OSError, IOError, UnicodeError, ValueError):
-            _logger.info('Failed to open last_profile file', exc_info=True)
+        except (OSError, IOError, UnicodeError, TypeError, ValueError,
+                KeyError, EOFError, pickle.PickleError) as error:
+            _logger.info('Failed to open last profile "%s": %s'
+                         % (file_path, repr(error)))
 
         if self.email is None:
             raise _InvalidUserProfile()
@@ -222,12 +220,16 @@ class UserProfile(object):
             'root_folder_path': self._root_folder_path,
             'fingerprint_key': self._fingerprint_key,
             'passphrase': passphrase,
-            'containers': [dict(id=c.id, name=c.name, path=c.path)
-                           for c in self._containers.values()]
+            'containers': self._containers
         }
 
-        with open(profile_file_path, 'w')as profile_file:
-            json.dump(data, profile_file)
+        try:
+            with open(profile_file_path, 'wb') as profile_file:
+                pickle.dump(data, profile_file)
+        except (OSError, IOError, UnicodeError, TypeError,
+                pickle.PickleError) as error:
+            _logger.info('Failed to update profile file %s: %s' %
+                         (profile_file_path, repr(error)))
 
     def _update_last_profile(self):
         email_hash = hashlib.md5(self.email.encode('utf-8')).hexdigest()
