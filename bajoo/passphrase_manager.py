@@ -1,6 +1,7 @@
 #  -*- coding:utf-8 -*-
 
 import logging
+from threading import Lock
 
 _logger = logging.getLogger(__name__)
 
@@ -22,6 +23,7 @@ class PassphraseManager(object):
         self._user_input_callback = None
         self._passphrase = None
         self._rejected = False
+        self._lock = Lock()
 
         self._user_profile = user_profile
 
@@ -41,8 +43,10 @@ class PassphraseManager(object):
         If there is already a passphrase value in memory, it's returned.
         If not, the function search the passphrase on the disk (if the user has
         chosen the "remember" option).
-        If we still havn't the passphrase, we ask the user usoing the callback
+        If we still haven't the passphrase, we ask the user using the callback
         specified by a previous call to `set_user_input_callback`.
+
+        This method is thread-safe
 
         Args:
             email (str): email of the user.
@@ -51,24 +55,25 @@ class PassphraseManager(object):
             text: the passphrase. None if the user has refused to provide the
                 passphrase
         """
-        if self._rejected:
+        with self._lock:
+            if self._rejected:
+                return None
+
+            if not is_retry:
+                if self._passphrase:
+                    return self._passphrase
+                self._passphrase = self._user_profile.passphrase
+                if self._passphrase:
+                    return self._passphrase
+
+            if self._user_input_callback:
+                passphrase, remember_it = self._user_input_callback(is_retry)
+                self._passphrase = passphrase
+                self._rejected = passphrase is None
+                if remember_it:
+                    self._user_profile.passphrase = passphrase
+                return passphrase
             return None
-
-        if not is_retry:
-            if self._passphrase:
-                return self._passphrase
-            self._passphrase = self._user_profile.passphrase
-            if self._passphrase:
-                return self._passphrase
-
-        if self._user_input_callback:
-            passphrase, remember_it = self._user_input_callback(is_retry)
-            self._passphrase = passphrase
-            self._rejected = passphrase is None
-            if remember_it:
-                self._user_profile.passphrase = passphrase
-            return passphrase
-        return None
 
     def set_passphrase(self, passphrase, remember_on_disk=False):
         """Set the passphrase.
