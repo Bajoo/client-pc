@@ -32,9 +32,9 @@ Modifications Copyright (C) 2008-2014 Vinay Sajip. All rights reserved.
 A unittest harness (test_gnupg.py) has also been added.
 """
 
-__version__ = "0.3.8.dev0"
+__version__ = "0.3.8"
 __author__ = "Vinay Sajip"
-__date__  = "$07-Dec-2014 18:46:17$"
+__date__  = "$24-Sep-2015 18:03:55$"
 
 try:
     from io import StringIO
@@ -48,7 +48,7 @@ import os
 import psutil
 import re
 import socket
-from subprocess import Popen, list2cmdline
+from subprocess import Popen
 from subprocess import PIPE
 import sys
 import threading
@@ -120,8 +120,18 @@ else:
 
 # Now that we use shell=False, we shouldn't need to quote arguments.
 # Use no_quote instead of shell_quote to remind us of where quoting
-# was needed.
+# was needed. However, note that we still need, on 2.x, to encode any
+# Unicode argument with the file system encoding - see Issue #41 and
+# Python issue #1759845 ("subprocess.call fails with unicode strings in
+# command line").
+
+# Allows the encoding used to be overridden in special cases by setting
+# this module attribute appropriately.
+fsencoding = sys.getfilesystemencoding()
+
 def no_quote(s):
+    if not _py3k and isinstance(s, text_type):
+        s = s.encode(fsencoding)
     return s
 
 def _copy_data(instream, outstream):
@@ -132,7 +142,13 @@ def _copy_data(instream, outstream):
     else:
         enc = 'ascii'
     while True:
-        data = instream.read(1024)
+        # See issue #39: read can fail when e.g. a text stream is provided
+        # for what is actually a binary file
+        try:
+            data = instream.read(1024)
+        except UnicodeError:
+            logger.warning('Exception occurred while reading', exc_info=1)
+            break
         if not data:
             break
         sent += len(data)
@@ -530,7 +546,8 @@ class Crypt(Verify, TextHandler):
                    "PINENTRY_LAUNCHED"):
             # in the case of ERROR, this is because a more specific error
             # message will have come first
-            pass
+            if key == "NODATA":
+                self.status = "no data was provided"
         elif key in ("NEED_PASSPHRASE", "BAD_PASSPHRASE", "GOOD_PASSPHRASE",
                      "MISSING_PASSPHRASE", "DECRYPTION_FAILED",
                      "KEY_NOT_CREATED", "NEED_PASSPHRASE_PIN"):
@@ -582,6 +599,14 @@ class GenKey(object):
             (self.type,self.fingerprint) = value.split()
         else:
             raise ValueError("Unknown status message: %r" % key)
+
+class ExportResult(GenKey):
+    """Handle status messages for --export[-secret-key].
+
+    For now, just use an existing class to base it on - if needed, we
+    can override handle_status for more specific message handling.
+    """
+    pass
 
 class DeleteResult(object):
     "Handle status messages for --delete-key and --delete-secret-key"
@@ -661,6 +686,7 @@ class GPG(object):
         'search': SearchKeys,
         'sign': Sign,
         'verify': Verify,
+        'export': ExportResult,
     }
 
     "Encapsulate access to the gpg executable"
@@ -726,10 +752,7 @@ class GPG(object):
         """
         cmd = [self.gpgbinary, '--status-fd', '2', '--no-tty']
         if self.gnupghome:
-            gnupghome = self.gnupghome
-            if sys.version_info[0] is 2 and isinstance(gnupghome, unicode):
-                gnupghome = self.gnupghome.encode(sys.getfilesystemencoding())
-            cmd.extend(['--homedir',  no_quote(gnupghome)])
+            cmd.extend(['--homedir',  no_quote(self.gnupghome)])
         if self.keyring:
             cmd.append('--no-default-keyring')
             for fn in self.keyring:
@@ -751,23 +774,6 @@ class GPG(object):
         # the file objects for communicating with it.
         cmd = self.make_args(args, passphrase)
 
-        try:
-            if sys.platform == "win32":
-                # Under Linux, "cmd" must be a list.
-                # Under Windows, we concatenate the arguments ourselves,
-                # because Popen doesn't support well unicode characters.
-                cmd = list2cmdline(cmd)
-        except UnicodeError:
-            # list2cmd don't accept unicode entries
-            args = []
-            for arg in cmd:
-                if not isinstance(arg, bytes):
-                    arg = arg.decode(sys.getfilesystemencoding())
-                if (" " in arg) or ("\t" in arg) or not arg:
-                    arg = u'"%s"' % arg
-                args.append(arg)
-            cmd = u' '.join(args)
-            cmd = cmd.encode(sys.getfilesystemencoding())
         if self.verbose:
             pcmd = ' '.join(cmd)
             print(pcmd)
@@ -785,7 +791,7 @@ class GPG(object):
                 psutil.Process(p.pid).nice(psutil.IDLE_PRIORITY_CLASS)
             else:
                 psutil.Process(p.pid).nice(-10)
-        except psutil.AccessDenied:
+        except psutil.AccessDenied, psutil.NoSuchProcess:
             pass
         return p
 
@@ -895,7 +901,7 @@ class GPG(object):
         if os.path.exists(output):
             # We need to avoid an overwrite confirmation message
             args.extend(['--batch', '--yes'])
-        args.extend(['--output', output])
+        args.extend(['--output', no_quote(output)])
 
     def sign_file(self, file, keyid=None, passphrase=None, clearsign=True,
                   detach=False, binary=False, output=None):
@@ -1115,7 +1121,7 @@ class GPG(object):
         # gpg --export produces no status-fd output; stdout will be
         # empty in case of failure
         #stdout, stderr = p.communicate()
-        result = self.result_map['delete'](self) # any result will do
+        result = self.result_map['delete'](self)
         self._collect_output(p, result, stdin=p.stdin)
         logger.debug('export_keys result: %r', result.data)
         return result.data.decode(self.encoding, self.decode_errors)
@@ -1166,7 +1172,7 @@ class GPG(object):
                 '--with-colons']
         if keys:
             if isinstance(keys, string_types):
-                keys = [keys]
+                keys = [no_quote(keys)]
             args.extend(keys)
         p = self._open_subprocess(args)
         return self._get_list_output(p, 'list')
