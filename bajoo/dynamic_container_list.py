@@ -8,7 +8,7 @@ from .common.i18n import _
 from .common.path import get_data_dir
 from .api.sync import container_list_updater
 from .local_container import LocalContainer
-from .user_profile import ContainerModel
+from .container_model import ContainerModel
 
 
 _logger = logging.getLogger(__name__)
