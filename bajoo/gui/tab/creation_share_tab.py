@@ -46,14 +46,11 @@ class CreationShareTab(BaseForm):
         wx.PostEvent(self, back_event)
 
     def _btn_create_clicked(self, event):
-        confirmed = False
-
         if self._view.members_share_form.has_changes:
-            confirmed = \
-                message_box.message_box_members_changed(self) == wx.YES
+            confirm = message_box.message_box_members_changed(self)
 
-        if not confirmed:
-            return
+            if confirm != wx.YES:
+                return
 
         share_name = self.FindWindow('txt_share_name').GetValue()
         encrypted = self.FindWindow('chk_encryption').GetValue()
