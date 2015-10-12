@@ -113,3 +113,148 @@ class TestPromise(object):
 
         p = Promise(executor)
         assert isinstance(p.exception(), Err)
+
+
+class TestThenMethod(object):
+
+    def test_then_sync_call(self):
+        """Test to chain a callback using then() on an fulfilled Promise."""
+
+        def _callback(arg):
+            assert arg is 23
+            return arg * 2
+
+        p = Promise(lambda ok, error: ok(23))
+        p2 = p.then(_callback)
+        assert p2.result(0.01) is 46
+        assert p.result(0.01) is 23
+
+    def test_then_async_call(self):
+        """Chain a callback using then() on an not-yet fulfilled Promise."""
+
+        _fulfill = []
+
+        def _init(ok, error):
+            _fulfill.append(ok)
+
+        def _callback(arg):
+            assert arg is 23
+            return arg * 2
+
+        p = Promise(_init)
+        p2 = p.then(_callback)
+        _fulfill[0](23)  # fulfill the Promise now.
+        assert p2.result(0.01) is 46
+        assert p.result(0.01) is 23
+
+    def test_then_on_failing_sync_promise(self):
+        """Chain a callback using then() to a Promise raising an exception"""
+        class Err(Exception):
+            pass
+
+        def _task(ok, error):
+            raise Err()
+
+        def _callback(__):
+            assert not 'This should not be executed.'
+
+        p = Promise(_task)
+        p2 = p.then(_callback)
+        with pytest.raises(Err):
+            p2.result(0.01)
+
+    def test_then_on_failing_async_promise(self):
+        """Chain a callback using then() to a Promise who will be rejected."""
+        class Err(Exception):
+            pass
+
+        _reject = []
+
+        def _task(ok, error):
+            _reject.append(error)
+
+        def _callback(__):
+            assert not 'This should not be executed.'
+
+        p = Promise(_task)
+        p2 = p.then(_callback)
+        _reject[0](Err())  # fulfill the Promise now.
+        with pytest.raises(Err):
+            p2.result()
+
+    def test_then_with_promise_factory(self):
+        """Chain a Future factory, using then().
+
+        a Promise factory is a function who returns a Promise.
+        """
+
+        def factory(value):
+            x = Promise(lambda ok, error: ok(value * value))
+            return x
+
+        p = Promise(lambda ok, error: ok(6))
+        p2 = p.then(factory)
+        assert p2.result(0.01) is 36
+
+    def test_then_with_error_callback_on_fulfilled_promise(self):
+        """Chain a Promise with both success and error callbacks.
+        Only the success callback should be called.
+        """
+        def on_success(value):
+            return value * 3
+
+        def on_error(err):
+            raise Exception('This should never be called!')
+
+        p = Promise(lambda ok, error: ok(654))
+        p2 = p.then(on_success, on_error)
+        assert p2.result(0.01) == 1962
+
+    def test_then_with_error_callback_on_rejected_promise(self):
+        """Chain a Promise with both success and error callbacks.
+
+        Only the error callback should be called.
+        The resulting Promise will (successfully) resolve with the value
+        returned by the error callback.
+        """
+        class MyException(Exception):
+            pass
+
+        def task(ok, error):
+            error(MyException())
+
+        def on_success(value):
+            raise Exception('This should never be called!')
+
+        def on_error(err):
+            assert type(err) is MyException
+            return 38
+
+        p = Promise(task)
+        p2 = p.then(on_success, on_error)
+        assert p2.result() is 38
+
+    def test_then_with_error_callback_only_on_fulfilled_promise(self):
+        """Chain a successful Promise with only the error callback."""
+        def on_error(err):
+            raise Exception('This should never be called!')
+
+        p = Promise(lambda ok, error: ok(185))
+        p2 = p.then(None, on_error)
+        assert p2.result() is 185
+
+    def test_then_with_error_callback_only_on_rejected_promise(self):
+        """Chain a failing promise with only the error callback."""
+        class MyException(Exception):
+            pass
+
+        def task(ok, error):
+            raise MyException()
+
+        def on_error(err):
+            assert isinstance(err, MyException)
+            return 8
+
+        p = Promise(task)
+        p2 = p.then(None, on_error)
+        assert p2.result() is 8

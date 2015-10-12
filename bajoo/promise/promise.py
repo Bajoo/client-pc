@@ -2,6 +2,7 @@
 
 import logging
 from threading import Condition
+from .util import is_thenable
 
 _logger = logging.getLogger(__name__)
 
@@ -62,7 +63,13 @@ class Promise(object):
                 self._state = self.FULFILLED
 
                 self._condition.notify_all()
-                # TODO: CALL CALLBACKS ...
+
+                for callback in self._callbacks:
+                    self._exec_callback(callback, result)
+
+                # Free the references
+                self._callbacks = None
+                self._errbacks = None
 
         def on_rejected(error):
             with self._condition:
@@ -83,7 +90,13 @@ class Promise(object):
                 self._state = self.REJECTED
 
                 self._condition.notify_all()
-                # TODO: CALL CALLBACK ...
+
+                for errback in self._errbacks:
+                    self._exec_callback(errback, error, is_errback=True)
+
+                # Free the references
+                self._callbacks = None
+                self._errbacks = None
 
         try:
             executor(on_fulfilled, on_rejected)
@@ -135,3 +148,119 @@ class Promise(object):
                 raise TimeoutError()
             else:
                 return self._error
+
+    def then(self, on_fulfilled=None, on_rejected=None):
+        """Create a new promise from callbacks called when this one is settled.
+
+        If the promise is fulfilled, the `on_fullfilled` callback will be
+        called. Otherwise (the promise has been rejected), the `on_rejected`
+        callback is called.
+        In any case, the callback will define the state of the returned
+        Promise. If the callback raises an exception, the new Promise is
+        rejected. The callback can returns:
+        - A value: the new promise will be fulfilled with this value.
+        - Another Promise, or any object with a `then` method: when fulfilled
+            or rejected, will transfer its status (state and result/error) to
+            the Promise returned by this method.
+
+        If a callback is not defined, the state of the self promise" is
+        transferred at the new promise (the state and the value/error).
+
+        Args:
+            on_fulfilled (callable, optional):  This callback will receive the
+                result of the original promise as argument.
+            on_rejected (callable, optional): This callback will receive the
+                exception raised by the original promise as argument.
+        Returns:
+            Promise<*>: new promise depending of self.
+        """
+
+        def deferred_chained_promise(fulfilled, rejected):
+
+            def callback(result):
+                if on_fulfilled is None:
+                    return fulfilled(result)
+                else:
+                    try:
+                        new_result = on_fulfilled(result)
+                    except BaseException as error:
+                        return rejected(error)
+
+                if is_thenable(new_result):
+                    new_result.then(fulfilled, rejected)
+                else:
+                    fulfilled(new_result)
+
+            def errback(error):
+                if on_rejected is None:
+                    return rejected(error)
+                else:
+                    try:
+                        result = on_rejected(error)
+                    except BaseException as new_error:
+                        return rejected(new_error)
+
+                if is_thenable(result):
+                    result.then(fulfilled, rejected)
+                else:
+                    fulfilled(result)
+
+            self._add_callback(callback)
+            self._add_errback(errback)
+
+        return Promise(deferred_chained_promise)
+
+    def catch(self, on_rejected):
+        """Create a new promise with a callback called when an error occurs.
+
+        Alias of `self.then(None, on_rejected)`
+
+        Args:
+            on_rejected (callable): Must take an argument instance of Exception
+                (or one of its subclass). Will be called if `self` is rejected.
+        returns:
+            Promise<*>: new Promise chained to `self`. If `self` is fulfilled,
+                the promised value will be the same as `self`. Otherwise, the
+                value returned by the `on_rejected()` callback.
+        """
+        return self.then(None, on_rejected)
+
+    @staticmethod
+    def _exec_callback(callback, value, is_errback=False):
+        try:
+            callback(value)
+        except:
+            if is_errback:
+                _logger.exception("Promise errback raise an exception!")
+            else:
+                _logger.exception("Promise callback raise an exception!")
+
+    def _add_callback(self, callback):
+        execute_now = False
+        result = None
+
+        with self._condition:
+            if self._state == self.PENDING:
+                self._callbacks.append(callback)
+            else:
+                if self._state == self.FULFILLED:
+                    execute_now = True
+                    result = self._result
+
+        if execute_now:
+            self._exec_callback(callback, result)
+
+    def _add_errback(self, errback):
+        execute_now = False
+        error = None
+
+        with self._condition:
+            if self._state == self.PENDING:
+                self._errbacks.append(errback)
+            else:
+                if self._state == self.REJECTED:
+                    execute_now = True
+                    error = self._error
+
+        if execute_now:
+            self._exec_callback(errback, error, is_errback=True)
