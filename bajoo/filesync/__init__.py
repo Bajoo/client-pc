@@ -89,7 +89,7 @@ class _Task(object):
         self.container = container
         self.target = target
         self.local_container = local_container
-        self.local_path = local_container.path
+        self.local_path = local_container.model.path
         self.index_fragment = {}
         self.local_md5 = None
         self.remote_md5 = None

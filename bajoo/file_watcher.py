@@ -16,16 +16,16 @@ class FileWatcher(FileSystemEventHandler):
         directory events are ignored.
     """
 
-    def __init__(self, local_container, on_new_files, on_changed_files,
+    def __init__(self, container_model, on_new_files, on_changed_files,
                  on_moved_files, on_deleted_files):
         """
         Args:
-            local_container (LocalContainer): it's used to get the path to
+            local_container (ContainerModel): it's used to get the path to
                 listen, and the directories to exclude.
         """
-        self._local_container = local_container
+        self._container = container_model
         self._observer = Observer()
-        self._observer.schedule(self, path=local_container.path,
+        self._observer.schedule(self, path=container_model.path,
                                 recursive=True)
 
         self._on_new_files = on_new_files
@@ -71,7 +71,7 @@ class FileWatcher(FileSystemEventHandler):
         if not config.get('exclude_hidden_files'):
             return False
 
-        container_path = os.path.normpath(self._local_container.path)
+        container_path = os.path.normpath(self._container.path)
 
         p = file_path
         while p != container_path:
@@ -84,7 +84,7 @@ class FileWatcher(FileSystemEventHandler):
 def main():
     from functools import partial
     import time
-    from .local_container import LocalContainer
+    from .container_model import ContainerModel
 
     def callback(event, src, dest=None):
         if not dest:
@@ -92,7 +92,7 @@ def main():
         else:
             print('An event happened: %s %s -> %s' % (event, src, dest))
 
-    watcher = FileWatcher(LocalContainer(1, 'CWD', '.'),
+    watcher = FileWatcher(ContainerModel(1, name='CWD', path='.'),
                           partial(callback, 'CREATED'),
                           partial(callback, 'MODIFIED'),
                           partial(callback, 'MOVED'),

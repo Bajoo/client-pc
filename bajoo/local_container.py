@@ -29,17 +29,11 @@ class LocalContainer(object):
     constraint, an index part can be reserved.
 
     Attributes:
-        id (str): ID of the Bajoo Container
-        name (str): Name of the container
-        path (str, optional): If set, path of the container folder present on
-            the filesystem. If None, the container has no local folder. The
-            path is not guaranteed to be valid, and shoudl be checked using
-            ``check_folder()``.
         status: One of the 4 status possible. See below.
-        Container (Container): the corresponding API Container object. If the
+        container (Container): the corresponding API Container object. If the
             container is not yet loaded, it may be None.
-        do_not_sync (boolean): If True, the container should not be synced
-            automatically.
+        model (ContainerModel): the local representation of the same container.
+            It contains al persistent data.
     """
 
     STATUS_UNKNOWN = 1
@@ -56,17 +50,14 @@ class LocalContainer(object):
         STATUS_STARTED: 'Started'
     }
 
-    def __init__(self, id, name, path=None, do_not_sync=False):
-        self.id = id
-        self.name = name
-        self.path = path
+    def __init__(self, model, container):
         self.status = self.STATUS_UNKNOWN
         self.error_msg = None
         self._index = {}
         self._index_lock = RLock()  # Lock both `_index` and `_index_booking`
         self._index_booking = {}
-        self.container = None
-        self.do_not_sync = do_not_sync
+        self.container = container
+        self.model = model
 
     def check_path(self):
         """Check that the path is the folder corresponding to the container.
@@ -78,7 +69,8 @@ class LocalContainer(object):
             boolean: True if all is ok, otherwise False.
         """
 
-        index_path = os.path.join(self.path, '.bajoo-%s.idx' % self.id)
+        index_path = os.path.join(self.model.path,
+                                  '.bajoo-%s.idx' % self.model.id)
         try:
             with io.open(index_path, encoding='utf-8') as index_file:
                 self._index = json.load(index_file)
@@ -87,7 +79,7 @@ class LocalContainer(object):
 
             if e.errno == errno.ENOENT:
                 # TODO: Add a specific message if the folder is empty (or not)
-                if os.path.isdir(self.path):
+                if os.path.isdir(self.model.path):
                     self.error_msg = _(
                         'The corresponding folder exists, but the Bajoo index '
                         'file is missing.')
@@ -104,7 +96,7 @@ class LocalContainer(object):
         self.status = self.STATUS_STOPPED
         return True
 
-    def create_folder(self, root_folder_path, name):
+    def create_folder(self, root_folder_path):
         """Create a new folder for storing the container's files.
 
         Set the ``self.path`` attribute.
@@ -113,6 +105,7 @@ class LocalContainer(object):
             str: the path of the created folder. None if an error occurs
         """
 
+        name = self.container.name
         if isinstance(self.container, TeamShare):
             folder_path = os.path.join(root_folder_path, _('Shares'), name)
         else:
@@ -143,9 +136,9 @@ class LocalContainer(object):
                                   os.strerror(e.errno))
                 return None
 
-        self.path = folder_path
+        self.model.path = folder_path
         self.status = self.STATUS_STOPPED
-        return self.path
+        return self.model.path
 
     def _init_index_file(self, path=None):
         """Create the index file.
@@ -154,8 +147,8 @@ class LocalContainer(object):
             path (str, optional): path of the container folder. If None,
             ``self.path`` will be used.
         """
-        path = path or self.path
-        index_path = os.path.join(path, '.bajoo-%s.idx' % self.id)
+        path = path or self.model.path
+        index_path = os.path.join(path, '.bajoo-%s.idx' % self.model.id)
         with io.open(index_path, "w", encoding='utf-8') as index_file:
             index_file.write(u'{}')
         if sys.platform == 'win32':
@@ -170,7 +163,8 @@ class LocalContainer(object):
                                 '%s failed' % index_path, exc_info=True)
 
     def _save_index(self):
-        index_path = os.path.join(self.path, '.bajoo-%s.idx' % self.id)
+        index_path = os.path.join(self.model.path,
+                                  '.bajoo-%s.idx' % self.model.id)
         try:
             with open(index_path, 'w+') as index_file:
                 json.dump(self._index, index_file)
@@ -308,8 +302,8 @@ class LocalContainer(object):
         n_folders = 0
         n_files = 0
 
-        if self.path and os.path.exists(self.path):
-            for dir_path, dir_names, files_names in os.walk(self.path):
+        if self.model.path and os.path.exists(self.model.path):
+            for dir_path, dir_names, files_names in os.walk(self.model.path):
                 n_folders += 1
 
                 for file_name in files_names:

@@ -115,7 +115,7 @@ class DetailsShareTab(BaseForm):
         n_folders, n_files, folder_size = share.get_stats()
         friendly_folders_size = human_readable_bytes(folder_size)
 
-        self.FindWindow('lbl_share_name').SetLabel(share.name)
+        self.FindWindow('lbl_share_name').SetLabel(share.model.name)
         has_member_data = self._has_member_data()
         is_encrypted = share.container and share.container.is_encrypted
         share_type = N_('Team share') \
@@ -178,8 +178,8 @@ class DetailsShareTab(BaseForm):
         self.FindWindow('lbl_share_nb_members').Show(
             show_share_options and has_member_data)
         self.FindWindow('btn_open_folder').Enable(
-            share.path is not None and
-            path.exists(share.path))
+            share.model.path is not None and
+            path.exists(share.model.path))
 
         if share.error_msg:
             self.show_error_message(share.error_msg)
@@ -268,11 +268,11 @@ class DetailsShareTab(BaseForm):
     def _btn_open_folder_clicked(self, _event):
         self.hide_message()
 
-        if self._share and self._share.path:
+        if self._share and self._share.model.path:
             from ...common.util import open_folder
 
-            open_folder(self._share.path)
-            _logger.debug("Open directory %s", self._share.path)
+            open_folder(self._share.model.path)
+            _logger.debug("Open directory %s", self._share.model.path)
         else:
             _logger.debug("Unknown container or directory to open")
 
@@ -280,7 +280,7 @@ class DetailsShareTab(BaseForm):
         self.hide_message()
 
         if self._share:
-            if message_box.message_box_quit_share(self._share.name, self) \
+            if message_box.message_box_quit_share(self._share.model.name, self) \
                     == wx.YES:
                 event = DetailsShareTab.RequestQuitShare(self.GetId())
                 event.share = self._share
@@ -292,7 +292,7 @@ class DetailsShareTab(BaseForm):
         self.hide_message()
 
         if self._share:
-            if message_box.message_box_delete_share(self._share.name, self) \
+            if message_box.message_box_delete_share(self._share.model.name, self) \
                     == wx.YES:
                 event = DetailsShareTab.RequestDeleteShare(self.GetId())
                 event.share = self._share

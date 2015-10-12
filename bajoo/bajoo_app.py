@@ -329,7 +329,7 @@ class BajooApp(wx.App, SoftwareUpdate):
                     status = TaskBarIcon.SYNC_PROGRESS
             else:
                 status = mapping[container.status]
-            row = (container.name, container.path, status)
+            row = (container.model.name, container.model.path, status)
             containers_status.append(row)
 
         self._task_bar_icon.set_container_status_list(containers_status)
@@ -493,7 +493,7 @@ class BajooApp(wx.App, SoftwareUpdate):
                     loaded = False
 
                     for container in self._container_list.get_list():
-                        if container.id == share.id:
+                        if container.model.id == share.id:
                             container.container.list_members() \
                                 .then(load_shares)
                             loaded = True

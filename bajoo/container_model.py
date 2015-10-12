@@ -14,11 +14,13 @@ class ContainerModel(object):
         name (unicode): container's name
         path (unicode, optional): absolute path of the container folder, if it
             exists.
+        type (str) one of 'teamshare' or 'my_bajoo'
         do_not_sync (boolean): if True, the user don't want to sync it on disk,
             even if the path attribute is defined.
     """
 
-    def __init__(self, id, name, path=None, do_not_sync=False):
+    def __init__(self, id, name, path=None, container_type=None,
+                 do_not_sync=False):
         """container model constructor.
 
         Args:
@@ -26,11 +28,13 @@ class ContainerModel(object):
             name (unicode): container's name
             path (unicode, optional): if set, absolute path of the folder
                 present on disk.
+            container_type (str): one of 'teamshare' or 'my_bajoo'
             do_not_sync (boolean, optional): if True, the container should not
                 be sync on the disk. Default to False.
         """
         self.id = id
         self.name = name
         self.path = path
+        self.type = container_type
 
         self.do_not_sync = do_not_sync
