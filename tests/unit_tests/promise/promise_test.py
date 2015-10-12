@@ -232,7 +232,7 @@ class TestThenMethod(object):
 
         p = Promise(task)
         p2 = p.then(on_success, on_error)
-        assert p2.result() is 38
+        assert p2.result(0.01) is 38
 
     def test_then_with_error_callback_only_on_fulfilled_promise(self):
         """Chain a successful Promise with only the error callback."""
@@ -241,7 +241,7 @@ class TestThenMethod(object):
 
         p = Promise(lambda ok, error: ok(185))
         p2 = p.then(None, on_error)
-        assert p2.result() is 185
+        assert p2.result(0.01) is 185
 
     def test_then_with_error_callback_only_on_rejected_promise(self):
         """Chain a failing promise with only the error callback."""
@@ -257,4 +257,15 @@ class TestThenMethod(object):
 
         p = Promise(task)
         p2 = p.then(None, on_error)
-        assert p2.result() is 8
+        assert p2.result(0.01) is 8
+
+    def test_resolve_value(self):
+        """Wrap a value into a Promise using Promise.resolve()."""
+        p = Promise.resolve('xyz')
+        assert p.result(0.01) is 'xyz'
+
+    def test_resolve_future(self):
+        """Use Promise.resolve() on an object who is already a Promise."""
+
+        p = Promise.resolve(Promise.resolve(33))
+        assert p.result(0.01) == 33

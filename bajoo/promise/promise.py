@@ -225,6 +225,33 @@ class Promise(object):
         """
         return self.then(None, on_rejected)
 
+    @classmethod
+    def resolve(cls, value):
+        """Create a promise who resolves the selected value.
+
+        Args:
+            value: result of the promise. If it's a promise, it's returned as
+                is.
+        Returns:
+            Promise: new Promise already fulfilled, containing the value
+                passed in parameter.
+        """
+        if is_thenable(value):
+            return value
+        else:
+            return cls(lambda ok, error: ok(value))
+
+    @classmethod
+    def reject(cls, reason):
+        """Create a Promise rejected for the reason specified.
+
+        Args:
+            reason: Exception set to the Promise
+        Returns:
+            Promise: new Promise already rejected.
+        """
+        return cls(lambda ok, error: error(reason))
+
     @staticmethod
     def _exec_callback(callback, value, is_errback=False):
         try:
