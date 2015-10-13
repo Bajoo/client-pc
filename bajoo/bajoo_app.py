@@ -335,6 +335,7 @@ class BajooApp(wx.App, SoftwareUpdate):
 
         self._task_bar_icon.set_container_status_list(containers_status)
 
+    @promise.reduce_coroutine(safeguard=True)
     def _on_request_container_details(self, event):
         """
         Handle the request `get container detail`: fetch the team share's
@@ -346,16 +347,11 @@ class BajooApp(wx.App, SoftwareUpdate):
         """
         l_container = event.container
 
-        def send_data_to_window(data):
-            if self._main_window:
-                self._main_window.set_share_details(data)
-
         # If this is a TeamShare, fetch its members.
         if isinstance(l_container.container, TeamShare):
-            f = l_container.container.list_members()
-            f.then(lambda _members: send_data_to_window(l_container))
-        else:
-            send_data_to_window(l_container)
+            yield l_container.container.list_members()
+        if self._main_window:
+            self._main_window.set_share_details(l_container)
 
     def _on_request_config(self, _event):
         if self._main_window:
@@ -365,6 +361,7 @@ class BajooApp(wx.App, SoftwareUpdate):
         _logger.debug("Check for updates...")
         self.CheckForUpdate()
 
+    @promise.reduce_coroutine(safeguard=True)
     def _on_add_share_member(self, event):
         """
         Handle the request `add/modify a new member of a share`.
@@ -377,68 +374,54 @@ class BajooApp(wx.App, SoftwareUpdate):
         if not share or not email or not permission:
             return
 
-        def _on_member_added(__):
-            """
-            The member has been added/modified successfully. Show a
-            notification and update data on the screen.
-            """
-            # Refresh the member list
-            def on_refresh_members(__):
+        if share.container:
+            try:
+                yield share.container.add_member(email, permission)
+            except Exception as err:
+                _logger.error('Adding member failed: %s' % err)
+
                 if self._main_window:
                     self._main_window.on_share_member_added(
-                        share, email, permission,
-                        N_('%s has been given access to team share \'%s\'')
-                        % (email, share.name))
+                        share, None, None,
+                        N_('Cannot add this member to team share; '
+                           'maybe this account does not exist.'))
+                return
 
-            share.container.list_members().then(on_refresh_members)
-
-        def _on_member_add_error(err):
-            """
-            Error occurred when attempting to add/modify rights of a member
-            on a share. Show a notification.
-            """
-            _logger.error('Adding member failed: %s' % err)
-            _logger.warning(err._origin_stack)
+            # Refresh the member list
+            yield share.container.list_members()
 
             if self._main_window:
                 self._main_window.on_share_member_added(
-                    share, None, None,
-                    N_('Cannot add this member to team share; '
-                       'maybe this account does not exist.'))
-
-        if share.container:
-            share.container.add_member(email, permission) \
-                .then(_on_member_added, _on_member_add_error)
+                    share, email, permission,
+                    N_('%s has been given access to team share \'%s\'')
+                    % (email, share.name))
         else:
             if self._main_window:
                 self._main_window.on_share_member_added(
                     share, None, None,
                     N_('Unidentified container, cannot add member'))
 
+    @promise.reduce_coroutine(safeguard=True)
     def _on_remove_share_member(self, event):
         share = event.share
         email = event.email
 
         if share.container:
-            def _on_member_removed(__):
-                # Refresh the member list
-                def on_refresh_members(__):
-                    if self._main_window:
-                        self._main_window.on_share_member_removed(
-                            share, email,
-                            N_('%s\'s access to team share \'%s\' '
-                               'has been removed.') % (email, share.name))
-
-                share.container.list_members().then(on_refresh_members)
-
-            def _on_member_remove_error(__):
+            try:
+                yield share.container.remove_member(email)
+            except Exception:
                 if self._main_window:
                     self._main_window.on_share_member_removed(
                         share, None,
                         N_('Cannot remove this member from this team share.'))
+                return
 
-            share.container.remove_member(email) \
-                .then(_on_member_removed, _on_member_remove_error)
+            yield share.container.list_members()
+            if self._main_window:
+                self._main_window.on_share_member_removed(
+                    share, email,
+                    N_('%s\'s access to team share \'%s\' '
+                       'has been removed.') % (email, share.name))
         else:
             if self._main_window:
                 self._main_window.on_share_member_removed(
@@ -453,6 +436,7 @@ class BajooApp(wx.App, SoftwareUpdate):
         set_lang(event.lang)
         self._notify_lang_change()
 
+    @promise.reduce_coroutine(safeguard=True)
     def _on_request_create_share(self, event):
         """
         Handle the request `create a new team share`. This function can
@@ -464,129 +448,82 @@ class BajooApp(wx.App, SoftwareUpdate):
         encrypted = event.encrypted
         members = event.members
 
-        def on_share_created(share):
-            """
-            The share has been created successfully: notify user,
-            then send requests to add member(s) to it if neccessary.
-            """
-            futures = []
-
-            for member in members:
-                permissions = members[member]
-                permissions.pop('user')
-                futures.append(share.add_member(member, permissions))
-
-            def share_creation_finally(refresh, success_msg=None,
-                                       error_msg=None):
-                """
-                This function needs to be called after all operations in the
-                share creation process. This will recollect data if neccessary
-                and show the share list tab.
-                """
-
-                def on_refreshed():
-                    def load_shares(__):
-                        if self._main_window:
-                            self._main_window.load_shares(
-                                self._container_list.get_list(),
-                                success_msg, error_msg)
-
-                    loaded = False
-
-                    for container in self._container_list.get_list():
-                        if container.model.id == share.id:
-                            container.container.list_members() \
-                                .then(load_shares)
-                            loaded = True
-                            break
-
-                    if not loaded:
-                        load_shares(None)
-
-                if refresh:
-                    self._container_list.refresh(on_refreshed)
-                else:
-                    on_refreshed()
-
-            def on_members_added(__):
-                """
-                All members have been added to the share: return
-                to the share list screen.
-                """
-                share_creation_finally(
-                    True, _('Team share %s has been successfully created') %
-                    share_name)
-
-            def on_members_added_error(__):
-                """
-                One or some members were not added: show error message.
-                """
-                share_creation_finally(
-                    True,
-                    _('Team share %s has been successfully created')
-                    % share_name,
-                    N_('Some members cannot be added to this team share. '
-                       'Please verify the email addresses.'))
-
-            if len(futures) > 0:
-                return wait_all(futures).then(
-                    on_members_added, on_members_added_error)
-            else:
-                on_members_added(None)
-
-        def on_create_share_failed(__):
-            """
-            Error occurred when attempting to create a new share.
-            Notify user then return to the share list screen.
-            """
+        # Create share
+        try:
+            share = yield TeamShare.create(self._session, share_name,
+                                           encrypted)
+        except:
             if self._main_window:
                 self._main_window.load_shares(
                     self._container_list.get_list(),
                     None, _('Cannot create share %s') % share_name)
+            return
 
-        TeamShare.create(self._session, share_name, encrypted) \
-            .then(on_share_created, on_create_share_failed)
+        # Add all members
+        futures = []
+        for member in members:
+            permissions = members[member]
+            permissions.pop('user')
+            futures.append(share.add_member(member, permissions))
 
+        error_msg = None
+        try:
+            yield wait_all(futures)
+        except:
+            error_msg = N_('Some members cannot be added to this team share. '
+                           'Please verify the email addresses.')
+        success_msg = _('Team share %s has been successfully '
+                        'created') % share_name
+
+        # Refresh the list.
+        @promise.reduce_coroutine(safeguard=True)
+        def on_refreshed():
+            for container in self._container_list.get_list():
+                if container.model.id == share.id:
+                    yield container.container.list_members()
+                    break
+
+            if self._main_window:
+                self._main_window.load_shares(self._container_list.get_list(),
+                                              success_msg, error_msg)
+
+        self._container_list.refresh(on_refreshed)
+
+    @promise.reduce_coroutine(safeguard=True)
     def _on_request_quit_share(self, event):
         share = event.share
         # TODO: stop the synchro on this share
 
-        def on_share_quit(__):
-            """
-            Notify user & navigate back to share list
-            """
-
-            def on_refreshed():
-                self._notifier.send_message(
-                    _('Quit team share'),
-                    _('You have no longer access to team share %s.'
-                      % share.name))
-
-                if self._main_window:
-                    self._main_window.load_shares(
-                        self._container_list.get_list(),
-                        _('You have no longer access to team share %s.'
-                          % share.name))
-
-                    if self._main_window:
-                        self._main_window.on_quit_or_delete_share(share)
-
-            self._container_list.refresh(on_refreshed)
-
-        def on_share_quit_error(__):
+        try:
+            yield share.container.remove_member(self._user.name,
+                                                is_self_quit=True)
+        except:
             self._notifier.send_message(
                 _('Error'),
                 _('An error occured when trying to quit team share %s.'
                   % share.name),
                 is_error=True
             )
-
             if self._main_window:
                 self._main_window.on_quit_or_delete_share(None)
+            return
 
-        share.container.remove_member(self._user.name, is_self_quit=True) \
-            .then(on_share_quit, on_share_quit_error)
+        def on_refreshed():
+            self._notifier.send_message(
+                _('Quit team share'),
+                _('You have no longer access to team share %s.'
+                  % share.name))
 
+            if self._main_window:
+                self._main_window.load_shares(
+                    self._container_list.get_list(),
+                    _('You have no longer access to team share %s.'
+                      % share.name))
+                self._main_window.on_quit_or_delete_share(share)
+
+        self._container_list.refresh(on_refreshed)
+
+    @promise.reduce_coroutine(safeguard=True)
     def _on_request_delete_share(self, event):
         """
         Handle the request `delete a share`. Stop the local synchronization
@@ -595,59 +532,43 @@ class BajooApp(wx.App, SoftwareUpdate):
         share = event.share
         # TODO: stop the synchro on this share
 
-        def share_deleted_finally(refresh, success_msg=None, error_msg=None):
-            def on_refresh():
-                if self._main_window:
-                    self._main_window.load_shares(
-                        self._container_list.get_list(),
-                        success_msg, error_msg)
+        success_msg = None
+        error_msg = None
+        try:
+            yield share.container.delete()
+            success_msg = _('A team share has been successfully deleted '
+                            'from server.')
+        except:
+            error_msg = _('Team share %s cannot be '
+                          'deleted from server.') % share.name
 
-            if refresh:
-                self._container_list.refresh(on_refresh)
-            else:
-                on_refresh()
+        def on_refresh():
+            if self._main_window:
+                self._main_window.load_shares(
+                    self._container_list.get_list(),
+                    success_msg, error_msg)
 
-        def _on_share_deleted(__):
-            """
-            The share has been successfully deleted: notify user then
-            return to the share list screen.
-            """
-            success_msg = _(
-                'A team share has been successfully deleted from server.')
-            share_deleted_finally(True, success_msg)
+        self._container_list.refresh(on_refresh)
 
-        def _on_delete_share_failed(_):
-            """
-            Error occurred when attempting to delete a share: notify user.
-            """
-            share_deleted_finally(
-                True, None,
-                _('Team share %s cannot be '
-                  'deleted from server.') % share.name)
-
-        share.container.delete().then(
-            _on_share_deleted, _on_delete_share_failed)
-
+    @promise.reduce_coroutine(safeguard=True)
     def _on_request_account_info(self, event):
 
-        def _send_account_info(quota_info):
-            used_quota, allowed_quota = quota_info
+        quota_info = yield self._user.get_quota()
+        used_quota, allowed_quota = quota_info
 
-            # user.name must be set.
-            if self._main_window:
-                self._main_window.set_account_info({
-                    'email': self._user.name,
-                    'account_type': _('Beta tester account'),
-                    # Note: In beta, there is only one account type.
-                    'is_best_account_type': True,
-                    'n_shares': len(self._container_list.get_list()),
-                    'quota': allowed_quota,  # 2GB
-                    'quota_used': used_quota  # 500MB
-                })
+        # user.name must be set.
+        if self._main_window:
+            self._main_window.set_account_info({
+                'email': self._user.name,
+                'account_type': _('Beta tester account'),
+                # Note: In beta, there is only one account type.
+                'is_best_account_type': True,
+                'n_shares': len(self._container_list.get_list()),
+                'quota': allowed_quota,  # 2GB
+                'quota_used': used_quota  # 500MB
+            })
 
-        self._user.get_quota().then(_send_account_info)
-
-    @promise.reduce_coroutine()
+    @promise.reduce_coroutine(safeguard=True)
     def _on_request_change_password(self, event):
         _logger.debug('Change password request received %s:', event.data)
 
