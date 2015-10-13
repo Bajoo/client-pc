@@ -1,6 +1,8 @@
 # -*- coding: utf8 -*-
 
+import logging
 import pytest
+import sys
 from threading import Timer
 from bajoo.promise import Promise, TimeoutError
 
@@ -269,3 +271,29 @@ class TestThenMethod(object):
 
         p = Promise.resolve(Promise.resolve(33))
         assert p.result(0.01) == 33
+
+    def test_promise_safe_guard(self, capsys):
+        """Use the safeguard() on a failing promise.
+
+        It ensures the error is logged in the stdout, with sufficient details.
+
+        """
+        class Err(Exception):
+            pass
+
+        logging.basicConfig(stream=sys.stdout)
+
+        def in_promise(a, b):
+            msg = 'ERROR'
+            raise Err(msg)
+
+        p = Promise(in_promise)
+
+        def callback(value):
+            assert value is 3
+
+        p.then(callback)
+        p.safeguard()
+
+        out, err = capsys.readouterr()
+        assert '[SAFEGUARD]' in out

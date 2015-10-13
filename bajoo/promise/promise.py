@@ -26,7 +26,7 @@ class Promise(object):
     FULFILLED = 'fulfilled'
     REJECTED = 'rejected'
 
-    def __init__(self, executor):
+    def __init__(self, executor, _name=None, _previous=None):
         """Constructor of the Promise.
 
         Generate the two callbacks for the executor, then call the `executor`.
@@ -42,12 +42,15 @@ class Promise(object):
                 result's value as its only argument.
                 The second, `on_rejected()`, should be called when an error
                 occurs. Its argument must be an instance of `Exception`.
+            _name (str): if set, name used when converted to text.
         """
 
         self._state = self.PENDING
         self._result = None
         self._error = None
         self._condition = Condition()
+        self._name = _name or getattr(executor, '__name__', '???')
+        self._previous = _previous
 
         self._callbacks = []
         self._errbacks = []
@@ -208,7 +211,14 @@ class Promise(object):
             self._add_callback(callback)
             self._add_errback(errback)
 
-        return Promise(deferred_chained_promise)
+        if not on_rejected:
+            name = '%s' % getattr(on_fulfilled, '__name__', '???')
+        elif not on_fulfilled:
+            name = '<None, %s>' % getattr(on_rejected, '__name__', '???')
+        else:
+            name = '<%s, %s>' % (getattr(on_fulfilled, '__name__', '???'),
+                                 getattr(on_fulfilled, '__name__', '???'))
+        return Promise(deferred_chained_promise, _name=name, _previous=self)
 
     def catch(self, on_rejected):
         """Create a new promise with a callback called when an error occurs.
@@ -225,6 +235,41 @@ class Promise(object):
         """
         return self.then(None, on_rejected)
 
+    def safeguard(self):
+        """Catch all errors and log them with the most details possible.
+
+        This method is aimed to protect the program from uncaught rejected
+        Promise. If no error handler has been set (via then() or catch()), the
+        default behavior is to do nothing, and thus, errors are silently
+        ignored.
+        Calling `safeguard()` after all chains are set will catch these errors,
+        and log them as ERROR with the maximum of details possible.
+        """
+        def guard(error):
+            try:
+                raise error
+            except:
+                _logger.exception('[SAFEGUARD] %s' % self)
+
+        self._add_errback(guard)
+
+    def __str__(self):
+        return 'Promise(%s)' % self._inner_print()
+
+    def _inner_print(self):
+        with self._condition:
+            if self._state == self.REJECTED:
+                state = 'R'
+            elif self._state == self.FULFILLED:
+                state = 'F'
+            else:
+                state = 'P'
+
+        if self._previous:
+            return '%s -> %s %s' % (self._previous._inner_print(), self._name,
+                                    state)
+        return '%s %s' % (self._name, state)
+
     @classmethod
     def resolve(cls, value):
         """Create a promise who resolves the selected value.
@@ -239,7 +284,7 @@ class Promise(object):
         if is_thenable(value):
             return value
         else:
-            return cls(lambda ok, error: ok(value))
+            return cls(lambda ok, error: ok(value), _name='RESOLVE')
 
     @classmethod
     def reject(cls, reason):
@@ -250,7 +295,7 @@ class Promise(object):
         Returns:
             Promise: new Promise already rejected.
         """
-        return cls(lambda ok, error: error(reason))
+        return cls(lambda ok, error: error(reason), _name='REJECT')
 
     @staticmethod
     def _exec_callback(callback, value, is_errback=False):

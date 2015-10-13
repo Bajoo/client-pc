@@ -4,13 +4,17 @@ from .promise import Promise
 from .util import is_thenable
 
 
-def reduce_coroutine():
+def reduce_coroutine(safeguard=True):
     """Decorator who converts a coroutine of promises into a single promise.
 
     The greatest interest is the ability to write a function in an
     synchronous-like style, using many asynchronous Promises.
     Whatever is the number of Promises or async calls used, the result will
     always be an unique Promise wrapping the whole process.
+
+    Args:
+        safeguard (boolean): if true, use `Promise.safeguard()` on the
+            resulting promise.
     """
 
     def decorator(func):
@@ -55,7 +59,10 @@ def reduce_coroutine():
                 f = next(gen)
                 _call_next_or_set_result(f)
 
-            return Promise(executor)
+            p = Promise(executor, _name='COROUTINE %s' % func.__name__)
+            if safeguard:
+                p.safeguard()
+            return p
 
         return wrapper
     return decorator
