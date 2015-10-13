@@ -582,7 +582,7 @@ class BajooApp(wx.App, SoftwareUpdate):
             if self._main_window:
                 self._main_window.on_quit_or_delete_share(None)
 
-        share.container.remove_member(self._user.name) \
+        share.container.remove_member(self._user.name, is_self_quit=True) \
             .then(on_share_quit, on_share_quit_error)
 
     def _on_request_delete_share(self, event):

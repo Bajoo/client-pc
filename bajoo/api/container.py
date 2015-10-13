@@ -114,7 +114,13 @@ class Container(object):
             self._key_lock.release()
             return Future.resolve(self._encryption_key)
 
-    def _encrypt_and_upload_key(self, key):
+    def _encrypt_and_upload_key(self, key, use_local_members=False):
+        """
+        Args:
+            use_local_members (boolean):
+                True to use its own member array,
+                False to send API request to download the member list.
+        """
 
         def extract_key_members(members):
             return wait_all(
@@ -137,7 +143,10 @@ class Container(object):
 
         # TODO: code smell: we shouldn't use methods of child classes.
         if hasattr(self, 'list_members'):
-            f = self.list_members().then(extract_key_members)
+            if use_local_members:
+                f = extract_key_members(self.members or [])
+            else:
+                f = self.list_members().then(extract_key_members)
         else:
             f = get_owner_key()
             f = f.then(lambda key: [key])
@@ -176,10 +185,14 @@ class Container(object):
             f = f.then(close_lock, close_lock_err)
         return f
 
-    def _update_key(self):
+    def _update_key(self, use_local_members=False):
         _logger.debug('Update key for container #%s ...' % self.id)
         f = self._get_encryption_key()
-        return f.then(self._encrypt_and_upload_key)
+
+        def on_get_key(key):
+            return self._encrypt_and_upload_key(key, use_local_members)
+
+        return f.then(on_get_key)
 
     @staticmethod
     def _from_json(session, json_object):

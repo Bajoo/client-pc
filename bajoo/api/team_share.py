@@ -86,9 +86,20 @@ class TeamShare(Container):
         return self._session.send_api_request('GET', url) \
             .then(_on_receive_response)
 
-    def _set_permissions(self, user, permissions):
+    def _set_permissions(self, user, permissions, then_update_key=True):
         """
         Set a user's permissions for this share.
+
+        Args:
+            user (str): user email
+            permission (object): permission object, e.g.
+                {
+                    'admin' (bool): True/False,
+                    'write' (bool): True/False,
+                    'read' (bool): True/False
+                }
+            then_update_key (boolean):
+                True (default) if you want to update & re-upload the key.
         """
         url = '/storages/%s/rights/users/%s' % (self.id, user)
 
@@ -101,7 +112,7 @@ class TeamShare(Container):
             headers={'Content-type': 'application/json'},
             data=json.dumps(permissions)) \
             .then(_on_receive_response)
-        if self.is_encrypted:
+        if self.is_encrypted and then_update_key:
             return f.then(lambda _: self._update_key())
         else:
             return f
@@ -142,16 +153,36 @@ class TeamShare(Container):
         """
         return self._set_permissions(user, permissions)
 
-    def remove_member(self, user):
+    def remove_member(self, user, is_self_quit=False):
         """
         Remove access to this share of a user.
 
         Args:
             user (str): email of the user to remove access.
+            is_self_quit (boolean):
+                True if it's user who chose to quit instead of being
+                kicked out by another admin.
 
         Returns (Future<dict>): the permissions dictionary for this user.
         """
-        return self._set_permissions(user, permission['NO_RIGHTS'])
+
+        def _set_permission(_):
+            return self._set_permissions(
+                user, permission['NO_RIGHTS'], then_update_key=False)
+
+        if is_self_quit:
+            # remove user in the list first
+            for entry in self.members:
+                if entry['user'] == user:
+                    self.members.remove(entry)
+                    break
+
+            # then update the encryption key
+            # & send request to server
+            return self._update_key(use_local_members=True) \
+                .then(_set_permission)
+        else:
+            return self._set_permissions(user, permission['NO_RIGHTS'])
 
 
 if __name__ == '__main__':
