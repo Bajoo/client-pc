@@ -88,12 +88,12 @@ class MembersShareForm(BaseForm):
         return data
 
     def _on_email_changed(self, event):
-        self.has_changes = True
         email = self.FindWindow('user_email').GetValue()
-        self.enable_add_remove_user(email not in self.excluded_emails)
+        if email:
+            self.has_changes = True
+            self.enable_add_remove_user(email not in self.excluded_emails)
 
     def _on_select_member(self, _event):
-        self.has_changes = True
         row = self._view._members_list_view.GetSelectedRow()
         txt_user_email = self.FindWindow('user_email')
         btn_remove_user = self.FindWindow('btn_remove_user')
@@ -103,6 +103,7 @@ class MembersShareForm(BaseForm):
             txt_user_email.SetValue('')
             btn_remove_user.Disable()
         else:
+            self.has_changes = True
             email = self._view._members_list_view.GetValue(row, 0)
             txt_user_email.SetValue(email)
             btn_remove_user.Enable()
