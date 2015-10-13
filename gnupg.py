@@ -791,7 +791,7 @@ class GPG(object):
                 psutil.Process(p.pid).nice(psutil.IDLE_PRIORITY_CLASS)
             else:
                 psutil.Process(p.pid).nice(-10)
-        except psutil.AccessDenied, psutil.NoSuchProcess:
+        except (psutil.AccessDenied, psutil.NoSuchProcess):
             pass
         return p
 
