@@ -66,6 +66,7 @@ class ConnectionFormView(BaseView):
                           target=password_txt, hide_if_valid=True)
 
         submit_btn = wx.Button(self.window, name='submit')
+        submit_btn.SetDefault()
 
         str20 = '123456789ABCDEF01234'
         size = username_txt.GetSizeFromTextSize(
