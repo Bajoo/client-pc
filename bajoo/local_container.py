@@ -6,6 +6,7 @@ import io
 import json
 import logging
 import os
+import shutil
 import sys
 from threading import RLock
 
@@ -318,3 +319,8 @@ class LocalContainer(object):
     def get_status_text(self):
         return LocalContainer._status_textes.get(
             self.status, _('Unknown'))
+
+    def remove_on_disk(self):
+        """Remove the folder synchronised and its content."""
+        _logger.info('Remove container of the disk: rm %s' % self.model.path)
+        shutil.rmtree(self.model.path, ignore_errors=True)

@@ -96,6 +96,9 @@ class DynamicContainerList(object):
         The container has been created by the user (not yet fetched from the
         updater).
 
+        This will start the sync, unless the model has the `do_not_sync` flag
+        to True.
+
         Args:
             container (Container):
             model (ContainerModel):
@@ -103,6 +106,19 @@ class DynamicContainerList(object):
         with self._list_lock:
             self.user_profile.set_container(model.id, model)
             self._append_local_container(model, container)
+
+    def remove_container(self, id, remove_on_disk=False):
+        with self._list_lock:
+            if not self.user_profile.remove_container(id):
+                _logger.info('Try to remove unknown container %s' % id)
+                return
+
+            lc = next((c for c in self._local_list if c.model.id == id), None)
+            if lc:
+                self._stop_container(lc)
+                self._local_list.remove(lc)
+                if remove_on_disk:
+                    lc.remove_on_disk()
 
     def _append_local_container(self, model, container, is_new=False):
         """Create a local_container and add it to the list.
@@ -162,23 +178,12 @@ class DynamicContainerList(object):
     def _on_added_containers(self, added_containers):
         _logger.info('New container(s) detected: %s', added_containers)
 
-        if len(added_containers) == 1:
-            self._notify(_('New Bajoo share added'),
-                         _('You have a new Bajoo share:\n%s') %
-                         added_containers[0].name)
-        else:
-            body = _('You have %s new Bajoo shares:') % len(added_containers)
-            body += '\n\t- %s' % added_containers[0].name
-            body += '\n\t- %s' % added_containers[1].name
-            if len(added_containers) == 3:
-                body += '\n\t- %s' % added_containers[2].name
-            elif len(added_containers) > 3:
-                body += '\n\t'
-                body += _('and %s others') % (len(added_containers) - 2)
-            self._notify(_('New Bajoo shares added'), body)
-
+        new_containers = []
         with self._list_lock:
             for c in added_containers:
+                if self.user_profile.get_container(c.id):
+                    continue  # Container already added.
+
                 if isinstance(c, TeamShare):
                     c_type = 'teamshare'
                 else:
@@ -187,30 +192,52 @@ class DynamicContainerList(object):
                                        name=c.name,
                                        container_type=c_type)
                 self._append_local_container(model, c, is_new=True)
+                new_containers.append((c.id, c.name))
+
+        if not new_containers:
+            return
+
+        if len(new_containers) == 1:
+            self._notify(_('New Bajoo share added'),
+                         _('You have a new Bajoo share:\n%s') %
+                         new_containers[0][1])
+        else:
+            body = _('You have %s new Bajoo shares:') % len(new_containers)
+            body += '\n\t- %s' % new_containers[0][1]
+            body += '\n\t- %s' % new_containers[1][1]
+            if len(new_containers) == 3:
+                body += '\n\t- %s' % new_containers[2][1]
+            elif len(new_containers) > 3:
+                body += '\n\t'
+                body += _('and %s others') % (len(new_containers) - 2)
+            self._notify(_('New Bajoo shares added'), body)
 
     def _on_removed_containers(self, removed_containers):
         _logger.info('container(s) removed: %s', removed_containers)
 
-        if len(removed_containers) == 1:
-            title = _('A Bajoo share have been removed.')
-            body = _('Either the share has been deleted or your permissions '
-                     'have been revoked.')
-        else:
-            title = _('%s Bajoo shares have been removed.'
-                      % len(removed_containers))
-            body = _('Either the shares have been deleted, or your permissions'
-                     ' have been revoked.')
-        self._notify(title, body)
-
+        removed_nb = 0
         with self._list_lock:
             for container_id in removed_containers:
-                self.user_profile.remove_container(container_id)
+                if not self.user_profile.remove_container(container_id):
+                    continue
+
+                removed_nb += 1
 
                 to_remove = [c for c in self._local_list
                              if c.model.id == container_id]
                 for local_container in to_remove:
                     self._stop_container(local_container)
                     self._local_list.remove(local_container)
+
+        if removed_nb == 1:
+            title = _('A Bajoo share have been removed.')
+            body = _('Either the share has been deleted or your permissions '
+                     'have been revoked.')
+        elif removed_nb > 1:
+            title = _('%s Bajoo shares have been removed.') % removed_nb
+            body = _('Either the shares have been deleted, or your permissions'
+                     ' have been revoked.')
+        self._notify(title, body)
 
     def stop(self):
         self._updater.stop()
