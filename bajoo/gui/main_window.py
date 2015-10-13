@@ -109,13 +109,11 @@ class MainWindow(wx.Frame, Translator):
     @ensure_gui_thread
     def show_creation_shares_tab(self):
         """Make the creation share tab shown on top."""
-        self._show_share_tab(self._view.creation_shares_tab,
-                             _('Create new share'))
+        self._show_share_tab(self._view.creation_shares_tab)
 
     @ensure_gui_thread
     def show_details_share_tab(self, share):
-        self._show_share_tab(self._view.details_share_tab,
-                             _('Folder detail: %s') % share.name)
+        self._show_share_tab(self._view.details_share_tab)
         self._view.details_share_tab.set_data(share)
 
     def show_settings_tab(self):
@@ -245,14 +243,8 @@ class MainWindow(wx.Frame, Translator):
         self.show_creation_shares_tab()
 
     def _on_request_share_details(self, event):
-        try:
-            container_name = event.container.name
-        except AttributeError:
-            container_name = ''
-
         self._view.details_share_tab = DetailsShareTab(self._view)
-        self._show_share_tab(self._view.details_share_tab,
-                             _('Folder detail: %s') % container_name)
+        self._show_share_tab(self._view.details_share_tab)
         event.Skip()
 
 
@@ -317,7 +309,14 @@ class MainWindowListbook(wx.Listbook, Translator):
 
     def on_page_changed(self, event=None):
         self.GetPage(self.GetSelection()).Show()
-        self.GetParent().SetTitle(self.GetPageText(self.GetSelection()))
+
+        if isinstance(self.GetPage(self.GetSelection()), CreationShareTab):
+            self.GetParent().SetTitle(_('Create new share'))
+        elif isinstance(self.GetPage(self.GetSelection()), DetailsShareTab):
+            self.GetParent().SetTitle(_('Folder details'))
+        else:
+            self.GetParent().SetTitle(self.GetPageText(self.GetSelection()))
+
         self.GetParent().on_tab_changed(event)
 
 
