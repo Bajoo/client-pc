@@ -102,8 +102,12 @@ class _Task(object):
         self._task_errors = None
 
     def __repr__(self):
-        return ('<Task %s %s local_path=%s>' %
-                (self.type.upper(), self.target, self.local_path))
+        s = ('<Task %s %s local_path=%s>' %
+             (self.type.upper(), self.target, self.local_path))
+        if not isinstance(s, str):
+            # Python 2 with type unicode.
+            s = s.encode('utf-8')
+        return s
 
     def start(self, parent_path=None):
         """Register the task and execute it.

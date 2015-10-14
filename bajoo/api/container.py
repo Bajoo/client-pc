@@ -60,8 +60,12 @@ class Container(object):
         """
         Override the representational string of the container object.
         """
-        return "<Container '%s' (id=%s, encrypted=%s)>" % \
-               (self.name, self.id, str(self.is_encrypted))
+        s = "<Container '%s' (id=%s, encrypted=%s)>" % \
+            (self.name, self.id, self.is_encrypted)
+        if not isinstance(s, str):
+            # Python 2 with type unicode.
+            s = s.encode('utf-8')
+        return s
 
     def _get_encryption_key(self):
         """get the encryption key and returns it.
