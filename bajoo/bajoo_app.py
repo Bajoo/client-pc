@@ -554,6 +554,7 @@ class BajooApp(wx.App, SoftwareUpdate):
             """
             Notify user & navigate back to share list
             """
+
             def on_refreshed():
                 self._notifier.send_message(
                     _('Quit team share'),

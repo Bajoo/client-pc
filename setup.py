@@ -173,6 +173,11 @@ if sys.platform not in ['win32', 'cygwin', 'win64']:
         'notify2'
     ]
 
+if sys.platform in ['win32', 'win64']:
+    setup_kwargs['install_requires'] += [
+        'pypiwin32'
+    ]
+
 
 try:
     from esky import bdist_esky

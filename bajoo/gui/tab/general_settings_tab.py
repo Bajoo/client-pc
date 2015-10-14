@@ -4,6 +4,7 @@ import logging
 import wx
 
 from ...common.i18n import N_
+from ...common import autorun
 from ..common.language_box import LanguageBox
 from ..base_view import BaseView
 from ..translator import Translator
@@ -43,13 +44,16 @@ class GeneralSettingsTab(wx.Panel, Translator):
             _logger.debug("Null config object detected !!!")
             return
 
-        # launched_at_startup = self._config.get('launched_at_startup')
         # contextual_icon_shown = self._config.get('contextual_icon')
         # notifications_shown = self._config.get('notifications')
         # lang_code = self._config.get('lang')
 
+        self.FindWindow('chk_launch_at_startup').Enable(
+            autorun.can_autorun())
+        self.FindWindow('chk_launch_at_startup').SetValue(
+            autorun.is_autorun())
+
         # TODO: set to real value for next release
-        self.FindWindow('chk_launch_at_startup').SetValue(False)
         self.FindWindow('chk_contextual_icon').SetValue(False)
         self.FindWindow('chk_notifications').SetValue(False)
         # TODO: change to language button & apply config
@@ -63,9 +67,13 @@ class GeneralSettingsTab(wx.Panel, Translator):
             self.FindWindow('chk_notifications').GetValue()
 
         if self._config:
-            self._config.set('launched_at_startup', launched_at_startup)
             self._config.set('contextual_icon', contextual_icon_shown)
             self._config.set('notifications', notifications_shown)
+
+        autorun.set_autorun(launched_at_startup)
+        _logger.info(
+            'Bajoo autorun is %s',
+            'enabled' if autorun.is_autorun() else 'disabled')
 
     def notify_lang_change(self):
         Translator.notify_lang_change(self)
@@ -91,7 +99,6 @@ class GeneralSettingsView(BaseView):
             general_settings_screen, name='chk_notifications')
 
         # TODO: disable for next release
-        chk_launch_at_startup.Disable()
         chk_contextual_icon.Disable()
         chk_notifications.Disable()
 
