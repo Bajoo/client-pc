@@ -3,7 +3,8 @@
 import logging
 from threading import Lock
 
-from ..common.future import Future, wait_all
+from ..common.future import Future
+from ..promise import Promise
 from .. import encryption
 from ..network.errors import HTTPNotFoundError
 from . import User
@@ -127,7 +128,7 @@ class Container(object):
         """
 
         def extract_key_members(members):
-            return wait_all(
+            return Promise.all(
                 [User(member['user'], self._session).get_public_key()
                  for member in members])
 

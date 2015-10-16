@@ -7,7 +7,6 @@ from wx.lib.softwareupdate import SoftwareUpdate
 
 from . import promise
 from .api import TeamShare, Session, Container
-from .common.future import wait_all
 from .common import config
 from .common.path import get_data_dir
 from .connection_registration_process import connect_or_register
@@ -33,6 +32,7 @@ from .gui.form.members_share_form import MembersShareForm
 from .gui.change_password_window import ChangePasswordWindow
 from .common.i18n import _, N_, set_lang
 from .passphrase_manager import PassphraseManager
+from .promise import Promise
 
 
 _logger = logging.getLogger(__name__)
@@ -304,7 +304,7 @@ class BajooApp(wx.App, SoftwareUpdate):
                         error_msg=_('Error occurred: %s.') % error,
                         show_tab=False)
 
-            wait_all(futures).then(_on_members_load, _on_members_load_error)
+            Promise.all(futures).then(_on_members_load, _on_members_load_error)
 
         self._container_list.refresh(on_refreshed)
 
@@ -442,7 +442,7 @@ class BajooApp(wx.App, SoftwareUpdate):
         Handle the request `create a new team share`. This function can
         send multiple API requests to create a new share and then add
         member(s) to it. Failure when adding a member does not effect
-        other requests, thanks to using Future & wait_all() function.
+        other requests.
         """
         share_name = event.share_name
         encrypted = event.encrypted
@@ -468,7 +468,7 @@ class BajooApp(wx.App, SoftwareUpdate):
 
         error_msg = None
         try:
-            yield wait_all(futures)
+            yield Promise.all(futures)
         except:
             error_msg = N_('Some members cannot be added to this team share. '
                            'Please verify the email addresses.')

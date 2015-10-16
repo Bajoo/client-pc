@@ -332,7 +332,7 @@ def main():
     _logger.setLevel(logging.DEBUG)
 
     from ..api import Session, Container, TeamShare
-    from ..common.future import wait_all
+    from ..promise import Promise
     from .form.members_share_form import MembersShareForm
 
     session = Session.create_session(
@@ -384,7 +384,7 @@ def main():
                 permissions.pop('user')
                 futures.append(share.add_member(member, permissions))
 
-            return wait_all(futures).then(on_members_added)
+            return Promise.all(futures).then(on_members_added)
 
         TeamShare.create(session, share_name) \
             .then(on_share_created)

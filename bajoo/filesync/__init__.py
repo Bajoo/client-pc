@@ -43,10 +43,10 @@ import sys
 
 from ..network.errors import HTTPNotFoundError
 from ..common import config
-from ..common.future import Future, patch_dec, wait_all, then, resolve_rec
+from ..common.future import Future, patch_dec, then, resolve_rec
 from .filepath import is_path_allowed, is_hidden
 from ..common.i18n import _
-from ..promise import ThreadPoolExecutor
+from ..promise import Promise, ThreadPoolExecutor
 
 
 _logger = logging.getLogger(__name__)
@@ -317,7 +317,7 @@ class _Task(object):
                         self._task_errors = failed_tasks
                     return None
 
-                return wait_all(subtasks).then(all_tasks_done)
+                return Promise.all(subtasks).then(all_tasks_done)
             else:
                 return None
 
@@ -454,7 +454,7 @@ def moved_local_files(container, local_container, src_filename, dest_filename,
             else:
                 return results[0]
 
-    return wait_all([
+    return Promise.all([
         _Task(_Task.LOCAL_DELETION, container, src_filename,
               local_container, display_error_cb).start(),
         _Task(_Task.LOCAL_ADD, container, dest_filename,

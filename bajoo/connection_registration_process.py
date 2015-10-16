@@ -9,7 +9,7 @@ import sys
 from .api import register, User
 from .api.session import Session
 from .common.i18n import N_, _
-from .common.future import Future, resolve_dec, wait_all
+from .common.future import Future, resolve_dec
 from .encryption import set_gpg_home_dir
 from .network.errors import HTTPError
 from . import promise
@@ -269,7 +269,7 @@ class _ConnectionProcess(object):
             self._need_root_folder_config = True
             f = self._get_settings_and_apply()
         else:
-            f = wait_all([
+            f = promise.Promise.all([
                 self.check_bajoo_root_folder().then(self._set_folder_flag,
                                                     self._set_folder_flag),
                 self.check_gpg_config().then(self._set_gpg_flag,
@@ -317,7 +317,7 @@ class _ConnectionProcess(object):
             f2 = f2.then(self._set_gpg_flag, self._set_gpg_flag)
             futures.append(f2)
 
-        return wait_all(futures).then(self._ask_config_if_flags)
+        return promise.Promise.all(futures).then(self._ask_config_if_flags)
 
     def _set_folder_flag(self, result):
         log_msg = str(result)

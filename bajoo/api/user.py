@@ -4,8 +4,9 @@ from hashlib import sha256
 
 from ..network.errors import HTTPNotFoundError
 from .. import encryption
-from ..common.future import resolve_dec, wait_all
+from ..common.future import resolve_dec
 from ..encryption import AsymmetricKey
+from ..promise import Promise
 
 
 _logger = logging.getLogger(__name__)
@@ -223,7 +224,7 @@ class User(object):
         """
 
         def _upload_key(key):
-            return wait_all([
+            return Promise.all([
                 self._upload_private_key(key.export(secret=True)),
                 self._upload_public_key(key.export())
             ])
