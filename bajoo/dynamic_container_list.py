@@ -105,7 +105,7 @@ class DynamicContainerList(object):
         """
         with self._list_lock:
             self.user_profile.set_container(model.id, model)
-            self._append_local_container(model, container)
+            self._append_local_container(model, container, is_new=True)
 
     def remove_container(self, id, remove_on_disk=False):
         with self._list_lock:
@@ -148,7 +148,7 @@ class DynamicContainerList(object):
         container = local_container.container
         model_path = local_container.model.path
 
-        if model_path is None:
+        if model_path is None or is_new:
             new_path = local_container.create_folder(
                 self.user_profile.root_folder_path)
 

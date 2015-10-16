@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 
+from os import path
+
 import wx
 from wx.lib.filebrowsebutton import DirBrowseButton
 from wx.lib.newevent import NewCommandEvent
 
 from ...api.team_share import permission as share_permission
-from ...common.i18n import N_
+from ...common.i18n import N_, _
 from ..common import message_box
 from ..common.pictos import get_bitmap
 from ..base_view import BaseView
@@ -32,6 +34,8 @@ class CreationShareTab(BaseForm):
         self.Bind(wx.EVT_BUTTON, self._btn_create_clicked, id=wx.ID_OK)
         self.Bind(wx.EVT_BUTTON, self._btn_back_clicked,
                   self.FindWindow('btn_back'))
+        self.Bind(wx.EVT_CHECKBOX, self._chk_exclusion_checked,
+                  self.FindWindow('chk_exclusion'))
         self.Bind(MembersShareForm.EVT_SUBMIT, self._on_add_member)
 
         self._user_email = wx.GetApp()._user.name
@@ -53,17 +57,29 @@ class CreationShareTab(BaseForm):
                 return
 
         share_name = self.FindWindow('txt_share_name').GetValue()
-        encrypted = self.FindWindow('chk_encryption').GetValue()
 
         if share_name:
             request_event = CreationShareTab.RequestCreateShareEvent(
                 self.GetId())
             request_event.share_name = share_name
-            request_event.encrypted = encrypted
+            request_event.encrypted = \
+                self.FindWindow('chk_encryption').GetValue()
             request_event.members = self.members
+            request_event.do_not_sync = \
+                self.FindWindow('chk_exclusion').GetValue()
+            request_event.path = None
+
+            if not request_event.do_not_sync:
+                request_event.path = path.join(
+                    self.FindWindow('btn_browse_location').GetValue(),
+                    share_name)
 
             wx.PostEvent(self, request_event)
             self.disable()
+
+    def _chk_exclusion_checked(self, event):
+        do_not_sync = self.FindWindow('chk_exclusion').GetValue()
+        self.FindWindow('btn_browse_location').Enable(not do_not_sync)
 
     def _on_add_member(self, event):
         # Retrieve the event data
@@ -104,13 +120,17 @@ class CreationShareView(BaseView):
         chk_encryption.SetValue(True)
         chk_exclusion = wx.CheckBox(
             creation_share_tab, name='chk_exclusion')
-        btn_browse_location = DirBrowseButton(creation_share_tab)
+
+        share_folder = path.join(
+            wx.GetApp().user_profile.root_folder_path, _('Shares'))
+        btn_browse_location = DirBrowseButton(
+            creation_share_tab, name='btn_browse_location',
+            startDirectory=share_folder)
+        btn_browse_location.SetValue(share_folder)
 
         # TODO: disable for next release
         rbtn_team_share.Disable()
         rbtn_public_share.Disable()
-        chk_exclusion.Disable()
-        btn_browse_location.Disable()
 
         # the top sizer contains the back button
         top_sizer = self.make_sizer(

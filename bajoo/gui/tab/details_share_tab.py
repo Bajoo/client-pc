@@ -189,6 +189,8 @@ class DetailsShareTab(BaseForm):
             self._user_email = wx.GetApp()._user.name
             self._refresh_admin_controls()
 
+        self.FindWindow('chk_exclusion').SetValue(share.model.do_not_sync)
+
     @ensure_gui_thread
     def _refresh_admin_controls(self):
         show_share_options = \
@@ -383,6 +385,8 @@ class DetailsShareView(BaseView):
         self.members_share_form = members_share_form
 
         chk_exclusion = wx.CheckBox(details_share_tab, name='chk_exclusion')
+        chk_exclusion.Disable()
+
         btn_browse_location = DirBrowseButton(details_share_tab)
 
         # the top sizer contains the back button
@@ -449,7 +453,6 @@ class DetailsShareView(BaseView):
         })
 
         # TODO: disable for next release
-        chk_exclusion.Disable()
         btn_browse_location.Disable()
 
 

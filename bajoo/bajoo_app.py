@@ -10,6 +10,7 @@ from .api import TeamShare, Session, Container
 from .common import config
 from .common.path import get_data_dir
 from .connection_registration_process import connect_or_register
+from .container_model import ContainerModel
 from .container_sync_pool import ContainerSyncPool
 from .dynamic_container_list import DynamicContainerList
 from .gui.common.language_box import LanguageBox
@@ -447,6 +448,8 @@ class BajooApp(wx.App, SoftwareUpdate):
         share_name = event.share_name
         encrypted = event.encrypted
         members = event.members
+        do_not_sync = event.do_not_sync
+        local_path = event.path
 
         # Create share
         try:
@@ -487,6 +490,11 @@ class BajooApp(wx.App, SoftwareUpdate):
                 self._main_window.load_shares(self._container_list.get_list(),
                                               success_msg, error_msg)
 
+        share_model = ContainerModel(
+            share.id, share.name, path=local_path,
+            container_type='teamshare', do_not_sync=do_not_sync)
+
+        self._container_list.add_container(share, share_model)
         self._container_list.refresh(on_refreshed)
 
     @promise.reduce_coroutine(safeguard=True)

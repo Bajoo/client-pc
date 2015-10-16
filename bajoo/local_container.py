@@ -107,7 +107,9 @@ class LocalContainer(object):
         """
 
         name = self.container.name
-        if isinstance(self.container, TeamShare):
+        if self.model.path:
+            folder_path = self.model.path
+        elif isinstance(self.container, TeamShare):
             folder_path = os.path.join(root_folder_path, _('Shares'), name)
         else:
             folder_path = os.path.join(root_folder_path, name)
