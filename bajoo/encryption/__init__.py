@@ -24,7 +24,6 @@ Ideally, one thread to manage all GPG process would be sufficient.
 """
 
 import atexit
-from concurrent.futures import ThreadPoolExecutor
 import errno
 from functools import partial
 import io
@@ -35,7 +34,7 @@ import tempfile
 from gnupg import GPG
 
 from ..common.path import get_cache_dir
-from ..common.future import then
+from ..promise import ThreadPoolExecutor
 from .asymmetric_key import AsymmetricKey
 from .errors import EncryptionError, KeyGenError, EncryptError, DecryptError
 from .errors import PassphraseAbortError
@@ -153,7 +152,7 @@ def create_key(email, passphrase, container=False):
             raise KeyGenError('Key generation failed: %s' % data)
         return AsymmetricKey(gpg, data.fingerprint)
 
-    return then(f, on_key_generated)
+    return f.then(on_key_generated)
 
 
 def encrypt(source, recipients):
@@ -216,7 +215,7 @@ def encrypt(source, recipients):
             _patch_autodelete_file(result_file, dst_path)
             return result_file
 
-        f = then(f, _on_file_encrypted)
+        f = f.then(_on_file_encrypted)
         f.then(close_source, close_source_err)
         return f
     except:
@@ -314,7 +313,7 @@ def decrypt(source, key=None, passphrase_callback=None, _retry=0):
             _patch_autodelete_file(result_file, dst_path)
             return result_file
 
-        f = then(f, on_file_decrypted)
+        f = f.then(on_file_decrypted)
         f = f.then(close_source, close_source_err)
         return f
     except:

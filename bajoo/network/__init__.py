@@ -5,7 +5,7 @@ This module performs HTTPS requests to the Bajoo API. All requests are
 asynchronous, executed in separate threads.
 
 Three main function are available, to upload a file, download a file, or send
-a JSON request. Each of these functions returns a Future instance.
+a JSON request. Each of these functions returns a Promise instance.
 
 This module uses the `config` module to configure the proxy settings, and
 bandwidths limitation.
@@ -28,12 +28,11 @@ import logging
 import os
 import tempfile
 
-from concurrent.futures import ThreadPoolExecutor, CancelledError
 from requests import Session
 from requests.adapters import HTTPAdapter
 
-from ..common.future import patch
-from .request_future import RequestFuture
+from ..promise import ThreadPoolExecutor, CancelledError
+from .request_promise import RequestPromise
 from . import errors
 from .proxy import prepare_proxy
 
@@ -123,9 +122,9 @@ def json_request(verb, url, **params):
         }
 
     thread_pool = _get_thread_pool(**params)
-    future = patch(thread_pool.submit(_json_request))
+    future = thread_pool.submit(_json_request)
 
-    return RequestFuture(future, shared_data)
+    return RequestPromise(future, shared_data)
 
 
 def download(verb, url, **params):
@@ -195,9 +194,9 @@ def download(verb, url, **params):
         }
 
     thread_pool = _get_thread_pool(**params)
-    future = patch(thread_pool.submit(_download))
+    future = thread_pool.submit(_download)
 
-    return RequestFuture(future, shared_data)
+    return RequestPromise(future, shared_data)
 
 
 def upload(verb, url, source, **params):
@@ -255,9 +254,9 @@ def upload(verb, url, source, **params):
         }
 
     thread_pool = _get_thread_pool(**params)
-    future = patch(thread_pool.submit(_upload))
+    future = thread_pool.submit(_upload)
 
-    return RequestFuture(future, shared_data)
+    return RequestPromise(future, shared_data)
 
 
 if __name__ == "__main__":

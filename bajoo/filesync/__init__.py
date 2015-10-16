@@ -32,7 +32,6 @@ Sometimes, a task is ignored (duplicate tasks); In this case, the function
 doesn't returns a Future, but directly None.
 """
 
-from concurrent.futures import ThreadPoolExecutor
 import errno
 from functools import partial
 import hashlib
@@ -47,6 +46,7 @@ from ..common import config
 from ..common.future import Future, patch_dec, wait_all, then, resolve_rec
 from .filepath import is_path_allowed, is_hidden
 from ..common.i18n import _
+from ..promise import ThreadPoolExecutor
 
 
 _logger = logging.getLogger(__name__)
@@ -249,7 +249,7 @@ class _Task(object):
                 remote_md5 = metadata['hash']
                 future = _thread_pool.submit(self._write_downloaded_file,
                                              file_content)
-                return then(future, lambda local_md5: {
+                return future.then(lambda local_md5: {
                     self.target: (local_md5, remote_md5)})
 
             return self.container.download(self.target).then(callback)

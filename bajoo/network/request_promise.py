@@ -1,42 +1,38 @@
 # -*- coding: utf-8 -*-
 
-from concurrent.futures import CancelledError, Future
+from ..promise import CancelledError, is_cancellable
 
 
-class RequestFuture(Future):
+class RequestPromise(object):
     """
-    This is a proxy class for futures.Future
+    This is a proxy class for promise.Promise
     which enables cancelling the long requests
     via a shared_data object.
     """
 
-    def __init__(self, future, shared_data):
+    def __init__(self, promise, shared_data):
         """
         Create a RequestFuture.
 
         Args:
-            future: (futures.Future) the future returned by the thread pool
+            future: (promise.Promise) the promise returned by the thread pool
                 when we submit/map a new task.
             shared_data: (dict) the object containing shared resource
-                between this future and the task executing thread.
+                between this promise and the task executing thread.
                 It must have a boolean item 'cancelled'.
         """
-
-        self._future = future
+        self._promise = promise
         self._shared_data = shared_data
 
     def __getattr__(self, name):
-        return getattr(self._future, name)
+        return getattr(self._promise, name)
 
     def cancel(self):
         """
         Cancel the request via the shared object.
         """
-        if not self._future.cancel():
+        if not is_cancellable(self._promise) or not self._promise.cancel():
             self._shared_data['cancelled'] = True
-
-    def cancelled(self):
-        return self._future.cancelled() or self._shared_data['cancelled']
 
     def result(self, timeout=None):
         """
@@ -45,4 +41,4 @@ class RequestFuture(Future):
         if self._shared_data['cancelled']:
             raise CancelledError
 
-        return self._future.result(timeout)
+        return self._promise.result(timeout)
