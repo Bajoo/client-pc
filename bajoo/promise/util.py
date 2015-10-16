@@ -12,3 +12,14 @@ def is_thenable(value):
             False if not.
     """
     return hasattr(getattr(value, 'then', None), '__call__')
+
+
+def is_cancellable(value):
+    """Check if an object (thenable) can be cancelled (has a cancel() method).
+
+    Args:
+        value: object to test, usually a Promise.
+    Returns:
+        boolean: True if it can be cancelled, False if not.
+    """
+    return hasattr(getattr(value, 'cancel', None), '__call__')

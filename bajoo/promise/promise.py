@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import logging
-from threading import Condition
-from .util import is_thenable
+from functools import partial
+from threading import Condition, Lock
+from .util import is_cancellable, is_thenable
 
 _logger = logging.getLogger(__name__)
 
@@ -296,6 +297,93 @@ class Promise(object):
             Promise: new Promise already rejected.
         """
         return cls(lambda ok, error: error(reason), _name='REJECT')
+
+    @classmethod
+    def all(cls, promises):
+        """Create a Promise who wait a list of promises to be all fulfilled.
+
+        The resulting Promise resolve when all of the promises in the list bare
+        resolved, and returns a list of all the resulting values, keeping the
+        order of the promise list.
+        If a promise is rejected, then the resulting promsie is rejected with
+        the same reason, and all results from other promises are ignored.
+
+        Args:
+            promises (list of Promise)
+        Returns:
+            Promise<list>: resulting promise., fulfilled when all promises will
+                are fulfilled, or when one of the promises has been rejected.
+        """
+        lock = Lock()
+        has_error = [False]
+
+        _remaining_tasks = [len(promises)]
+        results = [None] * len(promises)
+
+        if _remaining_tasks[0] == 0:
+            return cls.resolve([])
+
+        def executor(resolve, reject):
+            def resolve_one_promise(index, value):
+                with lock:
+                    if has_error[False]:
+                        return
+                    results[index] = value
+                    _remaining_tasks[0] -= 1
+                    if _remaining_tasks[0] == 0:
+                        resolve(results)
+
+            def reject_one_promise(reason):
+                with lock:
+                    if has_error[0]:
+                        return
+                    has_error[0] = True
+                reject(reason)
+                # NOTE: maybe we should cancel other promises ?
+
+            for index, p in enumerate(promises):
+                p.then(partial(resolve_one_promise, index), reject_one_promise)
+
+        return Promise(executor, _name='ALL')
+
+    @classmethod
+    def race(cls, promises):
+        """Run all promises, then resolve or reject with the fastest Promise.
+
+        Run all promises given in argument, and returns a new Promise. The
+        resulting Promise will be settled as soon as the one the running
+        Promises is done. Result value or rejection reason of the finished
+        promise are transmitted.
+        All other Promise result's will be ignored.
+
+        Args:
+            promises (list): list of promises to run at the same time.
+        Returns:
+            Promise: a promise
+        """
+        lock = Lock()
+        is_resolved = [False]
+
+        def executor(resolve, reject):
+            def resolve_once(result):
+                with lock:
+                    if is_resolved[0]:
+                        return
+                    is_resolved[0] = True
+                resolve(result)
+                map(lambda p: p.cancel(), filter(is_cancellable, promises))
+
+            def reject_once(reason):
+                with lock:
+                    if is_resolved[0]:
+                        return
+                    is_resolved[0] = True
+                reject(reason)
+                map(lambda p: p.cancel(), filter(is_cancellable, promises))
+
+            map(lambda p: p.then(resolve_once, reject_once), promises)
+
+        return cls(executor, _name='RACE')
 
     @staticmethod
     def _exec_callback(callback, value, is_errback=False):
