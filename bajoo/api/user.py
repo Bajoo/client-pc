@@ -4,9 +4,8 @@ from hashlib import sha256
 
 from ..network.errors import HTTPNotFoundError
 from .. import encryption
-from ..common.future import resolve_dec
 from ..encryption import AsymmetricKey
-from ..promise import Promise
+from ..promise import Promise, reduce_coroutine
 
 
 _logger = logging.getLogger(__name__)
@@ -48,7 +47,7 @@ class User(object):
             .then(_send_create_user_request)
 
     @staticmethod
-    @resolve_dec
+    @reduce_coroutine()
     def load(session):
         """
         Create a user object from an existing session.
@@ -69,11 +68,9 @@ class User(object):
 
         # Refresh token if necessary
         if not session.is_authorized():
-            return session.refresh_token().then(
-                lambda __: User(session=session))
-        else:
-            # Valid session, so return user
-            return User(session=session)
+            yield session.refresh_token()
+
+        yield User(session=session)
 
     @staticmethod
     def hash_password(password):

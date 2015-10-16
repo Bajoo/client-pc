@@ -43,10 +43,11 @@ import sys
 
 from ..network.errors import HTTPNotFoundError
 from ..common import config
-from ..common.future import Future, patch_dec, then, resolve_rec
+from ..common.future import Future
 from .filepath import is_path_allowed, is_hidden
 from ..common.i18n import _
-from ..promise import Promise, ThreadPoolExecutor
+from ..promise import Promise, ThreadPoolExecutor, reduce_coroutine
+from ..promise import resolve_rec
 
 
 _logger = logging.getLogger(__name__)
@@ -109,6 +110,7 @@ class _Task(object):
             s = s.encode('utf-8')
         return s
 
+    @reduce_coroutine()
     def start(self, parent_path=None):
         """Register the task and execute it.
 
@@ -128,7 +130,8 @@ class _Task(object):
             _logger.debug('Resource path acquired by another task; '
                           'waiting for %s..' % self.target)
             # TODO: detect if it's possible to merge the 2 events.
-            return delayed_start
+            yield delayed_start
+            return
 
         self._index_acquired = True
         if item:
@@ -136,10 +139,12 @@ class _Task(object):
             self.local_md5, self.remote_md5 = item.get(self.target,
                                                        (None, None))
 
-        future = resolve_rec(_thread_pool.submit(self._apply_task))
-        future = future.then(None, self._manage_error)
-        future = future.then(self._release_index)
-        return future.then(lambda _none: self._task_errors)
+        try:
+            result = yield resolve_rec(_thread_pool.submit(self._apply_task))
+        except Exception as error:
+            result = self._manage_error(error)
+        self._release_index(result)
+        yield self._task_errors  # return
 
     def _delayed_start(self, future):
         """Execute a delayed start() call.
@@ -155,7 +160,7 @@ class _Task(object):
             return  # The task has been cancelled !
         f = self.start()
         if f:
-            then(f, future.set_result, future.set_exception)
+            f.then(future.set_result, future.set_exception)
         else:
             future.set_result(None)
 
@@ -353,14 +358,12 @@ class _Task(object):
         return md5_hash
 
 
-@patch_dec
 def added_remote_files(container, local_container, filename, display_error_cb):
     task = _Task(_Task.REMOTE_ADD, container, filename, local_container,
                  display_error_cb)
     return task.start()
 
 
-@patch_dec
 def changed_remote_files(container, local_container, filename,
                          display_error_cb):
     task = _Task(_Task.REMOTE_CHANGE, container, filename, local_container,
@@ -368,7 +371,6 @@ def changed_remote_files(container, local_container, filename,
     return task.start()
 
 
-@patch_dec
 def removed_remote_files(container, local_container, filename,
                          display_error_cb):
     task = _Task(_Task.REMOTE_DELETION, container, filename, local_container,
@@ -376,7 +378,6 @@ def removed_remote_files(container, local_container, filename,
     return task.start()
 
 
-@patch_dec
 def added_local_files(container, local_container, filename, display_error_cb):
     """Tells that a new file as been created and must be synced.
 
@@ -393,7 +394,6 @@ def added_local_files(container, local_container, filename, display_error_cb):
     return task.start()
 
 
-@patch_dec
 def changed_local_files(container, local_container, filename,
                         display_error_cb):
     """Tells that a file has been modified and must be synced.
@@ -411,7 +411,6 @@ def changed_local_files(container, local_container, filename,
     return task.start()
 
 
-@patch_dec
 def removed_local_files(container, local_container, filename,
                         display_error_cb):
     """Tells that a file has been deleted and must be synced.
@@ -462,7 +461,6 @@ def moved_local_files(container, local_container, src_filename, dest_filename,
     ]).then(join_results)
 
 
-@patch_dec
 def sync_folder(container, local_container, folder_path, display_error_cb):
     """Sync a local folder
 

@@ -9,7 +9,6 @@ import sys
 from .api import register, User
 from .api.session import Session
 from .common.i18n import N_, _
-from .common.future import Future, resolve_dec
 from .encryption import set_gpg_home_dir
 from .network.errors import HTTPError
 from . import promise
@@ -369,19 +368,19 @@ class _ConnectionProcess(object):
 
         if not root_folder:
             self._root_folder_error = None
-            return Future.resolve(False)
+            return promise.Promise.resolve(False)
 
         if not os.path.isdir(root_folder):
             self._root_folder_error = N_(
                 "%s doesn't exists, or is not a directory" % root_folder)
-            return Future.resolve(False)
+            return promise.Promise.resolve(False)
 
         if not os.access(root_folder, os.R_OK | os.W_OK):
             self._root_folder_error = N_(
                 "%s has not the read and/or write permissions." % root_folder)
-            return Future.resolve(False)
+            return promise.Promise.resolve(False)
 
-        return Future.resolve(True)
+        return promise.Promise.resolve(True)
 
     def check_gpg_config(self, __=None):
         """Check that the GPG config is valid and the user has a valid set of
@@ -398,7 +397,7 @@ class _ConnectionProcess(object):
         set_gpg_home_dir(self.profile.gpg_folder_path)
         return self.user.check_remote_key()
 
-    @resolve_dec
+    @promise.wrap_promise
     def set_root_folder(self, root_folder_path):
         """Create the Bajoo root folder.
 

@@ -3,7 +3,6 @@
 import logging
 from threading import Lock
 
-from ..common.future import Future
 from ..promise import Promise
 from .. import encryption
 from ..network.errors import HTTPNotFoundError
@@ -117,7 +116,7 @@ class Container(object):
             return f.then(close_lock, close_lock_err)
         else:
             self._key_lock.release()
-            return Future.resolve(self._encryption_key)
+            return Promise.resolve(self._encryption_key)
 
     def _encrypt_and_upload_key(self, key, use_local_members=False):
         """
@@ -387,7 +386,7 @@ class Container(object):
             f = self._get_encryption_key()
             f = f.then(encrypt_file)
         else:
-            f = Future.resolve(file)
+            f = Promise.resolve(file)
 
         f = f.then(upload_file)
         return f.then(format_result)
