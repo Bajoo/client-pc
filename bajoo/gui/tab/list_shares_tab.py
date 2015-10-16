@@ -10,7 +10,7 @@ from ...local_container import LocalContainer
 from ...common.i18n import N_
 from ..common import message_box
 from ..common.pictos import get_bitmap
-from ..event_future import ensure_gui_thread
+from ..event_promise import ensure_gui_thread
 from ..base_view import BaseView
 from ..translator import Translator
 
@@ -62,7 +62,6 @@ class ListSharesTab(wx.Panel, Translator):
         container: <bajoo.LocalContainer>
     """
 
-    @ensure_gui_thread
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
         Translator.__init__(self)

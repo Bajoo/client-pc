@@ -79,7 +79,7 @@ class _ConnectionProcess(object):
         """
         if not self.ui_handler:
             _logger.debug('Load UI Handler')
-            self.ui_handler = Future.resolve(self.ui_factory()).result()
+            self.ui_handler = self.ui_factory().result()
         return self.ui_handler
 
     @promise.reduce_coroutine()

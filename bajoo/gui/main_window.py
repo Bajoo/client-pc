@@ -6,7 +6,7 @@ import wx
 
 from ..common.i18n import _
 from ..common.path import resource_filename
-from ..gui.event_future import ensure_gui_thread
+from ..gui.event_promise import ensure_gui_thread
 from .tab import ListSharesTab
 from .tab import CreationShareTab
 from .tab import DetailsShareTab

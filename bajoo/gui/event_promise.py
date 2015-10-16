@@ -3,34 +3,55 @@
 import wx
 from wx.lib.newevent import NewEvent
 
-from ..common.future import Future
+from ..promise import Promise, CancelledError
 
 
-class EventFuture(Future):
-    """Bind to a wx event and convert it into a Future.
+class EventPromise(Promise):
+    """Bind to a wx event and convert it into a Promise.
 
-    the Future can be cancelled until the Bind event is emitted.
+    the Promise can be cancelled until the Bind event is emitted.
 
     Returns:
-        Future<wxEvent>: Future with the selected event.
+        Promise<wxEvent>: Promise resolving the event instance.
     """
     def __init__(self, evt_handler, event, source=None):
-        """Bind a wx event and resolve this future when the event occurs.
+        """Bind a wx event and resolve this promise when the event occurs.
 
-        It equivalent to: ``evt_handler.Bind(event, CALLBACK, source)``
+        It's equivalent to: ``evt_handler.Bind(event, CALLBACK, source)``
 
         Args:
             evt_handler (wx.EvtHandler): evt_handler who receive the event.
             event: type of the event, of the form wx.EVT_XXX
             source (optional): source when created the event.
         """
-        Future.__init__(self)
+
+        self._fulfill_cb = None
+        self._reject_cb = None
+
+        def executor(fulfill_cb, reject_cb):
+            self._fulfill_cb = fulfill_cb
+            self._reject_cb = reject_cb
+
+        Promise.__init__(self, executor, _name='EVENT')
 
         self.evt_handler = evt_handler
         self.event = event
         self.source = source
 
         evt_handler.Bind(event, self._event_handler, source)
+
+    def _inner_print(self):
+        # Find the name of the variable referring to the event ID.
+        for name in dir(wx):
+            if not name.startswith('EVT_'):
+                continue
+            evt = getattr(wx, name)
+            if isinstance(evt, wx.PyEventBinder):
+                if evt.typeId == self.event:
+                    self._name = 'EVENT %s' % name
+                    break
+
+        return Promise._inner_print(self)
 
     def _event_handler(self, event):
         """Callback of wxEvent"""
@@ -41,23 +62,24 @@ class EventFuture(Future):
             event.Skip()
             return
 
-        self.set_running_or_notify_cancel()
-
         # if the event is wx.EVT_WINDOW_DESTROY, the source widget and its
         # bound functions are already deleted.
         if self.event is not wx.EVT_WINDOW_DESTROY:
             self.evt_handler.Unbind(self.event, source=self.source)
         self.evt_handler = None
-        self.set_result(event)
+        self._fulfill_cb(event)
 
     def cancel(self):
         if self.evt_handler:
             self.evt_handler.Unbind(self.event, source=self.source,
                                     handler=self._event_handler)
-        if Future.cancel(self):
-            self.set_running_or_notify_cancel()
-            return True
-        return False
+
+        with self._condition:
+            if self._state == self.PENDING:
+                self._reject_cb(CancelledError())
+                return True
+            else:
+                return False
 
 
 def ensure_gui_thread(f):
@@ -65,7 +87,12 @@ def ensure_gui_thread(f):
 
     This decorator will execute the function only in the GUI thread.
     If we are not in the right thread, it will delay the execution (using
-    wx.PostEvent) and returns a Future
+    wx.PostEvent).
+
+    Returns:
+        Promise: a Promise fulfilled with the return value of the function
+            decorated. If the function raise an exception, the promise is
+            rejected.
     """
 
     RunEvent, EVT_RUN = NewEvent()
@@ -73,9 +100,12 @@ def ensure_gui_thread(f):
 
     def wrapper(*args, **kwargs):
         if wx.IsMainThread():
-            return f(*args, **kwargs)
+            try:
+                return Promise.resolve(f(*args, **kwargs))
+            except BaseException as error:
+                return Promise.reject(error)
         else:
-            future = EventFuture(handler, EVT_RUN)
+            future = EventPromise(handler, EVT_RUN)
             future = future.then(lambda _evt: f(*args, **kwargs))
             wx.PostEvent(handler, RunEvent())
             return future

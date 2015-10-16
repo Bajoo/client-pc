@@ -4,10 +4,10 @@ import wx
 
 from ..common.i18n import _
 from ..common.path import resource_filename
-from ..common.future import wait_one
+from ..promise import Promise
 from ..ui_handler_of_connection import UIHandlerOfConnection
 from .base_view import BaseView
-from .event_future import EventFuture, ensure_gui_thread
+from .event_promise import EventPromise, ensure_gui_thread
 from .screen import ActivationScreen, HomeScreen, SetupConfigScreen
 
 
@@ -51,7 +51,7 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
             self.Unbind(ActivationScreen.EVT_ACTIVATION_DELAYED)
             return None
 
-        f = EventFuture(self, ActivationScreen.EVT_ACTIVATION_DONE)
+        f = EventPromise(self, ActivationScreen.EVT_ACTIVATION_DONE)
         return f.then(callback)
 
     @ensure_gui_thread
@@ -63,7 +63,7 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
             root_folder_error=root_folder_error, gpg_error=gpg_error)
         self.Show()
 
-        f = EventFuture(self, SetupConfigScreen.EVT_SUBMIT)
+        f = EventPromise(self, SetupConfigScreen.EVT_SUBMIT)
         return f.then(lambda data: (data.bajoo_folder, data.passphrase))
 
     @ensure_gui_thread
@@ -81,10 +81,10 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
                 action = 'register'
             return action, evt.username, evt.password
 
-        return wait_one([
-            EventFuture(self, HomeScreen.EVT_CONNECTION_SUBMIT),
-            EventFuture(self, HomeScreen.EVT_REGISTER_SUBMIT),
-        ], cancel_others=True).then(callback)
+        return Promise.race([
+            EventPromise(self, HomeScreen.EVT_CONNECTION_SUBMIT),
+            EventPromise(self, HomeScreen.EVT_REGISTER_SUBMIT),
+        ]).then(callback)
 
     @ensure_gui_thread
     def inform_user_is_connected(self):

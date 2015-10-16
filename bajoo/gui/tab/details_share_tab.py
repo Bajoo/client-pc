@@ -12,7 +12,7 @@ from ...api import TeamShare
 from ...local_container import LocalContainer
 from ...common.i18n import N_, _
 from ..base_view import BaseView
-from ..event_future import ensure_gui_thread
+from ..event_promise import ensure_gui_thread
 from ..form.members_share_form import MembersShareForm
 from ..form.base_form import BaseForm
 from ..common import message_box
@@ -35,7 +35,6 @@ class DetailsShareTab(BaseForm):
     RequestQuitShare, EVT_QUIT_SHARE_REQUEST = NewCommandEvent()
     RequestDeleteShare, EVT_DELETE_SHARE_REQUEST = NewCommandEvent()
 
-    @ensure_gui_thread
     def __init__(self, parent):
         BaseForm.__init__(self, parent)
         self._init_images()

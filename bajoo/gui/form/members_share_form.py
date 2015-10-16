@@ -7,7 +7,7 @@ import wx.dataview as dv
 from wx.lib.newevent import NewCommandEvent
 
 from ..translator import Translator
-from ..event_future import ensure_gui_thread
+from ..event_promise import ensure_gui_thread
 from ..base_view import BaseView
 from .base_form import BaseForm
 from ..validator import EmailValidator

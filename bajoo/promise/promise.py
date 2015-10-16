@@ -218,7 +218,7 @@ class Promise(object):
             name = '<None, %s>' % getattr(on_rejected, '__name__', '???')
         else:
             name = '<%s, %s>' % (getattr(on_fulfilled, '__name__', '???'),
-                                 getattr(on_fulfilled, '__name__', '???'))
+                                 getattr(on_rejected, '__name__', '???'))
         return Promise(deferred_chained_promise, _name=name, _previous=self)
 
     def catch(self, on_rejected):
@@ -254,7 +254,7 @@ class Promise(object):
 
         self._add_errback(guard)
 
-    def __str__(self):
+    def __repr__(self):
         return 'Promise(%s)' % self._inner_print()
 
     def _inner_print(self):

@@ -5,7 +5,7 @@ import wx
 
 from ..common.i18n import _, N_
 from .base_view import BaseView
-from .event_future import ensure_gui_thread
+from .event_promise import ensure_gui_thread
 
 _logger = logging.getLogger(__name__)
 

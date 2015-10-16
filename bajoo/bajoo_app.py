@@ -16,7 +16,7 @@ from .dynamic_container_list import DynamicContainerList
 from .gui.common.language_box import LanguageBox
 from .local_container import LocalContainer
 from .gui.about_window import AboutBajooWindow
-from .gui.event_future import ensure_gui_thread
+from .gui.event_promise import ensure_gui_thread
 from .gui.home_window import HomeWindow
 from .gui.main_window import MainWindow
 from .gui.message_notifier import MessageNotifier

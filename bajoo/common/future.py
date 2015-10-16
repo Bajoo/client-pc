@@ -17,6 +17,7 @@ import sys
 from threading import Lock as ThreadLock
 import traceback
 import types
+from ..promise import is_thenable
 
 _logger = logging.getLogger(__name__)
 
@@ -92,7 +93,7 @@ def then(original_future, on_success=None, on_error=None, no_arg=False):
                 new_result = callback()
             else:
                 new_result = callback(result)
-            if isinstance(new_result, concurrent.futures.Future):
+            if is_thenable(new_result):
                 new_result.then(new_future.set_result,
                                 new_future.set_exception)
             else:
@@ -121,7 +122,7 @@ class Future(concurrent.futures.Future):
             Future: new Future already terminated, containing the value passed
                 in parameter.
         """
-        if isinstance(value, concurrent.futures.Future):
+        if isinstance(value, concurrent.futures.Future) or is_thenable(value):
             return value
 
         future = Future()
@@ -290,7 +291,9 @@ def resolve_rec(result):
     Returns:
         Future<?>: Future guaranteed to resolve a non-future result.
     """
-    if isinstance(result, concurrent.futures.Future):
+    if is_thenable(result):
+        return result.then(resolve_rec)
+    elif isinstance(result, concurrent.futures.Future):
         return then(result, resolve_rec)
     else:
         return Future.resolve(result)
