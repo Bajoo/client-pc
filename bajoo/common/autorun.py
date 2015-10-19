@@ -8,7 +8,7 @@ if sys.platform in ['win32', 'win64']:
 
 
 def _win_startup_directory():
-    """
+    r"""
     Returns (str): the path to startup directory
         Tested on Windows 8:
         C:\Users\<user>\AppData\Roaming\Microsoft\Windows\Start Menu\

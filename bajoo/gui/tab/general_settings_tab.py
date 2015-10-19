@@ -70,7 +70,10 @@ class GeneralSettingsTab(wx.Panel, Translator):
             self._config.set('contextual_icon', contextual_icon_shown)
             self._config.set('notifications', notifications_shown)
 
+        # Set autorun and also change the config value
         autorun.set_autorun(launched_at_startup)
+        self._config.set('autorun', launched_at_startup)
+
         _logger.info(
             'Bajoo autorun is %s',
             'enabled' if autorun.is_autorun() else 'disabled')

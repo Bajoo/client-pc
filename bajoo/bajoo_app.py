@@ -7,7 +7,7 @@ from wx.lib.softwareupdate import SoftwareUpdate
 
 from . import promise
 from .api import TeamShare, Session, Container
-from .common import config
+from .common import config, autorun
 from .common.path import get_data_dir
 from .connection_registration_process import connect_or_register
 from .container_model import ContainerModel
@@ -106,6 +106,9 @@ class BajooApp(wx.App, SoftwareUpdate):
         self._dummy_frame = wx.Frame(None)
 
         self.Bind(EVT_PROXY_FORM, self._on_proxy_config_changes)
+
+        # Apply autorun on app startup to match with the config value
+        autorun.set_autorun(config.get('autorun'))
 
     def _ensures_single_instance_running(self):
         """Check that only one instance of Bajoo is running per user.
