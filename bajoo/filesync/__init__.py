@@ -110,7 +110,7 @@ class _Task(object):
             s = s.encode('utf-8')
         return s
 
-    @reduce_coroutine()
+    @reduce_coroutine(safeguard=True)
     def start(self, parent_path=None):
         """Register the task and execute it.
 

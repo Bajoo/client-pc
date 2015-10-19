@@ -4,7 +4,7 @@ from .promise import Promise
 from .util import is_thenable
 
 
-def reduce_coroutine(safeguard=True):
+def reduce_coroutine(safeguard=False):
     """Decorator who converts a coroutine of promises into a single promise.
 
     The greatest interest is the ability to write a function in an

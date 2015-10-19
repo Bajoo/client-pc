@@ -6,7 +6,7 @@ import logging
 import os
 import sys
 
-from .api import register, User
+from .api import User
 from .api.session import Session
 from .common.i18n import N_, _
 from .encryption import set_gpg_home_dir
@@ -81,7 +81,7 @@ class _ConnectionProcess(object):
             self.ui_handler = self.ui_factory().result()
         return self.ui_handler
 
-    @promise.reduce_coroutine()
+    @promise.reduce_coroutine(safeguard=True)
     def run(self):
         """Entry point of the connection process.
 
@@ -114,7 +114,7 @@ class _ConnectionProcess(object):
 
         yield session, self.user, self.profile
 
-    @promise.reduce_coroutine()
+    @promise.reduce_coroutine(safeguard=True)
     def connection(self, username, password=None, refresh_token=None,
                    error_msg=None):
         """Connect the user from the credentials given.
@@ -163,7 +163,7 @@ class _ConnectionProcess(object):
 
             try:
                 if action == 'register':
-                    yield register(username, password)
+                    yield User.create(username, password)
                     self.is_new_account = True
 
                 _logger.debug('Log user "%s" using password ...' % username)
@@ -172,7 +172,7 @@ class _ConnectionProcess(object):
                 yield self._connection_error_handler(error, username,
                                                      password=password)
 
-    @promise.reduce_coroutine()
+    @promise.reduce_coroutine(safeguard=True)
     def _connection_error_handler(self, error, username, password=None,
                                   refresh_token=None):
         """Error handler of the `self.connection` method.
@@ -241,7 +241,7 @@ class _ConnectionProcess(object):
 
         return session
 
-    @promise.reduce_coroutine()
+    @promise.reduce_coroutine(safeguard=True)
     def load_user_info(self, session):
         """Load the user info of the session's user.
 

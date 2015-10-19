@@ -24,33 +24,29 @@ class User(object):
         self._session = session
 
     @staticmethod
+    @reduce_coroutine()
     def create(email, password):
         """
         Create a new user using email & password.
 
         Returns:
-            Future<None>
+            Promise<None>
         """
         from .session import Session
 
         session = Session()
         hashed_password = User.hash_password(password)
 
-        def _send_create_user_request(_result=None):
-            return session \
-                .send_api_request('POST', '/users',
-                                  data={u'email': email,
-                                        u'password': hashed_password}) \
-                .then(lambda _: None)
-
-        return session.fetch_client_token() \
-            .then(_send_create_user_request)
+        yield session.fetch_client_token()
+        yield session.send_api_request('POST', '/users', data={
+            u'email': email,
+            u'password': hashed_password})
+        yield None
 
     @staticmethod
     @reduce_coroutine()
     def load(session):
-        """
-        Create a user object from an existing session.
+        """Load the User owner of an existing session.
 
         Note: by default, the data associated to this class are not loaded.
         Before using it, you should call `get_user_info()`
@@ -61,7 +57,7 @@ class User(object):
             session (bajoo.api.Session): an authorized session
 
         Returns:
-            Future<User>
+            Promise<User>
         """
         if not session:
             raise ValueError("Empty or null session")
@@ -77,35 +73,29 @@ class User(object):
         """Convert a password to a hash usable by the Bajoo API"""
         return sha256(password.encode('utf-8')).hexdigest()
 
+    @reduce_coroutine()
     def get_quota(self):
         """
-        Returns Future<(int, int)>: used & total storage space.
+        Returns:
+            Promise<(int, int)>: used & total storage space (in bytes).
         """
-        f = self._session.send_storage_request('GET', '/quota')
+        response = yield self._session.send_storage_request('GET', '/quota')
+        content = response['content']
+        yield int(content.get('used_space', 0)), int(content.get('allowed', 0))
 
-        def extract_quota(response):
-            content = response['content']
-
-            return (int(content.get('used_space', 0)),
-                    int(content.get('allowed', 0)))
-        return f.then(extract_quota)
-
+    @reduce_coroutine()
     def get_user_info(self):
         """
         Get user's public profile and load infos in this class.
 
         returns:
-            Future<dict>: user infos.
+            Promise<dict>: user infos.
         """
 
-        def _on_request_result(response):
-            content = response.get('content', {})
-            self.name = content.get('email', '')
-
-            return content
-
-        return self._session.send_api_request('GET', '/user') \
-            .then(_on_request_result)
+        response = yield self._session.send_api_request('GET', '/user')
+        content = response.get('content', {})
+        self.name = content.get('email', '')
+        yield content
 
     def change_password(self, old_password, new_password):
         """
@@ -116,7 +106,7 @@ class User(object):
             new_password (str): new password in plain text
 
         Returns:
-            Future<None>
+            Promise<None>
         """
         hashed_old_password = self.hash_password(old_password)
         hashed_new_password = self.hash_password(new_password)
@@ -127,6 +117,7 @@ class User(object):
         return self._session.send_api_request(
             'PATCH', '/user', data=data)
 
+    @reduce_coroutine()
     def delete_account(self, password):
         """
         Remove current account from Bajoo.
@@ -135,15 +126,12 @@ class User(object):
             password (str): current password in plain text
 
         Returns:
-            Future<None>
+            Promise<None>
         """
-
-        def _send_delete_request(_result=None):
-            return self._session.send_api_request(
-                'DELETE', '/user',
-                data={'password': self.hash_password(password)}).result()
-
-        self._remove_encryption_key().then(_send_delete_request)
+        yield self._remove_encryption_key()
+        yield self._session.send_api_request(
+            'DELETE', '/user', data={'password': self.hash_password(password)})
+        yield None
 
     def _get_key_url(self):
         return User.KEY_URL_FORMAT % self.name
@@ -151,47 +139,44 @@ class User(object):
     def _get_public_key_url(self):
         return User.PUBLIC_KEY_URL_FORMAT % self.name
 
+    @reduce_coroutine()
     def get_public_key(self):
         """Get the user's public key string.
 
         Note: user.name must be set before using this method, either at the
         __init__() call or by using get_user_info().
 
-        Returns (Future<str>): the public key string.
+        Returns:
+            Promise<str>: the public key string.
         """
+        response = yield self._session.download_storage_file(
+            'GET', self._get_public_key_url())
 
-        def _on_download_finished(response):
-            tmp_file = response.get('content', None)
-            if not tmp_file:
-                return None
-            return encryption.AsymmetricKey.load(tmp_file, main_context=True)
+        tmp_file = response.get('content', None)
+        if not tmp_file:
+            yield None
+            return
+        yield encryption.AsymmetricKey.load(tmp_file, main_context=True)
 
-        return self._session \
-            .download_storage_file('GET', self._get_public_key_url()) \
-            .then(_on_download_finished)
-
+    @reduce_coroutine()
     def check_remote_key(self):
         """Download the user's GPG private key from the server, and add it to
         the keyring.
 
         Returns:
-            Future<boolean>: True if the operation succeeded. False if there is
-                no remote key.
+            Promise<boolean>: True if the operation succeeded. False if there
+                is no remote key.
         """
+        try:
+            response = yield self._session.download_storage_file(
+                'GET', self._get_key_url())
+        except HTTPNotFoundError:
+            yield False  # Key doesn't exists
+            return
 
-        def _on_download_finished(response):
-            tmp_file = response.get('content', None)
-            with response.get('content', None) as tmp_file:
-                AsymmetricKey.load(tmp_file, main_context=True)
-                return True
-
-        def _download_error(error):
-            if isinstance(error, HTTPNotFoundError):
-                return False  # Key doesn't exists
-            raise error
-
-        f = self._session.download_storage_file('GET', self._get_key_url())
-        return f.then(_on_download_finished, _download_error)
+        with response.get('content', None) as tmp_file:
+            AsymmetricKey.load(tmp_file, main_context=True)
+            yield True
 
     def _upload_private_key(self, key_content):
         return self._session.send_storage_request(
@@ -209,6 +194,7 @@ class User(object):
         return self._session.send_storage_request(
             'DELETE', self._get_public_key_url())
 
+    @reduce_coroutine()
     def create_encryption_key(self, passphrase=''):
         """
         Create a new GPG key file and upload to server.
@@ -217,33 +203,29 @@ class User(object):
             passphrase: the passphrase used to create the new GPG key.
 
         Returns:
-            Future<None>
+            Promise<None>
         """
+        key = yield encryption.create_key(self.name, passphrase)
+        yield Promise.all([
+            self._upload_private_key(key.export(secret=True)),
+            self._upload_public_key(key.export())
+        ])
 
-        def _upload_key(key):
-            return Promise.all([
-                self._upload_private_key(key.export(secret=True)),
-                self._upload_public_key(key.export())
-            ])
-
-        return encryption.create_key(self.name, passphrase).then(_upload_key)
-
+    @reduce_coroutine()
     def _remove_encryption_key(self):
-        """
-        Remove the remote private & public key file.
+        """Remove the remote private & public key file.
 
         Returns:
-            Future<dict>
+            Promise<dict>
         """
-
-        def _on_private_key_removed(result):
-            return {
-                'private_key_result': result,
-                'pub_key_result': self._remove_public_key().result()
-            }
-
-        return self._remove_private_key() \
-            .then(_on_private_key_removed)
+        private_result, public_result = yield Promise.all([
+            self._remove_private_key(),
+            self._remove_public_key()
+        ])
+        yield {
+            'private_key_result': private_result,
+            'pub_key_result': public_result
+        }
 
     def reset_encryption_key(self, passphrase=''):
         """
@@ -251,10 +233,11 @@ class User(object):
         then upload to server.
 
         Args:
-            passphrase: the passphrase used to create the new GPG key.
+            passphrase (optional): the passphrase used to create the new GPG
+                key.
 
         Returns:
-            Future<None>
+            Promise<None>
         """
         # TODO: remove local key file
         self.create_encryption_key(passphrase)

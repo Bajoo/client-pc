@@ -3,7 +3,7 @@
 import logging
 from threading import Lock
 
-from ..promise import Promise
+from ..promise import Promise, reduce_coroutine
 from .. import encryption
 from ..network.errors import HTTPNotFoundError
 from . import User
@@ -67,100 +67,86 @@ class Container(object):
             s = s.encode('utf-8')
         return s
 
+    @reduce_coroutine()
     def _get_encryption_key(self):
         """get the encryption key and returns it.
 
         If the key is not present in local, it will be downloaded.
 
         Returns:
-            Future<AsyncKey>: container key
+            Promise<AsyncKey>: container key
         """
-        self._key_lock.acquire()
 
-        def close_lock(result):
-            self._key_lock.release()
-            return result
+        with self._key_lock.acquire():
+            if self._encryption_key:
+                yield self._encryption_key
+                return
 
-        def close_lock_err(error):
-            self._key_lock.release()
-            raise error
+            _logger.debug('Download key of container #%s ...' % self.id)
+            key_url = '/storages/%s/.key' % self.id
 
-        if not self._encryption_key:
-
-            def dl_key_error(error):
-                if isinstance(error, HTTPNotFoundError):
-                    _logger.debug('Container key not found (404)')
-                    f = self._generate_key(lock_acquired=True)
-                    return f.then(lambda _: self._encryption_key)
+            try:
+                result = yield self._session.download_storage_file('GET',
+                                                                   key_url)
+            except HTTPNotFoundError:
+                _logger.debug('Container key not found (404)')
+                yield self._generate_key(lock_acquired=True)
+                yield self._encryption_key
+                return
+            except Exception as error:
                 error.container_id = self.id
                 self.error = error
                 raise error
 
-            def on_key_downloaded(result):
-                key_content = result.get('content')
-                _logger.debug('Key of container #%s downloaded' % self.id)
-                return encryption.decrypt(
-                    key_content,
-                    passphrase_callback=Container.passphrase_callback)
+            enc_key_content = result.get('content')
+            _logger.debug('Key of container #%s downloaded' % self.id)
+            key_content = yield encryption.decrypt(
+                enc_key_content,
+                passphrase_callback=Container.passphrase_callback)
 
-            def on_key_decrypted(key_content):
-                key = encryption.AsymmetricKey.load(key_content)
-                self._encryption_key = key
-                return key
+            key = encryption.AsymmetricKey.load(key_content)
+            self._encryption_key = key
+            yield key
+            return
 
-            _logger.debug('Download key of container #%s ...' % self.id)
-            key_url = '/storages/%s/.key' % self.id
-            f = self._session.download_storage_file('GET', key_url)
-            f = f.then(on_key_downloaded)
-            f = f.then(on_key_decrypted, dl_key_error)
-            return f.then(close_lock, close_lock_err)
-        else:
-            self._key_lock.release()
-            return Promise.resolve(self._encryption_key)
-
+    @reduce_coroutine()
     def _encrypt_and_upload_key(self, key, use_local_members=False):
         """
         Args:
             use_local_members (boolean):
                 True to use its own member array,
                 False to send API request to download the member list.
+        Returns:
+            Promise
         """
-
-        def extract_key_members(members):
-            return Promise.all(
-                [User(member['user'], self._session).get_public_key()
-                 for member in members])
-
-        def get_owner_key():
-            f = User.load(self._session)
-            f = f.then(lambda user: user.get_user_info().then(lambda _: user))
-            return f.then(lambda user: user.get_public_key())
-
-        def upload_key(key_content):
-            key_url = '/storages/%s/.key' % self.id
-            _logger.debug('Key for container #%s generated.' % self.id)
-            return self._session.send_storage_request(
-                'PUT', key_url, data=key_content)
-
         self._encryption_key = key
         key_content = key.export(secret=True)
 
         # TODO: code smell: we shouldn't use methods of child classes.
         if hasattr(self, 'list_members'):
             if use_local_members:
-                f = extract_key_members(self.members or [])
+                members = self.members or []
             else:
-                f = self.list_members().then(extract_key_members)
+                members = yield self.list_members()
+            recipients = yield Promise.all(
+                [User(member['user'], self._session).get_public_key()
+                 for member in members])
         else:
-            f = get_owner_key()
-            f = f.then(lambda key: [key])
+            user = yield User.load(self._session)
+            yield user.get_user_info()
+            key = yield user.get_public_key()
+            recipients = [key]
 
-        def encrypt(recipients):
-            return encryption.encrypt(key_content, recipients)
+        enc_key_content = yield encryption.encrypt(key_content, recipients)
 
-        f = f.then(encrypt)
-        return f.then(upload_key)
+        # Upload key
+        key_url = '/storages/%s/.key' % self.id
+        _logger.debug('Key for container #%s generated.' % self.id)
+        yield self._session.send_storage_request(
+            'PUT', key_url, data=enc_key_content)
+        return
 
+    @reduce_coroutine()
     def _generate_key(self, lock_acquired=False):
         """Generate and upload the GPG key
 
@@ -168,35 +154,27 @@ class Container(object):
             lock_acquired (boolean): If True, don't acquire the lock before
                 generating the key.
         Returns:
-            Future
+            Promise
         """
         if not lock_acquired:
             self._key_lock.acquire()
 
-        def close_lock(result):
-            self._key_lock.release()
-            return result
+        try:
 
-        def close_lock_err(error):
-            self._key_lock.release()
-            raise error
+            key_name = 'bajoo-storage-%s' % self.id
+            _logger.debug('generate new key for container #%s ...' % self.id)
+            key = yield encryption.create_key(key_name, None, container=True)
+            yield self._encrypt_and_upload_key(key)
+        finally:
+            if lock_acquired:
+                self._key_lock.release()
 
-        key_name = 'bajoo-storage-%s' % self.id
-        _logger.debug('generate new key for container #%s ...' % self.id)
-        f = encryption.create_key(key_name, None, container=True)
-        f = f.then(self._encrypt_and_upload_key)
-        if not lock_acquired:
-            f = f.then(close_lock, close_lock_err)
-        return f
-
+    @reduce_coroutine()
     def _update_key(self, use_local_members=False):
         _logger.debug('Update key for container #%s ...' % self.id)
-        f = self._get_encryption_key()
+        key = yield self._get_encryption_key()
 
-        def on_get_key(key):
-            return self._encrypt_and_upload_key(key, use_local_members)
-
-        return f.then(on_get_key)
+        yield self._encrypt_and_upload_key(key, use_local_members)
 
     @staticmethod
     def _from_json(session, json_object):
@@ -215,6 +193,7 @@ class Container(object):
         return cls(session, id, name, is_encrypted)
 
     @classmethod
+    @reduce_coroutine()
     def create(cls, session, name, encrypted=True):
         """
         Create a new Container on Bajoo server.
@@ -225,24 +204,25 @@ class Container(object):
             encrypted(boolean, optional):
                 if set the container will be encrypted.
 
-        Returns Future<Container>: the newly created container.
+        Returns:
+            Promise<Container>: the newly created container.
         """
 
-        def _on_create_returned(response):
-            container_result = response.get('content', {})
-            container = Container._from_json(session, container_result)
-
-            if container.is_encrypted:
-                return container._generate_key().then(lambda _: container)
-
-            return container
-
-        return session.send_api_request(
+        response = yield session.send_api_request(
             'POST', '/storages',
-            data={'name': name, 'is_encrypted': encrypted}) \
-            .then(_on_create_returned)
+            data={'name': name, 'is_encrypted': encrypted})
+
+        container_result = response.get('content', {})
+        container = Container._from_json(session, container_result)
+
+        if container.is_encrypted:
+            yield container._generate_key()
+
+        yield container
+        return
 
     @staticmethod
+    @reduce_coroutine()
     def find(session, container_id):
         """
         Find a container by its id.
@@ -252,21 +232,22 @@ class Container(object):
                 a user's session to whom the container belongs.
             container_id (str): id of the container to search.
 
-        Returns Future<Container>: the container found, Future<None> otherwise.
+        Returns:
+            Promise<Container>: the container found, Promise<None> otherwise.
         """
-
-        def _on_get_containers(result):
-            result_container = result.get('content', {})
-            return Container._from_json(session, result_container)
-
-        def _on_error(error):
+        try:
+            result = yield session.send_api_request(
+                'GET', '/storages/%s' % container_id)
+        except Exception as error:
             # TODO: throw ContainerNotFoundError
             _logger.debug('Error when search for container (%s, %s)',
                           error.code, error.message)
-            return None
+            yield None
+            return
 
-        return session.send_api_request('GET', '/storages/%s' % container_id) \
-            .then(_on_get_containers, _on_error)
+        result_container = result.get('content', {})
+        yield Container._from_json(session, result_container)
+        return
 
     @staticmethod
     def list(session):
@@ -291,15 +272,17 @@ class Container(object):
         return session.send_api_request('GET', '/storages') \
             .then(_on_get_storages)
 
+    @reduce_coroutine()
     def delete(self):
         """Delete this container from Bajoo server."""
-        return self._session \
-            .send_api_request('DELETE', '/storages/%s' % self.id) \
-            .then(lambda _: None)
+        yield self._session.send_api_request('DELETE',
+                                             '/storages/%s' % self.id)
+        yield None
 
     def get_stats(self):
         raise NotImplemented()
 
+    @reduce_coroutine()
     def list_files(self, prefix=None):
         """
         List all files in this container.
@@ -308,17 +291,17 @@ class Container(object):
             prefix (str): when defined, this will search only for files
                 whose names start with this prefix.
 
-        Returns Future<array>: the request result.
+        Returns:
+            Promise<array>: the request result.
         """
-
-        def _on_list_file_result(response):
-            return response.get('content', {})
-
-        return self._session.send_storage_request(
+        response = yield self._session.send_storage_request(
             'GET', '/storages/%s' % self.id,
             headers={'Accept': 'application/json'},
-            params={'prefix': prefix}).then(_on_list_file_result)
+            params={'prefix': prefix})
 
+        yield response.get('content', {})
+
+    @reduce_coroutine()
     def download(self, path):
         """
         Download a file in this container.
@@ -326,33 +309,28 @@ class Container(object):
         Args:
             path (str): the path to the file to be downloaded.
 
-        Returns <Future<dict, TemporaryFile>>: metadata and the temporary file
+        Returns:
+            Promise<dict, TemporaryFile>: metadata and the temporary file
             downloaded.
         """
         url = '/storages/%s/%s' % (self.id, path)
 
-        def download_file(_key=None):
-            return self._session.download_storage_file('GET', url)
+        if self.is_encrypted:
+            encryption_key = yield self._get_encryption_key()
 
-        def format_result(result):
-            md5_hash = result.get('headers', {}).get('etag')
-            return {'hash': md5_hash}, result.get('content')
-
-        def decrypt_file(data):
-            metadata, encrypted_file = data
-            f = encryption.decrypt(encrypted_file, self._encryption_key)
-            return f.then(lambda clear_file: (metadata, clear_file))
+        result = yield self._session.download_storage_file('GET', url)
+        md5_hash = result.get('headers', {}).get('etag')
+        metadata = {'hash': md5_hash}
+        downloaded_file = result.get('content')
 
         if self.is_encrypted:
-            f = self._get_encryption_key()
-            f = f.then(download_file)
-            f = f.then(format_result)
-            f = f.then(decrypt_file)
+            decrypted_file = yield encryption.decrypt(downloaded_file,
+                                                      encryption_key)
+            yield metadata, decrypted_file
         else:
-            f = download_file()
-            f = f.then(format_result)
-        return f
+            yield metadata, downloaded_file
 
+    @reduce_coroutine()
     def upload(self, path, file):
         """Upload a file in this container.
 
@@ -364,33 +342,22 @@ class Container(object):
             file (str / File-like): the path to the local file to be uploaded
             (if type is str), or file content to be uploaded.
         Returns:
-            Future<dict>: Metadata dict, containing the md5 hash of the
+            Promise<dict>: Metadata dict, containing the md5 hash of the
                 uploaded file.
         """
         url = '/storages/%s/%s' % (self.id, path)
 
-        def encrypt_file(encryption_key):
-            return encryption.encrypt(file, recipients=[encryption_key])
+        if self.is_encrypted:
+            encryption_key = yield self._get_encryption_key()
+            file = yield encryption.encrypt(file, recipients=[encryption_key])
 
-        def upload_file(encrypted_file):
-            return self._session.upload_storage_file('PUT', url,
-                                                     encrypted_file)
-
-        def format_result(result):
-            md5_hash = result.get('headers', {}).get('etag')
-            return {'hash': md5_hash}
-
+        result = yield self._session.upload_storage_file('PUT', url, file)
         # TODO: check the upload result (using md5 sum)
 
-        if self.is_encrypted:
-            f = self._get_encryption_key()
-            f = f.then(encrypt_file)
-        else:
-            f = Promise.resolve(file)
+        md5_hash = result.get('headers', {}).get('etag')
+        yield {'hash': md5_hash}
 
-        f = f.then(upload_file)
-        return f.then(format_result)
-
+    @reduce_coroutine()
     def remove_file(self, path):
         """
         Delete a file object in this container.
@@ -398,12 +365,12 @@ class Container(object):
         Args:
             path (str): the relative file path inside the container.
 
-        Returns (Future<None>)
+        Returns:
+            Promise<None>
         """
         url = '/storages/%s/%s' % (self.id, path)
-        return self._session \
-            .send_storage_request('DELETE', url) \
-            .then(lambda _: None)
+        yield self._session.send_storage_request('DELETE', url)
+        yield None
 
 
 if __name__ == '__main__':
