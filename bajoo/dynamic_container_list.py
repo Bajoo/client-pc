@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from functools import partial
 import logging
 from threading import Lock as Lock
 
@@ -8,6 +9,7 @@ from .common.i18n import _
 from .api.sync import container_list_updater
 from .local_container import LocalContainer
 from .container_model import ContainerModel
+from .promise import Promise
 
 
 _logger = logging.getLogger(__name__)
@@ -242,14 +244,16 @@ class DynamicContainerList(object):
     def stop(self):
         self._updater.stop()
 
-    def refresh(self, callback=None):
+    def refresh(self):
         """Force refresh immediately.
 
-        Args:
-            callback (Callable, optional): if set, it will be called without
-                argument as soon as the refresh is done.
+        Returns:
+            Promise<None>: resolved when the refresh is done.
         """
-        self._updater.apply_now(callback)
+        def executor(resolve, _reject):
+            self._updater.apply_now(partial(resolve, None))
+
+        return Promise(executor)
 
     def get_list(self):
         """Returns the list of containers.

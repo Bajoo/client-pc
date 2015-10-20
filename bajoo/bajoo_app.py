@@ -281,36 +281,30 @@ class BajooApp(wx.App, SoftwareUpdate):
             self._main_window.Show()
             self._main_window.Raise()
 
+    @promise.reduce_coroutine(safeguard=True)
     def _on_request_share_list(self, _event):
         """
         Handle the request `get share list`: refresh the dynamic container
         list in bajoo_app and give it to the share list tab in main_window.
         """
 
-        def on_refreshed():
-            futures = []
+        yield self._container_list.refresh()
 
-            for container in self._container_list.get_list():
-                if isinstance(container.container, TeamShare):
-                    futures.append(container.container.list_members())
+        futures = []
+        for container in self._container_list.get_list():
+            if isinstance(container.container, TeamShare):
+                futures.append(container.container.list_members())
 
-            def _on_members_load(_):
-                if self._main_window:
-                    self._main_window.load_shares(
-                        self._container_list.get_list(), show_tab=False)
+        error_msg = None
+        try:
+            yield Promise.all(futures)
+        except Exception as error:
+            _logger.exception('Actualize member list of shares has failed.')
+            error_msg = _('Error occurred: %s.') % error
 
-            def _on_members_load_error(error):
-                _logger.error(error)
-
-                if self._main_window:
-                    self._main_window.load_shares(
-                        self._container_list.get_list(),
-                        error_msg=_('Error occurred: %s.') % error,
-                        show_tab=False)
-
-            Promise.all(futures).then(_on_members_load, _on_members_load_error)
-
-        self._container_list.refresh(on_refreshed)
+        if self._main_window:
+            self._main_window.load_shares(self._container_list.get_list(),
+                                          error_msg=error_msg, show_tab=False)
 
     def _container_status_request(self, _event):
 
@@ -381,8 +375,8 @@ class BajooApp(wx.App, SoftwareUpdate):
         if share.container:
             try:
                 yield share.container.add_member(email, permission)
-            except Exception as err:
-                _logger.error('Adding member failed: %s' % err)
+            except:
+                _logger.exception('Adding a member has failed')
 
                 if self._main_window:
                     self._main_window.on_share_member_added(
@@ -413,7 +407,8 @@ class BajooApp(wx.App, SoftwareUpdate):
         if share.container:
             try:
                 yield share.container.remove_member(email)
-            except Exception:
+            except:
+                _logger.exception('Remove member of a share has failed.')
                 if self._main_window:
                     self._main_window.on_share_member_removed(
                         share, None,
@@ -459,6 +454,7 @@ class BajooApp(wx.App, SoftwareUpdate):
             share = yield TeamShare.create(self._session, share_name,
                                            encrypted)
         except:
+            _logger.exception('Creation of a new TeamShare has failed.')
             if self._main_window:
                 self._main_window.load_shares(
                     self._container_list.get_list(),
@@ -476,29 +472,28 @@ class BajooApp(wx.App, SoftwareUpdate):
         try:
             yield Promise.all(futures)
         except:
+            _logger.exception('Add of a TeamShare member has failed.')
             error_msg = N_('Some members cannot be added to this team share. '
                            'Please verify the email addresses.')
         success_msg = _('Team share %s has been successfully '
                         'created') % share_name
-
-        # Refresh the list.
-        @promise.reduce_coroutine(safeguard=True)
-        def on_refreshed():
-            for container in self._container_list.get_list():
-                if container.model.id == share.id:
-                    yield container.container.list_members()
-                    break
-
-            if self._main_window:
-                self._main_window.load_shares(self._container_list.get_list(),
-                                              success_msg, error_msg)
 
         share_model = ContainerModel(
             share.id, share.name, path=local_path,
             container_type='teamshare', do_not_sync=do_not_sync)
 
         self._container_list.add_container(share, share_model)
-        self._container_list.refresh(on_refreshed)
+
+        yield self._container_list.refresh()
+
+        for container in self._container_list.get_list():
+            if container.model.id == share.id:
+                yield container.container.list_members()
+                break
+
+        if self._main_window:
+            self._main_window.load_shares(self._container_list.get_list(),
+                                          success_msg, error_msg)
 
     @promise.reduce_coroutine(safeguard=True)
     def _on_request_quit_share(self, event):
@@ -509,30 +504,30 @@ class BajooApp(wx.App, SoftwareUpdate):
             yield share.container.remove_member(self._user.name,
                                                 is_self_quit=True)
         except:
+            _logger.exception('Exception when quitting a share.')
             self._notifier.send_message(
                 _('Error'),
-                _('An error occured when trying to quit team share %s.'
-                  % share.name),
+                _('An error occured when trying to quit team share %s.')
+                % share.name,
                 is_error=True
             )
             if self._main_window:
                 self._main_window.on_quit_or_delete_share(None)
             return
 
-        def on_refreshed():
-            self._notifier.send_message(
-                _('Quit team share'),
+        yield self._container_list.refresh()
+
+        self._notifier.send_message(
+            _('Quit team share'),
+            _('You have no longer access to team share %s.'
+              % share.name))
+
+        if self._main_window:
+            self._main_window.load_shares(
+                self._container_list.get_list(),
                 _('You have no longer access to team share %s.'
                   % share.name))
-
-            if self._main_window:
-                self._main_window.load_shares(
-                    self._container_list.get_list(),
-                    _('You have no longer access to team share %s.'
-                      % share.name))
-                self._main_window.on_quit_or_delete_share(share)
-
-        self._container_list.refresh(on_refreshed)
+            self._main_window.on_quit_or_delete_share(share)
 
     @promise.reduce_coroutine(safeguard=True)
     def _on_request_delete_share(self, event):
@@ -550,16 +545,15 @@ class BajooApp(wx.App, SoftwareUpdate):
             success_msg = _('A team share has been successfully deleted '
                             'from server.')
         except:
+            _logger.exception('Unable to delet teamshare %s' % share.name)
             error_msg = _('Team share %s cannot be '
                           'deleted from server.') % share.name
 
-        def on_refresh():
-            if self._main_window:
-                self._main_window.load_shares(
-                    self._container_list.get_list(),
-                    success_msg, error_msg)
-
-        self._container_list.refresh(on_refresh)
+        yield self._container_list.refresh()
+        if self._main_window:
+            self._main_window.load_shares(
+                self._container_list.get_list(),
+                success_msg, error_msg)
 
     @promise.reduce_coroutine(safeguard=True)
     def _on_request_account_info(self, event):
@@ -680,6 +674,7 @@ class BajooApp(wx.App, SoftwareUpdate):
     def _on_sync_error(self, err):
         self._notifier.send_message(_('Sync error'), _(err), is_error=True)
 
+    @promise.reduce_coroutine(safeguard=True)
     def disconnect(self, _evt):
         """revoke token and return the the home window."""
 
@@ -697,20 +692,15 @@ class BajooApp(wx.App, SoftwareUpdate):
         if self._passphrase_manager:
             self._passphrase_manager.remove_passphrase()
 
-        def _on_unhandled_exception(_exception):
-            _logger.critical('Uncaught exception on Run process',
-                             exc_info=True)
-
-        def callback(_):
-            _logger.debug('Now restart the connection process...')
-            future = connect_or_register(self.create_home_window)
-            return future.then(self._on_connection)
-
         self._container_sync_pool.pause()
         self._container_sync_pool = ContainerSyncPool(
             self._on_global_status_change, self._on_sync_error)
         self._container_list.stop()
         self._container_list = None
-        f = self._session.disconnect().then(callback)
-        f.then(None, _on_unhandled_exception)
+
+        yield self._session.disconnect()
         self._session = None
+
+        _logger.debug('Now restart the connection process...')
+        session_and_user = yield connect_or_register(self.create_home_window)
+        yield self._on_connection(session_and_user)
