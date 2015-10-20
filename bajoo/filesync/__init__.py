@@ -192,14 +192,16 @@ class _Task(object):
 
         if self.container.error:
             self.display_error_cb(
-                _("Error during the sync of the \"%s\" container:\n%s")
-                % (self.container.name, error))
+                _('Error during the sync of the "%(name)s" container:'
+                  '\n%(error)s')
+                % {'name': self.container.name, 'error': error})
             raise self.container.error
         else:
             self.display_error_cb(
-                _("Error during sync of the file \"%s\" "
-                  "in the \"%s\" container:\n%s")
-                % (self.target, self.container.name, error))
+                _('Error during sync of the file "%(filename)s" '
+                  'in the "%(name)s" container:\n%(error)s')
+                % {'filename': self.target, 'name': self.container.name,
+                   'error': error})
         return None
 
     def _apply_task(self):

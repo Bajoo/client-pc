@@ -140,8 +140,8 @@ class MinLengthValidator(BaseValidator):
         BaseValidator.__init__(self, parent, target, **kwargs)
         self.min_length = min_length
         self.default_error_message = \
-            N_('This field must contains at least %s characters.' %
-               self.min_length)
+            N_('This field must contains at least %s characters.') \
+            % self.min_length
 
     def check(self):
         return len(self.target.GetValue()) >= self.min_length

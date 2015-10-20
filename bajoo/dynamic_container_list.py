@@ -158,16 +158,17 @@ class DynamicContainerList(object):
                 # TODO: if not is_new, display a more appropriate message ?
                 self._notify(
                     _('Error when adding new share'),
-                    _('Unable to create a folder for %s:\n%s')
-                    % (container.name, local_container.error_msg),
+                    _('Unable to create a folder for %(name)s:\n%(error)s')
+                    % {'name': container.name,
+                       'error': local_container.error_msg},
                     is_error=True)
                 return
 
         elif not local_container.check_path():
             self._notify(
                 _('Error on share sync'),
-                _("Unable to sync the share %s:\n%s")
-                % (container.name, local_container.error_msg),
+                _("Unable to sync the share %(name)s:\n%(error)s")
+                % {'name': container.name, 'error': local_container.error_msg},
                 is_error=True)
             return
 
