@@ -106,11 +106,14 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
             lambda txt: self.SetIcon(self._icons[self._state], tooltip=txt),
             self._tooltips[self._state])
 
-        self.Bind(wx.EVT_TASKBAR_LEFT_DOWN, self._open_window)
+        self.Bind(wx.EVT_TASKBAR_LEFT_DOWN, self._open_root_folder)
         self.Bind(wx.EVT_MENU,
                   lambda _evt: wx.PostEvent(self, self.ExitEvent(-1)),
                   id=wx.ID_EXIT)
         self.Bind(wx.EVT_MENU, self._open_window)
+
+    def _open_root_folder(self, event):
+        open_folder(wx.GetApp().user_profile.root_folder_path)
 
     def _open_window(self, event):
         mapping_open_evt = {
