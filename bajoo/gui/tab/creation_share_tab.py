@@ -3,13 +3,13 @@
 from os import path
 
 import wx
-from wx.lib.filebrowsebutton import DirBrowseButton
 from wx.lib.newevent import NewCommandEvent
 
 from ...api.team_share import permission as share_permission
 from ...common.i18n import N_, _
 from ..common import message_box
 from ..common.pictos import get_bitmap
+from ..common.share_location_browser import ShareLocationBrowser
 from ..base_view import BaseView
 from ..form.members_share_form import MembersShareForm
 from ..form.base_form import BaseForm
@@ -31,9 +31,12 @@ class CreationShareTab(BaseForm):
         self._user_email = ''
         self.members = {}
 
+        self.Bind(wx.EVT_TEXT, self._share_name_changed,
+                  self.FindWindow('txt_share_name'))
         self.Bind(wx.EVT_BUTTON, self._btn_create_clicked, id=wx.ID_OK)
         self.Bind(wx.EVT_BUTTON, self._btn_back_clicked,
                   self.FindWindow('btn_back'))
+        self.Bind(wx.EVT_BUTTON, self._btn_back_clicked, id=wx.ID_CANCEL)
         self.Bind(wx.EVT_CHECKBOX, self._chk_exclusion_checked,
                   self.FindWindow('chk_exclusion'))
         self.Bind(MembersShareForm.EVT_SUBMIT, self._on_add_member)
@@ -44,6 +47,11 @@ class CreationShareTab(BaseForm):
     def _init_images(self):
         self.IMG_MEMBERS = get_bitmap('group.png', False)
         self.IMG_BACK = get_bitmap('previous.png', False)
+
+    def _share_name_changed(self, event):
+        share_name = event.GetEventObject().GetValue()
+        btn_browse_location = self.FindWindow('btn_browse_location')
+        btn_browse_location.set_share_name(share_name)
 
     def _btn_back_clicked(self, _event):
         back_event = CreationShareTab.RequestShowListShares(self.GetId())
@@ -70,9 +78,8 @@ class CreationShareTab(BaseForm):
             request_event.path = None
 
             if not request_event.do_not_sync:
-                request_event.path = path.join(
-                    self.FindWindow('btn_browse_location').GetValue(),
-                    share_name)
+                request_event.path = \
+                    self.FindWindow('btn_browse_location').GetValue()
 
             wx.PostEvent(self, request_event)
             self.disable()
@@ -123,8 +130,8 @@ class CreationShareView(BaseView):
 
         share_folder = path.join(
             wx.GetApp().user_profile.root_folder_path, _('Shares'))
-        btn_browse_location = DirBrowseButton(
-            creation_share_tab, name='btn_browse_location',
+        btn_browse_location = ShareLocationBrowser(
+            parent=creation_share_tab, name='btn_browse_location',
             startDirectory=share_folder)
         btn_browse_location.SetValue(share_folder)
 
