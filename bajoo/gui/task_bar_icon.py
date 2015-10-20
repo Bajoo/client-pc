@@ -200,11 +200,9 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
 
         for name, fpath, status in status_list:
             item = wx.MenuItem(self._container_menu, -1, name)
-            if not fpath:
-                item.Enable(False)
             item.SetBitmap(wx.BitmapFromImage(self._container_icons[status]))
             self._container_menu.AppendItem(item) \
-                .Enable(path.exists(fpath))
+                .Enable(bool(fpath) and path.exists(fpath))
 
             def open_container(_evt, folder_path=fpath):
                 if path.exists(folder_path):
