@@ -536,18 +536,19 @@ class BajooApp(wx.App, SoftwareUpdate):
         & send the API request.
         """
         share = event.share
-        # TODO: stop the synchro on this share
 
         success_msg = None
         error_msg = None
         try:
+            # TODO: should we also delete the folder ?
+            self._container_list.remove_container(share.model.id)
             yield share.container.delete()
             success_msg = _('A team share has been successfully deleted '
                             'from server.')
         except:
             _logger.exception('Unable to delet teamshare %s' % share.name)
             error_msg = _('Team share %s cannot be '
-                          'deleted from server.') % share.name
+                          'deleted from server.') % share.model.name
 
         yield self._container_list.refresh()
         if self._main_window:
