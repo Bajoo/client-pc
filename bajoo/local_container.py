@@ -318,9 +318,15 @@ class LocalContainer(object):
 
         return 0, 0, 0
 
+    def get_status(self):
+        if self.model.do_not_sync:
+            return self.STATUS_STOPPED
+
+        return self.status
+
     def get_status_text(self):
         return LocalContainer._status_textes.get(
-            self.status, _('Unknown'))
+            self.get_status(), _('Unknown'))
 
     def remove_on_disk(self):
         """Remove the folder synchronised and its content."""

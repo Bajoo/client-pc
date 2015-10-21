@@ -168,7 +168,7 @@ class DetailsShareTab(BaseForm):
         })
 
         self.FindWindow('img_share_status').SetBitmap(
-            self.IMG_CONTAINER_STATUS[share.status])
+            self.IMG_CONTAINER_STATUS[share.get_status()])
 
         # Cannot show members of/delete/quit MyBajoo folder
         show_share_options = \
