@@ -8,7 +8,6 @@ from wx.lib.newevent import NewCommandEvent
 
 from ...local_container import LocalContainer
 from ...common.i18n import N_
-from ..common import message_box
 from ..common.pictos import get_bitmap
 from ..event_promise import ensure_gui_thread
 from ..base_view import BaseView
@@ -23,8 +22,7 @@ class ListSharesTab(wx.Panel, Translator):
     List shares tab in the main window, which displays
     the status of user's all shares.
 
-    User can then go to the share creation screen or share details screen,
-    or can delete a share folder.
+    User can then go to the share creation screen or share details screen.
     """
 
     DataRequestEvent, EVT_DATA_REQUEST = NewCommandEvent()
@@ -39,22 +37,6 @@ class ListSharesTab(wx.Panel, Translator):
 
     ContainerDetailRequestEvent, EVT_CONTAINER_DETAIL_REQUEST = \
         NewCommandEvent()
-    """
-    Send this event to demand for fetching container details.
-
-    Attrs:
-        container: <bajoo.LocalContainer>
-    """
-
-    RequestQuitShare, EVT_QUIT_SHARE_REQUEST = NewCommandEvent()
-    """
-    Send this event to demand for fetching container details.
-
-    Attrs:
-        container: <bajoo.LocalContainer>
-    """
-
-    RequestDeleteShare, EVT_DELETE_SHARE_REQUEST = NewCommandEvent()
     """
     Send this event to demand for fetching container details.
 
@@ -83,10 +65,6 @@ class ListSharesTab(wx.Panel, Translator):
             'icon_storage_my_bajoo.png', True, 64, 64)
         self.IMG_CONTAINER_DETAILS = get_bitmap(
             'edit-share.png', True, 32, 32)
-        self.IMG_QUIT_SHARE = get_bitmap(
-            'quit-share.png', True, 32, 32)
-        self.IMG_DELETE_SHARE = get_bitmap(
-            'delete-share.png', True, 32, 32)
         self.IMG_ENCRYPTED = get_bitmap('lock.png')
         self.IMG_NOT_ENCRYPTED = get_bitmap('unlock.png')
         self.IMG_MEMBERS = get_bitmap('group.png')
@@ -155,26 +133,6 @@ class ListSharesTab(wx.Panel, Translator):
         if container:
             new_event = self.ContainerDetailRequestEvent(self.GetId())
             new_event.container = container
-            wx.PostEvent(self, new_event)
-
-    def btn_quit_share_clicked(self, event):
-        share = self.get_container_from_button(
-            event, 'btn_quit_share_')
-
-        if share and message_box.message_box_quit_share(
-                share.model.name, self) == wx.YES:
-            new_event = self.RequestQuitShare(self.GetId())
-            new_event.share = share
-            wx.PostEvent(self, new_event)
-
-    def btn_delete_share_clicked(self, event):
-        share = self.get_container_from_button(
-            event, 'btn_delete_share_')
-
-        if share and message_box.message_box_delete_share(
-                share.model.name, self) == wx.YES:
-            new_event = ListSharesTab.RequestDeleteShare(self.GetId())
-            new_event.share = share
             wx.PostEvent(self, new_event)
 
     def btn_open_dir_clicked(self, event):
@@ -353,24 +311,15 @@ class ListSharesView(BaseView):
         lbl_share_members = wx.StaticText(
             share_box, name='lbl_share_members_' + model.id)
 
-        btn_share_details = wx.BitmapButton(
+        btn_share_details = wx.Button(
             share_box, name='btn_share_details_' + model.id,
-            bitmap=self.window.IMG_CONTAINER_DETAILS)
-        btn_quit_share = wx.BitmapButton(
-            share_box, name='btn_quit_share_' + model.id,
-            bitmap=self.window.IMG_QUIT_SHARE)
-        btn_quit_share.Hide()
-        btn_delete_share = wx.BitmapButton(
-            share_box, name='btn_delete_share_' + model.id,
-            bitmap=self.window.IMG_DELETE_SHARE)
-        btn_delete_share.Hide()
+            label=N_('Details'))
+        btn_share_details.SetBitmap(self.window.IMG_CONTAINER_DETAILS)
         self.window.Bind(wx.EVT_BUTTON, self.window.btn_share_details_clicked,
                          btn_share_details)
 
         action_box = self.make_sizer(
-            wx.HORIZONTAL, [
-                btn_quit_share, btn_delete_share, btn_share_details
-            ], outside_border=False)
+            wx.HORIZONTAL, [btn_share_details], outside_border=False)
 
         if model.type == 'my_bajoo':
             img_share = self.window.IMG_MY_BAJOO
@@ -427,9 +376,7 @@ class ListSharesView(BaseView):
 
         self.register_many_i18n('SetToolTipString', {
             btn_open_local_dir: N_('Open folder'),
-            btn_share_details: N_('Details'),
-            btn_quit_share: N_('Quit this share'),
-            btn_delete_share: N_('Delete this share')
+            btn_share_details: N_('Details')
         })
 
         img_share_status.SetBitmap(
@@ -447,31 +394,7 @@ class ListSharesView(BaseView):
                 lbl_share_members.Show()
                 img_share_members.Show()
 
-                is_admin = False
-                has_other_admins = False
-
-                for member in share.members:
-                    member_email = member.get(u'user')
-                    member_admin = member.get(u'admin')
-
-                    if member_admin:
-                        if member_email == wx.GetApp().user_profile.email:
-                            is_admin = True
-                        else:
-                            has_other_admins = True
-
-                is_only_admin = is_admin and not has_other_admins
-
-                btn_delete_share.Show(is_admin)
-                btn_quit_share.Show(not is_only_admin)
                 share_box_sizer.Layout()
-
-                self.window.Bind(
-                    wx.EVT_BUTTON, self.window.btn_quit_share_clicked,
-                    btn_quit_share)
-                self.window.Bind(
-                    wx.EVT_BUTTON, self.window.btn_delete_share_clicked,
-                    btn_delete_share)
 
     def _waiting_timer_handler(self, _event):
         self._wait.Pulse()

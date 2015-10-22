@@ -32,7 +32,7 @@ class MainWindow(wx.Frame, Translator):
     SETTINGS_TAB = 2
 
     def __init__(self):
-        wx.Frame.__init__(self, parent=None, size=(800, 600))
+        wx.Frame.__init__(self, parent=None, size=(1024, 768))
         Translator.__init__(self)
 
         self.SetMinSize((800, 600))

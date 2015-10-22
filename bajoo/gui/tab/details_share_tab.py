@@ -293,7 +293,8 @@ class DetailsShareTab(BaseForm):
         self.hide_message()
 
         if self._share:
-            if message_box.message_box_delete_share(self._share.model.name, self) \
+            if message_box.message_box_delete_share(self._share.model.name,
+                                                    self) \
                     == wx.YES:
                 event = DetailsShareTab.RequestDeleteShare(self.GetId())
                 event.share = self._share
@@ -332,12 +333,14 @@ class DetailsShareView(BaseView):
         btn_back = wx.BitmapButton(
             details_share_tab, name='btn_back',
             bitmap=details_share_tab.IMG_BACK)
-        btn_quit_share = wx.BitmapButton(
+        btn_quit_share = wx.Button(
             details_share_tab, name='btn_quit_share',
-            bitmap=details_share_tab.IMG_QUIT_SHARE)
-        btn_delete_share = wx.BitmapButton(
+            label=N_('Quit this share'))
+        btn_quit_share.SetBitmap(details_share_tab.IMG_QUIT_SHARE)
+        btn_delete_share = wx.Button(
             details_share_tab, name='btn_delete_share',
-            bitmap=details_share_tab.IMG_DELETE_SHARE)
+            label=N_('Delete this share'))
+        btn_delete_share.SetBitmap(details_share_tab.IMG_DELETE_SHARE)
 
         lbl_share_name = wx.StaticText(
             details_share_tab,
@@ -368,9 +371,10 @@ class DetailsShareView(BaseView):
         lbl_local_space = wx.StaticText(
             details_share_tab,
             label='', name='lbl_local_space')
-        btn_open_folder = wx.BitmapButton(
+        btn_open_folder = wx.Button(
             details_share_tab, name='btn_open_folder',
-            bitmap=details_share_tab.IMG_OPEN_FOLDER)
+            label=N_('Open folder'))
+        btn_open_folder.SetBitmap(details_share_tab.IMG_OPEN_FOLDER)
 
         # the members share form
         img_members = wx.StaticBitmap(
@@ -385,9 +389,10 @@ class DetailsShareView(BaseView):
         self.members_share_form = members_share_form
 
         chk_exclusion = wx.CheckBox(details_share_tab, name='chk_exclusion')
-        chk_exclusion.Disable()
-
         btn_browse_location = DirBrowseButton(details_share_tab)
+
+        btn_cancel = wx.Button(details_share_tab, wx.ID_CANCEL)
+        btn_apply = wx.Button(details_share_tab, wx.ID_APPLY)
 
         # the top sizer contains the back button
         top_sizer = self.make_sizer(
@@ -421,10 +426,23 @@ class DetailsShareView(BaseView):
             details_share_tab, name='lbl_message')
         lbl_message.Hide()
 
+        # the button sizer
+        share_options_buttons = wx.StdDialogButtonSizer()
+        share_options_buttons.SetAffirmativeButton(btn_apply)
+        share_options_buttons.SetCancelButton(btn_cancel)
+        share_options_buttons.Realize()
+
         # the share_options sizer contains options of exclusion & local dir
+        share_options_box = wx.StaticBox(
+            details_share_tab, label=N_('Advanced Options'))
+        share_options_box_sizer = wx.StaticBoxSizer(
+            share_options_box, wx.VERTICAL)
+
         share_options_sizer = self.make_sizer(
-            wx.VERTICAL, [chk_exclusion, btn_browse_location],
-            flag=wx.EXPAND, outside_border=False)
+            wx.VERTICAL, [chk_exclusion, btn_browse_location,
+                          share_options_buttons],
+            flag=wx.EXPAND,
+            sizer=share_options_box_sizer)
 
         # the main sizer
         main_sizer = self.make_sizer(wx.VERTICAL, [top_sizer])
@@ -453,6 +471,7 @@ class DetailsShareView(BaseView):
         })
 
         # TODO: disable for next release
+        chk_exclusion.Disable()
         btn_browse_location.Disable()
 
 
