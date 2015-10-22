@@ -4,7 +4,6 @@ import logging
 from os import path
 
 import wx
-from wx.lib.filebrowsebutton import DirBrowseButton
 from wx.lib.newevent import NewCommandEvent
 
 from ...api.team_share import permission as share_permission
@@ -16,6 +15,7 @@ from ..event_promise import ensure_gui_thread
 from ..form.members_share_form import MembersShareForm
 from ..form.base_form import BaseForm
 from ..common import message_box
+from ..common.share_location_browser import ShareLocationBrowser
 from ..common.pictos import get_bitmap
 from ...common.util import human_readable_bytes
 
@@ -34,6 +34,12 @@ class DetailsShareTab(BaseForm):
     RequestShowListShares, EVT_SHOW_LIST_SHARE_REQUEST = NewCommandEvent()
     RequestQuitShare, EVT_QUIT_SHARE_REQUEST = NewCommandEvent()
     RequestDeleteShare, EVT_DELETE_SHARE_REQUEST = NewCommandEvent()
+    RequestStopSyncContainer, EVT_STOP_SYNC_CONTAINER_REQUEST \
+        = NewCommandEvent()
+    RequestStartSyncContainer, EVT_START_SYNC_CONTAINER_REQUEST \
+        = NewCommandEvent()
+    RequestMoveContainer, EVT_MOVE_CONTAINER_REQUEST \
+        = NewCommandEvent()
 
     def __init__(self, parent):
         BaseForm.__init__(self, parent)
@@ -53,6 +59,12 @@ class DetailsShareTab(BaseForm):
                   self.FindWindow('btn_quit_share'))
         self.Bind(wx.EVT_BUTTON, self._btn_delete_share_clicked,
                   self.FindWindow('btn_delete_share'))
+        self.Bind(wx.EVT_CHECKBOX, self._chk_exclusion_checked,
+                  self.FindWindow('chk_exclusion'))
+        self.Bind(wx.EVT_TEXT, self._on_location_changed,
+                  self.FindWindow('btn_browse_location'))
+        self.Bind(wx.EVT_BUTTON, self._on_options_applied, id=wx.ID_APPLY)
+        self.Bind(wx.EVT_BUTTON, self._on_options_reset, id=wx.ID_CANCEL)
 
     def _init_images(self):
         self.IMG_ENCRYPTED = get_bitmap('lock.png')
@@ -102,6 +114,99 @@ class DetailsShareTab(BaseForm):
         is_only_admin = is_admin and not has_other_admins
 
         return is_admin, is_only_admin
+
+    def _chk_exclusion_checked(self, event):
+        do_not_sync = self.FindWindow('chk_exclusion').GetValue()
+        btn_browse = self.FindWindow('btn_browse_location')
+        btn_browse.Enable(not do_not_sync)
+
+        # Set the default value for the location
+        if not do_not_sync:
+            if self._share.model.path is None:
+                btn_browse.SetValue(path.join(
+                    wx.GetApp().user_profile.root_folder_path,
+                    _('Shares'), self._share.model.name))
+            else:
+                btn_browse.SetValue(self._share.model.path)
+
+        self.set_options_buttons_status()
+
+    def _on_location_changed(self, event):
+        share_path = self.FindWindow('btn_browse_location').GetValue()
+        lbl_folder_exist_error = self.FindWindow('lbl_folder_exist_error')
+
+        if share_path != self._share.model.path and \
+                path.exists(share_path):
+            self.FindWindow('btn_apply').Enable(False)
+            lbl_folder_exist_error.Show()
+
+            return
+
+        lbl_folder_exist_error.Hide()
+        self.set_options_buttons_status()
+        self.Layout()
+
+    def _on_options_applied(self, event):
+        do_not_sync = self.FindWindow('chk_exclusion').GetValue()
+        share_path = self.FindWindow('btn_browse_location').GetValue()
+
+        if do_not_sync != self._share.model.do_not_sync:
+            # User changes the sync status
+            self._share.model.do_not_sync = do_not_sync
+
+            if do_not_sync:
+                event = self.RequestStopSyncContainer(self.GetId())
+                event.container = self._share
+                wx.PostEvent(self, event)
+                # wx.GetApp().stop_sync_container(self._share)
+            else:
+                # TODO: check valid directory
+                self._share.model.path = share_path
+                event = self.RequestStartSyncContainer(self.GetId())
+                event.container = self._share
+                wx.PostEvent(self, event)
+                # wx.GetApp().start_sync_container(self._share)
+
+            self.FindWindow('lbl_share_status').SetLabel(
+                _('Status: %s') % self._share.get_status_text())
+            self.FindWindow('img_share_status').SetBitmap(
+                self.IMG_CONTAINER_STATUS[self._share.get_status()])
+
+        elif not do_not_sync and share_path != self._share.model.path:
+            # Always sync this container, but move its path
+            event = self.RequestMoveContainer(self.GetId())
+            event.container = self._share
+            event.path = share_path
+            wx.PostEvent(self, event)
+
+    def set_options_buttons_status(self):
+        """
+        Enable Apply/Cancel only if has changed
+        """
+        has_change = \
+            self._share.model.do_not_sync != self.FindWindow(
+                'chk_exclusion').GetValue() or \
+            (self._share.model.path != self.FindWindow(
+                'btn_browse_location').GetValue() and
+             not self._share.model.do_not_sync)
+
+        self.FindWindow('btn_apply').Enable(has_change)
+        self.FindWindow('btn_cancel').Enable(has_change)
+
+    def _on_options_reset(self, event):
+        self.set_share_options_value(self._share)
+
+    def set_share_options_value(self, share):
+        do_not_sync = share.model.do_not_sync
+        share_path = share.model.path
+
+        self.FindWindow('chk_exclusion').SetValue(do_not_sync)
+
+        if share_path:
+            self.FindWindow('btn_browse_location').SetValue(
+                share_path or '')
+
+        self.FindWindow('btn_browse_location').Enable(not do_not_sync)
 
     @ensure_gui_thread
     def set_data(self, share):
@@ -189,7 +294,10 @@ class DetailsShareTab(BaseForm):
             self._user_email = wx.GetApp()._user.name
             self._refresh_admin_controls()
 
-        self.FindWindow('chk_exclusion').SetValue(share.model.do_not_sync)
+        self.set_share_options_value(self._share)
+        self.FindWindow('btn_browse_location').set_share_name(
+            share.model.name, set_value_now=False)
+        self.set_options_buttons_status()
 
     @ensure_gui_thread
     def _refresh_admin_controls(self):
@@ -389,10 +497,13 @@ class DetailsShareView(BaseView):
         self.members_share_form = members_share_form
 
         chk_exclusion = wx.CheckBox(details_share_tab, name='chk_exclusion')
-        btn_browse_location = DirBrowseButton(details_share_tab)
+        btn_browse_location = ShareLocationBrowser(
+            parent=details_share_tab, name='btn_browse_location')
 
-        btn_cancel = wx.Button(details_share_tab, wx.ID_CANCEL)
-        btn_apply = wx.Button(details_share_tab, wx.ID_APPLY)
+        btn_cancel = wx.Button(details_share_tab, wx.ID_CANCEL,
+                               name='btn_cancel')
+        btn_apply = wx.Button(details_share_tab, wx.ID_APPLY,
+                              name='btn_apply')
 
         # the top sizer contains the back button
         top_sizer = self.make_sizer(
@@ -426,10 +537,15 @@ class DetailsShareView(BaseView):
             details_share_tab, name='lbl_message')
         lbl_message.Hide()
 
+        lbl_folder_exist_error = wx.StaticText(
+            details_share_tab, name='lbl_folder_exist_error')
+        lbl_folder_exist_error.SetForegroundColour(wx.RED)
+
         # the button sizer
         share_options_buttons = wx.StdDialogButtonSizer()
         share_options_buttons.SetAffirmativeButton(btn_apply)
         share_options_buttons.SetCancelButton(btn_cancel)
+        share_options_buttons.Add(lbl_folder_exist_error)
         share_options_buttons.Realize()
 
         # the share_options sizer contains options of exclusion & local dir
@@ -460,7 +576,8 @@ class DetailsShareView(BaseView):
         self.register_many_i18n('SetLabel', {
             lbl_members: N_('Members having access to this share'),
             chk_exclusion: N_('Do not synchronize on this PC'),
-            btn_browse_location: N_('Location on this PC')
+            btn_browse_location: N_('Location on this PC'),
+            lbl_folder_exist_error: N_('This folder already exists')
         })
 
         self.register_many_i18n('SetToolTipString', {
@@ -469,10 +586,6 @@ class DetailsShareView(BaseView):
             btn_delete_share: N_('Delete this share'),
             btn_open_folder: N_('Open folder'),
         })
-
-        # TODO: disable for next release
-        chk_exclusion.Disable()
-        btn_browse_location.Disable()
 
 
 def main():

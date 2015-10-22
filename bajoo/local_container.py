@@ -36,6 +36,10 @@ class LocalContainer(object):
             container is not yet loaded, it may be None.
         model (ContainerModel): the local representation of the same container.
             It contains al persistent data.
+        is_moving (boolean): if True, the local folder of this container
+            is being currently moved, the sync normally has stopped
+            and all other operations (which mean all related screens)
+            must be blocked.
     """
 
     STATUS_UNKNOWN = 1
@@ -60,6 +64,7 @@ class LocalContainer(object):
         self._index_booking = {}
         self.container = container
         self.model = model
+        self.is_moving = False
 
     def check_path(self):
         """Check that the path is the folder corresponding to the container.
@@ -97,6 +102,21 @@ class LocalContainer(object):
 
         self.status = self.STATUS_STOPPED
         return True
+
+    def get_not_existing_folder(self, dest_folder):
+        if not os.path.exists(dest_folder):
+            return dest_folder
+
+        parent_folder = os.path.abspath(os.path.join(dest_folder, os.pardir))
+        src_folder_name = os.path.basename(dest_folder)
+        index = 1
+        folder_name = '%s (%s)' % (src_folder_name, index)
+
+        while os.path.exists(os.path.join(parent_folder, folder_name)):
+            index += 1
+            folder_name = '%s (%s)' % (src_folder_name, index)
+
+        return os.path.join(parent_folder, folder_name)
 
     def create_folder(self, root_folder_path):
         """Create a new folder for storing the container's files.

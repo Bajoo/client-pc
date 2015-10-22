@@ -2,6 +2,7 @@
 
 from functools import partial
 import logging
+import os
 from threading import Lock as Lock
 
 from .api.team_share import TeamShare
@@ -109,6 +110,20 @@ class DynamicContainerList(object):
             self.user_profile.set_container(model.id, model)
             self._append_local_container(model, container, is_new=True)
 
+    def stop_sync_container(self, local_container):
+        model = local_container.model
+
+        with self._list_lock:
+            self.user_profile.set_container(model.id, model)
+            self._stop_container(local_container)
+
+    def start_sync_container(self, local_container):
+        model = local_container.model
+
+        with self._list_lock:
+            self.user_profile.set_container(model.id, model)
+            self._check_and_start_local_container(local_container)
+
     def remove_container(self, id, remove_on_disk=False):
         with self._list_lock:
             if not self.user_profile.remove_container(id):
@@ -150,7 +165,7 @@ class DynamicContainerList(object):
         container = local_container.container
         model_path = local_container.model.path
 
-        if model_path is None or is_new:
+        if model_path is None or is_new or not os.path.exists(model_path):
             new_path = local_container.create_folder(
                 self.user_profile.root_folder_path)
 

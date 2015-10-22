@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import shutil
 
 import wx
 from wx.lib.softwareupdate import SoftwareUpdate
@@ -233,6 +234,12 @@ class BajooApp(wx.App, SoftwareUpdate):
                   self._on_request_quit_share)
         self.Bind(DetailsShareTab.EVT_DELETE_SHARE_REQUEST,
                   self._on_request_delete_share)
+        self.Bind(DetailsShareTab.EVT_START_SYNC_CONTAINER_REQUEST,
+                  self._start_sync_container)
+        self.Bind(DetailsShareTab.EVT_STOP_SYNC_CONTAINER_REQUEST,
+                  self._stop_sync_container)
+        self.Bind(DetailsShareTab.EVT_MOVE_CONTAINER_REQUEST,
+                  self._move_synced_container)
         self.Bind(AccountTab.EVT_DATA_REQUEST,
                   self._on_request_account_info)
         self.Bind(ChangePasswordWindow.EVT_CHANGE_PASSWORD_SUBMIT,
@@ -490,6 +497,39 @@ class BajooApp(wx.App, SoftwareUpdate):
         if self._main_window:
             self._main_window.load_shares(self._container_list.get_list(),
                                           success_msg, error_msg)
+
+    def _move_synced_container(self, event):
+        container = event.container
+        new_path = event.path
+
+        self._container_list.stop_sync_container(container)
+
+        try:
+            container.is_moving = True
+
+            # Check if selected folder exists
+            new_path = container.get_not_existing_folder(new_path)
+
+            shutil.copytree(container.model.path, new_path)
+            shutil.rmtree(container.model.path)
+
+            container.model.path = new_path
+        except (IOError, OSError):
+            _logger.critical(
+                'Cannot move folder from %s to %s' % (
+                    container.model.path, new_path),
+                exc_info=True)
+        finally:
+            container.is_moving = False
+            self._container_list.start_sync_container(container)
+
+    def _stop_sync_container(self, event):
+        container = event.container
+        self._container_list.stop_sync_container(container)
+
+    def _start_sync_container(self, event):
+        container = event.container
+        self._container_list.start_sync_container(container)
 
     @promise.reduce_coroutine(safeguard=True)
     def _on_request_quit_share(self, event):
