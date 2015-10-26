@@ -2,10 +2,17 @@
 
 import logging
 from functools import partial
+import sys
 from threading import Condition, Lock
 from .util import is_cancellable, is_thenable
 
 _logger = logging.getLogger(__name__)
+
+# reraise is used to raise with a specific traceback, on Python2.
+# The code is not compatible Python3, and so must be wrapped by exec()
+if sys.version_info[0] == 2:
+    exec("def reraise(tp, value, tb=None):"
+         "\traise tp, value, tb\n")
 
 
 class TimeoutError(Exception):
@@ -52,6 +59,7 @@ class Promise(object):
         self._condition = Condition()
         self._name = _name or getattr(executor, '__name__', '???')
         self._previous = _previous
+        self._exc_info = None
 
         self._callbacks = []
         self._errbacks = []
@@ -75,7 +83,11 @@ class Promise(object):
                 self._callbacks = None
                 self._errbacks = None
 
-        def on_rejected(error):
+        def on_rejected(error, value=None, tb=None):
+            if value and tb:
+                self._exc_info = (error, value, tb)
+                error = value
+
             with self._condition:
                 if self._state != self.PENDING:
                     _logger.warning('Try to reject Promise %s already settled.'
@@ -104,8 +116,8 @@ class Promise(object):
 
         try:
             executor(on_fulfilled, on_rejected)
-        except BaseException as error:
-            on_rejected(error)
+        except:
+            on_rejected(*sys.exc_info())
 
     def result(self, timeout=None):
         """Wait for the result and returns it as soon as it's available.
@@ -126,6 +138,8 @@ class Promise(object):
             if self._state == self.PENDING:
                 raise TimeoutError()
             elif self._state == self.REJECTED:
+                if sys.version_info[0] == 2 and self._exc_info:
+                    reraise(*self._exc_info)  # noqa
                 raise self._error
             else:
                 return self._result
@@ -156,7 +170,7 @@ class Promise(object):
     def then(self, on_fulfilled=None, on_rejected=None):
         """Create a new promise from callbacks called when this one is settled.
 
-        If the promise is fulfilled, the `on_fullfilled` callback will be
+        If the promise is fulfilled, the `on_fulfilled` callback will be
         called. Otherwise (the promise has been rejected), the `on_rejected`
         callback is called.
         In any case, the callback will define the state of the returned
@@ -187,8 +201,8 @@ class Promise(object):
                 else:
                     try:
                         new_result = on_fulfilled(result)
-                    except BaseException as error:
-                        return rejected(error)
+                    except:
+                        return rejected(*sys.exc_info())
 
                 if is_thenable(new_result):
                     new_result.then(fulfilled, rejected)
@@ -197,12 +211,15 @@ class Promise(object):
 
             def errback(error):
                 if on_rejected is None:
-                    return rejected(error)
+                    if self._exc_info:
+                        return rejected(*self._exc_info)
+                    else:
+                        return rejected(error)
                 else:
                     try:
                         result = on_rejected(error)
-                    except BaseException as new_error:
-                        return rejected(new_error)
+                    except:
+                        return rejected(*sys.exc_info())
 
                 if is_thenable(result):
                     result.then(fulfilled, rejected)
@@ -247,10 +264,13 @@ class Promise(object):
         and log them as ERROR with the maximum of details possible.
         """
         def guard(error):
-            try:
-                raise error
-            except:
-                _logger.exception('[SAFEGUARD] %s' % self)
+            if self._exc_info:
+                _logger.error('[SAFEGUARD] %s' % self, exc_info=self._exc_info)
+            else:
+                try:
+                    raise error
+                except:
+                    _logger.exception('[SAFEGUARD] %s' % self)
 
         self._add_errback(guard)
 
@@ -371,7 +391,9 @@ class Promise(object):
                         return
                     is_resolved[0] = True
                 resolve(result)
-                map(lambda p: p.cancel(), filter(is_cancellable, promises))
+                for p in promises:
+                    if is_cancellable(p):
+                        p.cancel()
 
             def reject_once(reason):
                 with lock:
@@ -379,9 +401,12 @@ class Promise(object):
                         return
                     is_resolved[0] = True
                 reject(reason)
-                map(lambda p: p.cancel(), filter(is_cancellable, promises))
+                for p in promises:
+                    if is_cancellable(p):
+                        p.cancel()
 
-            map(lambda p: p.then(resolve_once, reject_once), promises)
+            for p in promises:
+                p.then(resolve_once, reject_once)
 
         return cls(executor, _name='RACE')
 
