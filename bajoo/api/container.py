@@ -77,7 +77,7 @@ class Container(object):
             Promise<AsyncKey>: container key
         """
 
-        with self._key_lock.acquire():
+        with self._key_lock:
             if self._encryption_key:
                 yield self._encryption_key
                 return
