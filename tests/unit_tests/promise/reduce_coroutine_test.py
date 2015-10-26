@@ -124,4 +124,26 @@ class TestReduceCoroutine(object):
             yield 'never_yielded'
 
         p = generator()
-        assert p.result() == 'fixed_result'
+        assert p.result(0.01) == 'fixed_result'
+
+    def test_reduce_coroutine_close_generator(self):
+        """Ensure the generator is properly closed when it returns a value.
+
+        If a generator has yielded the final result, and the caller don't want
+        to iter until the end, the caller must close the generator.
+        Closing the generator will raise an exception GeneratorExit, and so
+        allow the generator to clean resources.
+        Without the close, resources locked by `with` will not be released.
+        """
+        is_generator_closed = []
+
+        @promise.reduce_coroutine()
+        def generator():
+            try:
+                yield 'RESULT'
+            except GeneratorExit:
+                is_generator_closed.append(True)
+
+        p = generator()
+        assert p.result(0.01) == 'RESULT'
+        assert is_generator_closed

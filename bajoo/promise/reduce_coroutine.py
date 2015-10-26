@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import sys
 from .promise import Promise
 from .util import is_thenable
 
@@ -35,6 +36,7 @@ def reduce_coroutine(safeguard=False):
                     if is_thenable(value):
                         value.then(iter_next, iter_error)
                     else:
+                        gen.close()
                         return on_fulfilled(value)
 
                 def iter_next(yielded_value):
@@ -42,8 +44,8 @@ def reduce_coroutine(safeguard=False):
                         next_value = gen.send(yielded_value)
                     except StopIteration:
                         return on_fulfilled(yielded_value)
-                    except BaseException as error:
-                        return on_rejected(error)
+                    except:
+                        return on_rejected(*sys.exc_info())
                     _call_next_or_set_result(next_value)
 
                 def iter_error(raised_error):
@@ -51,8 +53,8 @@ def reduce_coroutine(safeguard=False):
                         next_value = gen.throw(raised_error)
                     except StopIteration:
                         return on_rejected(raised_error)
-                    except BaseException as error:
-                        return on_rejected(error)
+                    except:
+                        return on_rejected(*sys.exc_info())
                     _call_next_or_set_result(next_value)
 
                 # Start and resolve loop.
