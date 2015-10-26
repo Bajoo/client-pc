@@ -58,7 +58,11 @@ def reduce_coroutine(safeguard=False):
                     _call_next_or_set_result(next_value)
 
                 # Start and resolve loop.
-                f = next(gen)
+                try:
+                    f = next(gen)
+                except StopIteration:
+                    on_fulfilled(None)
+                    return
                 _call_next_or_set_result(f)
 
             p = Promise(executor, _name='COROUTINE %s' % func.__name__)

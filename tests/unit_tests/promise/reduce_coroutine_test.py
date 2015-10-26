@@ -80,7 +80,7 @@ class TestReduceCoroutine(object):
         err = p.exception(0.01)
         assert isinstance(err, Err)
 
-    def test_reduce_empty_coroutine(self):
+    def test_reduce_one_step_coroutine(self):
         """Use @reduce_coroutine on a generator who yield only once."""
         @promise.reduce_coroutine()
         def generator():
@@ -147,3 +147,14 @@ class TestReduceCoroutine(object):
         p = generator()
         assert p.result(0.01) == 'RESULT'
         assert is_generator_closed
+
+    def test_coroutine_empty_coroutine(self):
+        """Use a coroutine who never yield (it returns directly)."""
+
+        @promise.reduce_coroutine()
+        def generator():
+            return
+            yield
+
+        p = generator()
+        assert p.result(0.01) is None
