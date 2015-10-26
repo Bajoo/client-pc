@@ -388,7 +388,7 @@ class BajooApp(wx.App, SoftwareUpdate):
                 self._main_window.on_share_member_added(
                     share, email, permission,
                     N_('%s has been given access to team share \'%s\'')
-                    % (email, share.name))
+                    % (email, share.model.name))
         else:
             if self._main_window:
                 self._main_window.on_share_member_added(
@@ -416,7 +416,7 @@ class BajooApp(wx.App, SoftwareUpdate):
                 self._main_window.on_share_member_removed(
                     share, email,
                     N_('%s\'s access to team share \'%s\' '
-                       'has been removed.') % (email, share.name))
+                       'has been removed.') % (email, share.model.name))
         else:
             if self._main_window:
                 self._main_window.on_share_member_removed(
@@ -504,7 +504,7 @@ class BajooApp(wx.App, SoftwareUpdate):
             self._notifier.send_message(
                 _('Error'),
                 _('An error occured when trying to quit team share %s.')
-                % share.name,
+                % share.model.name,
                 is_error=True
             )
             if self._main_window:
@@ -516,13 +516,13 @@ class BajooApp(wx.App, SoftwareUpdate):
         self._notifier.send_message(
             _('Quit team share'),
             _('You have no longer access to team share %s.'
-              % share.name))
+              % share.model.name))
 
         if self._main_window:
             self._main_window.load_shares(
                 self._container_list.get_list(),
                 _('You have no longer access to team share %s.'
-                  % share.name))
+                  % share.model.name))
             self._main_window.on_quit_or_delete_share(share)
 
     @promise.reduce_coroutine(safeguard=True)
@@ -542,7 +542,8 @@ class BajooApp(wx.App, SoftwareUpdate):
             success_msg = _('A team share has been successfully deleted '
                             'from server.')
         except:
-            _logger.exception('Unable to delet teamshare %s' % share.name)
+            _logger.exception('Unable to delet teamshare %s' %
+                              share.model.name)
             error_msg = _('Team share %s cannot be '
                           'deleted from server.') % share.model.name
 
