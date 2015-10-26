@@ -233,7 +233,7 @@ class ContainerSyncPool(object):
         # should be retried and the concerned files should be excluded of
         # the sync for a period of 24h if they keep failing.
         if f:
-            f.then(self._decrement, self._on_task_failed)
+            f.then(self._decrement, self._on_task_failed).safeguard()
         else:  # The task has been "merged" with another.
             self._decrement()
 
@@ -246,7 +246,8 @@ class ContainerSyncPool(object):
         """
         self._decrement()
 
-        local_container = self._local_containers[error.container_id]
-        self.remove(local_container)
-        local_container.status = local_container.STATUS_ERROR
-        local_container.error_msg = str(error)
+        if hasattr(error, 'container_id'):
+            local_container = self._local_containers[error.container_id]
+            self.remove(local_container)
+            local_container.status = local_container.STATUS_ERROR
+            local_container.error_msg = str(error)

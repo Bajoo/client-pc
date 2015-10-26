@@ -240,7 +240,9 @@ class DynamicContainerList(object):
             title = _('%s Bajoo shares have been removed.') % removed_nb
             body = _('Either the shares have been deleted, or your permissions'
                      ' have been revoked.')
-        self._notify(title, body)
+
+        if removed_nb > 0:
+            self._notify(title, body)
 
     def stop(self):
         self._updater.stop()
