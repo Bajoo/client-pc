@@ -12,6 +12,7 @@ from threading import RLock
 
 from .api.team_share import TeamShare
 from .common.i18n import _
+from .promise import Promise
 
 
 _logger = logging.getLogger(__name__)
@@ -174,12 +175,15 @@ class LocalContainer(object):
         except (OSError, IOError):
             _logger.exception('Unable to save index %s:' % index_path)
 
-    def acquire_index(self, path, item, callback, is_directory=False,
+    def acquire_index(self, path, item, is_directory=False,
                       bypass_folder=None):
         """Acquire a part of the index, and returns corresponding values.
 
         Marks the path as 'acquired', and associate an item to it.
         If the path correspond to some hashes, these hashes are returned.
+
+        The result is returned encapsulated in a Promise: the promise is
+        resolved as soon as the index is acquired.
 
         Args:
             path (str): filename of a file or directory to acquire. It will
@@ -187,20 +191,15 @@ class LocalContainer(object):
                 sub-path if the path correspond to a directory).
             item (*): This object will be associated to the acquired
                 path.
-            callback (callable): If the acquire fails, this callback will be
-                called when the index fragment is released.
             is_directory (boolean): if True, additional checks are
                 done to ensures any file in the target folder are reserved.
             bypass_folder (str): If set, the reservation of this folder, and
                 parent folders are non-blocking.
         Returns:
-            (None, dict): if the resource is free. The dict contains a list of
-                path (or subpath) associated to a couple
-                (local_hash, remote_hash).
-            (path, Item): if the resource is not available. Returns the path
-                acquired, and the item who've reserved the resource or a parent
-                resource.
+            Promise<dict>: The dict contains a list of path (or subpath)
+                associated to a couple (local_hash, remote_hash).
         """
+        _logger.debug('Acquire index part of %s' % path)
         if path.endswith('/'):
             path = path[:-1]
         parent_path = '/'.join(path.split('/')[:-1]) or '.'
@@ -219,22 +218,39 @@ class LocalContainer(object):
                                ('%s/' % bypass_folder).startswith(
                                    '%s/' % parent_path))
                     if not bypass:
-                        self._index_booking[parent_path][1].append(callback)
-                        return parent_path, self._index_booking[parent_path][0]
+                        def wait_index(resolve, reject):
+                            def cb():
+                                p = self.acquire_index(path, item,
+                                                       is_directory,
+                                                       bypass_folder)
+                                p.then(resolve, reject)
+
+                            self._index_booking[parent_path][1].append(cb)
+
+                        return Promise(wait_index)
 
             if is_directory:
                 for p in [p for p in self._index_lock
                           if p.startwith('%s/' % path)]:
                     if '/' in p[len('%s/' % path):]:
-                        self._index_booking[p][1].append(callback)
-                        return p, self._index_booking[p][0]
+                        def wait_index(resolve, reject):
+                            def cb():
+                                p = self.acquire_index(path, item,
+                                                       is_directory,
+                                                       bypass_folder)
+                                p.then(resolve, reject)
+
+                            self._index_booking[p][1].append(cb)
+
+                        return Promise(wait_index)
 
             self._index_booking[path] = [item, []]
             if path == '.':
-                return None, dict(self._index.items())
-            return None, {key: tuple(hashes) for (key, hashes)
-                          in self._index.items()
-                          if key == path or key.startswith('%s/' % path)}
+                return Promise.resolve(dict(self._index.items()))
+            return Promise.resolve(
+                {key: tuple(hashes) for (key, hashes)
+                 in self._index.items()
+                 if key == path or key.startswith('%s/' % path)})
 
     def release_index(self, path, new_index=None):
         """Release an acquired index part, and update it.
@@ -263,7 +279,11 @@ class LocalContainer(object):
             while call_list and path not in self._index_booking:
                 callback = call_list[0]
                 del call_list[0]
-                callback()
+                self._index_lock.release()
+                try:
+                    callback()
+                finally:
+                    self._index_lock.acquire()
             if call_list:
                 self._index_booking[path][1] = call_list
 

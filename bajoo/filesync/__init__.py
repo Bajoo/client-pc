@@ -26,14 +26,13 @@ When done, it generates a dict containing the new values for theses hashes. If
 the dict is empty (or if some items are missing), the original hash values are
 removed. When an error occurs, the new index fragment is not generated. In this
 case, the original hash values are not modified.
-The Future returns True or False, according to the success of the operation.
+The Promise returns True or False, according to the success of the operation.
 The task should be executed again latter if it returns False.
 Sometimes, a task is ignored (duplicate tasks); In this case, the function
-doesn't returns a Future, but directly None.
+doesn't returns a Promise, but directly None.
 """
 
 import errno
-from functools import partial
 import hashlib
 import itertools
 import logging
@@ -43,25 +42,30 @@ import sys
 
 from ..network.errors import HTTPNotFoundError
 from ..common import config
-from ..common.future import Future
 from .filepath import is_path_allowed, is_hidden
 from ..common.i18n import _
-from ..promise import Promise, ThreadPoolExecutor, reduce_coroutine
-from ..promise import resolve_rec
+from ..promise import Promise
+from .task_consumer import add_task, start, stop
 
 
 _logger = logging.getLogger(__name__)
 
-_thread_pool = ThreadPoolExecutor(max_workers=5)
+
+# TODO: the module should be started and stopped by the caller.
+# start the task_consumer service
+import atexit
+start()
+atexit.register(stop)
 
 
 class _Task(object):
     """Class representing a sync task.
 
-    A task is executed in a separated thread (in the _thread_pool). The method
-    `start()` will start that thread and returns a Future. In practice, the
-    task can be executed in several steps (network and encryption parts), and
-    can be split in many subtasks (for SYNC tasks).
+    A task is executed in a separated thread (by the task_consumer service).
+    The method `__call__()` will be called that in a I/O-bound thread and
+    returns a Promise. In practice, the task can be executed in several steps
+    (network and encryption parts), and can be split in many subtasks (for
+    SYNC tasks).
     """
 
     # Type of tasks
@@ -74,7 +78,7 @@ class _Task(object):
     SYNC = 'sync'
 
     def __init__(self, type, container, target, local_container,
-                 display_error_cb):
+                 display_error_cb, parent_path=None):
         """
         Args:
             type (str): One of the 8 type declared above.
@@ -84,6 +88,9 @@ class _Task(object):
             local_container (LocalContainer): local container. It will be used
                 only to acquire, update and release index fragments.
             display_error_cb (callable)
+            parent_path (str, optional): if set, target path of the parent
+                task. It indicates the parent task allow this one to "acquire"
+                fragments of folder owner by itself.
         """
         self._index_acquired = False
         self.type = type
@@ -95,6 +102,7 @@ class _Task(object):
         self.local_md5 = None
         self.remote_md5 = None
         self.display_error_cb = display_error_cb
+        self._parent_path = parent_path
 
         if sys.platform in ['win32', 'cygwin', 'win64']:
             self.target = self.target.replace('\\', '/')
@@ -110,28 +118,18 @@ class _Task(object):
             s = s.encode('utf-8')
         return s
 
-    @reduce_coroutine(safeguard=True)
-    def start(self, parent_path=None):
-        """Register the task and execute it.
+    def __call__(self):
+        """Execute the task.
 
-        The task will be added to the ref task index.
-
-        Args:
-            parent_path (str, optional): if ste, target path of the parent
-                task. It indicates the parent task allow this one to "acquire"
-                fragments of folder owner by itself.
+        The task will be added to the ref task index during the initialization
+        phase.
         """
-        delayed_start = Future()  # Future used in case of delayed start
-        path, item = self.local_container.acquire_index(
-            self.target, (self, None),
-            partial(self._delayed_start, delayed_start),
-            bypass_folder=parent_path)
-        if path is not None:  # The path is not available.
-            _logger.debug('Resource path acquired by another task; '
-                          'waiting for %s..' % self.target)
-            # TODO: detect if it's possible to merge the 2 events.
-            yield delayed_start
-            return
+
+        _logger.debug('Prepare task %s' % self)
+        # Initialization: we acquire the index
+        p = self.local_container.acquire_index(
+            self.target, (self, None), bypass_folder=self._parent_path)
+        item = yield p
 
         self._index_acquired = True
         if item:
@@ -139,30 +137,37 @@ class _Task(object):
             self.local_md5, self.remote_md5 = item.get(self.target,
                                                        (None, None))
 
+        # Execution of the _apply_task generator
+        # This code is a 'yield from', compatible python 2 and 3.
+        gen = self._apply_task()
         try:
-            result = yield resolve_rec(_thread_pool.submit(self._apply_task))
+            from ..promise import is_thenable
+
+            try:
+                result = next(gen)
+            except StopIteration:
+                result = None
+
+            while is_thenable(result):
+                try:
+                    value = yield result
+                except Exception:
+                    try:
+                        gen.throw(*sys.exc_info())
+                    except StopIteration:
+                        result = None
+                else:
+                    try:
+                        result = gen.send(value)
+                    except StopIteration:
+                        result = value
         except Exception as error:
             result = self._manage_error(error)
+        finally:
+            gen.close()
         self._release_index(result)
+
         yield self._task_errors  # return
-
-    def _delayed_start(self, future):
-        """Execute a delayed start() call.
-
-        A start() call has been delayed, as the fragment index was not
-        available at the moment it was requested.
-
-        Args:
-            future (Future): empty, non started future. It will be notified
-                before start() and will receive the result of start().
-        """
-        if not future.set_running_or_notify_cancel():
-            return  # The task has been cancelled !
-        f = self.start()
-        if f:
-            f.then(future.set_result, future.set_exception)
-        else:
-            future.set_result(None)
 
     def _release_index(self, result=None):
         if self._index_acquired:
@@ -217,7 +222,8 @@ class _Task(object):
                 if err.errno == errno.ENOENT and self.type == _Task.LOCAL_ADD:
                     _logger.debug("The file is gone before we've done"
                                   " anything.")
-                    return {}
+                    yield {}
+                    return
                 raise
             try:
                 md5 = self._compute_md5_hash(file_content)
@@ -225,21 +231,22 @@ class _Task(object):
                     _logger.debug('local md5 hash has not changed. '
                                   'No need to upload.')
                     file_content.close()
-                    return {self.target: (self.local_md5, self.remote_md5)}
+                    yield {self.target: (self.local_md5, self.remote_md5)}
+                    return
                 file_content.seek(0)
             except:
                 if file_content:
                     file_content.close()
                 raise
 
-            def callback(metadata):
-                return {self.target: (md5, metadata['hash'])}
-
-            f = self.container.upload(self.target, file_content)
-            return f.then(callback)
+            metadata = yield self.container.upload(self.target, file_content)
+            yield {self.target: (md5, metadata['hash'])}
+            return
         elif self.type == _Task.LOCAL_DELETION:
             # Delete remote file
-            return self.container.remove_file(self.target).then(lambda _: {})
+            yield self.container.remove_file(self.target)
+            yield {}
+            return
         elif self.type in (_Task.REMOTE_ADD, _Task.REMOTE_CHANGE):
 
             if self.type == _Task.REMOTE_ADD:
@@ -251,15 +258,14 @@ class _Task(object):
                     if e.errno != errno.EEXIST:
                         raise e
 
-            def callback(result):
-                metadata, file_content = result
-                remote_md5 = metadata['hash']
-                future = _thread_pool.submit(self._write_downloaded_file,
-                                             file_content)
-                return future.then(lambda local_md5: {
-                    self.target: (local_md5, remote_md5)})
+            x = self.container.download(self.target)
+            result = yield x
 
-            return self.container.download(self.target).then(callback)
+            metadata, file_content = result
+            remote_md5 = metadata['hash']
+            local_md5 = self._write_downloaded_file(file_content)
+            yield {self.target: (local_md5, remote_md5)}
+            return
         elif self.type == _Task.REMOTE_DELETION:
             # Delete local
             src_path = os.path.join(self.local_path, self.target)
@@ -272,8 +278,10 @@ class _Task(object):
                                   ' not present on the'
                                   'disk: nothing to do.')
                     raise
-            return {}
+            yield {}
+            return
         else:  # SYNC
+
             src_path = os.path.join(self.local_path, self.target)
             subtasks = []
 
@@ -289,7 +297,8 @@ class _Task(object):
                         k: v for (k, v) in self.index_fragment.items()
                         if not k.startswith('%s/' % rel_path)}
                     task = _Task(_Task.SYNC, self.container, rel_path,
-                                 self.local_container, self.display_error_cb)
+                                 self.local_container, self.display_error_cb,
+                                 parent_path=self.target)
                 else:
                     if not is_path_allowed(rel_path):
                         continue
@@ -299,34 +308,39 @@ class _Task(object):
                         del self.index_fragment[rel_path]
                         task = _Task(_Task.LOCAL_CHANGE, self.container,
                                      rel_path, self.local_container,
-                                     self.display_error_cb)
+                                     self.display_error_cb,
+                                     parent_path=self.target)
                     else:
                         task = _Task(_Task.LOCAL_ADD, self.container,
                                      rel_path, self.local_container,
-                                     self.display_error_cb)
+                                     self.display_error_cb,
+                                     parent_path=self.target)
 
                 if task:
-                    subtasks.append(task.start(parent_path=self.target))
+                    subtasks.append(add_task(task, priority=True))
 
             # locally removed items, present in the index, but not in local.
             for child_path in self.index_fragment:
                 task = _Task(_Task.LOCAL_DELETION, self.container, child_path,
-                             self.local_container, self.display_error_cb)
-                subtasks.append(task.start(parent_path=self.target))
+                             self.local_container, self.display_error_cb,
+                             parent_path=self.target)
+                subtasks.append(add_task(task, priority=True))
 
             self._release_index()
 
             if subtasks:
-                def all_tasks_done(results):
-                    failed_tasks = itertools.chain(*filter(None, results))
-                    failed_tasks = list(failed_tasks)
-                    if failed_tasks:
-                        self._task_errors = failed_tasks
-                    return None
-
-                return Promise.all(subtasks).then(all_tasks_done)
-            else:
-                return None
+                # TODO: retrieve all errors.
+                # The current behavior is to return the first error
+                # encountered, discarding the other results.
+                # We need to get all results and errors , no matter who many
+                # errors are raised.
+                results = yield Promise.all(subtasks)
+                failed_tasks = itertools.chain(*filter(None, results))
+                failed_tasks = list(failed_tasks)
+                if failed_tasks:
+                    self._task_errors = failed_tasks
+            yield None
+            return
 
     @staticmethod
     def _compute_md5_hash(file_content):
@@ -363,21 +377,21 @@ class _Task(object):
 def added_remote_files(container, local_container, filename, display_error_cb):
     task = _Task(_Task.REMOTE_ADD, container, filename, local_container,
                  display_error_cb)
-    return task.start()
+    return add_task(task)
 
 
 def changed_remote_files(container, local_container, filename,
                          display_error_cb):
     task = _Task(_Task.REMOTE_CHANGE, container, filename, local_container,
                  display_error_cb)
-    return task.start()
+    return add_task(task)
 
 
 def removed_remote_files(container, local_container, filename,
                          display_error_cb):
     task = _Task(_Task.REMOTE_DELETION, container, filename, local_container,
                  display_error_cb)
-    return task.start()
+    return add_task(task)
 
 
 def added_local_files(container, local_container, filename, display_error_cb):
@@ -388,12 +402,12 @@ def added_local_files(container, local_container, filename, display_error_cb):
         local_container (LocalContainer)
         filename (str): filename of the file created, relative to base_path.
     Returns:
-        Future<boolean>: True if the task is successful; False if an error
+        Promise<boolean>: True if the task is successful; False if an error
             happened.
     """
     task = _Task(_Task.LOCAL_ADD, container, filename, local_container,
                  display_error_cb)
-    return task.start()
+    return add_task(task)
 
 
 def changed_local_files(container, local_container, filename,
@@ -405,12 +419,12 @@ def changed_local_files(container, local_container, filename,
         local_container (LocalContainer)
         filename (str): filename of the modified file, relative to base_path.
     Returns:
-        Future<boolean>: True if the task is successful; False if an error
+        Promise<boolean>: True if the task is successful; False if an error
             happened.
     """
     task = _Task(_Task.LOCAL_CHANGE, container, filename, local_container,
                  display_error_cb)
-    return task.start()
+    return add_task(task)
 
 
 def removed_local_files(container, local_container, filename,
@@ -422,12 +436,12 @@ def removed_local_files(container, local_container, filename,
         local_container (LocalContainer)
         filename (str): filename of the deleted file, relative to base_path.
     Returns:
-        Future<boolean>: True if the task is successful; False if an error
+        Promise<boolean>: True if the task is successful; False if an error
             happened.
     """
     task = _Task(_Task.LOCAL_DELETION, container, filename, local_container,
                  display_error_cb)
-    return task.start()
+    return add_task(task)
 
 
 def moved_local_files(container, local_container, src_filename, dest_filename,
@@ -442,7 +456,7 @@ def moved_local_files(container, local_container, src_filename, dest_filename,
         dest_filename (str): destination filename of the movedfile, relative to
             base_path.
     Returns:
-        Future<boolean>: True if the task is successful; False if an error
+        Promise<boolean>: True if the task is successful; False if an error
             happened.
     """
     # TODO: optimization: move the file server-side.
@@ -456,10 +470,10 @@ def moved_local_files(container, local_container, src_filename, dest_filename,
                 return results[0]
 
     return Promise.all([
-        _Task(_Task.LOCAL_DELETION, container, src_filename,
-              local_container, display_error_cb).start(),
-        _Task(_Task.LOCAL_ADD, container, dest_filename,
-              local_container, display_error_cb).start()
+        add_task(_Task(_Task.LOCAL_DELETION, container, src_filename,
+                       local_container, display_error_cb)),
+        add_task(_Task(_Task.LOCAL_ADD, container, dest_filename,
+                       local_container, display_error_cb))
     ]).then(join_results)
 
 
@@ -471,9 +485,9 @@ def sync_folder(container, local_container, folder_path, display_error_cb):
         local_container (LocalContainer)
         filename (str): path of the directory, relative to base_path.
     Returns:
-        Future<boolean>: True if the task is successful; False if an error
+        Promise<boolean>: True if the task is successful; False if an error
             happened.
     """
     task = _Task(_Task.SYNC, container, folder_path, local_container,
                  display_error_cb)
-    return task.start()
+    return add_task(task)
