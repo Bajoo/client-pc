@@ -150,6 +150,30 @@ class MainWindow(wx.Frame, Translator):
         if show_tab:
             self.show_list_shares_tab(False)
 
+    def on_container_updated(
+            self, container, success_msg=None, error_msg=None):
+        """
+        Should be called when the changes made by user to a container
+        has been applied (successfully or not).
+        """
+
+        if self._view.details_share_tab:
+            self._view.details_share_tab.enable()
+
+        if self._view.GetCurrentPage() is self._view.details_share_tab:
+            current_container = self._view.details_share_tab \
+                .get_displayed_share()
+
+            if current_container:
+                # If user hasn't switch to another tab yet
+                if current_container.model.id == container.model.id:
+                    self._view.details_share_tab.set_data(
+                        container, success_msg, error_msg)
+                    self._view.details_share_tab.enable()
+            else:
+                self._view.details_share_tab.set_data(
+                    container, success_msg, error_msg)
+
     @ensure_gui_thread
     def set_share_details(self, share_details):
         if self._view.details_share_tab:

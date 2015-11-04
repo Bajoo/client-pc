@@ -522,14 +522,27 @@ class BajooApp(wx.App, SoftwareUpdate):
         finally:
             container.is_moving = False
             self._container_list.start_sync_container(container)
+            self._container_updated(
+                container, N_('This folder has been succesfully moved'
+                              ' to the new location.'))
 
     def _stop_sync_container(self, event):
         container = event.container
         self._container_list.stop_sync_container(container)
+        self._container_updated(
+            container, N_('The synchronization of this share is stopped.'))
 
     def _start_sync_container(self, event):
         container = event.container
         self._container_list.start_sync_container(container)
+        self._container_updated(
+            container, N_('The synchronization of this share is restarted.'))
+
+    def _container_updated(
+            self, container, success_msg=None, error_msg=None):
+        if self._main_window:
+            self._main_window.on_container_updated(
+                container, success_msg, error_msg)
 
     @promise.reduce_coroutine(safeguard=True)
     def _on_request_quit_share(self, event):

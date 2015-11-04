@@ -158,19 +158,14 @@ class DetailsShareTab(BaseForm):
                 event = self.RequestStopSyncContainer(self.GetId())
                 event.container = self._share
                 wx.PostEvent(self, event)
-                # wx.GetApp().stop_sync_container(self._share)
             else:
                 # TODO: check valid directory
                 self._share.model.path = share_path
                 event = self.RequestStartSyncContainer(self.GetId())
                 event.container = self._share
                 wx.PostEvent(self, event)
-                # wx.GetApp().start_sync_container(self._share)
 
-            self.FindWindow('lbl_share_status').SetLabel(
-                _('Status: %s') % self._share.get_status_text())
-            self.FindWindow('img_share_status').SetBitmap(
-                self.IMG_CONTAINER_STATUS[self._share.get_status()])
+            self.disable()
 
         elif not do_not_sync and share_path != self._share.model.path:
             # Always sync this container, but move its path
@@ -178,6 +173,8 @@ class DetailsShareTab(BaseForm):
             event.container = self._share
             event.path = share_path
             wx.PostEvent(self, event)
+
+            self.disable()
 
     def set_options_buttons_status(self):
         """
@@ -209,7 +206,7 @@ class DetailsShareTab(BaseForm):
         self.FindWindow('btn_browse_location').Enable(not do_not_sync)
 
     @ensure_gui_thread
-    def set_data(self, share):
+    def set_data(self, share, success_msg=None, error_msg=None):
         """Display data received about the container.
 
         Args:
@@ -298,6 +295,19 @@ class DetailsShareTab(BaseForm):
         self.FindWindow('btn_browse_location').set_share_name(
             share.model.name, set_value_now=False)
         self.set_options_buttons_status()
+
+        lbl_options_success = self.FindWindow('lbl_options_success')
+        lbl_options_success.SetLabel(success_msg or '')
+        lbl_options_success.Show(success_msg is not None)
+
+        lbl_options_error = self.FindWindow('lbl_options_error')
+        lbl_options_error.SetLabel(error_msg or '')
+        lbl_options_error.Show(error_msg is not None)
+
+        if share.is_moving:
+            self.disable()
+
+        self.Layout()
 
     @ensure_gui_thread
     def _refresh_admin_controls(self):
@@ -496,6 +506,16 @@ class DetailsShareView(BaseView):
             details_share_tab, name='members_share_form')
         self.members_share_form = members_share_form
 
+        lbl_options_success = wx.StaticText(
+            details_share_tab, name='lbl_options_success')
+        lbl_options_success.SetForegroundColour(wx.BLUE)
+        lbl_options_success.Hide()
+
+        lbl_options_error = wx.StaticText(
+            details_share_tab, name='lbl_options_error')
+        lbl_options_error.SetForegroundColour(wx.RED)
+        lbl_options_error.Hide()
+
         chk_exclusion = wx.CheckBox(details_share_tab, name='chk_exclusion')
         btn_browse_location = ShareLocationBrowser(
             parent=details_share_tab, name='btn_browse_location')
@@ -555,8 +575,10 @@ class DetailsShareView(BaseView):
             share_options_box, wx.VERTICAL)
 
         share_options_sizer = self.make_sizer(
-            wx.VERTICAL, [chk_exclusion, btn_browse_location,
-                          share_options_buttons],
+            wx.VERTICAL, [
+                lbl_options_success, lbl_options_error,
+                chk_exclusion, btn_browse_location,
+                share_options_buttons],
             flag=wx.EXPAND,
             sizer=share_options_box_sizer)
 
