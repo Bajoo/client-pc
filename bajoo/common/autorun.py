@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
+import errno
 
 if sys.platform in ['win32', 'win64']:
     import win32com.client
@@ -88,17 +89,25 @@ def _set_autorun_linux(autorun=True):
     """
     if autorun:
         if not is_autorun():
+            shortcut_path = _linux_shortcut_path()
+
+            try:
+                os.makedirs(os.path.dirname(shortcut_path))
+            except (IOError, OSError) as e:
+                if e.errno != errno.EEXIST:
+                    raise
+
             # Create Bajoo.desktop
-            desktop_file = open(_linux_shortcut_path(), 'w')
-            desktop_file.write('[Desktop Entry]\n')
-            desktop_file.write('Type=Application\n')
-            desktop_file.write('Name=Bajoo\n')
-            desktop_file.write('Comment=Official client for the '
-                               'cloud storage service Bajoo.\n')
-            desktop_file.write('Exec=%s %s\n' %
-                               (sys.executable, ' '.join(sys.argv)))
-            desktop_file.write('Terminal=false\n')
-            desktop_file.write('Version=%s\n' % __version__)
+            with open(shortcut_path, 'w') as desktop_file:
+                desktop_file.write('[Desktop Entry]\n')
+                desktop_file.write('Type=Application\n')
+                desktop_file.write('Name=Bajoo\n')
+                desktop_file.write('Comment=Official client for the '
+                                   'cloud storage service Bajoo.\n')
+                desktop_file.write('Exec=%s %s\n' %
+                                   (sys.executable, ' '.join(sys.argv)))
+                desktop_file.write('Terminal=false\n')
+                desktop_file.write('Version=%s\n' % __version__)
     else:
         # Delete Bajoo.desktop
         if os.path.isfile(_linux_shortcut_path()):
