@@ -509,7 +509,6 @@ class BajooApp(wx.App, SoftwareUpdate):
 
             # Check if selected folder exists
             new_path = container.get_not_existing_folder(new_path)
-
             shutil.copytree(container.model.path, new_path)
             shutil.rmtree(container.model.path)
 
@@ -687,6 +686,12 @@ class BajooApp(wx.App, SoftwareUpdate):
     @ensure_gui_thread
     def _on_connection(self, session_and_user):
         self._session, self._user, self.user_profile = session_and_user
+
+        def _on_refresh_token_changed(refresh_token):
+            if self.user_profile:
+                self.user_profile.refresh_token = refresh_token
+
+        self._session.token_changed_callback = _on_refresh_token_changed
 
         if self._home_window:
             self._home_window.Destroy()

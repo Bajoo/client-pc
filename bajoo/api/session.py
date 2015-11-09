@@ -23,6 +23,11 @@ class BajooOAuth2Session(object):
 
     def __init__(self):
         self.token = None
+        self.token_changed_callback = None
+
+    def _notify_token_changed(self):
+        if self.token_changed_callback and self.token:
+            self.token_changed_callback(self.token.get('refresh_token', None))
 
     def _prepare_request(self):
         """
@@ -64,6 +69,7 @@ class BajooOAuth2Session(object):
             # Analyze response and save the tokens
             if response and response.get('code') == 200:
                 self.token = response.get('content')
+                self._notify_token_changed()
 
         return response_future.then(_on_request_result)
 
@@ -99,6 +105,7 @@ class BajooOAuth2Session(object):
             # Analyze response and save the tokens
             if response and response.get('code') == 200:
                 self.token = response.get('content')
+                self._notify_token_changed()
                 _logger.info('Token fetched = %s', self.token)
 
         return response_future.then(_on_request_result)
@@ -138,6 +145,7 @@ class BajooOAuth2Session(object):
             # Analyze response and save the tokens
             if response and response.get('code') == 200:
                 self.token = response.get('content')
+                self._notify_token_changed()
                 _logger.info('Token refreshed = %s', self.token)
 
         return request_future.then(_on_request_result)
