@@ -119,6 +119,11 @@ class TestPromise(object):
 
 class TestThenMethod(object):
 
+    def setup_method(self, method):
+        logger = logging.getLogger()
+        for h in list(logger.handlers):
+            logger.removeHandler(h)
+
     def test_then_sync_call(self):
         """Test to chain a callback using then() on an fulfilled Promise."""
 

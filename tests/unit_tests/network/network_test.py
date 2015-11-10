@@ -201,7 +201,7 @@ class TestNetwork(object):
         http_server.handler.do_PUT = handler
 
         empty_file_path = pkg_resources.resource_filename(
-            __name__, "../resources/empty.txt")
+            __name__, "../../resources/empty.txt")
         f = bajoo.network.upload('PUT', 'http://localhost:%s/' %
                                  http_server.server_port, empty_file_path)
         http_server.handle_request()
