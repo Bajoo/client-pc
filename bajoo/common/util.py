@@ -30,7 +30,7 @@ def human_readable_bytes(value):
         value /= 1024.0
 
     # The biggest unit reached: cannot translate anymore
-    return "%.2f%s" % (value, _(_bytes_units[-1]))
+    return "%.2f %s" % (value, _(_bytes_units[-1]))
 
 
 def open_folder(folder_path):

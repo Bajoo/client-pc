@@ -72,8 +72,8 @@ def _get_file_handler():
                 try:
                     return logging.FileHandler(log_path, mode='x')
                 except FileExistsError as e:  # noqa
-                    if e.errno == errno.EEXIST:
-                        pass
+                    if e.errno != errno.EEXIST:
+                        raise
             else:
                 if not os.path.exists(log_path):
                     return logging.FileHandler(log_path, mode='w')
@@ -146,7 +146,6 @@ def _excepthook(exctype, value, traceback):
 def init():
     """Open the log file and prepare the logging module before first use."""
     root_logger = logging.getLogger()
-    stdout_handler = logging.StreamHandler()
 
     date_format = '%Y-%m-%d %H:%M:%S'
     string_format = '%(asctime)s %(levelname)-7s %(name)s - %(message)s'
@@ -164,6 +163,8 @@ def init():
         sys.stdout = OutLogger(STDOUT_LEVEL)
         sys.stderr = OutLogger(STDERR_LEVEL)
     else:
+        stdout_handler = logging.StreamHandler()
+
         if _support_color_output():
             colored_formatter = ColoredFormatter(fmt=string_format,
                                                  datefmt=date_format)

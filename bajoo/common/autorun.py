@@ -38,13 +38,13 @@ def is_autorun():
     Check if autorun is enabled.
     Returns: (boolean)
     """
-    if not can_autorun():
-        return False
 
     if sys.platform in ['win32', 'win64']:
         return os.path.isfile(_win_shortcut_path())
     elif sys.platform.startswith('linux'):
         return os.path.isfile(_linux_shortcut_path())
+
+    return False
 
 
 def can_autorun():
@@ -110,8 +110,6 @@ def set_autorun(autorun=True):
     Enable/Disable the automatic launch of Bajoo at system startup.
     """
     if sys.platform in ['win32', 'win64']:
-        return _set_autorun_win(autorun)
+        _set_autorun_win(autorun)
     elif sys.platform.startswith('linux'):
-        return _set_autorun_linux(autorun)
-
-    return False
+        _set_autorun_linux(autorun)
