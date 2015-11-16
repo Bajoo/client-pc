@@ -33,7 +33,8 @@ class PassphraseWindow(wx.Dialog):
      - if set "error_msg" is a wx.TextCtrl. Can be None.
     """
     def __init__(self, is_retry=False):
-        wx.Dialog.__init__(self, parent=None)
+        wx.Dialog.__init__(self, parent=None,
+                           style=wx.DEFAULT_DIALOG_STYLE | wx.STAY_ON_TOP)
 
         self._passphrase_input = wx.TextCtrl(self, name='passphrase',
                                              style=wx.TE_PASSWORD)
