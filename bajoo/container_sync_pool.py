@@ -8,6 +8,7 @@ import threading
 from .api.sync import files_list_updater
 from . import filesync
 from .file_watcher import FileWatcher
+from .filesync.filepath import is_path_allowed
 
 _logger = logging.getLogger(__name__)
 
@@ -163,21 +164,21 @@ class ContainerSyncPool(object):
     def _added_remote_file(self, container_id, files):
         print('Added (remote): %s' % files)
         for f in files:
-            if filesync.is_path_allowed(f['name']):
+            if is_path_allowed(f['name']):
                 self._create_task(filesync.added_remote_files, container_id,
                                   f['name'])
 
     def _removed_remote_files(self, container_id, files):
         print('Removed (remote): %s' % files)
         for f in files:
-            if filesync.is_path_allowed(f['name']):
+            if is_path_allowed(f['name']):
                 self._create_task(filesync.removed_remote_files, container_id,
                                   f['name'])
 
     def _modified_remote_files(self, container_id, files):
         print('Modified (remote): %s' % files)
         for f in files:
-            if filesync.is_path_allowed(f['name']):
+            if is_path_allowed(f['name']):
                 self._create_task(filesync.changed_remote_files, container_id,
                                   f['name'])
 

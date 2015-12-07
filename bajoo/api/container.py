@@ -302,6 +302,25 @@ class Container(object):
         yield response.get('content', {})
 
     @reduce_coroutine()
+    def get_info_file(self, path):
+        """
+        Get info from remote file
+
+        Args:
+            path (str): the path to the file
+
+        Returns:
+            Promise<dict>: metadata.
+        """
+        result = yield self._session.download_storage_file(
+            'HEAD', '/storages/%s/%s' % (self.id, path,))
+
+        md5_hash = result.get('headers', {}).get('etag')
+        metadata = {'hash': md5_hash}
+
+        yield metadata
+
+    @reduce_coroutine()
     def download(self, path):
         """
         Download a file in this container.
