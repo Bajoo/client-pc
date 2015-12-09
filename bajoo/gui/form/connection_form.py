@@ -38,6 +38,8 @@ class ConnectionForm(BaseForm):
         ]
 
         self.Bind(wx.EVT_BUTTON, self.submit, self.FindWindow('submit'))
+        self.Bind(wx.EVT_TEXT_ENTER, self.submit, self.FindWindow('username'))
+        self.Bind(wx.EVT_TEXT_ENTER, self.submit, self.FindWindow('password'))
 
     def set_data(self, username=None, errors=None):
         """Initialize the form and set default data."""
@@ -57,11 +59,12 @@ class ConnectionFormView(BaseView):
         """Create all named children of proxy form."""
 
         BaseValidator(self.window, hide_if_valid=True, name='messages')
-        username_txt = wx.TextCtrl(self.window, name='username')
+        username_txt = wx.TextCtrl(self.window, name='username',
+                                   style=wx.TE_PROCESS_ENTER)
         EmailValidator(self.window, name='username_error',
                        target=username_txt, hide_if_valid=True)
         password_txt = wx.TextCtrl(self.window, name='password',
-                                   style=wx.TE_PASSWORD)
+                                   style=wx.TE_PASSWORD | wx.TE_PROCESS_ENTER)
         NotEmptyValidator(self.window, name='password_error',
                           target=password_txt, hide_if_valid=True)
 
