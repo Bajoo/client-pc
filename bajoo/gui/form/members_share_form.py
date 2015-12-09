@@ -165,10 +165,10 @@ class MembersShareView(BaseView):
 
         cmb_permission = wx.ComboBox(
             members_share_form, name='permission',
-            style=wx.CB_READONLY, value=_('Admin'))
-        cmb_permission.Append(_('Admin'), 'ADMIN')
+            style=wx.CB_READONLY, value=_('Read Write'))
         cmb_permission.Append(_('Read Write'), 'READ_WRITE')
         cmb_permission.Append(_('Read Only'), 'READ_ONLY')
+        cmb_permission.Append(_('Admin'), 'ADMIN')
         cmb_permission.SetSelection(0)
         self._cmb_permission = cmb_permission
 
