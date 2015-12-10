@@ -85,7 +85,7 @@ class AccountTab(wx.Panel, Translator):
         self.FindWindow('gauge_text_max').SetLabelText(quota_str)
 
     def _on_open_bajoo_folder(self, _event):
-        open_folder(self.profile.root_folder_path)
+        open_folder(wx.GetApp().user_profile.root_folder_path)
 
     def _btn_change_password_clicked(self, _event):
         self.show_change_password_window()
