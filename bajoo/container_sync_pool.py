@@ -86,7 +86,7 @@ class ContainerSyncPool(object):
         else:
             updater.start()
             watcher.start()
-            self._create_task(filesync.sync_folder, container.id, '.')
+            self._create_task(filesync.sync_folder, container.id, u'.')
             local_container.status = local_container.STATUS_STARTED
 
     def remove(self, local_container):
@@ -139,7 +139,7 @@ class ContainerSyncPool(object):
             self._on_state_change(self._global_status)
 
         for container in self._local_containers.values():
-            self._create_task(filesync.sync_folder, container.id, '.')
+            self._create_task(filesync.sync_folder, container.id, u'.')
             container.status = container.STATUS_STARTED
 
     def _increment(self, _arg=None):

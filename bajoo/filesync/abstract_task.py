@@ -23,7 +23,11 @@ class _Target(object):
         self.remote_md5 = None
 
     def __str__(self):
-        return str(self.rel_path)
+        # Python 2 with type unicode.
+        if not isinstance(self.rel_path, str):
+            return self.rel_path.encode('utf-8')
+
+        return self.rel_path
 
 
 class _Task(object):
@@ -80,11 +84,15 @@ class _Task(object):
 
     def __repr__(self):
         targetString = ', '.join(str(x) for x in self.target_list)
-        s = '<Task %s (%s) local_path=%s>' % (self.get_type().upper(),
-                                              targetString, self.local_path)
-        if not isinstance(s, str):
+
+        if not isinstance(self.local_path, str):
             # Python 2 with type unicode.
-            s = s.encode('utf-8')
+            local_path = self.local_path.encode('utf-8')
+        else:
+            local_path = self.local_path
+
+        s = '<Task %s (%s) local_path=%s>' % (self.get_type().upper(),
+                                              targetString, local_path)
         return s
 
     def __call__(self):
@@ -95,7 +103,6 @@ class _Task(object):
         """
 
         _logger.debug('Prepare task %s' % self)
-        # Initialization: we acquire the index
 
         # sort the target by rel_path to avoid deadlock during index acquiring
         # for more details: see Dining philosophers problem
@@ -103,6 +110,7 @@ class _Task(object):
         deadlock_avoider_target_list = sorted(self.target_list,
                                               key=lambda t: t.rel_path)
 
+        # Initialization: we acquire the index
         for target in deadlock_avoider_target_list:
             promises_list.append(self.local_container.acquire_index(
                 target.rel_path,

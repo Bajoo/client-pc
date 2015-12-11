@@ -1,10 +1,27 @@
 # -*- coding: utf-8 -*-
 
 import os.path
+import sys
+
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 from .filesync.filepath import is_path_allowed, is_hidden
 from .common import config
+
+
+def ensure_unicode(string):
+    if type(string) == unicode:
+        return string
+
+    file_system_encoding = sys.getfilesystemencoding()
+
+    if file_system_encoding is not None:
+        return string.decode(file_system_encoding)
+
+    try:
+        return string.decode('UTF-8')
+    except (LookupError, UnicodeDecodeError,):
+        return string.decode()
 
 
 class FileWatcher(FileSystemEventHandler):
@@ -40,32 +57,38 @@ class FileWatcher(FileSystemEventHandler):
         self._observer.stop()
 
     def on_moved(self, event):
-        if event.is_directory or not is_path_allowed(event.src_path):
+        src_path = ensure_unicode(event.src_path)
+        if event.is_directory or not is_path_allowed(src_path):
             return
-        if self._is_ignored_target(event.dest_path):
+
+        dest_path = ensure_unicode(event.dest_path)
+        if self._is_ignored_target(dest_path):
             return
-        self._on_moved_files(event.src_path, event.dest_path)
+        self._on_moved_files(src_path, dest_path)
 
     def on_created(self, event):
-        if event.is_directory or not is_path_allowed(event.src_path):
+        src_path = ensure_unicode(event.src_path)
+        if event.is_directory or not is_path_allowed(src_path):
             return
-        if self._is_ignored_target(event.src_path):
+        if self._is_ignored_target(src_path):
             return
-        self._on_new_files(event.src_path)
+        self._on_new_files(src_path)
 
     def on_deleted(self, event):
-        if event.is_directory or not is_path_allowed(event.src_path):
+        src_path = ensure_unicode(event.src_path)
+        if event.is_directory or not is_path_allowed(src_path):
             return
-        if self._is_ignored_target(event.src_path):
+        if self._is_ignored_target(src_path):
             return
-        self._on_deleted_files(event.src_path)
+        self._on_deleted_files(src_path)
 
     def on_modified(self, event):
-        if event.is_directory or not is_path_allowed(event.src_path):
+        src_path = ensure_unicode(event.src_path)
+        if event.is_directory or not is_path_allowed(src_path):
             return
-        if self._is_ignored_target(event.src_path):
+        if self._is_ignored_target(src_path):
             return
-        self._on_changed_files(event.src_path)
+        self._on_changed_files(src_path)
 
     def _is_ignored_target(self, file_path):
         if not config.get('exclude_hidden_files'):
