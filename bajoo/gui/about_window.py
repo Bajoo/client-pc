@@ -67,6 +67,9 @@ class AboutBajooView(BaseView):
         BaseView.__init__(self, about_panel)
         from ..__version__ import __version__
 
+        # See bug http://trac.wxwidgets.org/ticket/17145
+        bg_color = about_panel.GetBackgroundColour()
+
         self.window.SetBackgroundColour(wx.Colour(255, 255, 255))
 
         title_font = wx.Font(
@@ -82,71 +85,167 @@ class AboutBajooView(BaseView):
 
         lbl_description = wx.StaticText(
             about_panel, name='lbl_description',
-            label=N_('Official client for Bajoo online storage service.\n'
-                     'Version: ') + __version__)
+            label=N_('Official software for Bajoo online storage service.'))
+
+        lbl_version_title = wx.StaticText(
+            about_panel, name='lbl_version_title',
+            label=N_('Version: '))
+
+        lbl_version = wx.StaticText(
+            about_panel, name='lbl_version',
+            label=__version__)
+
+        lbl_version_font = wx.Font(10, wx.FONTFAMILY_DEFAULT,
+                                   wx.FONTSTYLE_NORMAL, wx.BOLD)
+        lbl_version.SetFont(lbl_version_font)
+
         lbl_license = wx.StaticText(
             about_panel, name='lbl_license',
             label=N_('This software is distributed under the terms '
-                     'of the GPL License. It is freely redistributable.'))
+                     'of the MIT License.'))
+
         lbl_source_code = wx.StaticText(
             about_panel, name='lbl_license',
-            label=N_('Its source code is'))
+            label=N_('It is freely redistributable, the source code is '
+                     'available'))
+
         lbl_source_code_link = HyperLinkCtrl(
-            about_panel, label=N_('available on GitHub.'),
+            about_panel, label=N_('on GitHub.'),
             URL='https://www.github.com/bajoo/client')
+        lbl_source_code_link.SetBackgroundColour(bg_color)
+
         lbl_trademarks = wx.StaticText(
             about_panel,
-            label=N_(u'The terms Bajoo and Linéa are registered trademarks.'))
+            label=N_(u'Bajoo and Linéa are registered trademarks.'))
+
         lbl_home_page_link = HyperLinkCtrl(
             about_panel, label=N_('www.bajoo.fr'), URL='https://www.bajoo.fr')
+        lbl_home_page_link.SetBackgroundColour(bg_color)
+
+        lbl_frequently_asked_url = HyperLinkCtrl(
+            about_panel, label=N_('List of frequently asked questions.'),
+            URL='https://www.bajoo.fr/partage-de-dossiers')
+        lbl_frequently_asked_url.SetBackgroundColour(bg_color)
+
+        lbl_contact_us = wx.StaticText(
+            about_panel,
+            label=N_('If you have a new question, feel free to'))
+
+        lbl_contact_us_url = HyperLinkCtrl(
+            about_panel, label=N_('contact us.'),
+            URL='https://www.bajoo.fr/contact')
+        lbl_contact_us_url.SetBackgroundColour(bg_color)
+
         lbl_libraries = wx.StaticText(
             about_panel,
-            label=N_('The client Bajoo reuse the following free elements:'))
-        lbl_gpg = wx.StaticText(
-            about_panel,
-            label=N_('* The GPG software, created by XXX, '
-                     'available under the GNU GPL license.'))
+            label=N_('Bajoo uses the following libraries:'))
+
+        lbl_wxpython = HyperLinkCtrl(
+            about_panel, label='wxpython', URL='http://www.wxpython.org')
+        lbl_wxpython.SetBackgroundColour(bg_color)
+
+        lbl_appdirs = HyperLinkCtrl(
+            about_panel, label='appdirs',
+            URL='https://pypi.python.org/pypi/appdirs')
+        lbl_appdirs.SetBackgroundColour(bg_color)
+
+        lbl_requests = HyperLinkCtrl(
+            about_panel, label='requests',
+            URL='http://python-requests.org')
+        lbl_requests.SetBackgroundColour(bg_color)
+
+        lbl_futures = HyperLinkCtrl(
+            about_panel, label='futures',
+            URL='https://pypi.python.org/pypi/futures')
+        lbl_futures.SetBackgroundColour(bg_color)
+
+        lbl_python_gnupg = HyperLinkCtrl(
+            about_panel, label='python-gnupg',
+            URL='https://pypi.python.org/pypi/gnupg')
+        lbl_python_gnupg.SetBackgroundColour(bg_color)
+
+        lbl_watchdog = HyperLinkCtrl(
+            about_panel, label='watchdog',
+            URL='https://pypi.python.org/pypi/watchdog')
+        lbl_watchdog.SetBackgroundColour(bg_color)
+
+        lbl_pysocks = HyperLinkCtrl(
+            about_panel, label='pysocks',
+            URL='https://pypi.python.org/pypi/PySocks')
+        lbl_pysocks.SetBackgroundColour(bg_color)
+
+        lbl_psutil = HyperLinkCtrl(
+            about_panel, label='psutil',
+            URL='https://pypi.python.org/pypi/psutil')
+        lbl_psutil.SetBackgroundColour(bg_color)
+
+        lbl_notify2 = HyperLinkCtrl(
+            about_panel, label='notify2',
+            URL='https://pypi.python.org/pypi/notify2')
+        lbl_notify2.SetBackgroundColour(bg_color)
+
+        lbl_pypiwin32 = HyperLinkCtrl(
+            about_panel, label='pypiwin32',
+            URL='https://pypi.python.org/pypi/pypiwin32')
+        lbl_pypiwin32.SetBackgroundColour(bg_color)
+
         btn_google = wx.BitmapButton(
             about_panel, bitmap=AboutBajooWindow.GOOGLE_ICON,
             style=wx.NO_BORDER, name='btn_google')
         btn_google.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
+
         btn_facebook = wx.BitmapButton(
             about_panel, bitmap=AboutBajooWindow.FACEBOOK_ICON,
             style=wx.NO_BORDER, name='btn_facebook')
         btn_facebook.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
+
         btn_twitter = wx.BitmapButton(
             about_panel, bitmap=AboutBajooWindow.TWITTER_ICON,
             style=wx.NO_BORDER, name='btn_twitter')
         btn_twitter.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
 
-        # See bug http://trac.wxwidgets.org/ticket/17145
-        bg_color = about_panel.GetBackgroundColour()
-        lbl_source_code_link.SetBackgroundColour(bg_color)
-        lbl_home_page_link.SetBackgroundColour(bg_color)
-
-        libraries_box = wx.BoxSizer(wx.VERTICAL)
-        libraries_box.AddMany([lbl_libraries, lbl_gpg])
+        libraries_box = wx.BoxSizer(wx.HORIZONTAL)
+        libraries_box.AddMany([lbl_wxpython, (lbl_appdirs, 0, wx.LEFT, 6),
+                               (lbl_requests, 0, wx.LEFT, 6),
+                               (lbl_futures, 0, wx.LEFT, 6),
+                               (lbl_python_gnupg, 0, wx.LEFT, 6),
+                               (lbl_watchdog, 0, wx.LEFT, 6),
+                               (lbl_pysocks, 0, wx.LEFT, 6),
+                               (lbl_psutil, 0, wx.LEFT, 6),
+                               (lbl_notify2, 0, wx.LEFT, 6),
+                               (lbl_pypiwin32, 0, wx.LEFT, 6)])
 
         source_code_sizer = wx.BoxSizer(wx.HORIZONTAL)
         source_code_sizer.AddMany(
             [lbl_source_code, (lbl_source_code_link, 0, wx.LEFT, 3)])
 
+        bajoo_trademark_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        bajoo_trademark_sizer.AddMany([lbl_trademarks, (lbl_home_page_link, 0,
+                                                        wx.LEFT, 6)])
+
+        version_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        version_sizer.AddMany([lbl_version_title, (lbl_version, 0,
+                                                   wx.LEFT, 3,)])
+
+        contact_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        contact_sizer.AddMany([lbl_contact_us, (lbl_contact_us_url, 0,
+                                                wx.LEFT, 3,)])
+
         # Add all left-aligned elements
         text_sizer = self.make_sizer(
             wx.VERTICAL, [
-                None, lbl_description, lbl_license,
-                source_code_sizer, lbl_trademarks, None,
-                libraries_box, None
-            ], outside_border=False)
+                None, lbl_description, version_sizer, None,
+                lbl_frequently_asked_url, contact_sizer, None,
+                lbl_license, source_code_sizer, None,
+                lbl_libraries, libraries_box, None,
+                bajoo_trademark_sizer, None
+            ], outside_border=False, border=5)
 
         # Insert the title at the top of the page
         # with a top space of 15 and center alignment
         text_sizer.Insert(
             0, lbl_title,
             flag=wx.ALIGN_CENTER_HORIZONTAL | wx.TOP, border=15)
-        # The home page link is also center-aligned.
-        text_sizer.Insert(
-            6, lbl_home_page_link, flag=wx.ALIGN_CENTER_HORIZONTAL)
 
         social_buttons_sizer = self.make_sizer(wx.VERTICAL, [
             None, btn_facebook, btn_twitter, btn_google, None
@@ -154,7 +253,7 @@ class AboutBajooView(BaseView):
 
         main_sizer = self.make_sizer(wx.HORIZONTAL, [
             img_view_bajoo, text_sizer, social_buttons_sizer
-        ], outside_border=False)
+        ], outside_border=False, border=25)
         about_panel.SetSizer(main_sizer)
         main_sizer.SetSizeHints(about_panel.GetTopLevelParent())
 
