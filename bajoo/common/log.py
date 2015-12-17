@@ -145,6 +145,9 @@ def _excepthook(exctype, value, traceback):
 
 def init():
     """Open the log file and prepare the logging module before first use."""
+
+    logging.captureWarnings(True)
+
     root_logger = logging.getLogger()
 
     date_format = '%Y-%m-%d %H:%M:%S'
