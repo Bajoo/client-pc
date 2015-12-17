@@ -113,7 +113,7 @@ setup_kwargs = {
     'setup_requires': ['python-gettext'],
     'install_requires': [
         'appdirs==1.4',
-        'requests>=2.6.0',
+        'requests[security]>=2.6.0',
         'futures>=2.2.0',
         'python-gnupg',
         'watchdog',

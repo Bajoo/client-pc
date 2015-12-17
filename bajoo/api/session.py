@@ -60,10 +60,7 @@ class BajooOAuth2Session(object):
         }
 
         response_future = json_request('POST', token_url,
-                                       auth=auth, headers=headers, data=data,
-                                       # disable temporarily
-                                       # certificate verifying
-                                       verify=False)
+                                       auth=auth, headers=headers, data=data)
 
         def _on_request_result(response):
             # Analyze response and save the tokens
@@ -96,10 +93,7 @@ class BajooOAuth2Session(object):
         }
 
         response_future = json_request('POST', token_url,
-                                       auth=auth, headers=headers, data=data,
-                                       # disable temporarily
-                                       # certificate verifying
-                                       verify=False)
+                                       auth=auth, headers=headers, data=data)
 
         def _on_request_result(response):
             # Analyze response and save the tokens
@@ -136,10 +130,7 @@ class BajooOAuth2Session(object):
         }
 
         request_future = json_request('POST', token_url,
-                                      auth=auth, headers=headers, data=data,
-                                      # disable temporarily
-                                      # certificate verifying
-                                      verify=False)
+                                      auth=auth, headers=headers, data=data)
 
         def _on_request_result(response):
             # Analyze response and save the tokens
@@ -214,10 +205,7 @@ class Session(BajooOAuth2Session):
         }
 
         request_future = json_request('POST', REVOKE_TOKEN_URL,
-                                      auth=auth, headers=headers, data=data,
-                                      # disable temporarily
-                                      # certificate verifying
-                                      verify=False)
+                                      auth=auth, headers=headers, data=data)
 
         def _on_request_result(response):
             # Analyze response and save the tokens
@@ -247,16 +235,13 @@ class Session(BajooOAuth2Session):
             param_headers['Authorization'] = \
                 'Bearer ' + self.token.get('access_token', '')
         else:
-            # Add default params if not exist: 'headers' & 'verify'
+            # Add default headers params if not exist
             headers = {
                 'Authorization': 'Bearer ' + self.token.get('access_token', '')
             } if self.token else {}
 
             headers.update(params.get('headers', {}))
             params['headers'] = headers
-
-        verify = params.get('verify', False)
-        params['verify'] = verify
 
         # Resolve url according to `request_type`
         url = {
@@ -334,7 +319,7 @@ class Session(BajooOAuth2Session):
         }
 
         return download(verb, STORAGE_API_URL + url_path,
-                        headers=headers, verify=False, **params)
+                        headers=headers, **params)
 
     def upload_storage_file(self, verb, url_path, source, **params):
         """Upload a file into the storage
@@ -355,7 +340,7 @@ class Session(BajooOAuth2Session):
         }
 
         return upload(verb, STORAGE_API_URL + url_path, source,
-                      headers=headers, verify=False, **params)
+                      headers=headers, **params)
 
     def disconnect(self):
         """
