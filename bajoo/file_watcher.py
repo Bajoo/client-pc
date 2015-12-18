@@ -8,9 +8,11 @@ from watchdog.observers import Observer
 from .filesync.filepath import is_path_allowed, is_hidden
 from .common import config
 
+_custom_unicode_type = type(u'unicode')
+
 
 def ensure_unicode(string):
-    if type(string) == unicode:
+    if type(string) is _custom_unicode_type:
         return string
 
     file_system_encoding = sys.getfilesystemencoding()
