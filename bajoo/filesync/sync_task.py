@@ -71,11 +71,6 @@ class SyncTask(_Task, PushTaskMixin, RemovedTaskMixin):
         self._release_index()
 
         if subtasks:
-            # TODO: retrieve all errors.
-            # The current behavior is to return the first error
-            # encountered, discarding the other results.
-            # We need to get all results and errors , no matter who many
-            # errors are raised.
             results = yield Promise.all(subtasks)
             failed_tasks = itertools.chain(*filter(None, results))
             failed_tasks = list(failed_tasks)

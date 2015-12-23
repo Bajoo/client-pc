@@ -6,11 +6,11 @@ from .fake_container import Fake_container
 from .fake_local_container import FakeLocalContainer
 
 import hashlib
+import os
 import random
+import shutil
 import string
 import tempfile
-import os
-from os.path import split
 
 
 class TestTaskAbstract(object):
@@ -36,10 +36,19 @@ class TestTaskAbstract(object):
                 continue
 
         for path in self.path_to_remove:
-            try:
-                os.remove(path)
-            except:
+            if not os.path.exists(path):
                 continue
+
+            if os.path.isdir(path):
+                try:
+                    shutil.rmtree(path)
+                except:
+                    continue
+            else:
+                try:
+                    os.remove(path)
+                except:
+                    continue
 
         for f in self.file_to_close:
             try:
@@ -157,8 +166,8 @@ def get_conflict_file_list_from_path(directory, prefix):
 
 class FakeFile(object):
 
-    def __init__(self, content=None):
-        self.descr = tempfile.NamedTemporaryFile()
+    def __init__(self, content=None, dir=None):
+        self.descr = tempfile.NamedTemporaryFile(dir=dir)
 
         if content is None:
             self.content = generate_random_string(55)
@@ -175,7 +184,7 @@ class FakeFile(object):
 
         self.remote_hash = generate_random_string()
 
-        self.dir, self.filename = split(self.descr.name)
+        self.dir, self.filename = os.path.split(self.descr.name)
 
     def writeRandom(self):
         self.descr.seek(0)

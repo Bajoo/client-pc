@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from bajoo.filesync.added_local_files_task import AddedLocalFilesTask
 from bajoo.filesync.moved_local_files_task import MovedLocalFilesTask
 from .utils import TestTaskAbstract, generate_random_string, FakeFile
 
@@ -19,7 +20,56 @@ def generate_task(tester, src_target, dst_target):
         None)
 
 
+class FakeMovedLocalFilesTask(MovedLocalFilesTask):
+    def _create_push_task(self, rel_path, ignore_missing_file=False):
+        return AddedLocalFilesTask(self.container,
+                                   (generate_random_string(),),
+                                   self.local_container,
+                                   self.display_error_cb,
+                                   parent_path=self._parent_path,
+                                   ignore_missing_file=ignore_missing_file)
+
+
+def generate_fake_task(tester, src_target, dst_target):
+    return FakeMovedLocalFilesTask(
+        tester.container,
+        (src_target,
+         dst_target,
+         ),
+        tester.local_container,
+        tester.error_append,
+        None)
+
+
 class Test_special_case(TestTaskAbstract):
+
+    def test_subtask_crash(self):
+        src_file = FakeFile()
+        self.add_file_to_close(src_file)
+
+        self.local_container.inject_hash(path=src_file.filename,
+                                         local_hash="local",
+                                         remote_hash="remote")
+
+        dest_file = FakeFile()
+        self.add_file_to_close(dest_file)
+
+        self.local_container.inject_hash(path=dest_file.filename,
+                                         local_hash="local",
+                                         remote_hash="remote")
+
+        self.execute_task(
+            generate_fake_task(
+                self,
+                src_file.filename,
+                dest_file.filename))
+
+        assert self.result is not None
+        assert len(self.result) == 2
+        assert len(set(self.result)) == 2
+
+        assert isinstance(self.result[0], AddedLocalFilesTask)
+        assert isinstance(self.result[1], AddedLocalFilesTask)
 
     def test_SRC_file_exist_BUT_no_dest_file(self):
         src_file = FakeFile()
