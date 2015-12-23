@@ -9,6 +9,7 @@ They are also more verbose when displayed using 'repr()`.
 """
 
 import logging
+
 import requests.exceptions
 
 from ..common.i18n import N_
@@ -72,6 +73,7 @@ class HTTPError(NetworkError):
         err_data: If response is a standard Bajoo error, the data
             associated to the error, if any.
     """
+
     def __init__(self, error, message=None):
         """
         Args:
@@ -163,11 +165,18 @@ class HTTPServiceUnavailableError(HTTPError):
         HTTPError.__init__(self, error, message)
 
 
+class HTTPEntityTooLargeError(HTTPError):
+    def __init__(self, error):
+        message = N_("Your quota has exceeded.")
+        HTTPError.__init__(self, error, message)
+
+
 _code2error = {
     400: HTTPBadRequestError,
     401: HTTPUnauthorizedError,
     403: HTTPForbiddenError,
     404: HTTPNotFoundError,
+    413: HTTPEntityTooLargeError,
     500: HTTPInternalServerError,
     501: HTTPNotImplementedError,
     503: HTTPServiceUnavailableError

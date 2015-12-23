@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from bajoo.promise.promise import Promise
-from bajoo.network.errors import HTTPNotFoundError
+from bajoo.network.errors import HTTPNotFoundError, HTTPEntityTooLargeError
 
 
 class FakeHTTPNotFoundError(HTTPNotFoundError):
@@ -14,12 +14,29 @@ class FakeHTTPNotFoundError(HTTPNotFoundError):
         self.reason = "because"
         self.request = "GET"
 
+    def __str__(self):
+        return "Not Found!"
+
+
+class FakeHTTPEntityTooLargeError(HTTPEntityTooLargeError):
+
+    def __init__(self):
+        self.err_code = 413
+        self.err_description = "not found"
+        self.err_data = "fake"
+        self.code = 123
+        self.reason = "because"
+        self.request = "GET"
+
+    def __str__(self):
+        return "Quotas Limit Reached"
+
 
 class Fake_container(object):
 
-    def __init__(self):
+    def __init__(self, session=None, container_id=42,
+                 name="Fake Container !", encrypted=True):
         self.error = None
-        self.name = "Fake Container !"
 
         #
         self.remote_hash = {}
@@ -29,6 +46,15 @@ class Fake_container(object):
         self.info_list = []
         self.removed_list = []
         self.downloaded_list = []
+
+        # parameters
+        self.session = session
+        self.id = container_id
+        self.name = name
+        self.encrypted = encrypted
+
+        # raise on
+        self.exception_to_raise_on_upload = None
 
     def __repr__(self):
         return "this is a fake container"
@@ -68,11 +94,7 @@ class Fake_container(object):
         raise Exception("Not supposed to be used in task testing")
 
     def list_files(self, prefix=None):
-        raise Exception("Not yet implemented !")
-
-        # TODO is used in sync task
-
-        return ()
+        raise Exception("Not supposed to be used in task testing")
 
     def get_info_file(self, path):
         self.info_list.append(path)
@@ -105,6 +127,9 @@ class Fake_container(object):
         return path
 
     def upload(self, path, file):
+        if self.exception_to_raise_on_upload is not None:
+            raise self.exception_to_raise_on_upload
+
         self.upload_list.append(path)
 
         def executor(on_fulfilled, on_rejected):

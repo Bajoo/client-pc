@@ -47,13 +47,15 @@ class LocalContainer(object):
     STATUS_STOPPED = 3
     STATUS_PAUSED = 4
     STATUS_STARTED = 5
+    STATUS_QUOTA_EXCEEDED = 6
 
     _status_textes = {
         STATUS_UNKNOWN: 'Unknown',
         STATUS_ERROR: 'Error',
         STATUS_STOPPED: 'Stopped',
         STATUS_PAUSED: 'Paused',
-        STATUS_STARTED: 'Started'
+        STATUS_STARTED: 'Started',
+        STATUS_QUOTA_EXCEEDED: 'Quota exceeded'
     }
 
     def __init__(self, model, container):

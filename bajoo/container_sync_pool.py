@@ -9,6 +9,9 @@ from .api.sync import files_list_updater
 from . import filesync
 from .file_watcher import FileWatcher
 from .filesync.filepath import is_path_allowed
+from .network.errors import HTTPEntityTooLargeError
+from .common.i18n import _
+
 
 _logger = logging.getLogger(__name__)
 
@@ -28,6 +31,8 @@ class ContainerSyncPool(object):
     STATUS_SYNCING = 1
     STATUS_UP_TO_DATE = 2
     STATUS_PAUSE = 3
+
+    QUOTA_TIMEOUT = 300.0
 
     def __init__(self, on_state_change, on_sync_error):
         """
@@ -100,11 +105,12 @@ class ContainerSyncPool(object):
             local_container (LocalContainer)
         """
         _logger.debug('Remove container %s from sync list' % local_container)
-        updater = self._updaters.get(local_container.model.id)
-        watcher = self._local_watchers.get(local_container.model.id)
+        container = local_container.container
+        updater = self._updaters.get(container.id)
+        watcher = self._local_watchers.get(container.id)
         if updater:
             updater.stop()
-            del self._updaters[local_container.model.id]
+            del self._updaters[container.id]
             # TODO: stop current operations ...
         if watcher:
             watcher.stop()
@@ -230,25 +236,97 @@ class ContainerSyncPool(object):
         self._increment()
         f = task_factory(container, local_container, *args,
                          display_error_cb=self._on_sync_error)
-        # TODO: If the task factory returns a list of failed tasks, the tasks
-        # should be retried and the concerned files should be excluded of
-        # the sync for a period of 24h if they keep failing.
+
         if f:
-            f.then(self._decrement, self._on_task_failed).safeguard()
+            f.then(self._on_task_success, self._on_task_failed).safeguard()
         else:  # The task has been "merged" with another.
             self._decrement()
 
+    def _turn_delay_upload_off(self, local_container):
+        _logger.debug('Resume upload for container #: %s',
+                      local_container.container.name)
+
+        # Restart local container
+        local_container.error_msg = None
+        local_container.status = local_container.STATUS_STARTED
+        self._create_task(filesync.sync_folder,
+                          local_container.container.id, u'.')
+
+    def delay_upload(self, local_container):
+        _logger.debug('Delay upload for container #: %s',
+                      local_container.container.name)
+
+        local_container.status = local_container.STATUS_QUOTA_EXCEEDED
+        local_container.error_msg = _(
+            'Your quota has exceeded.'
+            ' All upload operations are delayed in the next 5 minutes.')
+        threading.Timer(self.QUOTA_TIMEOUT, self._turn_delay_upload_off,
+                        [local_container]) \
+            .start()
+
+    def _on_task_success(self, _arg=None):
+        """This method can be called in three different cases:
+        A) the task and its subtasks are successful
+        B) the task is successful but a subtask failed
+        C) the task failed but it is not a "container related" error
+
+        So if the root task is in the list, the kind or error to manage here is
+        normal or local behaviour.
+        But if there is a subtask in the list, it could be a
+        "container related" error or not...
+
+        In cas B) or C), the argument _arg will be populated with the
+        failing tasks
+
+        Args:
+            _arg(list(_Task)): None or the list of failing taks
+
+        """
+        self._decrement()
+
+        # TODO: If the task factory returns a list of failed tasks, the tasks
+        # should be retried and the concerned files should be excluded of
+        # the sync for a period of 24h if they keep failing.
+
+        if _arg is not None:
+            upload_limit_reached = False
+
+            for task in _arg:
+                if isinstance(task.error, HTTPEntityTooLargeError):
+                    upload_limit_reached = True
+
+                if hasattr(task.error, 'container_id'):
+                    self._manage_container_error(task.error)
+
+            if upload_limit_reached:
+                local_container = task.local_container
+                self.delay_upload(local_container)
+
     def _on_task_failed(self, error):
-        """A task has raised an exception.
+        """A task has raised a "container related" error.
 
         If this happens, it means the container itself is in an error state:
         the container key is unusable. It can be either a network error or an
         encryption error (bad .key, missing or wrong passphrase, ...).
+
+        Args:
+            error (Exception): the exception raised during the task execution
+
         """
         self._decrement()
 
         if hasattr(error, 'container_id'):
-            local_container = self._local_containers[error.container_id]
-            self.remove(local_container)
-            local_container.status = local_container.STATUS_ERROR
-            local_container.error_msg = str(error)
+            self._manage_container_error(error)
+
+    def _manage_container_error(self, error):
+        # TODO only a failed download of the encryption key
+        # will trigger this statement, is it normal ?
+        # should it manage other container error ?
+
+        # TODO and once the local container is in error state
+        # what is it supposed to do ?
+
+        local_container = self._local_containers[error.container_id]
+        self.remove(local_container)
+        local_container.status = local_container.STATUS_ERROR
+        local_container.error_msg = str(error)

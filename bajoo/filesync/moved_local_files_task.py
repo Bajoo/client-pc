@@ -83,6 +83,13 @@ class MovedLocalFilesTask(_Task, PushTaskMixin, RemovedTaskMixin):
 
     def _apply_task(self):
         _logger.debug('Execute task %s' % self)
+
+        # Check if the upload type operations are currently being blocked.
+        if self.local_container.status is \
+           self.local_container.STATUS_QUOTA_EXCEEDED:
+            yield None
+            return
+
         state = MovedStateMachineStatus(self, self.target_list[0],
                                         self.target_list[1])
         next_action = ACTION_CHECK_LOCAL_SRC_FILE

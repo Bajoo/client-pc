@@ -2,6 +2,7 @@
 
 import tempfile
 from bajoo.promise.promise import Promise
+from bajoo.local_container import LocalContainer
 
 
 class FakeModel(object):
@@ -10,7 +11,7 @@ class FakeModel(object):
         self.path = tempfile.gettempdir()
 
 
-class FakeLocalContainer(object):
+class FakeLocalContainer(LocalContainer):
 
     """STATUS_UNKNOWN = 1
     STATUS_ERROR = 2
@@ -26,14 +27,27 @@ class FakeLocalContainer(object):
         STATUS_STARTED: 'Started'
     }"""
 
-    def __init__(self, model, container):
-        self.model = FakeModel()
+    def __init__(self, model=None, container=None):
+        if model is None:
+            self.model = FakeModel()
+        else:
+            self.model = model
 
+        self.container = container
         self.index_on_release = {}
         self.not_updated_index_on_release = set()
         self.updated_index_but_not_in_dict = set()
 
         self.hash_couple = {}
+
+        self.status_stack = []
+        self.status = LocalContainer.STATUS_STARTED
+
+    def __setattr__(self, name, value):
+        self.__dict__[name] = value
+
+        if name == "status":
+            self.status_stack.append(value)
 
     def check_path(self):
         raise Exception("Not supposed to be used in task testing")
@@ -51,10 +65,15 @@ class FakeLocalContainer(object):
                       bypass_folder=None):
 
         def executor(on_fulfilled, on_rejected):
-            if path in self.hash_couple:
-                on_fulfilled({path: self.hash_couple[path]})
-            else:
-                on_fulfilled({path: (None, None)})
+            result = {}
+            for k, v in self.hash_couple.items():
+                if k.startswith(path):
+                    result[k] = v
+
+            if path not in self.hash_couple:
+                result[path] = (None, None)
+
+            on_fulfilled(result)
 
         return Promise(executor)
 
@@ -72,7 +91,7 @@ class FakeLocalContainer(object):
         raise Exception("Not supposed to be used in task testing")
 
     def get_remote_index(self):
-        raise Exception("Not supposed to be used in task testing")
+        return {}  # corresponds to an empty container
 
     def is_up_to_date(self):
         raise Exception("Not supposed to be used in task testing")

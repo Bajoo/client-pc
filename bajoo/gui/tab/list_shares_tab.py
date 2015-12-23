@@ -79,6 +79,8 @@ class ListSharesTab(wx.Panel, Translator):
                 get_bitmap('container_status/synced.png'),
             LocalContainer.STATUS_STOPPED:
                 get_bitmap('container_status/stopped.png'),
+            LocalContainer.STATUS_QUOTA_EXCEEDED:
+                get_bitmap('container_status/error.png'),
             LocalContainer.STATUS_UNKNOWN:
                 get_bitmap('container_status/error.png')
         }

@@ -11,6 +11,7 @@ import time
 
 from ..common.i18n import _
 from ..promise import Promise
+from ..network.errors import HTTPEntityTooLargeError
 
 _logger = logging.getLogger(__name__)
 
@@ -81,6 +82,7 @@ class _Task(object):
 
         # If set, list of tasks who've failed.
         self._task_errors = None
+        self.error = None
 
     def __repr__(self):
         targetString = ', '.join(str(x) for x in self.target_list)
@@ -206,11 +208,18 @@ class _Task(object):
         should be ignored.
         """
 
-        _logger.exception('Exception on filesync task:')
+        _logger.exception('Exception on %s task:' % self.get_type())
 
         if not self._task_errors:
             self._task_errors = []
         self._task_errors.append(self)
+
+        self.error = error
+
+        if isinstance(error, HTTPEntityTooLargeError):
+            self.local_container.status = \
+                self.local_container.STATUS_QUOTA_EXCEEDED
+            self.display_error_cb(_("Quota limit reached"))
 
         if self.container.error:
             self.display_error_cb(

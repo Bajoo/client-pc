@@ -9,6 +9,7 @@ from .abstract_task import _Task
 from ..network.errors import HTTPNotFoundError
 from .task_consumer import add_task
 
+
 TASK_NAME = 'local_add'
 
 _logger = logging.getLogger(__name__)
@@ -24,7 +25,6 @@ class PushTaskMixin(object):
 
 
 class AddedLocalFilesTask(_Task, PushTaskMixin):
-
     def __init__(self, container, target, local_container,
                  display_error_cb, parent_path=None, ignore_missing_file=True):
 
@@ -39,6 +39,12 @@ class AddedLocalFilesTask(_Task, PushTaskMixin):
 
     def _apply_task(self):
         _logger.debug('Execute task %s' % self)
+
+        # Check if the upload type operations are currently being blocked.
+        if self.local_container.status is \
+           self.local_container.STATUS_QUOTA_EXCEEDED:
+            yield None
+            return
 
         target = self.target_list[0]
         src_path = os.path.join(self.local_path, target.rel_path)
