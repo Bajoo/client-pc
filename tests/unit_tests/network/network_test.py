@@ -194,7 +194,8 @@ class TestNetwork(object):
         """
 
         def handler(self):
-            assert int(self.headers.get('content-length')) is 0
+            assert 'content-length' not in self.headers or \
+                int(self.headers.get('content-length')) is 0
             self.send_response(204)
             self.end_headers()
 
