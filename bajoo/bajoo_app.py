@@ -1,20 +1,32 @@
 # -*- coding: utf-8 -*-
 
+from . import __version__
+
+from datetime import datetime
+import glob
+import locale
 import logging
+import os
 import shutil
+import sys
+import tempfile
+import platform
+import zipfile
 
 import wx
 from wx.lib.softwareupdate import SoftwareUpdate
 
 from . import promise
 from .api import TeamShare, Session, Container
+from .api.session import STORAGE_API_URL
 from .common import config, autorun
-from .common.path import get_data_dir
+from .common import path as bajoo_path
 from .connection_registration_process import connect_or_register
 from .container_model import ContainerModel
 from .container_sync_pool import ContainerSyncPool
 from .dynamic_container_list import DynamicContainerList
 from .gui.common.language_box import LanguageBox
+from .gui.bug_report import BugReportWindow
 from .local_container import LocalContainer
 from .gui.about_window import AboutBajooWindow
 from .gui.event_promise import ensure_gui_thread
@@ -32,7 +44,9 @@ from .gui.tab.details_share_tab import DetailsShareTab
 from .gui.tab.advanced_settings_tab import AdvancedSettingsTab  # REMOVE
 from .gui.form.members_share_form import MembersShareForm
 from .gui.change_password_window import ChangePasswordWindow
+from .gui.bug_report import EVT_BUG_REPORT
 from .common.i18n import _, N_, set_lang
+from .network import upload
 from .passphrase_manager import PassphraseManager
 from .promise import Promise
 
@@ -74,6 +88,7 @@ class BajooApp(wx.App, SoftwareUpdate):
         self._home_window = None
         self._main_window = None
         self._about_window = None
+        self._contact_dev_window = None
         self._task_bar_icon = None
         self._notifier = None
         self._session = None
@@ -132,7 +147,9 @@ class BajooApp(wx.App, SoftwareUpdate):
 
         # Note: the checker must be owned by ``self``, to stay alive until the
         # end of the program.
-        self._checker = wx.SingleInstanceChecker(app_name, path=get_data_dir())
+        self._checker = wx.SingleInstanceChecker(
+            app_name,
+            path=bajoo_path.get_data_dir())
         if self._checker.IsAnotherRunning():
             _logger.info('Prevents the user to start a second Bajoo instance.')
 
@@ -204,7 +221,8 @@ class BajooApp(wx.App, SoftwareUpdate):
     def _notify_lang_change(self):
         """Notify a language change to all root translators instances"""
         for widget in (self._home_window, self._main_window,
-                       self._about_window, self._task_bar_icon):
+                       self._about_window, self._task_bar_icon,
+                       self._contact_dev_window):
             if widget is not None:
                 widget.notify_lang_change()
 
@@ -250,6 +268,7 @@ class BajooApp(wx.App, SoftwareUpdate):
         self.Bind(ChangePasswordWindow.EVT_CHANGE_PASSWORD_SUBMIT,
                   self._on_request_change_password)
         self.Bind(AccountTab.EVT_DISCONNECT_REQUEST, self.disconnect)
+        self.Bind(EVT_BUG_REPORT, self.send_bug_report)
 
         return True
 
@@ -271,6 +290,8 @@ class BajooApp(wx.App, SoftwareUpdate):
         elif event.target == TaskBarIcon.OPEN_SHARES:
             window = self.get_window('_main_window', MainWindow)
             window.show_list_shares_tab()
+        elif event.target == TaskBarIcon.OPEN_DEV_CONTACT:
+            window = self.get_window('_contact_dev_window', BugReportWindow)
         else:
             _logger.error('Unexpected "Open Window" event: %s' % event)
 
@@ -668,6 +689,9 @@ class BajooApp(wx.App, SoftwareUpdate):
         if self._about_window:
             self._about_window.Destroy()
 
+        if self._contact_dev_window:
+            self._contact_dev_window.Destroy()
+
         self._task_bar_icon.Destroy()
         self._dummy_frame.Destroy()
 
@@ -769,3 +793,70 @@ class BajooApp(wx.App, SoftwareUpdate):
         _logger.debug('Now restart the connection process...')
         session_and_user = yield connect_or_register(self.create_home_window)
         yield self._on_connection(session_and_user)
+
+    @promise.reduce_coroutine(safeguard=True)
+    def send_bug_report(self, _evt):
+        _logger.debug("bug repport creation")
+        tmpdir = tempfile.mkdtemp()
+
+        try:
+            zip_path = os.path.join(tmpdir, "report.zip")
+            zf = zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED)
+
+            # identify where are last log files
+            glob_path = os.path.join(bajoo_path.get_log_dir(), '*.log')
+            newest = sorted(
+                glob.iglob(glob_path),
+                key=os.path.getmtime,
+                reverse=True)
+
+            # grab the 5 last log files if exist
+            for index in range(0, min(5, len(newest))):
+                zf.write(newest[index], os.path.basename(newest[index]))
+
+            # collect config file
+            zf.write(os.path.join(bajoo_path.get_config_dir(),
+                                  'bajoo.ini'),
+                     'bajoo.ini')
+
+            # collect OS env
+            with tempfile.NamedTemporaryFile() as configfile:
+                configfile.write("## Bajoo bug report ##\n\n")
+                configfile.write("Creation date: %s\n" % str(datetime.now()))
+                configfile.write("Bajoo version: %s\n" % __version__)
+                configfile.write("Python version: %s\n" % sys.version)
+                configfile.write("OS type: %s\n" % os.name)
+                configfile.write("Platform type: %s\n" % sys.platform)
+                configfile.write(
+                    "Platform details: %s\n" % platform.platform())
+                configfile.write(
+                    "System default encoding: %s\n" % sys.getdefaultencoding())
+                configfile.write(
+                    "Filesystem encoding: %s\n" % sys.getfilesystemencoding())
+
+                if self.user_profile is None:
+                    configfile.write("Connected: No\n")
+                else:
+                    configfile.write("Connected: Yes\n")
+                    configfile.write(
+                        "User account: %s\n" % self.user_profile.email)
+                    configfile.write(
+                        "User root directory: %s\n" %
+                        self.user_profile._root_folder_path)
+
+                locales = ", ".join(locale.getdefaultlocale())
+                configfile.write("Default locales: %s\n" % locales)
+                configfile.write("Message: \n\n%s" % _evt.report)
+
+                configfile.flush()
+                zf.write(configfile.name, "MESSAGE")
+
+            zf.close()
+            server_path = "/logs/bugreport%s.zip" % \
+                datetime.now().strftime("%Y%m%d-%H%M%S")
+
+            log_session = Session()
+            yield log_session.fetch_client_token()
+            yield log_session.upload_storage_file('PUT', server_path, zip_path)
+        finally:
+            shutil.rmtree(tmpdir)

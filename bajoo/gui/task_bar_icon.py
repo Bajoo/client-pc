@@ -42,6 +42,7 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
     OPEN_INVITATION = 4
     OPEN_SETTINGS = 5
     OPEN_ABOUT = 6
+    OPEN_DEV_CONTACT = 7
 
     # IDs for menu entries
     ID_SUSPEND_SYNC = wx.NewId()
@@ -50,6 +51,7 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
     ID_INVITATION = wx.NewId()
     ID_HELP = wx.NewId()
     ID_SETTINGS = wx.NewId()
+    ID_DEV_CONTACT = wx.NewId()
 
     _tooltips = {
         NOT_CONNECTED: N_('Not connected'),
@@ -129,6 +131,7 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
             self.ID_INVITATION: self.OPEN_INVITATION,
             wx.ID_ABOUT: self.OPEN_ABOUT,
             wx.ID_HOME: self.OPEN_HOME,
+            self.ID_DEV_CONTACT: self.OPEN_DEV_CONTACT,
             -1: self.OPEN_HOME  # left click on tray icon
         }
 
@@ -171,6 +174,7 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
             menu.Append(wx.ID_HOME, _('Login window'),
                         _('Open the login and registration window'))
         menu.Append(wx.ID_ABOUT, _('About Bajoo'))
+        menu.Append(self.ID_DEV_CONTACT, _('Contact our dev team'))
         menu.AppendSeparator()
         menu.Append(wx.ID_EXIT, _('Quit'), _('Quit Bajoo'))
         return menu

@@ -4,10 +4,11 @@ from . import wx_compat  # noqa
 import webbrowser
 
 import wx
-from wx.lib.agw.hyperlink import HyperLinkCtrl
+from wx.lib.agw.hyperlink import EVT_HYPERLINK_LEFT, HyperLinkCtrl
 
 from ..common.i18n import N_
 from .base_view import BaseView
+from .bug_report import BugReportWindow
 from ..common.path import resource_filename
 
 
@@ -30,6 +31,10 @@ class AboutBajooWindow(wx.Frame):
         self._view = AboutBajooView(about_panel)
 
         self.Bind(wx.EVT_BUTTON, self._on_click_link)
+
+        win = self.FindWindow('contact_dev')
+        win.Bind(EVT_HYPERLINK_LEFT, self._bug_report)
+        win.AutoBrowse(False)
 
     def _init_icons(self):
         if not AboutBajooWindow.GOOGLE_ICON:
@@ -60,6 +65,10 @@ class AboutBajooWindow(wx.Frame):
                 'https://www.facebook.com/pages/Bajoo/382879575063022')
         else:
             event.Skip()
+
+    def _bug_report(self, event):
+        bug_dialog = BugReportWindow(self)
+        bug_dialog.ShowModal()
 
 
 class AboutBajooView(BaseView):
@@ -105,7 +114,7 @@ class AboutBajooView(BaseView):
                      'of the MIT License.'))
 
         lbl_source_code = wx.StaticText(
-            about_panel, name='lbl_license',
+            about_panel, name='lbl_source_code',
             label=N_('It is freely redistributable, the source code is '
                      'available'))
 
@@ -129,12 +138,21 @@ class AboutBajooView(BaseView):
 
         lbl_contact_us = wx.StaticText(
             about_panel,
-            label=N_('If you have a new question, feel free to'))
+            label=N_('If you have a new question, feel free to '))
 
         lbl_contact_us_url = HyperLinkCtrl(
-            about_panel, label=N_('contact us.'),
+            about_panel, label=N_('contact us'),
             URL='https://www.bajoo.fr/contact')
         lbl_contact_us_url.SetBackgroundColour(bg_color)
+
+        lbl_contact_or_url = wx.StaticText(
+            about_panel,
+            label=N_(' or '))
+
+        lbl_contact_dev_url = HyperLinkCtrl(
+            about_panel, label=N_('contact our dev team.'),
+            name='contact_dev')
+        lbl_contact_dev_url.SetBackgroundColour(bg_color)
 
         lbl_libraries = wx.StaticText(
             about_panel,
@@ -228,8 +246,10 @@ class AboutBajooView(BaseView):
                                                    wx.LEFT, 3,)])
 
         contact_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        contact_sizer.AddMany([lbl_contact_us, (lbl_contact_us_url, 0,
-                                                wx.LEFT, 3,)])
+        contact_sizer.AddMany([lbl_contact_us,
+                               lbl_contact_us_url,
+                               lbl_contact_or_url,
+                               lbl_contact_dev_url])
 
         # Add all left-aligned elements
         text_sizer = self.make_sizer(
@@ -274,7 +294,9 @@ class AboutBajooView(BaseView):
             lbl_frequently_asked_url: N_('List of frequently asked '
                                          'questions.'),
             lbl_contact_us: N_('If you have a new question, feel free to'),
-            lbl_contact_us_url: N_('contact us.'),
+            lbl_contact_us_url: N_('contact us'),
+            lbl_contact_or_url: N_(' or '),
+            lbl_contact_dev_url: N_('contact our dev team.'),
             lbl_libraries: N_('Bajoo uses the following libraries:')
         })
 
