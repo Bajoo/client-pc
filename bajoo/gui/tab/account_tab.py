@@ -64,13 +64,17 @@ class AccountTab(wx.Panel, Translator):
             quota_percentage = \
                 self._data['quota_used'] * 100 / float(self._data['quota'])
 
+        if quota_percentage > 100:
+            quota_percentage = 100
+
         self.FindWindow('lbl_email') \
             .SetLabelText(self._data['email'])
         self.FindWindow('lbl_account_type') \
             .SetLabelText('%s - %s' % (self._data['account_type'], quota_str))
 
+        is_best_account_type = self._data.get('is_best_account_type', True)
         self.FindWindow('btn_change_offer').Show(
-            not self._data['is_best_account_type'])
+            not is_best_account_type)
 
         # re-register quota info text
         self._view.remove_i18n(self.FindWindow('lbl_quota_info').SetLabel)
