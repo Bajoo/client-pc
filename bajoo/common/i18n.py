@@ -108,6 +108,11 @@ available_langs = {
         'code': 'fr_FR',
         'name': u'Français (France)',
         'flag': ''
+    },
+    'vi_VN': {
+        'code': 'vi',
+        'name': u'Tiếng Việt',
+        'flag': ''
     }
 }
 
