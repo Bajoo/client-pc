@@ -77,15 +77,6 @@ def removeBackup():
     backupFile = None
 
 
-def setup_module(module):
-    backupConf(_get_config_file_path())
-
-
-def teardown_module(module):
-    restoreConf(_get_config_file_path())
-    removeBackup()
-
-
 class catchLogging(logging.NullHandler):
 
     def __init__(self):
@@ -95,9 +86,21 @@ class catchLogging(logging.NullHandler):
     def handle(self, record):
         self.lastLogRecord = record
 
-_logger = logging.getLogger()
 catcher = catchLogging()
-_logger.addHandler(catcher)
+
+
+def setup_module(module):
+    backupConf(_get_config_file_path())
+    _logger = logging.getLogger()
+    _logger.addHandler(catcher)
+
+
+def teardown_module(module):
+    restoreConf(_get_config_file_path())
+    removeBackup()
+
+    logger = logging.getLogger()
+    logger.removeHandler(catcher)
 
 
 class TestConfigLoad(object):
