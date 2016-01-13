@@ -311,6 +311,7 @@ class _ConnectionProcess(object):
             f1 = f1.then(self._set_folder_flag, self._set_folder_flag)
             futures.append(f1)
         if self._need_gpg_config:
+            set_gpg_home_dir(self.profile.gpg_folder_path)
             f2 = self.user.create_encryption_key(gpg_passphrase)
             f2 = f2.then(self.check_gpg_config)
             f2 = f2.then(self._set_gpg_flag, self._set_gpg_flag)
