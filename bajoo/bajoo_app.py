@@ -320,6 +320,7 @@ class BajooApp(wx.App, SoftwareUpdate):
             LocalContainer.STATUS_ERROR: TaskBarIcon.SYNC_ERROR,
             LocalContainer.STATUS_PAUSED: TaskBarIcon.SYNC_PAUSE,
             LocalContainer.STATUS_QUOTA_EXCEEDED: TaskBarIcon.SYNC_ERROR,
+            LocalContainer.STATUS_WAIT_PASSPHRASE: TaskBarIcon.SYNC_ERROR,
             LocalContainer.STATUS_STOPPED: TaskBarIcon.SYNC_STOP,
             LocalContainer.STATUS_UNKNOWN: TaskBarIcon.SYNC_PROGRESS
         }

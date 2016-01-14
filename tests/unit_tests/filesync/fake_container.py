@@ -2,6 +2,7 @@
 
 from bajoo.promise.promise import Promise
 from bajoo.network.errors import HTTPNotFoundError, HTTPEntityTooLargeError
+from bajoo.encryption.errors import PassphraseAbortError
 
 
 class FakeHTTPNotFoundError(HTTPNotFoundError):
@@ -29,7 +30,15 @@ class FakeHTTPEntityTooLargeError(HTTPEntityTooLargeError):
         self.request = "GET"
 
     def __str__(self):
-        return "Quotas Limit Reached"
+        return "Quota limit reached"
+
+
+class FakePassphraseAbortError(PassphraseAbortError):
+    def __init__(self):
+        pass
+
+    def __str__(self):
+        return "No passphrase set"
 
 
 class Fake_container(object):
@@ -51,7 +60,8 @@ class Fake_container(object):
         self.session = session
         self.id = container_id
         self.name = name
-        self.encrypted = encrypted
+        self.is_encrypted = encrypted
+        self.exception_counter = {}
 
         # raise on
         self.exception_to_raise_on_upload = None

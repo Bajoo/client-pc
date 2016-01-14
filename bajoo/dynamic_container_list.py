@@ -115,7 +115,7 @@ class DynamicContainerList(object):
 
         with self._list_lock:
             self.user_profile.set_container(model.id, model)
-            self._stop_container(local_container)
+            self._stop_container(local_container.model.id)
 
     def start_sync_container(self, local_container):
         model = local_container.model
@@ -132,7 +132,7 @@ class DynamicContainerList(object):
 
             lc = next((c for c in self._local_list if c.model.id == id), None)
             if lc:
-                self._stop_container(lc)
+                self._stop_container(lc.model.id)
                 self._local_list.remove(lc)
                 if remove_on_disk:
                     lc.remove_on_disk()
@@ -244,7 +244,7 @@ class DynamicContainerList(object):
                 to_remove = [c for c in self._local_list
                              if c.model.id == container_id]
                 for local_container in to_remove:
-                    self._stop_container(local_container)
+                    self._stop_container(local_container.model.id)
                     self._local_list.remove(local_container)
 
         if removed_nb == 1:

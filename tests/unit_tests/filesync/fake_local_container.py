@@ -9,24 +9,10 @@ class FakeModel(object):
 
     def __init__(self):
         self.path = tempfile.gettempdir()
+        self.id = 42
 
 
 class FakeLocalContainer(LocalContainer):
-
-    """STATUS_UNKNOWN = 1
-    STATUS_ERROR = 2
-    STATUS_STOPPED = 3
-    STATUS_PAUSED = 4
-    STATUS_STARTED = 5
-
-    _status_textes = {
-        STATUS_UNKNOWN: 'Unknown',
-        STATUS_ERROR: 'Error',
-        STATUS_STOPPED: 'Stopped',
-        STATUS_PAUSED: 'Paused',
-        STATUS_STARTED: 'Started'
-    }"""
-
     def __init__(self, model=None, container=None):
         if model is None:
             self.model = FakeModel()

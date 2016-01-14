@@ -12,6 +12,7 @@ import time
 from ..common.i18n import _
 from ..promise import Promise
 from ..network.errors import HTTPEntityTooLargeError
+from ..encryption.errors import PassphraseAbortError
 
 _logger = logging.getLogger(__name__)
 
@@ -216,24 +217,22 @@ class _Task(object):
 
         self.error = error
 
-        if isinstance(error, HTTPEntityTooLargeError):
-            self.local_container.status = \
-                self.local_container.STATUS_QUOTA_EXCEEDED
-            self.display_error_cb(_("Quota limit reached"))
+        if not isinstance(error, PassphraseAbortError) and \
+           not isinstance(error, HTTPEntityTooLargeError):
+            if self.container.error:
+                self.display_error_cb(
+                    _('Error during the sync of the "%(name)s" container:'
+                      '\n%(error)s')
+                    % {'name': self.container.name, 'error': error})
+                raise self.container.error
+            else:
+                targetString = ', '.join(str(x) for x in self.target_list)
+                self.display_error_cb(
+                    _('Error during sync of the file(s) "%(filename)s" '
+                      'in the "%(name)s" container:\n%(error)s')
+                    % {'filename': targetString, 'name': self.container.name,
+                       'error': error})
 
-        if self.container.error:
-            self.display_error_cb(
-                _('Error during the sync of the "%(name)s" container:'
-                  '\n%(error)s')
-                % {'name': self.container.name, 'error': error})
-            raise self.container.error
-        else:
-            targetString = ', '.join(str(x) for x in self.target_list)
-            self.display_error_cb(
-                _('Error during sync of the file(s) "%(filename)s" '
-                  'in the "%(name)s" container:\n%(error)s')
-                % {'filename': targetString, 'name': self.container.name,
-                   'error': error})
         return None
 
     @abc.abstractmethod

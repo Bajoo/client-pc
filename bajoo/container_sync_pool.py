@@ -10,6 +10,7 @@ from . import filesync
 from .file_watcher import FileWatcher
 from .filesync.filepath import is_path_allowed
 from .network.errors import HTTPEntityTooLargeError
+from .encryption.errors import PassphraseAbortError
 from .common.i18n import _
 
 
@@ -40,15 +41,14 @@ class ContainerSyncPool(object):
             on_state_change (callable): called when the global state change.
         """
         self._local_containers = {}
-        self._updaters = {}
-        self._local_watchers = {}
-
         self._on_state_change = on_state_change
         self._on_sync_error = on_sync_error
 
         self._global_status = self.STATUS_UP_TO_DATE
         self._counter = 0
-        self._status_lock = threading.Lock()
+        self._passphrase_needed = False
+
+        self._inner_lock = threading.RLock()
 
     def add(self, local_container):
         """Add a container to sync.
@@ -62,8 +62,6 @@ class ContainerSyncPool(object):
         container = local_container.container
         _logger.debug('Add container %s to sync list' % container)
 
-        self._local_containers[container.id] = local_container
-
         last_remote_index = local_container.get_remote_index()
 
         updater = files_list_updater(
@@ -73,28 +71,33 @@ class ContainerSyncPool(object):
             partial(self._removed_remote_files, container.id),
             None, last_remote_index)
 
-        self._updaters[container.id] = updater
-
         watcher = FileWatcher(local_container.model,
                               partial(self._added_local_file, container.id),
                               partial(self._modified_local_files,
                                       container.id),
                               partial(self._moved_local_files, container.id),
                               partial(self._removed_local_files, container.id))
-        self._local_watchers[container.id] = watcher
 
-        with self._status_lock:
-            is_paused = self._global_status == ContainerSyncPool.STATUS_PAUSE
+        with self._inner_lock:
+            self._local_containers[container.id] = \
+                (local_container, updater, watcher,)
 
-        if is_paused:
-            local_container.status = local_container.STATUS_PAUSED
-        else:
+            if self._global_status == ContainerSyncPool.STATUS_PAUSE:
+                local_container.status = local_container.STATUS_PAUSED
+                return
+
+            if self._passphrase_needed and container.is_encrypted:
+                local_container.status = local_container.STATUS_WAIT_PASSPHRASE
+                local_container.error_msg = _(
+                    'No passphrase set.  Syncing is disabled')
+                return
+
+            local_container.status = local_container.STATUS_STARTED
             updater.start()
             watcher.start()
             self._create_task(filesync.sync_folder, container.id, u'.')
-            local_container.status = local_container.STATUS_STARTED
 
-    def remove(self, local_container):
+    def remove(self, container_id):
         """Remove a container and stop its sync operations.
 
         Note: if a container has been removed when bajoo was not running, this
@@ -104,59 +107,117 @@ class ContainerSyncPool(object):
         Args:
             local_container (LocalContainer)
         """
-        _logger.debug('Remove container %s from sync list' % local_container)
-        container = local_container.container
-        updater = self._updaters.get(container.id)
-        watcher = self._local_watchers.get(container.id)
-        if updater:
-            updater.stop()
-            del self._updaters[container.id]
-            # TODO: stop current operations ...
-        if watcher:
-            watcher.stop()
-        local_container.status = local_container.STATUS_STOPPED
+
+        with self._inner_lock:
+            if container_id in self._local_containers:
+                lc, updater, watcher = self._local_containers[container_id]
+
+                lc.status = lc.STATUS_STOPPED
+                updater.stop()
+                watcher.stop()
+                lc.error_msg = None
+
+                del self._local_containers[container_id]
+
+                _logger.debug('Remove container %s from sync list' % lc)
+
+                return lc
+
+            return None
+
+    def _pause_if_need_the_passphrase(self):
+        with self._inner_lock:
+            if self._passphrase_needed:
+                _logger.debug('Local containers are already waiting for' +
+                              ' the passphrase')
+                return
+
+            self._passphrase_needed = True
+
+            self._on_sync_error(_('No passphrase set.  Cyphered containers' +
+                                  ' will be paused'))
+
+            if self._global_status == ContainerSyncPool.STATUS_PAUSE:
+                return
+
+            for lc, updater, watcher in self._local_containers.values():
+                if lc.status == lc.STATUS_PAUSED:
+                    continue
+
+                if not lc.container.is_encrypted:
+                    continue
+
+                lc.status = lc.STATUS_WAIT_PASSPHRASE
+                updater.stop()
+                watcher.stop()
+                lc.error_msg = _('No passphrase set.  Syncing is disabled')
+
+    def resume_if_wait_for_the_passphrase(self):
+        with self._inner_lock:
+            if not self._passphrase_needed:
+                _logger.debug('Local containers are already unpaused')
+                return
+
+            self._passphrase_needed = False
+
+            if self._global_status == ContainerSyncPool.STATUS_PAUSE:
+                return
+
+            for lc, updater, watcher in self._local_containers.values():
+                if lc.status != lc.STATUS_WAIT_PASSPHRASE:
+                    continue
+
+                lc.status = lc.STATUS_STARTED
+                lc.error_msg = None
+                updater.start()
+                watcher.start()
+                self._create_task(filesync.sync_folder, lc.model.id, u'.')
 
     def pause(self):
         """Set all sync operations in pause."""
-        _logger.debug('Pause sync')
-        for u in self._updaters.values():
-            u.stop()
-            # TODO: stop current operations ...
-        for w in self._local_watchers.values():
-            w.stop()
-        for lc in self._local_containers.values():
-            lc.status = lc.STATUS_PAUSED
-        with self._status_lock:
-            self._global_status = self.STATUS_PAUSE
-            self._on_state_change(self._global_status)
+        with self._inner_lock:
+            _logger.debug('Pause sync')
+            for lc, updater, watcher in self._local_containers.values():
+                lc.status = lc.STATUS_PAUSED
+                updater.stop()
+                watcher.stop()
+                lc.error_msg = None
+
+                self._global_status = self.STATUS_PAUSE
+                self._on_state_change(self._global_status)
 
     def resume(self):
         """Resume sync operations if they are paused."""
-        _logger.debug('Resume sync')
-        for u in self._updaters.values():
-            u.start()
-        for w in self._local_watchers.values():
-            w.start()
-        with self._status_lock:
+
+        with self._inner_lock:
+            _logger.debug('Resume sync')
+
             if self._counter == 0:
                 self._global_status = self.STATUS_UP_TO_DATE
             else:
                 self._global_status = self.STATUS_SYNCING
             self._on_state_change(self._global_status)
 
-        for container in self._local_containers.values():
-            self._create_task(filesync.sync_folder, container.id, u'.')
-            container.status = container.STATUS_STARTED
+            for lc, updater, watcher in self._local_containers.values():
+                if self._passphrase_needed and lc.container.is_encrypted:
+                    lc.status = lc.STATUS_WAIT_PASSPHRASE
+                    lc.error_msg = _('No passphrase set.  Syncing is disabled')
+                else:
+                    lc.status = lc.STATUS_STARTED
+                    lc.error_msg = None
+                    updater.start()
+                    watcher.start()
+                    self._create_task(filesync.sync_folder, lc.model.id, u'.')
 
     def _increment(self, _arg=None):
-        with self._status_lock:
+        with self._inner_lock:
             self._counter += 1
             if self._global_status == self.STATUS_UP_TO_DATE:
                 self._global_status = self.STATUS_SYNCING
                 self._on_state_change(self._global_status)
 
     def _decrement(self, _arg=None):
-        with self._status_lock:
+        with self._inner_lock:
             self._counter -= 1
             if self._global_status != self.STATUS_PAUSE:
                 if self._counter == 0:
@@ -168,50 +229,50 @@ class ContainerSyncPool(object):
                     self._on_state_change(self._global_status)
 
     def _added_remote_file(self, container_id, files):
-        print('Added (remote): %s' % files)
+        _logger.info('Added (remote): %s' % files)
         for f in files:
             if is_path_allowed(f['name']):
                 self._create_task(filesync.added_remote_files, container_id,
                                   f['name'])
 
     def _removed_remote_files(self, container_id, files):
-        print('Removed (remote): %s' % files)
+        _logger.info('Removed (remote): %s' % files)
         for f in files:
             if is_path_allowed(f['name']):
                 self._create_task(filesync.removed_remote_files, container_id,
                                   f['name'])
 
     def _modified_remote_files(self, container_id, files):
-        print('Modified (remote): %s' % files)
+        _logger.info('Modified (remote): %s' % files)
         for f in files:
             if is_path_allowed(f['name']):
                 self._create_task(filesync.changed_remote_files, container_id,
                                   f['name'])
 
     def _added_local_file(self, container_id, file_path):
-        print('Added (local): %s for %s' % (file_path, container_id))
-        local_container = self._local_containers[container_id]
+        _logger.info('Added (local): %s for %s' % (file_path, container_id))
+        local_container, u, w = self._local_containers[container_id]
         filename = os.path.relpath(file_path, local_container.model.path)
 
         self._create_task(filesync.added_local_files, container_id, filename)
 
     def _removed_local_files(self, container_id, file_path):
-        print('Removed (local): %s for %s' % (file_path, container_id))
-        local_container = self._local_containers[container_id]
+        _logger.info('Removed (local): %s for %s' % (file_path, container_id))
+        local_container, u, w = self._local_containers[container_id]
         filename = os.path.relpath(file_path, local_container.model.path)
 
         self._create_task(filesync.removed_local_files, container_id, filename)
 
     def _modified_local_files(self, container_id, file_path):
-        print('Modified (local): %s for %s' % (file_path, container_id))
-        local_container = self._local_containers[container_id]
+        _logger.info('Modified (local): %s for %s' % (file_path, container_id))
+        local_container, u, w = self._local_containers[container_id]
         filename = os.path.relpath(file_path, local_container.model.path)
 
         self._create_task(filesync.changed_local_files, container_id, filename)
 
     def _moved_local_files(self, container_id, src_path, dest_path):
-        print('Moved (local): %s -> %s' % (src_path, dest_path))
-        local_container = self._local_containers[container_id]
+        _logger.info('Moved (local): %s -> %s' % (src_path, dest_path))
+        local_container, u, w = self._local_containers[container_id]
         src_filename = os.path.relpath(src_path, local_container.model.path)
         dest_filename = os.path.relpath(dest_path, local_container.model.path)
 
@@ -230,7 +291,23 @@ class ContainerSyncPool(object):
             *args (...): supplementary args passed to the
                 task_factory.
         """
-        local_container = self._local_containers[container_id]
+
+        local_container, u, w = self._local_containers[container_id]
+
+        if local_container.status in \
+            (local_container.STATUS_STOPPED,
+             local_container.STATUS_PAUSED,
+             local_container.STATUS_WAIT_PASSPHRASE,):
+            _logger.debug('Local container is not running, abort task.')
+            return
+
+        elif local_container.status == \
+            local_container.STATUS_QUOTA_EXCEEDED and \
+            (task_factory is filesync.added_local_files or
+             task_factory is filesync.moved_local_files):
+            _logger.debug('Quota exceeded, abort task.')
+            return
+
         container = local_container.container
 
         self._increment()
@@ -243,26 +320,39 @@ class ContainerSyncPool(object):
             self._decrement()
 
     def _turn_delay_upload_off(self, local_container):
-        _logger.debug('Resume upload for container #: %s',
-                      local_container.container.name)
+        with self._inner_lock:
+            if local_container.status != local_container.STATUS_QUOTA_EXCEEDED:
+                _logger.debug('Fail to resume upload, local container' +
+                              ' is not in quota exceeded status')
+                return
 
-        # Restart local container
-        local_container.error_msg = None
-        local_container.status = local_container.STATUS_STARTED
-        self._create_task(filesync.sync_folder,
-                          local_container.container.id, u'.')
+            _logger.debug('Resume upload for container #: %s',
+                          local_container.container.name)
+
+            # Restart local container
+            local_container.status = local_container.STATUS_STARTED
+            local_container.error_msg = None
+            self._create_task(filesync.sync_folder,
+                              local_container.container.id, u'.')
 
     def delay_upload(self, local_container):
-        _logger.debug('Delay upload for container #: %s',
-                      local_container.container.name)
+        with self._inner_lock:
+            if local_container.status == local_container.STATUS_QUOTA_EXCEEDED:
+                _logger.debug('Quota limit has already been detected')
+                return
 
-        local_container.status = local_container.STATUS_QUOTA_EXCEEDED
-        local_container.error_msg = _(
-            'Your quota has exceeded.'
-            ' All upload operations are delayed in the next 5 minutes.')
-        threading.Timer(self.QUOTA_TIMEOUT, self._turn_delay_upload_off,
-                        [local_container]) \
-            .start()
+            _logger.debug('Delay upload for container #: %s',
+                          local_container.container.name)
+
+            self._on_sync_error(_("Quota limit reached"))
+
+            local_container.status = local_container.STATUS_QUOTA_EXCEEDED
+            local_container.error_msg = _(
+                'Your quota has exceeded.' +
+                ' All upload operations are delayed in the next 5 minutes.')
+            threading.Timer(self.QUOTA_TIMEOUT, self._turn_delay_upload_off,
+                            [local_container]) \
+                .start()
 
     def _on_task_success(self, _arg=None):
         """This method can be called in three different cases:
@@ -282,7 +372,6 @@ class ContainerSyncPool(object):
             _arg(list(_Task)): None or the list of failing taks
 
         """
-        self._decrement()
 
         # TODO: If the task factory returns a list of failed tasks, the tasks
         # should be retried and the concerned files should be excluded of
@@ -290,10 +379,14 @@ class ContainerSyncPool(object):
 
         if _arg is not None:
             upload_limit_reached = False
+            passphrase_not_set = False
 
             for task in _arg:
                 if isinstance(task.error, HTTPEntityTooLargeError):
                     upload_limit_reached = True
+
+                if isinstance(task.error, PassphraseAbortError):
+                    passphrase_not_set = True
 
                 if hasattr(task.error, 'container_id'):
                     self._manage_container_error(task.error)
@@ -301,6 +394,11 @@ class ContainerSyncPool(object):
             if upload_limit_reached:
                 local_container = task.local_container
                 self.delay_upload(local_container)
+
+            if passphrase_not_set:
+                self._pause_if_need_the_passphrase()
+
+        self._decrement()
 
     def _on_task_failed(self, error):
         """A task has raised a "container related" error.
@@ -313,10 +411,11 @@ class ContainerSyncPool(object):
             error (Exception): the exception raised during the task execution
 
         """
-        self._decrement()
 
         if hasattr(error, 'container_id'):
             self._manage_container_error(error)
+
+        self._decrement()
 
     def _manage_container_error(self, error):
         # TODO only a failed download of the encryption key
@@ -326,7 +425,6 @@ class ContainerSyncPool(object):
         # TODO and once the local container is in error state
         # what is it supposed to do ?
 
-        local_container = self._local_containers[error.container_id]
-        self.remove(local_container)
+        local_container = self.remove(error.container_id)
         local_container.status = local_container.STATUS_ERROR
         local_container.error_msg = str(error)

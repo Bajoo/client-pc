@@ -4,12 +4,14 @@
 import bajoo.container_sync_pool as csp
 from .filesync.fake_local_container import FakeLocalContainer
 from .filesync.fake_container import Fake_container, \
-    FakeHTTPEntityTooLargeError
+    FakeHTTPEntityTooLargeError, FakePassphraseAbortError
 
 from .filesync.utils import FakeFile
 from bajoo.filesync.task_consumer import add_task
 from bajoo.filesync.added_local_files_task import AddedLocalFilesTask
 
+import logging
+import sys
 import threading
 
 # backup module before mock
@@ -23,6 +25,23 @@ OLD_REMOVED_LOCAL_FILES = csp.filesync.removed_local_files
 OLD_REMOVED_REMOTE_FILES = csp.filesync.removed_remote_files
 OLD_SYNC_FOLDER = csp.filesync.sync_folder
 OLD_QUOTA_TIMEOUT = csp.ContainerSyncPool.QUOTA_TIMEOUT
+
+OLD_LOGGER_HANDLERS = None
+
+
+def setup_module(module):
+    global OLD_LOGGER_HANDLERS
+
+    logger = logging.getLogger()
+    OLD_LOGGER_HANDLERS = list(logger.handlers)
+
+
+def teardown_module(module):
+    global OLD_LOGGER_HANDLERS
+
+    logger = logging.getLogger()
+    logger.handlers = OLD_LOGGER_HANDLERS
+    logger.setLevel(logging.INFO)
 
 
 class FakeFileWatcher(object):
@@ -187,6 +206,10 @@ class TestContainerSyncPool(object):
         self.lc = FakeLocalContainer(container=Fake_container())
         self.sync_pool.add(self.lc)
 
+        logger = logging.getLogger()
+        for h in list(logger.handlers):
+            logger.removeHandler(h)
+
     def teardown_method(self, method):
         self.sync_pool.remove(self.lc)
         self.fake_file.descr.close()
@@ -238,27 +261,59 @@ class TestContainerSyncPool(object):
             self.lc.STATUS_STARTED,
             self.lc.STATUS_STARTED,
             self.lc.STATUS_QUOTA_EXCEEDED,
-            self.lc.STATUS_QUOTA_EXCEEDED,
             self.lc.STATUS_STARTED]
 
         # try to upload again without quota limitation
 
         self.test_finished = 0
         self.error = None
+        del self.state_stack[:]
+        del self.lc.status_stack[:]
         self.lc.container.exception_to_raise_on_upload = None
 
         self.trigger_added_local_file(self.fake_file.descr.name)
-
         self.wait_for_task_to_be_executed(expected_task=1)
 
         assert self.error is None
         self.staticfileSync.assertTaskCreation(sync_task_count=2,
                                                added_locally_count=2)
+        assert self.lc.status_stack == []
+
+    def test_passphrase_refused(self, capsys):
+        logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+
+        passphrase_refused = FakePassphraseAbortError()
+        self.lc.container.exception_to_raise_on_upload = passphrase_refused
+
+        self.trigger_added_local_file(self.fake_file.descr.name)
+
+        self.wait_for_task_to_be_executed(expected_task=2)
+        assert str(passphrase_refused) in self.error
+        self.staticfileSync.assertTaskCreation(sync_task_count=1,
+                                               added_locally_count=1)
+
         assert self.lc.status_stack == [
             self.lc.STATUS_STARTED,
             self.lc.STATUS_STARTED,
-            self.lc.STATUS_QUOTA_EXCEEDED,
-            self.lc.STATUS_QUOTA_EXCEEDED,
-            self.lc.STATUS_STARTED]
+            self.lc.STATUS_WAIT_PASSPHRASE]
+
+        out, err = capsys.readouterr()
+        assert 'Local container is not running, abort task' not in out
+
+        # try to execute another task with local container waiting
+        # for the passphrase
+
+        self.test_finished = 0
+        self.error = None
+        del self.state_stack[:]
+        del self.lc.status_stack[:]
+        self.lc.container.exception_to_raise_on_upload = None
+
+        self.trigger_added_local_file(self.fake_file.descr.name)
+        assert self.error is None
+        assert len(self.lc.status_stack) == 0
+
+        out, err = capsys.readouterr()
+        assert 'Local container is not running, abort task' in out
 
 # TODO test the other parts of ContainerSyncPool
