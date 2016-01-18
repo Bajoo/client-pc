@@ -69,10 +69,24 @@ def _set_autorun_win(autorun=True):
     """
     if autorun:
         if not is_autorun():
+
+            target = sys.executable
+            if getattr(sys, 'frozen', False):
+                # When Bajoo is frozen using esky, two "Bajoo.exe' executable
+                # are generated. The first one is used to performs update
+                # before starting the second one.
+                entry_exe = os.path.join(
+                    os.path.dirname(sys.executable),
+                    '..',
+                    os.path.basename(sys.executable))
+
+                if os.path.isfile(entry_exe):
+                    target = os.path.normpath(entry_exe)
+
             # Create shortcut
             ws = win32com.client.Dispatch("wscript.shell")
             scut = ws.CreateShortcut(_win_shortcut_path())
-            scut.TargetPath = sys.executable
+            scut.TargetPath = target
             scut.Save()
     else:
         # Delete shortcut
