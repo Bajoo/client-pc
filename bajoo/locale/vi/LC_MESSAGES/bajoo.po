@@ -17,9 +17,8 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: Poedit 1.6.9\n"
 
-#TODO
 msgid "Quota limit reached"
-msgstr "Quota limit reached"
+msgstr "Quota vượt giới hạn"
 
 #: bajoo/filesync/__init__.py:195
 #, python-format
@@ -297,29 +296,23 @@ msgstr "Không biết"
 msgid "Error occurred: %s."
 msgstr "Lỗi: %s"
 
-#TODO 
 msgid "%s has been given access to team share '%s'"
-msgstr "%s has been given access to team share '%s'"
+msgstr "%s đã được cho phép truy cập vào chia sẻ nhóm '%s'"
 
-#TODO
 msgid "Unidentified container, cannot add member"
-msgstr "Unidentified container, cannot add member"
+msgstr "Thư mục không xác định, không thể thêm thành viên vào."
 
-#TODO 
 msgid "Remove member of a share has failed."
-msgstr "Remove member of a share has failed."
+msgstr "Lỗi khi bỏ thành viên ra khỏi chia sẻ nhóm."
 
-#TODO 
 msgid "Cannot remove this member from this team share."
-msgstr "Cannot remove this member from this team share."
+msgstr "Không thể bỏ thành viên này ra khỏi chia sẻ nhóm"
 
-#TODO 
 msgid "%s's access to team share '%s' has been removed."
-msgstr "%s's access to team share '%s' has been removed."
+msgstr "Đã bỏ quyền truy cập của %s khỏi chia sẻ nhóm '%s'."
 
-#TODO 
 msgid "Unidentified container, cannot remove member"
-msgstr "Unidentified container, cannot remove member"
+msgstr "Thư mục không xác định, không thể bỏ thành viên ra khỏi nhóm."
 
 #: bajoo/bajoo_app.py:461
 #, python-format
@@ -331,17 +324,14 @@ msgstr "Lỗi khi tạo thư mục chia sẻ %s."
 msgid "Team share %s has been successfully created"
 msgstr "Thư mục chia sẻ nhóm %s đã được tạo thành công."
 
-#TODO 
 msgid "This folder has been succesfully moved to the new location."
-msgstr "This folder has been succesfully moved to the new location."
+msgstr "Thư mục này đã được di chuyển đến nơi mới."
 
-#TODO
 msgid "The synchronization of this share is stopped."
-msgstr "The synchronization of this share is stopped."
+msgstr "Đã ngừng đồng bộ hóa thư mục chia sẻ này."
 
-#TODO
 msgid "The synchronization of this share is restarted."
-msgstr "The synchronization of this share is restarted."
+msgstr "Đã tái khởi động đồng bộ hóa thư mục chia sẻ này."
 
 #: bajoo/bajoo_app.py:509
 msgid "Error"
@@ -370,9 +360,8 @@ msgstr "Lỗi khi xóa chia sẻ nhóm %s trên máy chủ."
 msgid "Beta tester account"
 msgstr "Tài khoản kiểm thử beta."
 
-#TODO
 msgid "Failure when attempting to change password."
-msgstr "Failure when attempting to change password."
+msgstr "Lỗi khi đổi mật khẩu."
 
 #: bajoo/bajoo_app.py:675
 msgid "Sync error"
@@ -387,9 +376,8 @@ msgstr "Đã có người dùng email này."
 msgid "An error happened: %s"
 msgstr "Đã có lỗi xảy ra: %s"
 
-#TODO
 msgid "Error: %s"
-msgstr "Error: %s"
+msgstr "Lỗi: %s"
 
 msgid ""
 "Error when applying the Bajoo root folder config:\n"
@@ -423,9 +411,8 @@ msgstr "Không thể kết nối đến các máy chủ Bajoo."
 msgid "The server did not respond on time."
 msgstr "Máy chủ không gửi được câu trả lời."
 
-#TODO
 msgid "Proxy error"
-msgstr "Proxy error"
+msgstr "Lỗi proxy"
 
 msgid "The server has returned an HTTP error: %s %s"
 msgstr "Máy chủ trả về lỗi HTTP  : %s %s"
@@ -455,17 +442,15 @@ msgstr "Dịch vụ Bajoo không hiểu hoặc không hỗ trợ chức năng n�
 msgid "The Bajoo servers are temporarily unavailable. Please try again later."
 msgstr "Hiện tại các máy chủ Bajoo không truy cập được. Vui lòng thử lại sau."
 
-#TODO
 msgid "Your quota has exceeded."
-msgstr "Limite de quota atteinte"
+msgstr "Bạn đã dùng vượt quota"
 
-#TODO
 msgid ""
 "Your quota has exceeded."
 " All upload operations are delayed in the next 5 minutes."
 msgstr ""
-"Your quota has exceeded."
-" All upload operations are delayed in the next 5 minutes."
+"Bạn đã dùng vượt quota."
+" Mọi thao tác tải lên sẽ bị ngừng trong 5 phút tới."
 
 msgid "Official software for Bajoo online storage service."
 msgstr "Phần mềm chính thức của dịch vụ lưu trữ trực tuyến Bajoo."
@@ -476,29 +461,23 @@ msgstr "Phiên bản:"
 msgid "This software is distributed under the terms of the MIT License."
 msgstr "Phần mềm này được phân phối dưới giấy phép MIT."
 
-#TODO
 msgid "It is freely redistributable, the source code is available"
-msgstr "Mọi người có toàn quyền tái phân phối nó, the source code is available"
+msgstr "Mọi người có toàn quyền tái phân phối nó, mã nguồn có thể được truy cập"
 
-#TODO
 msgid "on GitHub."
-msgstr "on GitHub."
+msgstr "trên GitHub."
 
-#TODO
 msgid "List of frequently asked questions."
-msgstr "List of frequently asked questions."
+msgstr "Các câu hỏi thường gặp."
 
-#TODO
 msgid "If you have a new question, feel free to"
-msgstr "If you have a new question, feel free to"
+msgstr "Nếu bạn có câu hỏi mới nào, xin cứ tự nhiên"
 
-#TODO
 msgid "contact us."
-msgstr "contact us."
+msgstr "liên lạc với chúng tôi."
 
-#TODO
 msgid "Bajoo uses the following libraries:"
-msgstr "Bajoo uses the following libraries:"
+msgstr "Bajoo sử dụng các thư viện sau đây:"
 
 msgid "Bajoo and Linéa are registered trademarks."
 msgstr "Các thuật ngữ Bajoo và Linéa đã được đăng ký bản quyền thương mại."
@@ -744,13 +723,11 @@ msgstr "Các thư mục chia sẻ đăng được đồng bộ hóa..."
 msgid "Synchronization suspended"
 msgstr "Tạm ngưng đồng bộ hóa"
 
-#TODO
 msgid "Synchronization is not active"
-msgstr "Synchronization is not active"
+msgstr "Chưa bật đồng bộ hóa"
 
-#TODO
 msgid "An error happened :("
-msgstr "An error happened :("
+msgstr "Đã có lỗi xảy ra :("
 
 msgid "8 characters minimum"
 msgstr "Ít nhất 8 ký tự"
@@ -830,9 +807,8 @@ msgstr "Tạm ngưng"
 msgid "Started"
 msgstr "Khởi động"
 
-#TODO
 msgid "Quota exceeded"
-msgstr "Quota exceeded"
+msgstr "Quota đã hết"
 
 msgid "Bajoo - Ask for passphrase"
 msgstr "Bajoo - Yêu cầu mật mã mã hóa"
@@ -850,38 +826,37 @@ msgstr ""
 "Vài thành viên không được cấp quyền cho chia sẻ này. Vui lòng kiểm tra các "
 "địa chỉ email."
 
-#TODO
 msgid "Create my account"
-msgstr "Create my account"
+msgstr "Tạo cho tôi một tài khoản"
 
-#TODO
 msgid "Your password has been successfully changed."
-msgstr "Your password has been successfully changed."
+msgstr "Mật khẩu của bạn đã được thay đổi."
 
-#TODO
 msgid "Reinitialize my passphrase"
-msgstr "Reinitialize my passphrase"
+msgstr "Tạo lại mật mã mã hóa"
 
-#TODO
 msgid "Personal folder"
-msgstr "Personal folder"
+msgstr "Thư mục cá nhân"
 
-#TODO
 msgid "Delete this share"
-msgstr "Delete this share"
+msgstr "Xóa thư mục chia sẻ này"
 
-#TODO
 msgid "Advanced options"
-msgstr "Advanced options"
+msgstr "Tùy chọn nâng cao"
 
-#TODO
 msgid "This folder already exists"
-msgstr "This folder already exists"
+msgstr "Thư mục này đã có rồi"
 
-#TODO
 msgid "Proxy is activate, but no URL is present.\nCheck your configuration."
-msgstr "Proxy is activate, but no URL is present.\nCheck your configuration."
+msgstr "Proxy đã được bật, nhưng không có URL.\nVui lòng kiểm tra thông tin."
 
-#TODO
 msgid "The passphrase request has been rejected by the user."
-msgstr "The passphrase request has been rejected by the user."
+msgstr "Yêu cầu tạo mật mã mã hóa đã bị người dùng từ chối."
+
+#: bajoo/gui/common/message_box.py:10
+msgid "Yes"
+msgstr "Có"
+
+#: bajoo/gui/common/message_box.py:10
+msgid "No"
+msgstr "Không"

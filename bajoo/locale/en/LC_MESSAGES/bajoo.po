@@ -316,3 +316,11 @@ msgstr ""
 #: bajoo/bajoo_app.py:675
 msgid "Sync error"
 msgstr ""
+
+#: bajoo/gui/common/message_box.py:10
+msgid "Yes"
+msgstr ""
+
+#: bajoo/gui/common/message_box.py:10
+msgid "No"
+msgstr ""

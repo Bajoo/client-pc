@@ -887,3 +887,11 @@ msgstr ""
 
 msgid "The passphrase request has been rejected by the user."
 msgstr "L'utilisateur a refusé d'entrer sa phrase secrète"
+
+#: bajoo/gui/common/message_box.py:10
+msgid "Yes"
+msgstr "Oui"
+
+#: bajoo/gui/common/message_box.py:10
+msgid "No"
+msgstr "Non"

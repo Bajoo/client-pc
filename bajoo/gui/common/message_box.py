@@ -5,9 +5,11 @@ from ...common.i18n import _
 
 
 def _show_confirmation_box(message, caption, parent=None):
-    return wx.MessageBox(message, caption,
-                         style=wx.YES | wx.NO | wx.ICON_QUESTION,
-                         parent=parent)
+    dialog = wx.MessageDialog(parent, message, caption,
+                              style=wx.YES | wx.NO | wx.ICON_QUESTION)
+    dialog.SetYesNoLabels(_("Yes"), _("No"))
+
+    return dialog.ShowModal()
 
 
 def message_box_delete_share(share_name, parent=None):
@@ -51,7 +53,8 @@ def message_box_members_changed(parent=None):
     caption = _("Data not saved")
 
     return _show_confirmation_box(message, caption, parent)
-    
+
+
 def main():
     app = wx.App()
     win = wx.Frame(None)
