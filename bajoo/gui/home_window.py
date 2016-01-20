@@ -147,8 +147,12 @@ class HomeWindowView(BaseView):
 
 
 def main():
+    def notify(title, msg):
+        print(title)
+        print(msg)
+
     app = wx.App()
-    win = HomeWindow()
+    win = HomeWindow(notify)
     win.Show(True)
     app.MainLoop()
 

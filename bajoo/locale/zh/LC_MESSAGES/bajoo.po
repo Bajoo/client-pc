@@ -8,14 +8,14 @@ msgstr ""
 "Project-Id-Version: Bajoo 2 0.1\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2015-10-20 12:12+0200\n"
-"PO-Revision-Date: 2016-01-11 09:50+0100\n"
-"Last-Translator: Bajoo <contact@bajoo.fr>\n"
+"PO-Revision-Date: 2015-10-20 12:37+0100\n"
+"Last-Translator: Kévin Bernard-Allies <kbernard-allies@bajoo.fr>\n"
 "Language-Team: Bajoo <contact@bajoo.fr>\n"
-"Language: fr\n"
+"Language: zh\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 1.6.9\n"
+"X-Generator: Poedit 1.5.4\n"
 
 #TODO
 msgid "Quota limit reached"
@@ -27,7 +27,7 @@ msgid ""
 "Error during the sync of the \"%(name)s\" container:\n"
 "%(error)s"
 msgstr ""
-"Lỗi khi đồng bộ hóa thư mục \"%(name)s\":\n"
+"文件同步时出错 \"%(name)s\":\n"
 "%(error)s"
 
 #: bajoo/filesync/__init__.py:201
@@ -37,184 +37,187 @@ msgid ""
 "container:\n"
 "%(error)s"
 msgstr ""
-"Lỗi khi đồng bộ hóa tập tin \"%(filename)s\" trong thư mục \"%(name)s\":"
-"%(error)s"
+"文件同步时出错 \"%(filename)s\" 在 "
+"文件夹 \"%(name)s\":%(error)s"
 
 #: bajoo/connection_registration_process.py:410
 #: bajoo/gui/tab/creation_share_tab.py:125 bajoo/local_container.py:113
 msgid "Shares"
-msgstr "Chia sẻ"
+msgstr "我的共享"
 
 #: bajoo/gui/home_window.py:91
 msgid "connection successful"
-msgstr "Kết nối thành công"
+msgstr "连接成功"
 
 #: bajoo/gui/home_window.py:92
 msgid "You've been successfully connected."
-msgstr "Bạn đã được kết nối thành công."
+msgstr "您已经成功连接。"
 
 #: bajoo/gui/tab/details_share_tab.py:344
 msgid "Loading ..."
-msgstr "Đang tải..."
+msgstr "Chargement..."
+"载入中..."
 
 #: bajoo/gui/main_window.py:275 bajoo/gui/main_window.py:286
 msgid "My Shares"
-msgstr "Chia sẻ của tôi"
+msgstr "我的共享"
 
 #: bajoo/gui/main_window.py:277 bajoo/gui/main_window.py:287
 msgid "My Account"
-msgstr "Tài khoản của tôi"
+msgstr "我的账户"
 
 #: bajoo/gui/main_window.py:278 bajoo/gui/main_window.py:288
 msgid "Settings"
-msgstr "Hiệu chỉnh"
+msgstr "设置"
 
 #: bajoo/gui/main_window.py:314
 msgid "Create new share"
-msgstr "Tạo thư mục chia sẻ mới"
+msgstr "创建新的共享"
 
 #: bajoo/gui/main_window.py:316
 msgid "Folder details"
-msgstr "Chi tiết thông tin thư mục"
+msgstr "详细信息"
 
 #: bajoo/gui/common/message_box.py:19
 #, python-format
 msgid "Are you sure to delete the team share %s?"
-msgstr "Bạn có chắc chắn muốn xóa chia sẻ nhóm này: %s ?"
+msgstr "确定要删除该团队共享: %s ?"
 
 #: bajoo/gui/common/message_box.py:20
 msgid "Delete team share"
-msgstr "Xóa thư mục chia sẻ"
+msgstr "删除该团队共享"
 
 #: bajoo/gui/common/message_box.py:31
 #, python-format
 msgid "Are you sure to remove %s from your shares?"
-msgstr "Bạn có chắc chắn muốn xóa thư mục chia sẻ %s?"
+msgstr "确定从您的共享上删除 %s  ?"
 
 #: bajoo/gui/common/message_box.py:32 bajoo/bajoo_app.py:521
 msgid "Quit team share"
-msgstr "Thoát khỏi chia sẻ nhóm"
+msgstr "退出团队共享"
 
 #: bajoo/gui/common/message_box.py:49
 msgid ""
 "Your member setting has not been saved yet.Do you want to continue and "
 "ignore the changes ?"
 msgstr ""
-"Những thay đổi của bạn về thành viên nhóm chưa được lưu lại. Bạn có muốn bỏ "
-"qua những thay đổi này và tiếp tục không?"
+"您的成员设置尚未保存。您想要 "
+"继续并忽略更改 ?"
 
 #: bajoo/gui/common/message_box.py:51
 msgid "Data not saved"
-msgstr "Dữ liệu chưa được lưu"
+msgstr "数据尚未保存"
 
 #: bajoo/gui/passphrase_window.py:43
 msgid "Invalid passphrase!"
-msgstr "Mật mã không hợp lệ!"
+msgstr "密码无效 !"
 
 #: bajoo/gui/passphrase_window.py:125
 msgid ""
 "Enter your Bajoo pasphrase to start the synchronization of your encrypted "
 "files."
 msgstr ""
-"Nhập mật mã mã hóa để bắt đầu đồng bộ hóa những tập tin mã hóa của bạn."
+"输入您的Bajoo密码开始同步您的 "
+"加密文件。"
 
 #: bajoo/gui/passphrase_window.py:131
 msgid "Memorize the passphrase"
-msgstr "Nhớ mật mã mã hóa"
+msgstr "存储我的密码"
 
 #: bajoo/gui/task_bar_icon.py:149 bajoo/gui/task_bar_icon.py:217
 msgid ""
 "Looks like you don't\n"
 "have any share"
 msgstr ""
-"Có vẻ như bạn không có\n"
-"thư mục chia sẻ nào."
+"这里没有 \n"
+"任何共享。"
 
 #: bajoo/gui/task_bar_icon.py:153
 msgid "Shares folder"
-msgstr "Các thư mục chia sẻ"
+msgstr "共享文件"
 
 #: bajoo/gui/task_bar_icon.py:154
 msgid "Suspend synchronization"
-msgstr "Tạm ngưng đồng bộ hóa"
+msgstr "暂停同步"
 
 #: bajoo/gui/task_bar_icon.py:156
 msgid "Manage my shares..."
-msgstr "Quản lý các thư mục chia sẻ..."
+msgstr "管理我的共享"
 
 #: bajoo/gui/task_bar_icon.py:158
 msgid "My client space"
-msgstr "Không gian khách hàng"
+msgstr "我的账户"
 
 #: bajoo/gui/task_bar_icon.py:159
 msgid "Invite a friend on Bajoo"
-msgstr "Mời một người bạn đến với Bajoo"
+msgstr "邀请朋友加入Bajoo"
 
 #: bajoo/gui/task_bar_icon.py:161
 msgid "Online help"
-msgstr "Hỗ trợ trực tuyến"
+msgstr "在线支援"
 
 #: bajoo/gui/task_bar_icon.py:163
 msgid "Settings ..."
-msgstr "Hiệu chỉnh..."
+msgstr "设置中 ..."
 
 #: bajoo/gui/task_bar_icon.py:165
 msgid "Login window"
-msgstr "Cửa sổ đăng nhập"
+msgstr "登录窗口"
 
 #: bajoo/gui/task_bar_icon.py:166
 msgid "Open the login and registration window"
-msgstr "Mở cửa sổ đăng nhập / đăng ký"
+msgstr "打开登录窗口 / 注册"
 
 #: bajoo/gui/task_bar_icon.py:167
 msgid "About Bajoo"
-msgstr "Nói về Bajoo"
+msgstr "关于Bajoo"
 
 #: bajoo/gui/task_bar_icon.py:169
 msgid "Quit"
-msgstr "Thoát"
+msgstr "离开"
 
 #: bajoo/gui/task_bar_icon.py:169
 msgid "Quit Bajoo"
-msgstr "Thoát Bajoo"
+msgstr "离开Bajoo"
 
 #: bajoo/gui/form/members_share_form.py:168
 #: bajoo/gui/form/members_share_form.py:169
 #: bajoo/gui/form/members_share_form.py:206
 #: bajoo/gui/form/members_share_form.py:227
 msgid "Admin"
-msgstr "Quản trị viên"
+msgstr "管理"
 
 #: bajoo/gui/form/members_share_form.py:170
 #: bajoo/gui/form/members_share_form.py:207
 #: bajoo/gui/form/members_share_form.py:229
 msgid "Read Write"
-msgstr "Đọc, ghi"
+msgstr "阅读，编辑"
 
 #: bajoo/gui/form/members_share_form.py:171
 #: bajoo/gui/form/members_share_form.py:208
 #: bajoo/gui/form/members_share_form.py:224
 msgid "Read Only"
-msgstr "Chỉ đọc"
+msgstr "只读"
 
 #: bajoo/common/i18n.py:99
 msgid "Auto"
-msgstr "Tự động"
+msgstr "自动"
 
 #: bajoo/dynamic_container_list.py:160
 msgid "Error when adding new share"
-msgstr "Lỗi khi thêm thư mục chia sẻ mới"
+msgstr "添加新的共享时出错"
 
 #: bajoo/dynamic_container_list.py:161
 #, python-format
 msgid ""
 "Unable to create a folder for %(name)s:\n"
 "%(error)s"
-msgstr "Không thể tạo thêm thư mục mới vì %(name)s :%(error)s"
+msgstr "无法创建一个文件夹 %(name)s :%(error)s"
 
 #: bajoo/dynamic_container_list.py:169
 msgid "Error on share sync"
-msgstr "Lỗi khi đồng bộ hóa thư mục chia sẻ"
+msgstr "同步共享出错"
+
 
 #: bajoo/dynamic_container_list.py:170
 #, python-format
@@ -222,12 +225,12 @@ msgid ""
 "Unable to sync the share %(name)s:\n"
 "%(error)s"
 msgstr ""
-"Lỗi khi đồng bộ hóa thư mục %(name)s:\n"
+"无法同步共享 %(name)s:\n"
 "%(error)s"
 
 #: bajoo/dynamic_container_list.py:204
 msgid "New Bajoo share added"
-msgstr "Thư mục chia sẻ mới đã được tạo thành công"
+msgstr "增加新的Bajoo共享"
 
 #: bajoo/dynamic_container_list.py:205
 #, python-format
@@ -235,67 +238,63 @@ msgid ""
 "You have a new Bajoo share:\n"
 "%s"
 msgstr ""
-"Bạn có một thư mục chia sẻ Bajoo mới :\n"
+"您有一个新的Bajoo共享 :\n"
 "%s"
 
 #: bajoo/dynamic_container_list.py:208
 #, python-format
 msgid "You have %s new Bajoo shares:"
-msgstr "Bạn có %s thư mục chia sẻ Bajoo mới:"
+msgstr "您有 %s 新的Bajoo共享 :"
 
 #: bajoo/dynamic_container_list.py:215
 #, python-format
 msgid "and %s others"
-msgstr "và %s khác"
+msgstr "和 %s 其他"
 
 #: bajoo/dynamic_container_list.py:216
 msgid "New Bajoo shares added"
-msgstr "Các thư mục chia sẻ Bajoo đã được thêm vào"
+msgstr "增加新的Bajoo共享"
 
 #: bajoo/dynamic_container_list.py:236
 msgid "A Bajoo share have been removed."
-msgstr "Một thư mục chia sẻ Bajoo đã bị xóa."
+msgstr "一个Bajoo共享已被删除。"
 
 #: bajoo/dynamic_container_list.py:237
 msgid ""
 "Either the share has been deleted or your permissions have been revoked."
-msgstr ""
-"Có thể thư mục chia sẻ Bajoo đã bị xóa, hoặc bạn không còn được cấp phép."
+msgstr "共享已被删除或您的权限已被撤销。"
 
 #: bajoo/dynamic_container_list.py:240
 #, python-format
 msgid "%s Bajoo shares have been removed."
-msgstr "%s thư mục chia sẻ Bajoo đã bị xóa."
+msgstr "%s 共享已被删除。"
 
 #: bajoo/dynamic_container_list.py:241
 msgid ""
 "Either the shares have been deleted, or your permissions have been revoked."
-msgstr ""
-"Có thể các thư mục chia sẻ Bajoo đã bị xóa, hoặc bạn không còn được cấp phép."
+msgstr "共享已被删除或您的权限已被撤销。"
 
 #: bajoo/local_container.py:85
 msgid "The corresponding folder exists, but the Bajoo index file is missing."
-msgstr ""
-"Thư mục tương ứng với chia sẻ trên máy bạn vẫn còn, nhưng không thấy tập tin "
-"chỉ số Bajoo."
+msgstr "该共享文件夹存在，但Bajoo索引文件丢失。 "
 
 #: bajoo/local_container.py:88
 msgid "The local folder is missing."
-msgstr "Thư mục tương ứng trên máy bạn không còn."
+msgstr "本地文件夹丢失。"
 
 #: bajoo/local_container.py:138
 #, python-format
 msgid "Folder creation failed: %s"
-msgstr "Lỗi khi tạo thư mục trên máy bạn: %s"
+msgstr "文件创建失败 : %s"
 
 #: bajoo/local_container.py:323
 msgid "Unknown"
-msgstr "Không biết"
+msgstr "未知"
 
 #: bajoo/bajoo_app.py:303
 #, python-format
 msgid "Error occurred: %s."
-msgstr "Lỗi: %s"
+msgstr "错误 : %s"
 
 #TODO 
 msgid "%s has been given access to team share '%s'"
@@ -324,12 +323,12 @@ msgstr "Unidentified container, cannot remove member"
 #: bajoo/bajoo_app.py:461
 #, python-format
 msgid "Cannot create share %s"
-msgstr "Lỗi khi tạo thư mục chia sẻ %s."
+msgstr "创建共享失败 %s。"
 
 #: bajoo/bajoo_app.py:478
 #, python-format
 msgid "Team share %s has been successfully created"
-msgstr "Thư mục chia sẻ nhóm %s đã được tạo thành công."
+msgstr "团队共享 %s 已成功建立。"
 
 #TODO 
 msgid "This folder has been succesfully moved to the new location."
@@ -345,30 +344,30 @@ msgstr "The synchronization of this share is restarted."
 
 #: bajoo/bajoo_app.py:509
 msgid "Error"
-msgstr "Lỗi"
+msgstr "错误"
 
 #: bajoo/bajoo_app.py:510
 #, python-format
 msgid "An error occured when trying to quit team share %s."
-msgstr "Lỗi khi muốn thoát khỏi chia sẻ nhóm %s."
+msgstr "试图退出团队共享时出现错误 %s。"
 
 #: bajoo/bajoo_app.py:522 bajoo/bajoo_app.py:528
 #, python-format
 msgid "You have no longer access to team share %s."
-msgstr "Bạn không còn quyền truy cập vào chia sẻ nhóm %s."
+msgstr "您不能再进入团队共享 %s。"
 
 #: bajoo/bajoo_app.py:545
 msgid "A team share has been successfully deleted from server."
-msgstr "Chia sẻ nhóm đã được xóa khỏi máy chủ."
+msgstr "一个团队共享成功在服务器上删除。"
 
 #: bajoo/bajoo_app.py:549
 #, python-format
 msgid "Team share %s cannot be deleted from server."
-msgstr "Lỗi khi xóa chia sẻ nhóm %s trên máy chủ."
+msgstr "无法删除服务器上的 %s 团队共享文件。"
 
 #: bajoo/bajoo_app.py:568
 msgid "Beta tester account"
-msgstr "Tài khoản kiểm thử beta."
+msgstr "Beta测试账号"
 
 #TODO
 msgid "Failure when attempting to change password."
@@ -376,16 +375,16 @@ msgstr "Failure when attempting to change password."
 
 #: bajoo/bajoo_app.py:675
 msgid "Sync error"
-msgstr "Lỗi đồng bộ hóa"
+msgstr "同步出错"
 
 msgid "Invalid username or password."
-msgstr "Tên đăng nhập hoặc mật khẩu không hợp lệ."
+msgstr "无效用户名或密码。"
 
 msgid "There is already an account with this email."
-msgstr "Đã có người dùng email này."
+msgstr "此电子邮件账户已存在。"
 
 msgid "An error happened: %s"
-msgstr "Đã có lỗi xảy ra: %s"
+msgstr "发生错误 : %s"
 
 #TODO
 msgid "Error: %s"
@@ -394,66 +393,64 @@ msgstr "Error: %s"
 msgid ""
 "Error when applying the Bajoo root folder config:\n"
 " %s"
-msgstr ""
-"Lỗi khi áp dùng tùy chỉnh với thư mục gốc Bajoo :\n"
+msgstr "Bajoo根文件配置应用错误 :\n"
 " %s"
 
 msgid "You haven't yet registered a GPG key."
-msgstr "Bạn chưa lưu khóa GPG nào."
+msgstr "您还没有输入GPG密钥。"
 
 msgid ""
 "Error during the GPG key check:\n"
 " %s"
-msgstr ""
-"Lỗi khi kiểm tra khóa GPG GPG :\n"
+msgstr "GPG密钥检查过程中出错 :\n"
 " %s"
 
 msgid "%s doesn't exists, or is not a directory"
-msgstr "%s không tồn tại, hoặc không phải thư mục."
+msgstr "%s 不存在，或者不是一个文件夹。"
 
 msgid "%s has not the read and/or write permissions."
-msgstr "%s không được cấp phép đọc và/hoặc lưu."
+msgstr "%s 没有权利阅读和/或编辑。"
 
 msgid "A network error has occurred."
-msgstr "Đã có lỗi truy cập mạng."
+msgstr "网络错误。"
 
 msgid "Unable to connect to the Bajoo servers."
-msgstr "Không thể kết nối đến các máy chủ Bajoo."
+msgstr "无法连接到Bajoo服务器。"
 
 msgid "The server did not respond on time."
-msgstr "Máy chủ không gửi được câu trả lời."
+msgstr "服务器没有响应。"
 
 #TODO
 msgid "Proxy error"
 msgstr "Proxy error"
 
 msgid "The server has returned an HTTP error: %s %s"
-msgstr "Máy chủ trả về lỗi HTTP  : %s %s"
+msgstr "服务器返回一个HTTP错误  : %s %s"
 
 msgid ""
-"The HTTP request is invalid. This is a bug, either in the client or in the "
-"server. Sorry for the inconvenience :("
+"The HTTP request is invalid. This is a bug, either in the client or in "
+"the server. Sorry for the inconvenience :("
 msgstr ""
-"Yêu cầu HTTP không hợp lệ. Đây là lỗi ở phía máy chủ hoặc phần mềm. Chúng "
-"tôi xin lỗi vì sự bất tiện này. :("
+"HTTP请求无效。 这是一个服务器或客户端之间的 "
+"错误。 造成不便深感抱歉 :("
 
 msgid "Your session has expired."
-msgstr "Buổi làm việc (session) của bạn đã hết hạn."
+msgstr "您的会话已过期。"
 
 msgid "You don't have the permission to do this operation."
-msgstr "Bạn không được cấp quyền cho chức năng này."
+msgstr "您没有权利执行这个操作。"
 
 msgid "The element you're looking for has not been found."
-msgstr "Cái bạn muốn tìm không được tìm thấy."
+msgstr "没有与搜索条件匹配的项。"
 
 msgid "The Bajoo servers have encountered an unexpected error :("
-msgstr "Các máy chủ Bajoo đã gặp sự cố không mong muốn :("
+msgstr "Bajoo服务器遇到一个意外的错误 :("
 
 msgid "Bajoo service does not understand or does not support this function."
-msgstr "Dịch vụ Bajoo không hiểu hoặc không hỗ trợ chức năng này."
+msgstr "Bajoo服务器不包括或不支持此功能。"
 
 msgid "The Bajoo servers are temporarily unavailable. Please try again later."
-msgstr "Hiện tại các máy chủ Bajoo không truy cập được. Vui lòng thử lại sau."
+msgstr "Bajoo服务器暂时无法使用。 请稍后再尝试。"
 
 #TODO
 msgid "Your quota has exceeded."
@@ -468,17 +465,17 @@ msgstr ""
 " All upload operations are delayed in the next 5 minutes."
 
 msgid "Official software for Bajoo online storage service."
-msgstr "Phần mềm chính thức của dịch vụ lưu trữ trực tuyến Bajoo."
+msgstr "对于Bajoo在线存储服务版"
 
 msgid "Version: "
-msgstr "Phiên bản:"
+msgstr "官方客户端 :"
 
 msgid "This software is distributed under the terms of the MIT License."
-msgstr "Phần mềm này được phân phối dưới giấy phép MIT."
+msgstr "这个软件是在MIT许可证下发布。"
 
 #TODO
 msgid "It is freely redistributable, the source code is available"
-msgstr "Mọi người có toàn quyền tái phân phối nó, the source code is available"
+msgstr "它是可自由配置的, the source code is available"
 
 #TODO
 msgid "on GitHub."
@@ -501,58 +498,60 @@ msgid "Bajoo uses the following libraries:"
 msgstr "Bajoo uses the following libraries:"
 
 msgid "Bajoo and Linéa are registered trademarks."
-msgstr "Các thuật ngữ Bajoo và Linéa đã được đăng ký bản quyền thương mại."
+msgstr "Bajoo为LINEA的注册商标。"
 
 msgid "Bajoo - Configuration"
-msgstr "Bajoo - Tùy chỉnh"
+msgstr "Bajoo - 配置"
 
 msgid "Encryption"
-msgstr "Mã hóa"
+msgstr "加密"
 
 msgid ""
-"Your passphrase is known only by yourself. It's used to encrypt your data.\n"
+"Your passphrase is known only by yourself. It's used to encrypt your "
+"data.\n"
 "It should contains at least 8 characters.You can use a real phrase to "
 "memorize it more easily (ex: MyBajooAccount)."
 msgstr ""
-"Bạn là người duy nhất biết mật mã mã hóa. Nó được sử dụng cho việc mã hóa dữ "
-"liệu của bạn.\n"
-"Nó phải có ít nhất 8 ký tự. Bạn có thể sử dụng một câu có nghĩa cho dễ nhớ."
+"您是唯一一个知道密码。 这是被用作 "
+"加密您的文件。\n"
+"密码应当包含8个字母。 您可以使用 "
+"一个实际的排列便于记忆。"
 
 msgid "Don't use encryption passphrase"
-msgstr "Không sử dụng mật mã mã hóa"
+msgstr "不要使用加密密码"
 
 msgid "Root folder Bajoo"
-msgstr "Thư mục gốc Bajoo"
+msgstr "Bajoo根目录"
 
 msgid "Your Bajoo shares will be deposit here:"
-msgstr "Các thư mục chia sẻ Bajoo của bạn sẽ được để ở đây:"
+msgstr "您的Bajoo共享将在此存放 :"
 
 msgid "Validate"
-msgstr "Phê chuẩn"
+msgstr "确认"
 
 msgid "Passphrase"
-msgstr "Mật mã mã hóa"
+msgstr "密码"
 
 msgid "passphrase confirmation"
-msgstr "Xác nhận mật mã mã hóa"
+msgstr "确认密码"
 
 msgid "Connection"
-msgstr "Kết nối"
+msgstr "连接"
 
 msgid "Make an account"
-msgstr "Tạo tài khoản"
+msgstr "创建账户"
 
 msgid "proxy settings"
-msgstr "Hiệu chỉnh proxy"
+msgstr "代理服务器设置"
 
 msgid "Language:"
-msgstr "Ngôn ngữ:"
+msgstr "语言 :"
 
 msgid "Bajoo - Activate your account"
-msgstr "Bajoo - Kích hoạt tài khoản"
+msgstr "Bajoo - 激活您的账号"
 
 msgid "Your account is not activated."
-msgstr "Tài khoản của bạn chưa được kích hoạt."
+msgstr "您的账号还未激活。"
 
 msgid ""
 "For continuing, your must activate your account.\n"
@@ -560,189 +559,191 @@ msgid ""
 "activation link.\n"
 "You should follow that link to continue."
 msgstr ""
-"Để tiếp tục, bạn cần kích hoạt tài khoản.\n"
-"Bạn sẽ nhận được một liên kết để kích hoạt tài khoản qua email.\n"
-"Bạn cần theo dấu liên kết này để tiếp tục."
+"为了继续, 您应该激活您的行号。\n"
+"几分钟您将会收到一封带有激活链接的 "
+"电子邮件。\n"
+"您必须按照此链接去激活您的账号。"
 
 msgid "Come back later"
-msgstr "Quay lại sau"
+msgstr "过会儿回来"
 
 msgid "It's done!"
-msgstr "Xong!"
+msgstr "完成了!"
+
+
+msgid "Bajoo - Proxy"
+msgstr "Bajoo - 代理服务器"
 
 msgid "Cancel"
-msgstr "Hủy"
+msgstr "取消"
 
 msgid "Bajoo - Change password"
-msgstr "Bajoo - Đổi mật khẩu"
+msgstr "Bajoo - 更改密码"
 
 msgid "Limit incoming debit (download)"
-msgstr "Giới hạn tải xuống"
+msgstr "限制下载流量"
 
 msgid "Limit outgoing debit (upload)"
-msgstr "Giới hạn tải lên"
-
-msgid "Kb/s"
-msgstr "Kb/s"
+msgstr "限制上传流量"
 
 msgid "Bandwidth"
-msgstr "Băng thông"
+msgstr "带宽"
 
 msgid "<< Back to share list"
-msgstr "<< Quay lại danh sách chia sẻ"
+msgstr "<< 返回共享目录"
 
 msgid "Create"
-msgstr "Tạo mới"
+msgstr "创建"
 
 msgid "Share name"
-msgstr "Tên chia sẻ"
+msgstr "共享名"
 
 msgid "Team share"
-msgstr "Chia sẻ nhóm"
+msgstr "团队共享"
 
 msgid "Public share"
-msgstr "Chia sẻ công cộng"
+msgstr "公用共享"
 
 msgid "Encrypt this share"
-msgstr "Mã hóa chia sẻ này"
+msgstr "加密此共享"
 
 msgid "Do not synchronize on this PC"
-msgstr "Không đồng bộ trên máy này"
+msgstr "此电脑上不能进行同步"
 
 msgid "Location on this PC"
-msgstr "Nơi để thư mục trên máy này"
+msgstr "这台电脑上定位"
 
 msgid "Members having access to this share"
-msgstr "Các thành viên có quyền truy cập"
+msgstr "成员有权访问此共享"
 
 msgid "New share"
-msgstr "Chia sẻ mới"
+msgstr "新的共享"
 
 msgid "Send crash reports to Bajoo automatically"
-msgstr "Tự động gửi báo cáo lỗi cho Bajoo"
+msgstr "自动发送错误报告"
 
 msgid "Activate debug mode"
-msgstr "Kích hoạt chế độ debug"
+msgstr "启动除错程序"
 
 msgid "Actual version:"
-msgstr "Phiên bản hiện tại:"
+msgstr "当前版本:"
 
 msgid "Apply the updates automatically"
-msgstr "Cập nhật tự động"
+msgstr "自动更新应用"
 
 msgid "Check for updates"
-msgstr "Kiểm tra bản cập nhật"
+msgstr "检查更新"
 
 msgid "Don't synchronize hidden files"
-msgstr "Không đồng bộ hóa các tập tin ẩn"
+msgstr "不同步隐藏文件"
 
 msgid "Updates"
-msgstr "Cập nhật"
+msgstr "更新"
 
 msgid "Details"
-msgstr "Chi tiết"
+msgstr "详细信息"
 
 msgid "Encrypted"
-msgstr "mã hóa"
+msgstr "加密"
 
 msgid "Not encrypted"
-msgstr "không mã hóa"
+msgstr "不加密"
 
 msgid "Refresh"
-msgstr "Nạp lại"
+msgstr "刷新"
 
 msgid "%d members"
-msgstr "%d thành viên"
+msgstr "%d 成员"
 
 msgid "Status: %s"
-msgstr "Hiện trạng: %s"
+msgstr "状态 : %s"
 
 msgid "Status:"
-msgstr "Hiện trạng:"
+msgstr "状态 :"
 
 msgid "This share contains %d folders and %d files,"
-msgstr "Chia sẻ này chưa %d thư mục và %d tập tin,"
+msgstr "该共享包含 %文件夹和 %文件，"
 
 msgid "which takes the disk space of %s"
-msgstr "chiếm không gian %s trên ổ đĩa."
+msgstr "这需要磁盘空间%s "
 
 msgid "Quit this share"
-msgstr "Thoát chia sẻ này"
+msgstr "离开此共享"
 
 msgid "Open folder"
-msgstr "Mở thư mục"
+msgstr "打开文件夹"
 
 msgid "Share Details"
-msgstr "Thông tin chi tiết chia sẻ"
+msgstr "共享详细信息"
 
 msgid "You are connected as:"
-msgstr "Bạn đang được kết nối dưới tài khoản:"
+msgstr "您登录为 :"
 
 msgid "Account type:"
-msgstr "Loại tài khoản:"
+msgstr "账户类型 :"
 
 msgid "%d share folders use %s, so %0.2f%% of your Bajoo storage."
-msgstr "%d thư mục sử dụng %s, tức %0.2f%% lượng lưu trữ cho phép."
+msgstr "%d 共享文件夹 %s, 所以 %0.2f%% 在您的Bajoo存储。"
 
 msgid ">>> Move to a higher offer"
-msgstr ">>> Đổi sang loại tài khoản tốt hơn"
+msgstr ">>> 转变到一个更高的价格"
 
 msgid "Disconnect my account"
-msgstr "Thoát khỏi tài khoản này"
+msgstr "退出我的账户"
 
 msgid "Open my Bajoo folder"
-msgstr "Mở thư mục Bajoo"
+msgstr "打开我的Bajoo文件夹"
 
 msgid "Change password"
-msgstr "Đổi mật khẩu"
+msgstr "更改您的密码"
 
 msgid "Launch Bajoo at system startup"
-msgstr "Chạy phần mềm Bajoo khi khởi động hệ thống"
+msgstr "开机启动Bajoo"
 
 msgid "Activate status icon and the contextual menu"
-msgstr "Kích hoạt biểu tượng hiện trạng và thực đơn ngữ cảnh"
+msgstr "激活状态图标和上下文菜单"
 
 msgid "Display a notification when finish downloading file modifications"
-msgstr "Hiển thị một thông báo khi tải thành công những tập tin đã thay đổi"
+msgstr "当文件下载完成时显示通知 "
 
 msgid "Language"
-msgstr "Ngôn ngữ"
+msgstr "语言"
 
 msgid "General settings"
-msgstr "Tùy chỉnh chung"
+msgstr "一般设置"
 
 msgid "Advanced settings"
-msgstr "Tùy chỉnh nâng cao"
+msgstr "高级设置"
 
 msgid "Network settings"
-msgstr "Tùy chỉnh mạng"
+msgstr "网络设置"
 
 msgid "This field is required."
-msgstr "Đây là thông tin bắt buộc."
+msgstr "必填项"
 
 msgid "The confirmation differs from the password."
-msgstr "Xác nhận không giống như mật khẩu."
+msgstr "确认与密码不符。"
 
 msgid "This email is not valid."
-msgstr "Email này không hợp lệ."
+msgstr "该电子邮件无效。"
 
 msgid "This field must contains at least %s characters."
-msgstr "Thông tin này phải chứa ít nhất %s ký tự."
+msgstr "该项应包含至少 %s 个字母。"
 
 msgid "Not connected"
-msgstr "Kết nối bị ngắt"
+msgstr "断开"
 
 msgid "Connection in progress..."
-msgstr "Đang kết nối..."
+msgstr "正在连接中 ..."
 
 msgid "Sync up to date"
-msgstr "Đã đồng bộ"
+msgstr "同步更新"
 
 msgid "Shares currently syncing..."
-msgstr "Các thư mục chia sẻ đăng được đồng bộ hóa..."
+msgstr "共享正在同步 ..."
 
 msgid "Synchronization suspended"
-msgstr "Tạm ngưng đồng bộ hóa"
+msgstr "暂停同步"
 
 #TODO
 msgid "Synchronization is not active"
@@ -753,102 +754,100 @@ msgid "An error happened :("
 msgstr "An error happened :("
 
 msgid "8 characters minimum"
-msgstr "Ít nhất 8 ký tự"
+msgstr "至少8个字母"
 
 msgid "Username (email)"
-msgstr "Tài khoản đăng nhập (email)"
+msgstr "用户名(email)"
 
 msgid "Password"
-msgstr "Mật khẩu"
+msgstr "密码"
 
 msgid "Password forgotten?"
-msgstr "Quên mật khẩu?"
+msgstr "忘记密码 ?"
 
 msgid "Password confirmation"
-msgstr "Xác nhận mật khẩu"
+msgstr "确认密码"
 
 msgid "System settings"
-msgstr "Hiệu chỉnh của hệ thống"
+msgstr "系统设置"
 
 msgid "Do not use proxy"
-msgstr "Không có proxy"
+msgstr "不使用代理服务器"
 
 msgid "Manual settings"
-msgstr "Tùy chỉnh tay"
+msgstr "手动设置"
 
 msgid "The server requires an authentication"
-msgstr "Máy chủ yêu cầu đăng nhập"
+msgstr "服务器需要身份验证"
 
 msgid "Server"
-msgstr "Máy chủ"
+msgstr "服务器"
 
 msgid "Port"
-msgstr "Cổng"
+msgstr "接口"
 
 msgid "User"
-msgstr "Người dùng"
+msgstr "用户"
 
 msgid "Proxy type:"
-msgstr "Loại proxy :"
+msgstr "代理服务器类型 :"
 
 msgid "Proxy"
-msgstr "Proxy"
+msgstr "代理服务器"
 
 msgid "Current password"
-msgstr "Mật khẩu hiện tại"
+msgstr "当前密码"
 
 msgid "New password"
-msgstr "Mật khẩu mới"
+msgstr "新密码"
 
 msgid "Confirm new password"
-msgstr "Xác nhận mật khẩu mới"
+msgstr "确认新密码"
 
 msgid ""
 "You are about to change your password.\n"
-"For this, you need to enter your current password, and the new password that "
-"you want to use."
+"For this, you need to enter your current password, and the new password "
+"that you want to use."
 msgstr ""
-"Bạn đang chuẩn bị đổi mật khẩu.\n"
-"Để làm việc này, bạn phải nhập mật khẩu hiện tại, và mật khẩu mới mà bạn "
-"muốn sử dụng."
+"您将要更改您的密码。\n"
+"为此，您必须输入您当前的密码以及"
+"您想要使用的新的密码。"
 
 msgid "Then you will receive a confirmation email.\n"
-msgstr "Sau đó bạn sẽ nhận một email xác nhận.\n"
+msgstr "您将会收到确认邮件。\n"
 
 msgid "Permission"
-msgstr "Quyền"
+msgstr "权利"
 
 msgid "Email"
-msgstr "Email"
+msgstr "电子邮件"
 
 msgid "Stopped"
-msgstr "Ngừng hẳn"
+msgstr "停止"
 
 msgid "Paused"
-msgstr "Tạm ngưng"
+msgstr "暂停"
 
 msgid "Started"
-msgstr "Khởi động"
+msgstr "开始"
 
 #TODO
 msgid "Quota exceeded"
 msgstr "Quota exceeded"
 
 msgid "Bajoo - Ask for passphrase"
-msgstr "Bajoo - Yêu cầu mật mã mã hóa"
+msgstr "Bajoo - 要求密令"
 
 msgid ""
 "Cannot add this member to team share; maybe this account does not exist."
-msgstr ""
-"Không thể thêm thành viên này vào chia sẻ nhóm; có thể rằng tài khoản không "
-"tồn tại."
+msgstr "该团队共享文件无法加入; 可能该账户已不存在。 "
 
 msgid ""
 "Some members cannot be added to this team share. Please verify the email "
 "addresses."
 msgstr ""
-"Vài thành viên không được cấp quyền cho chia sẻ này. Vui lòng kiểm tra các "
-"địa chỉ email."
+"一些成员不能加入到该团队共享。 "
+"请检查一下电子邮件地址。"
 
 #TODO
 msgid "Create my account"

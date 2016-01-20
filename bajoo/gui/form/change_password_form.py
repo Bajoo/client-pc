@@ -144,3 +144,21 @@ class ChangePasswordView(BaseView):
             self._old_password_error,
             self._new_password_error,
             self._confirm_new_password_error]
+            
+def main():
+    app = wx.App()
+    win = wx.Frame(None, title='Proxy Form')
+    app.SetTopWindow(win)
+
+    form = ChangePasswordForm(win)
+
+    sizer = wx.BoxSizer(wx.HORIZONTAL)
+    sizer.Add(form, proportion=1, flag=wx.ALL | wx.EXPAND, border=15)
+    win.SetSizer(sizer)
+    sizer.SetSizeHints(win)
+    win.Show(True)
+    app.MainLoop()
+
+
+if __name__ == '__main__':
+    main()

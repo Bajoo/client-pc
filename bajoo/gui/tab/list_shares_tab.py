@@ -336,10 +336,10 @@ class ListSharesView(BaseView):
         self.window.Bind(wx.EVT_BUTTON, self.window.btn_open_dir_clicked,
                          btn_open_local_dir)
 
-        encrypted_text = 'not encrypted'
+        encrypted_text = 'Not encrypted'
 
         if local_container.container.is_encrypted:
-            encrypted_text = 'encrypted'
+            encrypted_text = 'Encrypted'
 
         self.register_i18n(
             lbl_share_description.SetLabel,
@@ -413,6 +413,7 @@ class ListSharesView(BaseView):
 
 
 def main():
+    #FIXME this code seems to be broken.
     logging.basicConfig()
     _logger.setLevel(logging.DEBUG)
 

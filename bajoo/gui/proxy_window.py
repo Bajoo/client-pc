@@ -86,9 +86,10 @@ def main():
     win = ProxyWindow(None)
 
     def _proxy_event(event):
-        print('Proxy event received:')
-        print(event.data)
-        win.Destroy()  # Explicitly stop the MainLoop()
+        if event.GetId() == wx.ID_OK:
+            print('Proxy event received:')
+            print(event.data)
+            win.Destroy()  # Explicitly stop the MainLoop()
 
     app.Bind(EVT_PROXY_FORM, _proxy_event)
 
@@ -96,7 +97,6 @@ def main():
         print('OK')
     else:
         print('Action canceled')
-    app.MainLoop()
 
 if __name__ == '__main__':
     main()

@@ -596,7 +596,7 @@ class BajooApp(wx.App, SoftwareUpdate):
             success_msg = _('A team share has been successfully deleted '
                             'from server.')
         except:
-            _logger.exception('Unable to delet teamshare %s' %
+            _logger.exception('Unable to delete teamshare %s' %
                               share.model.name)
             error_msg = _('Team share %s cannot be '
                           'deleted from server.') % share.model.name

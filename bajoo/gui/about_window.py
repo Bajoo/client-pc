@@ -259,6 +259,24 @@ class AboutBajooView(BaseView):
 
         self.register_i18n(about_panel.GetTopLevelParent().SetTitle,
                            N_('About Bajoo'))
+                           
+        self.register_many_i18n('SetLabel', {
+            lbl_description: N_('Official software for Bajoo online storage '
+                                'service.'),
+            lbl_version_title: N_('Version: '),
+            lbl_license: N_('This software is distributed under the terms of '
+                            'the MIT License.'),
+            lbl_source_code: N_('It is freely redistributable, the source '
+                                'code is available'),
+            lbl_source_code_link: N_('on GitHub.'),
+            lbl_trademarks: N_(u'Bajoo and Linéa are registered trademarks.'),
+            lbl_home_page_link: N_('www.bajoo.fr'),
+            lbl_frequently_asked_url: N_('List of frequently asked '
+                                         'questions.'),
+            lbl_contact_us: N_('If you have a new question, feel free to'),
+            lbl_contact_us_url: N_('contact us.'),
+            lbl_libraries: N_('Bajoo uses the following libraries:')
+        })
 
 
 def main():

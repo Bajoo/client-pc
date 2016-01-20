@@ -185,6 +185,7 @@ class CreationShareView(BaseView):
 
         self.register_many_i18n('SetLabel', {
             btn_create: N_('Create'),
+            btn_cancel: N_('Cancel'),
             rbtn_team_share: N_("Team share"),
             rbtn_public_share: N_("Public share"),
             chk_encryption: N_("Encrypt this share"),
@@ -204,8 +205,20 @@ class CreationShareView(BaseView):
 
 def main():
     app = wx.App()
-    win = wx.Frame(None, title=N_('New Share'))
+    win = wx.Frame(None, title=N_('New share'))
     app.SetTopWindow(win)
+    from os.path import expanduser
+    
+    class FakeUserProfile(object):
+        def __init__(self):
+            self.root_folder_path = expanduser("~")
+            
+    class FakeUser(object):
+        def __init__(self):
+            self.name = "toto"
+    
+    app.user_profile = FakeUserProfile()
+    app._user = FakeUser()
 
     tab = CreationShareTab(win)
     tab.GetSizer().SetSizeHints(win)

@@ -177,6 +177,7 @@ class AccountView(BaseView):
         bg_color = account_screen.GetBackgroundColour()
         btn_change_offer.SetBackgroundColour(bg_color)
 
+        #TODO: set proper quota text + i18n support
         # lbl_quota_info
         lbl_quota_info = wx.StaticText(
             account_screen, wx.ID_ANY,
@@ -212,7 +213,7 @@ class AccountView(BaseView):
             account_screen, wx.ID_ANY, 100,
             name='gauge_quota')
 
-        # TODO: set proper quota text
+        # TODO: set proper quota text + i18n support
         gauge_text_min = wx.StaticText(
             account_screen, wx.ID_ANY,
             "min", name='gauge_text_min')

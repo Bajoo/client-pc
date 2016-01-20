@@ -51,3 +51,13 @@ def message_box_members_changed(parent=None):
     caption = _("Data not saved")
 
     return _show_confirmation_box(message, caption, parent)
+    
+def main():
+    app = wx.App()
+    win = wx.Frame(None)
+    message_box_delete_share("SHARE_NAME_EXAMPLE", win)
+    message_box_quit_share("SHARE_NAME_EXAMPLE", win)
+    message_box_members_changed(win)
+
+if __name__ == '__main__':
+    main()

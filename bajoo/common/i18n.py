@@ -113,6 +113,16 @@ available_langs = {
         'code': 'vi',
         'name': u'Tiếng Việt',
         'flag': ''
+    },
+    'it_IT': {
+        'code': 'it_IT',
+        'name': u'Italian (Italy)',
+        'flag': ''
+    },
+    'zh_CN': {
+        'code': 'zh-cn',
+        'name': u'Chinese (China)',
+        'flag': ''
     }
 }
 

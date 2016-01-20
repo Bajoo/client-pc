@@ -574,7 +574,7 @@ class DetailsShareView(BaseView):
 
         # the share_options sizer contains options of exclusion & local dir
         share_options_box = wx.StaticBox(
-            details_share_tab, label=N_('Advanced Options'))
+            details_share_tab, label=N_('Advanced options'))
         share_options_box_sizer = wx.StaticBoxSizer(
             share_options_box, wx.VERTICAL)
 
@@ -603,18 +603,20 @@ class DetailsShareView(BaseView):
             lbl_members: N_('Members having access to this share'),
             chk_exclusion: N_('Do not synchronize on this PC'),
             btn_browse_location: N_('Location on this PC'),
-            lbl_folder_exist_error: N_('This folder already exists')
-        })
-
-        self.register_many_i18n('SetToolTipString', {
-            btn_back: N_('<< Back to share list'),
+            lbl_folder_exist_error: N_('This folder already exists'),
             btn_quit_share: N_('Quit this share'),
             btn_delete_share: N_('Delete this share'),
             btn_open_folder: N_('Open folder'),
+            share_options_box: N_('Advanced options')
+        })
+
+        self.register_many_i18n('SetToolTipString', {
+            btn_back: N_('<< Back to share list')
         })
 
 
 def main():
+    #FIXME this code seems to be broken.
     logging.basicConfig()
     _logger.setLevel(logging.DEBUG)
 

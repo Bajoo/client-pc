@@ -143,7 +143,7 @@ class GeneralSettingsView(BaseView):
 
 def main():
     app = wx.App()
-    win = wx.Frame(None, title=N_('General Setttings'))
+    win = wx.Frame(None, title='General Setttings')
     app.SetTopWindow(win)
 
     tab = GeneralSettingsTab(win)
