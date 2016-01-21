@@ -113,7 +113,13 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
         self.Bind(wx.EVT_MENU, self._open_window)
 
     def _open_root_folder(self, event):
-        open_folder(wx.GetApp().user_profile.root_folder_path)
+        if wx.GetApp().user_profile is not None:
+            # User connected, open the root folder
+            open_folder(wx.GetApp().user_profile.root_folder_path)
+        else:
+            # User not connected, open the connection window
+            wx.PostEvent(self, self.OpenWindowEvent(
+                -1, target=self.OPEN_HOME))
 
     def _open_window(self, event):
         mapping_open_evt = {
