@@ -43,8 +43,8 @@ class PassphraseWindow(wx.Dialog):
         if is_retry:
             error_message = _('Invalid passphrase!')
             wx.StaticText(self, name='error_msg', label=error_message)
-        wx.Button(self, wx.ID_OK, name='btn_ok')
-        wx.Button(self, wx.ID_CANCEL, name='btn_cancel')
+        wx.Button(self, wx.ID_OK, name='btn_ok', label=_('OK'))
+        wx.Button(self, wx.ID_CANCEL, name='btn_cancel', label=_('Cancel'))
 
         PassphraseWindowView(self)
 

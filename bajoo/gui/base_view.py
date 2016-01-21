@@ -4,6 +4,7 @@ import wx
 
 from ..common.path import resource_filename
 from .translator import Translator
+from ..common.i18n import N_
 
 
 class BaseView(Translator):
@@ -114,6 +115,12 @@ class BaseView(Translator):
         btn_ok = wx.Button(parent, wx.ID_OK, name='btn_ok')
         btn_cancel = wx.Button(parent, wx.ID_CANCEL, name='btn_cancel')
         btn_apply = wx.Button(parent, wx.ID_APPLY, name='btn_apply')
+
+        self.register_many_i18n('SetLabel', {
+            btn_cancel: N_('Cancel'),
+            btn_ok: N_('OK'),
+            btn_apply: N_('Apply')
+        })
 
         # Buttons box
         button_box = wx.StdDialogButtonSizer()

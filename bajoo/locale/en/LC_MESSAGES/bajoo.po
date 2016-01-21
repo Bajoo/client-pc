@@ -3,18 +3,17 @@
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
-#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
+"Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2015-10-20 12:12+0200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"PO-Revision-Date: 2016-01-21 16:28+0100\n"
+"Last-Translator: Bajoo <contact@bajoo.fr>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
+"Language: en\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
 #: bajoo/filesync/__init__.py:195
@@ -323,4 +322,12 @@ msgstr ""
 
 #: bajoo/gui/common/message_box.py:10
 msgid "No"
+msgstr ""
+
+#: bajoo/gui/tab/base_view.py:122
+msgid "Apply"
+msgstr ""
+
+#: bajoo/gui/common/share_location_browser.py:19
+msgid "Browse"
 msgstr ""

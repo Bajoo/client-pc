@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: Bajoo 2 0.1\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2015-10-20 12:12+0200\n"
-"PO-Revision-Date: 2015-10-20 12:37+0100\n"
+"PO-Revision-Date: 2016-01-11 09:50+0100\n"
 "Last-Translator: Kévin Bernard-Allies <kbernard-allies@bajoo.fr>\n"
 "Language-Team: Bajoo <contact@bajoo.fr>\n"
 "Language: fr\n"
@@ -895,3 +895,11 @@ msgstr "Oui"
 #: bajoo/gui/common/message_box.py:10
 msgid "No"
 msgstr "Non"
+
+#: bajoo/gui/tab/base_view.py:122
+msgid "Apply"
+msgstr "Appliquer"
+
+#: bajoo/gui/common/share_location_browser.py:19
+msgid "Browse"
+msgstr "Parcourir"

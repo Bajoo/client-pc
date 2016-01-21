@@ -3,6 +3,7 @@ from os import path
 
 import wx
 from wx.lib.filebrowsebutton import DirBrowseButton
+from ...common.i18n import _
 
 
 class ShareLocationBrowser(DirBrowseButton):
@@ -14,8 +15,8 @@ class ShareLocationBrowser(DirBrowseButton):
     """
 
     def __init__(self, **kwargs):
-        DirBrowseButton.__init__(
-            self, changeCallback=self._on_changed, **kwargs)
+        DirBrowseButton.__init__(self, changeCallback=self._on_changed,
+                                 buttonText=_('Browse'), **kwargs)
 
         self._share_name = ''
         self._parent_folder = kwargs.get('startDirectory', '.')

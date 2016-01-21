@@ -884,3 +884,23 @@ msgstr "Proxy is activate, but no URL is present.\nCheck your configuration."
 #TODO
 msgid "The passphrase request has been rejected by the user."
 msgstr "The passphrase request has been rejected by the user."
+
+#TODO
+#: bajoo/gui/common/message_box.py:10
+msgid "Yes"
+msgstr "Yes"
+
+#TODO
+#: bajoo/gui/common/message_box.py:10
+msgid "No"
+msgstr "No"
+
+#TODO
+#: bajoo/gui/tab/base_view.py:122
+msgid "Apply"
+msgstr "Apply"
+
+#TODO
+#: bajoo/gui/common/share_location_browser.py:19
+msgid "Browse"
+msgstr "Browse"

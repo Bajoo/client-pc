@@ -607,7 +607,9 @@ class DetailsShareView(BaseView):
             btn_quit_share: N_('Quit this share'),
             btn_delete_share: N_('Delete this share'),
             btn_open_folder: N_('Open folder'),
-            share_options_box: N_('Advanced options')
+            share_options_box: N_('Advanced options'),
+            btn_cancel: N_('Cancel'),
+            btn_apply: N_('Apply')
         })
 
         self.register_many_i18n('SetToolTipString', {
@@ -616,7 +618,7 @@ class DetailsShareView(BaseView):
 
 
 def main():
-    #FIXME this code seems to be broken.
+    # FIXME this code seems to be broken.
     logging.basicConfig()
     _logger.setLevel(logging.DEBUG)
 

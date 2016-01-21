@@ -1035,3 +1035,24 @@ msgstr ""
 #TODO
 msgid "The passphrase request has been rejected by the user."
 msgstr "L'utilisateur a refusé d'entrer sa phrase secrète"
+
+#TODO
+#: bajoo/gui/common/message_box.py:10
+msgid "Yes"
+msgstr "Yes"
+
+#TODO
+#: bajoo/gui/common/message_box.py:10
+msgid "No"
+msgstr "No"
+
+#TODO
+#: bajoo/gui/tab/base_view.py:122
+msgid "Apply"
+msgstr "Apply"
+
+#TODO
+#: bajoo/gui/common/share_location_browser.py:19
+msgid "Browse"
+msgstr "Browse"
+

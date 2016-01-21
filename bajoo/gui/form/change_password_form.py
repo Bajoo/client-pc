@@ -136,7 +136,9 @@ class ChangePasswordView(BaseView):
         self.register_many_i18n('SetHint', {
             self._txt_old_password: N_('Current password'),
             self._txt_new_password: N_('New password'),
-            self._txt_confirm_new_password: N_('Confirm new password')
+            self._txt_confirm_new_password: N_('Confirm new password'),
+            self._btn_cancel: N_('Cancel'),
+            self._btn_ok: N_('OK')
         })
 
     def get_validators(self):
