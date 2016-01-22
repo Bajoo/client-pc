@@ -14,6 +14,7 @@ from .network.errors import HTTPError
 from . import promise
 from .user_profile import UserProfile
 
+
 _logger = logging.getLogger(__name__)
 
 
@@ -52,7 +53,6 @@ def connect_or_register(ui_factory):
 
 
 class _ConnectionProcess(object):
-
     def __init__(self, ui_factory):
         self.ui_factory = ui_factory
         self.ui_handler = None
@@ -210,7 +210,12 @@ class _ConnectionProcess(object):
                           (error.err_code, error.code))
 
             if error.code == 401:
-                message = N_('Invalid username or password.')
+                if error.err_code == 'invalid_client':
+                    message = N_('This program\'s version is no longer'
+                                 ' supported by Bajoo service. '
+                                 'Please update to continue.\n')
+                else:
+                    message = N_('Invalid username or password.')
             elif error.code == 409:
                 message = N_('There is already an account with this email.')
             else:
