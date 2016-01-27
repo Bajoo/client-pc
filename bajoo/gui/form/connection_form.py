@@ -8,6 +8,7 @@ from ...common.i18n import N_
 from ..base_view import BaseView
 from ..validator import BaseValidator, NotEmptyValidator, EmailValidator
 from . import BaseForm
+from ...api.session import IDENTITY_API_URL
 
 
 class ConnectionForm(BaseForm):
@@ -83,9 +84,12 @@ class ConnectionFormView(BaseView):
 
     def create_layout(self):
         """Create appropriate layout and static text for form."""
-        # TODO: set real URL
-        forgotten_password_link = HyperLinkCtrl(self.window,
-                                                URL='http://www.bajoo.fr')
+
+        # forgotten_password
+        forgotten_password_url = '/'.join([
+            IDENTITY_API_URL, 'user', 'password-forgotten'])
+        forgotten_password_link = HyperLinkCtrl(
+            self.window, URL=forgotten_password_url)
         self.register_i18n(forgotten_password_link.SetLabel,
                            N_('Password forgotten?'))
         forgotten_password_link.DoPopup(False)
