@@ -130,9 +130,10 @@ class PassphraseWindowView(BaseView):
 
         checkbox = self.window.FindWindow('allow_save_on_disk')
         checkbox.SetLabel(_('Memorize the passphrase'))
-        
+
+
 def main():
-    app = wx.App()
+    wx.App()
     win = PassphraseWindow(None)
 
     if win.ShowModal() == wx.ID_OK:

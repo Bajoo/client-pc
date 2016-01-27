@@ -2,12 +2,13 @@
 
 from itertools import cycle
 
-from .i18n import _
+from .i18n import _, N_
 
 # All currently known units:
 # bytes, kilobytes, megabytes, gigabytes, terabytes
 # petabytes, exabytes, zettabytes, yottabytes
-_bytes_units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+_bytes_units = [N_('B'), N_('KB'), N_('MB'), N_('GB'), N_('TB'), N_('PB'),
+                N_('EB'), N_('ZB'), N_('YB')]
 
 
 def human_readable_bytes(value):

@@ -246,6 +246,8 @@ class DetailsShareTab(BaseForm):
         self._view.remove_i18n(
             self.FindWindow('lbl_share_status').SetLabel)
         self._view.remove_i18n(
+            self.FindWindow('lbl_share_container_status').SetLabel)
+        self._view.remove_i18n(
             self.FindWindow('lbl_share_files_folders').SetLabel)
         self._view.remove_i18n(
             self.FindWindow('lbl_local_space').SetLabel)
@@ -259,14 +261,16 @@ class DetailsShareTab(BaseForm):
                 N_('Encrypted') if is_encrypted else N_('Not encrypted')
             ),
             self.FindWindow('lbl_share_type'): share_type,
-            self.FindWindow('lbl_share_status'): (
-                N_('Status: %s'), share.get_status_text()),
+            self.FindWindow('lbl_share_status'): (N_('Status:')),
+            self.FindWindow('lbl_share_container_status'): (
+                share.get_status_text()),
             # TODO: stats
-            self.FindWindow('lbl_share_files_folders'): N_(' '),
-            self.FindWindow('lbl_local_space'): N_(' '),
+            self.FindWindow('lbl_share_files_folders'): ' ',
+            self.FindWindow('lbl_local_space'): ' ',
             self.FindWindow('lbl_share_files_folders'): (
-                N_('This share contains %d folders and %d files,'),
-                (n_folders, n_files)
+                N_('This share contains %(n_folders)d folders '
+                   + 'and %(n_files)d files,'),
+                {"n_folders": n_folders, "n_files": n_files}
             ),
             self.FindWindow('lbl_local_space'): (
                 N_('which takes the disk space of %s'), friendly_folders_size
@@ -484,8 +488,13 @@ class DetailsShareView(BaseView):
         lbl_share_status = wx.StaticText(
             details_share_tab,
             label='', name='lbl_share_status')
+        lbl_share_container_status = wx.StaticText(
+            details_share_tab,
+            label='', name='lbl_share_container_status')
         lbl_share_status_box = self.make_sizer(
-            wx.HORIZONTAL, [lbl_share_status, img_share_status],
+            wx.HORIZONTAL, [lbl_share_status,
+                            lbl_share_container_status,
+                            img_share_status],
             outside_border=False, flag=wx.ALIGN_CENTER)
         lbl_share_files_folders = wx.StaticText(
             details_share_tab,

@@ -11,7 +11,7 @@ import sys
 from threading import RLock
 
 from .api.team_share import TeamShare
-from .common.i18n import _
+from .common.i18n import _, N_
 from .promise import Promise
 
 
@@ -51,13 +51,13 @@ class LocalContainer(object):
     STATUS_WAIT_PASSPHRASE = 7
 
     _status_textes = {
-        STATUS_UNKNOWN: 'Unknown',
-        STATUS_ERROR: 'Error',
-        STATUS_STOPPED: 'Stopped',
-        STATUS_PAUSED: 'Paused',
-        STATUS_STARTED: 'Started',
-        STATUS_QUOTA_EXCEEDED: 'Quota exceeded',
-        STATUS_WAIT_PASSPHRASE: 'Wait the passphrase'
+        STATUS_UNKNOWN: N_('Unknown'),
+        STATUS_ERROR: N_('Error'),
+        STATUS_STOPPED: N_('Stopped'),
+        STATUS_PAUSED: N_('Paused'),
+        STATUS_STARTED: N_('Started'),
+        STATUS_QUOTA_EXCEEDED: N_('Quota exceeded'),
+        STATUS_WAIT_PASSPHRASE: N_('Wait the passphrase')
     }
 
     def __init__(self, model, container):

@@ -413,7 +413,7 @@ class ListSharesView(BaseView):
 
 
 def main():
-    #FIXME this code seems to be broken.
+    # FIXME this code seems to be broken.
     logging.basicConfig()
     _logger.setLevel(logging.DEBUG)
 

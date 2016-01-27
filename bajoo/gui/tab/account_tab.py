@@ -80,8 +80,11 @@ class AccountTab(wx.Panel, Translator):
         self._view.remove_i18n(self.FindWindow('lbl_quota_info').SetLabel)
         self._view.register_i18n(
             self.FindWindow('lbl_quota_info').SetLabel,
-            N_("%d share folders use %s, so %0.2f%% of your Bajoo storage."),
-            (self._data['n_shares'], quota_used_str, quota_percentage))
+            N_("%(name)d share folders use %(quota)s, so %(percent)0.2f%% "
+               "of your Bajoo storage."),
+            {"name": self._data['n_shares'],
+             "quota": quota_used_str,
+             "percent": quota_percentage})
 
         self.FindWindow('gauge_quota').SetValue(quota_percentage)
         self.FindWindow('gauge_text_min').SetLabelText('0')
@@ -177,7 +180,7 @@ class AccountView(BaseView):
         bg_color = account_screen.GetBackgroundColour()
         btn_change_offer.SetBackgroundColour(bg_color)
 
-        #TODO: set proper quota text + i18n support
+        # TODO: set proper quota text + i18n support
         # lbl_quota_info
         lbl_quota_info = wx.StaticText(
             account_screen, wx.ID_ANY,

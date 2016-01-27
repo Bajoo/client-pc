@@ -111,6 +111,11 @@ class BajooApp(wx.App, SoftwareUpdate):
         # Apply autorun on app startup to match with the config value
         autorun.set_autorun(config.get('autorun'))
 
+        # Set the lang from the config file if available
+        lang = config.get('lang')
+        if lang is not None:
+            set_lang(lang)
+
     def _ensures_single_instance_running(self):
         """Check that only one instance of Bajoo is running per user.
 
@@ -396,8 +401,9 @@ class BajooApp(wx.App, SoftwareUpdate):
             if self._main_window:
                 self._main_window.on_share_member_added(
                     share, email, permission,
-                    N_('%s has been given access to team share \'%s\'')
-                    % (email, share.model.name))
+                    N_("%(email)s has been given access to team "
+                       "share \'%(name)s\'")
+                    % {"email": email, "name": share.model.name})
         else:
             if self._main_window:
                 self._main_window.on_share_member_added(
@@ -424,8 +430,9 @@ class BajooApp(wx.App, SoftwareUpdate):
             if self._main_window:
                 self._main_window.on_share_member_removed(
                     share, email,
-                    N_('%s\'s access to team share \'%s\' '
-                       'has been removed.') % (email, share.model.name))
+                    N_('%(email)s\'s access to team share \'%(name)s\' '
+                       'has been removed.')
+                    % {"email": email, "name": share.model.name})
         else:
             if self._main_window:
                 self._main_window.on_share_member_removed(

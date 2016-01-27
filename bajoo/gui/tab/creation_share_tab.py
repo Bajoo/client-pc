@@ -208,15 +208,15 @@ def main():
     win = wx.Frame(None, title=N_('New share'))
     app.SetTopWindow(win)
     from os.path import expanduser
-    
+
     class FakeUserProfile(object):
         def __init__(self):
             self.root_folder_path = expanduser("~")
-            
+
     class FakeUser(object):
         def __init__(self):
             self.name = "toto"
-    
+
     app.user_profile = FakeUserProfile()
     app._user = FakeUser()
 

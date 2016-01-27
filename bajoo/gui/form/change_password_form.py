@@ -146,7 +146,8 @@ class ChangePasswordView(BaseView):
             self._old_password_error,
             self._new_password_error,
             self._confirm_new_password_error]
-            
+
+
 def main():
     app = wx.App()
     win = wx.Frame(None, title='Proxy Form')

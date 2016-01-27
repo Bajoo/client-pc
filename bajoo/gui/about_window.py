@@ -259,7 +259,7 @@ class AboutBajooView(BaseView):
 
         self.register_i18n(about_panel.GetTopLevelParent().SetTitle,
                            N_('About Bajoo'))
-                           
+
         self.register_many_i18n('SetLabel', {
             lbl_description: N_('Official software for Bajoo online storage '
                                 'service.'),

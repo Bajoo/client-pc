@@ -80,8 +80,10 @@ class HTTPError(NetworkError):
             error (requests.exceptions.HTTPError): base error.
         """
         if not message:
-            message = (N_("The server has returned an HTTP error: %s %s") %
-                       (error.response.status_code, error.response.reason))
+            message = (N_("The server has returned an HTTP error: "
+                          "%(code)s %(reason)s") %
+                       {"code": error.response.status_code,
+                        "reason": error.response.reason})
 
         NetworkError.__init__(self, error, message)
 

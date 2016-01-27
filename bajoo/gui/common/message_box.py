@@ -56,7 +56,7 @@ def message_box_members_changed(parent=None):
 
 
 def main():
-    app = wx.App()
+    wx.App()
     win = wx.Frame(None)
     message_box_delete_share("SHARE_NAME_EXAMPLE", win)
     message_box_quit_share("SHARE_NAME_EXAMPLE", win)

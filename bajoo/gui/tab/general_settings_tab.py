@@ -4,7 +4,7 @@ import logging
 import wx
 
 from ...common.i18n import N_
-from ...common import autorun
+from ...common import autorun, config
 from ..common.language_box import LanguageBox
 from ..base_view import BaseView
 from ..translator import Translator
@@ -107,7 +107,8 @@ class GeneralSettingsView(BaseView):
 
         # language_ctrl
         language_ctrl = LanguageBox(general_settings_screen,
-                                    name='language_ctrl')
+                                    name='language_ctrl',
+                                    current_lang_code=config.get('lang'))
 
         # Options box
         options_box = wx.StaticBox(general_settings_screen)

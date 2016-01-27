@@ -147,7 +147,7 @@ class AdvancedSettingsView(BaseView):
 
 def main():
     app = wx.App()
-    win = wx.Frame(None, title=N_('Advanced Settings'))
+    win = wx.Frame(None, title=N_('Advanced settings'))
     app.SetTopWindow(win)
 
     tab = AdvancedSettingsTab(win)
