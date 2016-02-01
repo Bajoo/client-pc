@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from . import wx_compat  # noqa
+from . import wx_compat # noqa
 
 import webbrowser
 
@@ -10,6 +10,7 @@ from ..common.i18n import N_
 from .base_view import BaseView
 from .bug_report import BugReportWindow
 from ..common.path import resource_filename
+from ..gui.translator import Translator
 
 
 class AboutBajooWindow(wx.Frame):
@@ -35,6 +36,15 @@ class AboutBajooWindow(wx.Frame):
         win = self.FindWindow('contact_dev')
         win.Bind(EVT_HYPERLINK_LEFT, self._bug_report)
         win.AutoBrowse(False)
+
+    def Show(self, show=True):
+        wx.Frame.Show(self, show)
+
+        if show:
+            self.Layout()
+            self._view.contact_sizer.Layout()
+            self._view.source_code_sizer.Layout()
+            self._view.bajoo_trademark_sizer.Layout()
 
     def _init_icons(self):
         if not AboutBajooWindow.GOOGLE_ICON:
@@ -233,20 +243,20 @@ class AboutBajooView(BaseView):
                                (lbl_notify2, 0, wx.LEFT, 6),
                                (lbl_pypiwin32, 0, wx.LEFT, 6)])
 
-        source_code_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        source_code_sizer.AddMany(
+        self.source_code_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.source_code_sizer.AddMany(
             [lbl_source_code, (lbl_source_code_link, 0, wx.LEFT, 3)])
 
-        bajoo_trademark_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        bajoo_trademark_sizer.AddMany([lbl_trademarks, (lbl_home_page_link, 0,
-                                                        wx.LEFT, 6)])
+        self.bajoo_trademark_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.bajoo_trademark_sizer.AddMany([
+            lbl_trademarks, (lbl_home_page_link, 0, wx.LEFT, 6)])
 
         version_sizer = wx.BoxSizer(wx.HORIZONTAL)
         version_sizer.AddMany([lbl_version_title, (lbl_version, 0,
                                                    wx.LEFT, 3,)])
 
-        contact_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        contact_sizer.AddMany([lbl_contact_us,
+        self.contact_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.contact_sizer.AddMany([lbl_contact_us,
                                lbl_contact_us_url,
                                lbl_contact_or_url,
                                lbl_contact_dev_url])
@@ -255,10 +265,10 @@ class AboutBajooView(BaseView):
         text_sizer = self.make_sizer(
             wx.VERTICAL, [
                 None, lbl_description, version_sizer, None,
-                lbl_frequently_asked_url, contact_sizer, None,
-                lbl_license, source_code_sizer, None,
+                lbl_frequently_asked_url, self.contact_sizer, None,
+                lbl_license, self.source_code_sizer, None,
                 lbl_libraries, libraries_box, None,
-                bajoo_trademark_sizer, None
+                self.bajoo_trademark_sizer, None
             ], outside_border=False, border=5)
 
         # Insert the title at the top of the page
@@ -299,6 +309,13 @@ class AboutBajooView(BaseView):
             lbl_contact_dev_url: N_('contact our dev team.'),
             lbl_libraries: N_('Bajoo uses the following libraries:')
         })
+
+    def notify_lang_change(self):
+        Translator.notify_lang_change(self)
+
+        self.contact_sizer.Layout()
+        self.source_code_sizer.Layout()
+        self.bajoo_trademark_sizer.Layout()
 
 
 def main():
