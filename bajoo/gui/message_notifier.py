@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from ..common.path import resource_filename
+
 import logging
 import os
 import sys
@@ -9,8 +11,6 @@ if sys.platform not in ['win32', 'cygwin', 'win64']:
         from html import escape
     except:  # Python 2
         from cgi import escape
-
-from ..common.path import resource_filename
 
 _logger = logging.getLogger(__name__)
 

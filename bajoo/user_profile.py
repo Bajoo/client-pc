@@ -37,7 +37,7 @@ def _write_action_attr(attr, callback):
             "attr" attribute. When updated, the callback is called.
             If the profile file is not valid, raises an exception.
     """
-    _getter = lambda self: getattr(self, attr)
+    def _getter(self): return getattr(self, attr)
 
     def _setter(self, new_value):
         setattr(self, attr, new_value)

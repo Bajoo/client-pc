@@ -60,19 +60,22 @@ class TestXor(object):
     def test_byte_same_size(self):
         string1 = "0123456789ABCDEF"
         string2 = "FEDCBA9876543210"
-        assert xor(bytes(string1.encode('utf-8')), bytes(string2.encode('utf-8'))) \
+        assert xor(bytes(string1.encode('utf-8')),
+                   bytes(string2.encode('utf-8'))) \
             == b'vtvpvt\x0f\x0f\x0f\x0ftvpvtv'
 
     def test_byte_key_is_bigger(self):
         string1 = "0123456789ABCDEF"
         string2 = "FEDCBA9876543210FEDCBA"
-        assert xor(bytes(string1.encode('utf-8')), bytes(string2.encode('utf-8'))) \
+        assert xor(bytes(string1.encode('utf-8')),
+                   bytes(string2.encode('utf-8'))) \
             == b'vtvpvt\x0f\x0f\x0f\x0ftvpvtv'
 
     def test_byte_key_is_shorter(self):
         string1 = "0123456789ABCDEF"
         string2 = "FEDCBA98"
-        assert xor(bytes(string1.encode('utf-8')), bytes(string2.encode('utf-8'))) \
+        assert xor(bytes(string1.encode('utf-8')),
+                   bytes(string2.encode('utf-8'))) \
             == b'vtvpvt\x0f\x0f~|\x05\x01\x01\x05|~'
 
     def test_mixUnicodeWithItself(self):

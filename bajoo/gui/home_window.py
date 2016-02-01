@@ -25,8 +25,8 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
 
     def __init__(self, notify):
         wx.Frame.__init__(self, parent=None, title='Bajoo',
-                          style=(wx.DEFAULT_FRAME_STYLE & ~wx.MAXIMIZE_BOX
-                                 & ~wx.RESIZE_BORDER))
+                          style=(wx.DEFAULT_FRAME_STYLE & ~wx.MAXIMIZE_BOX & ~
+                                 wx.RESIZE_BORDER))
         self._view = HomeWindowView(self)
         self._notify = notify
 

@@ -268,8 +268,8 @@ class DetailsShareTab(BaseForm):
             self.FindWindow('lbl_share_files_folders'): ' ',
             self.FindWindow('lbl_local_space'): ' ',
             self.FindWindow('lbl_share_files_folders'): (
-                N_('This share contains %(n_folders)d folders '
-                   + 'and %(n_files)d files,'),
+                N_('This share contains %(n_folders)d folders ' +
+                   'and %(n_files)d files,'),
                 {"n_folders": n_folders, "n_files": n_files}
             ),
             self.FindWindow('lbl_local_space'): (
@@ -407,7 +407,8 @@ class DetailsShareTab(BaseForm):
         self.hide_message()
 
         if self._share:
-            if message_box.message_box_quit_share(self._share.model.name, self) \
+            if message_box.message_box_quit_share(self._share.model.name,
+                                                  self) \
                     == wx.YES:
                 event = DetailsShareTab.RequestQuitShare(self.GetId())
                 event.share = self._share
