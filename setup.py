@@ -186,6 +186,7 @@ except ImportError:
           "distributable archives.")
 else:
     if sys.platform in ['win32', 'cygwin', 'win64']:
+        import requests
 
         if sys.version_info[0] is 2:  # Python 2
             try:
@@ -201,8 +202,10 @@ else:
             bdist_esky.Executable('start.py', name='Bajoo', gui_only=True,
                                   icon=icon_path)
         ]
+        cacert_path = requests.certs.where()
         setup_kwargs['data_files'] = [('.', glob('gpg/*.exe') +
-                                       glob('gpg/*.dll'))]
+                                       glob('gpg/*.dll')),
+                                      ('requests', [cacert_path])]
 
 
 setup(**setup_kwargs)
