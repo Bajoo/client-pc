@@ -24,7 +24,7 @@ class ChangePasswordWindow(wx.Dialog, Translator):
             self, parent,
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER | wx.MAXIMIZE_BOX)
         Translator.__init__(self)
-        self.register_i18n(self.SetTitle, N_('Bajoo - Change password'))
+        self.register_i18n(self, self.SetTitle, N_('Bajoo - Change password'))
         self.form = ChangePasswordForm(self)
 
         sizer = wx.BoxSizer(wx.VERTICAL)

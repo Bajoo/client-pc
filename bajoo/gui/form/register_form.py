@@ -84,11 +84,20 @@ class RegisterFormView(BaseView):
         password_txt.SetMinSize(size)
         confirm_txt.SetMinSize(size)
 
-        self.register_i18n(username_txt.SetHint, N_('Username (email)'))
-        self.register_i18n(password_txt.SetHint, N_('Password'))
-        self.register_i18n(confirm_txt.SetHint, N_('Password confirmation'))
-        self.register_i18n(submit_btn.SetLabel, N_('Create my account'))
-        self.register_i18n(password_validator.SetLabel,
+        self.register_i18n(username_txt,
+                           username_txt.SetHint,
+                           N_('Username (email)'))
+        self.register_i18n(password_txt,
+                           password_txt.SetHint,
+                           N_('Password'))
+        self.register_i18n(confirm_txt,
+                           confirm_txt.SetHint,
+                           N_('Password confirmation'))
+        self.register_i18n(submit_btn,
+                           submit_btn.SetLabel,
+                           N_('Create my account'))
+        self.register_i18n(password_validator,
+                           password_validator.SetLabel,
                            N_('8 characters minimum'))
 
     def create_layout(self):

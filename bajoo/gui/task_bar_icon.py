@@ -105,6 +105,7 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
 
         self.set_state(self.NOT_CONNECTED)
         self.register_i18n(
+            self,
             lambda txt: self.SetIcon(self._icons[self._state], tooltip=txt),
             self._tooltips[self._state])
 

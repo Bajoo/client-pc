@@ -87,10 +87,13 @@ class HomeScreenView(BaseView):
         self._connection_form = ConnectionForm(notebook,
                                                name='connection_form')
         notebook.AddPage(self._connection_form, '')
-        self.register_i18n(partial(notebook.SetPageText, 0), N_('Connection'))
+        self.register_i18n(notebook,
+                           partial(notebook.SetPageText, 0),
+                           N_('Connection'))
         self._register_form = RegisterForm(notebook, name='register_form')
         notebook.AddPage(self._register_form, '')
-        self.register_i18n(partial(notebook.SetPageText, 1),
+        self.register_i18n(notebook,
+                           partial(notebook.SetPageText, 1),
                            N_('Make an account'))
 
         self.register_many_i18n('SetLabel', {

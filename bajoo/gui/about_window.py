@@ -285,7 +285,8 @@ class AboutBajooView(BaseView):
         about_panel.SetSizer(main_sizer)
         main_sizer.SetSizeHints(about_panel.GetTopLevelParent())
 
-        self.register_i18n(about_panel.GetTopLevelParent().SetTitle,
+        self.register_i18n(about_panel,
+                           about_panel.GetTopLevelParent().SetTitle,
                            N_('About Bajoo'))
 
         self.register_many_i18n('SetLabel', {

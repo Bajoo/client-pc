@@ -68,8 +68,12 @@ class ProxyWindowView(BaseView):
         self._cancel_btn = wx.Button(window, id=wx.ID_CANCEL)
         self._apply_btn = wx.Button(window, id=wx.ID_OK)
 
-        self.register_i18n(self._cancel_btn.SetLabel, N_('Cancel'))
-        self.register_i18n(self._apply_btn.SetLabel, N_('OK'))
+        self.register_i18n(self._cancel_btn,
+                           self._cancel_btn.SetLabel,
+                           N_('Cancel'))
+        self.register_i18n(self._apply_btn,
+                           self._apply_btn.SetLabel,
+                           N_('OK'))
 
         btn_sizer = wx.StdDialogButtonSizer()
         btn_sizer.AddButton(self._cancel_btn)

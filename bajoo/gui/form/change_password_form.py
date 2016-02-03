@@ -31,7 +31,7 @@ class ChangePasswordForm(BaseForm):
 
     def show_error(self, message):
         lbl_error = self.FindWindow('lbl_error')
-        self._view.register_i18n(lbl_error.SetLabel, message)
+        self._view.register_i18n(lbl_error, lbl_error.SetLabel, message)
         lbl_error.Show()
 
         self.GetTopLevelParent().Layout()
@@ -137,8 +137,6 @@ class ChangePasswordView(BaseView):
             self._txt_old_password: N_('Current password'),
             self._txt_new_password: N_('New password'),
             self._txt_confirm_new_password: N_('Confirm new password'),
-            self._btn_cancel: N_('Cancel'),
-            self._btn_ok: N_('OK')
         })
 
     def get_validators(self):

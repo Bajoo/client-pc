@@ -78,9 +78,15 @@ class ConnectionFormView(BaseView):
         username_txt.SetMinSize(size)
         password_txt.SetMinSize(size)
 
-        self.register_i18n(username_txt.SetHint, N_('Username (email)'))
-        self.register_i18n(password_txt.SetHint, N_('Password'))
-        self.register_i18n(submit_btn.SetLabel, N_('Connection'))
+        self.register_i18n(username_txt,
+                           username_txt.SetHint,
+                           N_('Username (email)'))
+        self.register_i18n(password_txt,
+                           password_txt.SetHint,
+                           N_('Password'))
+        self.register_i18n(submit_btn,
+                           submit_btn.SetLabel,
+                           N_('Connection'))
 
     def create_layout(self):
         """Create appropriate layout and static text for form."""
@@ -90,7 +96,8 @@ class ConnectionFormView(BaseView):
             IDENTITY_API_URL, 'user', 'password-forgotten'])
         forgotten_password_link = HyperLinkCtrl(
             self.window, URL=forgotten_password_url)
-        self.register_i18n(forgotten_password_link.SetLabel,
+        self.register_i18n(forgotten_password_link,
+                           forgotten_password_link.SetLabel,
                            N_('Password forgotten?'))
         forgotten_password_link.DoPopup(False)
 

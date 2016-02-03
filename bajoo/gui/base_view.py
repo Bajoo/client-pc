@@ -34,7 +34,7 @@ class BaseView(Translator):
             title (str): new frame title. The title will be translated.
         """
         frame = self.window.GetTopLevelParent()
-        self.register_i18n(frame.SetTitle, title)
+        self.register_i18n(frame, frame.SetTitle, title)
 
     def make_sizer(self, direction, items, outside_border=True, flag=0,
                    proportion=0, sizer=None, border=15):

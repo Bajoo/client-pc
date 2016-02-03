@@ -170,13 +170,15 @@ class ListSharesTab(wx.Panel, Translator):
         lbl_error_message = self.FindWindow('lbl_error_message')
 
         if msg:
-            self.register_i18n(lbl_message.SetLabel, msg)
+            self.register_i18n(lbl_message, lbl_message.SetLabel, msg)
             lbl_message.Show()
         else:
             lbl_message.Hide()
 
         if error_msg:
-            self.register_i18n(lbl_error_message.SetLabel, error_msg)
+            self.register_i18n(lbl_error_message,
+                               lbl_error_message.SetLabel,
+                               error_msg)
             lbl_error_message.Show()
         else:
             lbl_error_message.Hide()
@@ -238,9 +240,11 @@ class ListSharesView(BaseView):
         main_sizer.Add(self.shares_window, 1, wx.EXPAND | wx.ALL, 15)
         main_sizer.Add(self._wait, 0, wx.EXPAND | wx.ALL, 0)
         self.window.SetSizer(main_sizer)
-        self.register_i18n(btn_create_share.SetLabel,
+        self.register_i18n(btn_create_share,
+                           btn_create_share.SetLabel,
                            N_("New share"))
-        self.register_i18n(btn_refresh_share_list.SetToolTipString,
+        self.register_i18n(btn_refresh_share_list,
+                           btn_refresh_share_list.SetToolTipString,
                            N_("Refresh"))
 
     def generate_share_views(self, shares):
@@ -342,6 +346,7 @@ class ListSharesView(BaseView):
             encrypted_text = 'Encrypted'
 
         self.register_i18n(
+            lbl_share_description,
             lbl_share_description.SetLabel,
             N_(encrypted_text))
         img_share_encryption.SetBitmap(
@@ -350,9 +355,6 @@ class ListSharesView(BaseView):
 
         lbl_share_members.Hide()
         img_share_members.Hide()
-
-        # self.register_i18n(lbl_share_description.SetLabel,
-        # N_('%d members'), 18)
 
         share_box_sizer = wx.StaticBoxSizer(share_box)
 
@@ -393,6 +395,7 @@ class ListSharesView(BaseView):
                 n_members = len(share.members)
 
                 self.register_i18n(
+                    lbl_share_members,
                     lbl_share_members.SetLabel,
                     '%d members', n_members)
                 lbl_share_members.Show()

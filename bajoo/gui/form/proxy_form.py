@@ -150,7 +150,9 @@ class ProxyFormView(BaseView):
         """Create appropriate layout and static text for proxy form."""
 
         proxy_type_txt = wx.StaticText(self.window)
-        self.register_i18n(proxy_type_txt.SetLabel, N_('Proxy type:'))
+        self.register_i18n(proxy_type_txt,
+                           proxy_type_txt.SetLabel,
+                           N_('Proxy type:'))
 
         sizer_radio = wx.BoxSizer(wx.VERTICAL)
         sizer_radio.AddMany([
@@ -184,7 +186,7 @@ class ProxyFormView(BaseView):
         ])
 
         box = wx.StaticBox(self.window)
-        self.register_i18n(box.SetLabel, N_('Proxy'))
+        self.register_i18n(box, box.SetLabel, N_('Proxy'))
         sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
         sizer.Add(s, flag=wx.EXPAND)
         self.window.SetSizer(sizer)

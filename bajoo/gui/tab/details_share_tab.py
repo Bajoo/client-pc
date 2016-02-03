@@ -216,6 +216,7 @@ class DetailsShareTab(BaseForm):
         Args:
             share (LocalContainer)
         """
+
         self._share = share
         n_folders, n_files, folder_size = share.get_stats()
         friendly_folders_size = human_readable_bytes(folder_size)
@@ -236,22 +237,6 @@ class DetailsShareTab(BaseForm):
         self.FindWindow('img_share_encryption').SetBitmap(
             self.IMG_ENCRYPTED if is_encrypted else self.IMG_NOT_ENCRYPTED)
 
-        # Remove all i18n registrations
-        self._view.remove_i18n(
-            self.FindWindow('lbl_share_nb_members').SetLabel)
-        self._view.remove_i18n(
-            self.FindWindow('lbl_share_encryption').SetLabel)
-        self._view.remove_i18n(
-            self.FindWindow('lbl_share_type').SetLabel)
-        self._view.remove_i18n(
-            self.FindWindow('lbl_share_status').SetLabel)
-        self._view.remove_i18n(
-            self.FindWindow('lbl_share_container_status').SetLabel)
-        self._view.remove_i18n(
-            self.FindWindow('lbl_share_files_folders').SetLabel)
-        self._view.remove_i18n(
-            self.FindWindow('lbl_local_space').SetLabel)
-
         self._view.register_many_i18n('SetLabel', {
             self.FindWindow('lbl_share_nb_members'): (
                 N_('%d members'),
@@ -265,8 +250,6 @@ class DetailsShareTab(BaseForm):
             self.FindWindow('lbl_share_container_status'): (
                 share.get_status_text()),
             # TODO: stats
-            self.FindWindow('lbl_share_files_folders'): ' ',
-            self.FindWindow('lbl_local_space'): ' ',
             self.FindWindow('lbl_share_files_folders'): (
                 N_('This share contains %(n_folders)d folders ' +
                    'and %(n_files)d files,'),
@@ -431,7 +414,7 @@ class DetailsShareTab(BaseForm):
 
     def _show_message(self, message, text_color):
         lbl_message = self.FindWindow('lbl_message')
-        self.register_i18n(lbl_message.SetLabel, message)
+        self.register_i18n(lbl_message, lbl_message.SetLabel, message)
         lbl_message.SetForegroundColour(text_color)
         lbl_message.Show()
         self.Layout()

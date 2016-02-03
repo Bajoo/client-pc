@@ -77,9 +77,10 @@ class AccountTab(wx.Panel, Translator):
             not is_best_account_type)
 
         # re-register quota info text
-        self._view.remove_i18n(self.FindWindow('lbl_quota_info').SetLabel)
+        lbl_quota_info = self.FindWindow('lbl_quota_info')
         self._view.register_i18n(
-            self.FindWindow('lbl_quota_info').SetLabel,
+            lbl_quota_info,
+            lbl_quota_info.SetLabel,
             N_("%(name)d share folders use %(quota)s, so %(percent)0.2f%% "
                "of your Bajoo storage."),
             {"name": self._data['n_shares'],

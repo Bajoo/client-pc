@@ -61,6 +61,7 @@ class BugReportView(BaseView):
         pnl = wx.Panel(window)
         instruction_box = wx.StaticBox(pnl)
         self.register_i18n(
+            instruction_box,
             instruction_box.SetLabel,
             N_('Write your message here: '))
         sbs = wx.StaticBoxSizer(instruction_box, orient=wx.VERTICAL)
@@ -70,6 +71,7 @@ class BugReportView(BaseView):
 
         warning_label = wx.StaticText(window, style=wx.TE_MULTILINE)
         self.register_i18n(
+            warning_label,
             warning_label.SetLabel,
             N_('Settings and log files will be joined to your message.'))
 
@@ -77,11 +79,11 @@ class BugReportView(BaseView):
 
         cancel_button = wx.Button(window, wx.ID_CANCEL)
         btn_sizer.SetCancelButton(cancel_button)
-        self.register_i18n(cancel_button.SetLabel, N_('Cancel'))
+        self.register_i18n(cancel_button, cancel_button.SetLabel, N_('Cancel'))
 
         send_button = wx.Button(window, wx.ID_APPLY)
         btn_sizer.SetAffirmativeButton(send_button)
-        self.register_i18n(send_button.SetLabel, N_('Send'))
+        self.register_i18n(send_button, send_button.SetLabel, N_('Send'))
 
         btn_sizer.Realize()
 
