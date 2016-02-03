@@ -123,6 +123,11 @@ available_langs = {
         'code': 'zh-cn',
         'name': u'Chinese (China)',
         'flag': ''
+    },
+    'ru': {
+        'code': 'ru',
+        'name': u'Russian',
+        'flag': ''
     }
 }
 
