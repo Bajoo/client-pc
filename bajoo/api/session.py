@@ -9,11 +9,15 @@ from .user import User
 
 _logger = logging.getLogger(__name__)
 
-IDENTITY_API_URL = 'https://192.168.2.100'
-STORAGE_API_URL = 'https://192.168.2.100:8080/v1'
+IDENTITY_API_URL = 'https://beta.bajoo.fr'
+STORAGE_API_URL = 'https://storage.bajoo.fr/v1'
 
-CLIENT_ID = 'e2676e5d1fff42f7b32308e5eca3c36a'
-CLIENT_SECRET = '<client-secret>'
+# These credentials are valid, but are intended for test purpose only.
+# They can be revoked at any moment. If you want to develop your own client,
+# either for distributing it or for your personal use, please contact us at
+# <support-en@bajoo.fr> and we will be happy to provide you some credentials.
+CLIENT_ID = '24e1aba5d72046dd8db4410176613698'
+CLIENT_SECRET = '4f2c73941fda45eaa5e72a0ade8e7b80'
 
 TOKEN_URL = '/'.join([IDENTITY_API_URL, 'token'])
 REVOKE_TOKEN_URL = '/'.join([IDENTITY_API_URL, 'token', 'revoke'])

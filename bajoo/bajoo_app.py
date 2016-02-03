@@ -108,8 +108,7 @@ class BajooApp(wx.App, SoftwareUpdate):
 
         self.SetAppName("Bajoo")
 
-        # TODO: Set real value for production.
-        base_url = "http://192.168.1.120:8000"
+        base_url = "https://www.bajoo.fr/downloads"
         self.InitUpdates(base_url, base_url + "/" + 'ChangeLog.txt')
 
         if config.get('auto_update'):
