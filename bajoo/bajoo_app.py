@@ -18,7 +18,6 @@ from wx.lib.softwareupdate import SoftwareUpdate
 
 from . import promise
 from .api import TeamShare, Session, Container
-from .api.session import STORAGE_API_URL
 from .common import config, autorun
 from .common import path as bajoo_path
 from .connection_registration_process import connect_or_register
@@ -46,7 +45,6 @@ from .gui.form.members_share_form import MembersShareForm
 from .gui.change_password_window import ChangePasswordWindow
 from .gui.bug_report import EVT_BUG_REPORT
 from .common.i18n import _, N_, set_lang
-from .network import upload
 from .passphrase_manager import PassphraseManager
 from .promise import Promise
 
@@ -835,8 +833,10 @@ class BajooApp(wx.App, SoftwareUpdate):
                     "Filesystem encoding: %s\n" % sys.getfilesystemencoding())
 
                 if self.user_profile is None:
+                    username = "Unknown_user"
                     configfile.write("Connected: No\n")
                 else:
+                    username = self.user_profile.email
                     configfile.write("Connected: Yes\n")
                     configfile.write(
                         "User account: %s\n" % self.user_profile.email)
@@ -852,11 +852,16 @@ class BajooApp(wx.App, SoftwareUpdate):
                 zf.write(configfile.name, "MESSAGE")
 
             zf.close()
-            server_path = "/logs/bugreport%s.zip" % \
-                datetime.now().strftime("%Y%m%d-%H%M%S")
+            server_path = "/logs/%s/bugreport%s.zip" % \
+                (username,
+                 datetime.now().strftime("%Y%m%d-%H%M%S"))
 
-            log_session = Session()
-            yield log_session.fetch_client_token()
+            if self._session:
+                log_session = self._session
+            else:
+                log_session = Session()
+                yield log_session.fetch_client_token()
+
             yield log_session.upload_storage_file('PUT', server_path, zip_path)
         finally:
             shutil.rmtree(tmpdir)
