@@ -389,7 +389,7 @@ msgstr ""
 
 # TODO translate me
 #: bajoo/gui/about_window.py:128 bajoo/gui/about_window.py:292
-msgid "Bajoo and Linéa are registered trademarks."
+msgid "Bajoo is a registered trademark."
 msgstr ""
 
 # TODO translate me
@@ -419,7 +419,7 @@ msgstr ""
 
 # TODO translate me
 #: bajoo/gui/about_window.py:153 bajoo/gui/about_window.py:299
-msgid "contact our dev team."
+msgid "report a problem."
 msgstr ""
 
 # TODO translate me
@@ -527,7 +527,7 @@ msgstr "Aprire la finestra di login / registrazione"
 
 # TODO translate me
 #: bajoo/gui/task_bar_icon.py:177
-msgid "Contact our dev team"
+msgid "Report a problem"
 msgstr ""
 
 #: bajoo/gui/task_bar_icon.py:179

@@ -347,8 +347,8 @@ msgid "on GitHub."
 msgstr "trên GitHub."
 
 #: bajoo/gui/about_window.py:128 bajoo/gui/about_window.py:292
-msgid "Bajoo and Linéa are registered trademarks."
-msgstr "Các thuật ngữ Bajoo và Linéa đã được đăng ký bản quyền thương mại."
+msgid "Bajoo is a registered trademark."
+msgstr "Bajoo là một thương hiệu đã được đăng ký."
 
 #: bajoo/gui/about_window.py:131 bajoo/gui/about_window.py:293
 msgid "www.bajoo.fr"
@@ -371,8 +371,8 @@ msgid " or "
 msgstr " hoặc "
 
 #: bajoo/gui/about_window.py:153 bajoo/gui/about_window.py:299
-msgid "contact our dev team."
-msgstr "liên lạc với đội ngũ kỹ thuật."
+msgid "report a problem."
+msgstr "gửi thông báo lỗi."
 
 #: bajoo/gui/about_window.py:159 bajoo/gui/about_window.py:300
 msgid "Bajoo uses the following libraries:"
@@ -467,8 +467,8 @@ msgid "Open the login and registration window"
 msgstr "Mở cửa sổ đăng nhập / đăng ký"
 
 #: bajoo/gui/task_bar_icon.py:177
-msgid "Contact our dev team"
-msgstr "liên lạc với đội ngũ kỹ thuật"
+msgid "Report a problem"
+msgstr "Gửi thông báo lỗi"
 
 #: bajoo/gui/task_bar_icon.py:179
 msgid "Quit"

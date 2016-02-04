@@ -174,7 +174,7 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
             menu.Append(wx.ID_HOME, _('Login window'),
                         _('Open the login and registration window'))
         menu.Append(wx.ID_ABOUT, _('About Bajoo'))
-        menu.Append(self.ID_DEV_CONTACT, _('Contact our dev team'))
+        menu.Append(self.ID_DEV_CONTACT, _('Report a problem'))
         menu.AppendSeparator()
         menu.Append(wx.ID_EXIT, _('Quit'), _('Quit Bajoo'))
         return menu

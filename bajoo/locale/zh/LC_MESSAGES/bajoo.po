@@ -341,8 +341,8 @@ msgid "on GitHub."
 msgstr "在 GitHub."
 
 #: bajoo/gui/about_window.py:128 bajoo/gui/about_window.py:292
-msgid "Bajoo and Linéa are registered trademarks."
-msgstr "Bajoo为LINEA的注册商标。"
+msgid "Bajoo is a registered trademark."
+msgstr "Bajoo的注册商标。"
 
 #: bajoo/gui/about_window.py:131 bajoo/gui/about_window.py:293
 msgid "www.bajoo.fr"
@@ -364,8 +364,9 @@ msgstr "联系我们"
 msgid " or "
 msgstr "或者"
 
+# TODO translate me (message changed)
 #: bajoo/gui/about_window.py:153 bajoo/gui/about_window.py:299
-msgid "contact our dev team."
+msgid "report a problem."
 msgstr "联系我们的开发者团队。"
 
 #: bajoo/gui/about_window.py:159 bajoo/gui/about_window.py:300
@@ -460,8 +461,9 @@ msgstr "登录窗口"
 msgid "Open the login and registration window"
 msgstr "打开登录窗口 / 注册"
 
+# TODO translate me (message changed)
 #: bajoo/gui/task_bar_icon.py:177
-msgid "Contact our dev team"
+msgid "Report a problem"
 msgstr "联系我们的开发者团队"
 
 #: bajoo/gui/task_bar_icon.py:179

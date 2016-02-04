@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from . import wx_compat # noqa
+from . import wx_compat  # noqa
 
 import webbrowser
 
@@ -128,12 +128,12 @@ class AboutBajooView(BaseView):
 
         lbl_source_code_link = HyperLinkCtrl(
             about_panel, label=N_('on GitHub.'),
-            URL='https://www.github.com/bajoo/client')
+            URL='https://www.github.com/bajoo/client-pc')
         lbl_source_code_link.SetBackgroundColour(bg_color)
 
         lbl_trademarks = wx.StaticText(
             about_panel,
-            label=N_(u'Bajoo and Linéa are registered trademarks.'))
+            label=N_(u'Bajoo is a registered trademark.'))
 
         lbl_home_page_link = HyperLinkCtrl(
             about_panel, label=N_('www.bajoo.fr'), URL='https://www.bajoo.fr')
@@ -158,7 +158,7 @@ class AboutBajooView(BaseView):
             label=N_(' or '))
 
         lbl_contact_dev_url = HyperLinkCtrl(
-            about_panel, label=N_('contact our dev team.'),
+            about_panel, label=N_('report a problem.'),
             name='contact_dev')
         lbl_contact_dev_url.SetBackgroundColour(bg_color)
 
@@ -297,14 +297,14 @@ class AboutBajooView(BaseView):
             lbl_source_code: N_('It is freely redistributable, the source '
                                 'code is available'),
             lbl_source_code_link: N_('on GitHub.'),
-            lbl_trademarks: N_(u'Bajoo and Linéa are registered trademarks.'),
+            lbl_trademarks: N_(u'Bajoo is a registered trademark.'),
             lbl_home_page_link: N_('www.bajoo.fr'),
             lbl_frequently_asked_url: N_('List of frequently asked '
                                          'questions.'),
             lbl_contact_us: N_('If you have a new question, feel free to'),
             lbl_contact_us_url: N_('contact us'),
             lbl_contact_or_url: N_(' or '),
-            lbl_contact_dev_url: N_('contact our dev team.'),
+            lbl_contact_dev_url: N_('report a problem.'),
             lbl_libraries: N_('Bajoo uses the following libraries:')
         })
 

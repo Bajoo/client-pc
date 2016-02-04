@@ -334,7 +334,7 @@ msgid "on GitHub."
 msgstr ""
 
 #: bajoo/gui/about_window.py:128 bajoo/gui/about_window.py:292
-msgid "Bajoo and Linéa are registered trademarks."
+msgid "Bajoo is a registered trademark."
 msgstr ""
 
 #: bajoo/gui/about_window.py:131 bajoo/gui/about_window.py:293
@@ -358,7 +358,7 @@ msgid " or "
 msgstr ""
 
 #: bajoo/gui/about_window.py:153 bajoo/gui/about_window.py:299
-msgid "contact our dev team."
+msgid "report a problem."
 msgstr ""
 
 #: bajoo/gui/about_window.py:159 bajoo/gui/about_window.py:300
@@ -452,7 +452,7 @@ msgid "Open the login and registration window"
 msgstr ""
 
 #: bajoo/gui/task_bar_icon.py:177
-msgid "Contact our dev team"
+msgid "Report a problem"
 msgstr ""
 
 #: bajoo/gui/task_bar_icon.py:179
