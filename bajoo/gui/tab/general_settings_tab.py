@@ -113,11 +113,8 @@ class GeneralSettingsView(BaseView):
         # Options box
         options_box = wx.StaticBox(general_settings_screen)
         options_box_sizer = wx.StaticBoxSizer(options_box, wx.VERTICAL)
-        options_box_sizer_inside = self.make_sizer(wx.VERTICAL, [])
-        options_box_sizer_inside.AddMany([
-            (chk_launch_at_startup, 0, wx.EXPAND),
-            (chk_contextual_icon, 0, wx.EXPAND | wx.TOP, 15),
-            (chk_notifications, 0, wx.EXPAND | wx.TOP, 15)])
+        options_box_sizer_inside = self.make_sizer(wx.VERTICAL, [
+            chk_launch_at_startup, chk_contextual_icon, chk_notifications])
         options_box_sizer.Add(options_box_sizer_inside)
 
         # Language box
