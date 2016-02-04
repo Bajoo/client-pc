@@ -170,11 +170,12 @@ class _ConnectionProcess(object):
                 yield Session.create_session(username, password)
             except Exception as error:
                 yield self._connection_error_handler(error, username,
-                                                     password=password)
+                                                     password=password,
+                                                     action=action)
 
     @promise.reduce_coroutine(safeguard=True)
     def _connection_error_handler(self, error, username, password=None,
-                                  refresh_token=None):
+                                  refresh_token=None, action=None):
         """Error handler of the `self.connection` method.
 
         This handler catch error related to the connection or the registering.
@@ -224,6 +225,10 @@ class _ConnectionProcess(object):
             # Note: error.err_description is more accurate, but actually not
             # translated, and not always comprehensible for the end-user.
             yield self.connection(username, error_msg=message)
+
+        elif action == 'register' and str(error).lower().contains('timeout'):
+            yield self.connection(username, password)
+
         else:  # network error
             _logger.debug('login failed due to error: %s' % error)
             message = getattr(error, 'message',
