@@ -1,20 +1,21 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# Bajoo english language file
+# Copyright (C) 2016 Bajoo
+# This file is distributed under the same license as the Bajoo package.
+# Bajoo <support-fr@bajoo.fr>, 2016.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: \n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-10-20 12:12+0200\n"
-"PO-Revision-Date: 2016-01-28 11:31+0100\n"
-"Last-Translator: Bajoo <contact@bajoo.fr>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: en\n"
-"MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=UTF-8\n"
-"Content-Transfer-Encoding: 8bit\n"
+"Project-Id-Version: Bajoo 0.3.2"
+"Report-Msgid-Bugs-To: Bajoo <support-fr@bajoo.fr>"
+"POT-Creation-Date: 2015-10-20 12:12+0200"
+"PO-Revision-Date: 2016-02-04 09:25+0100"
+"Last-Translator: Kate"
+"Language-Team: Bajoo <support-en@bajoo.fr>"
+"Language: en"
+"MIME-Version: 1.0"
+"Content-Type: text/plain; charset=UTF-8"
+"Content-Transfer-Encoding: 8bit"
+"X-Generator: Poedit 1.5.4"
 
 #: bajoo/container_sync_pool.py:92 bajoo/container_sync_pool.py:153
 #: bajoo/container_sync_pool.py:204
@@ -52,7 +53,7 @@ msgstr ""
 #: bajoo/connection_registration_process.py:230
 #, python-format
 msgid "An error happened: %s"
-msgstr ""
+msgstr "An error occurred: %s"
 
 #: bajoo/connection_registration_process.py:336
 #, python-format
@@ -80,7 +81,7 @@ msgstr ""
 #: bajoo/connection_registration_process.py:382
 #, python-format
 msgid "%s doesn't exists, or is not a directory"
-msgstr ""
+msgstr "%s doesn't exist, or is not a directory"
 
 #: bajoo/connection_registration_process.py:387
 #, python-format
@@ -119,7 +120,7 @@ msgstr ""
 
 #: bajoo/local_container.py:60
 msgid "Wait the passphrase"
-msgstr ""
+msgstr "Waiting for the passphrase"
 
 #: bajoo/local_container.py:95
 msgid "The corresponding folder exists, but the Bajoo index file is missing."
@@ -261,7 +262,7 @@ msgstr ""
 
 #: bajoo/gui/form/connection_form.py:90
 msgid "Password forgotten?"
-msgstr ""
+msgstr "Forgot password?"
 
 #: bajoo/gui/form/proxy_form.py:136
 msgid "System settings"
@@ -406,7 +407,7 @@ msgstr ""
 
 #: bajoo/gui/task_bar_icon.py:63
 msgid "An error happened :("
-msgstr ""
+msgstr "An error occurred :("
 
 #: bajoo/gui/task_bar_icon.py:158 bajoo/gui/task_bar_icon.py:225
 msgid ""
@@ -532,6 +533,10 @@ msgid ""
 "activation link.\n"
 "You should follow that link to continue."
 msgstr ""
+"You must activate your account to continue.\n"
+"You should receive in the next minutes, a confirmation email with an "
+"activation link.\n"
+"Follow that link to continue."
 
 #: bajoo/gui/screen/activation_screen.py:78
 msgid "Come back later"
@@ -608,7 +613,7 @@ msgstr ""
 
 #: bajoo/gui/tab/general_settings_tab.py:139
 msgid "Display a notification when finish downloading file modifications"
-msgstr ""
+msgstr "Display a notification when file download is finished"
 
 #: bajoo/gui/tab/general_settings_tab.py:141
 msgid "Language"
@@ -635,7 +640,7 @@ msgstr ""
 
 #: bajoo/gui/tab/account_tab.py:265
 msgid ">>> Move to a higher offer"
-msgstr ""
+msgstr ">>> Move to a upper offer"
 
 #: bajoo/gui/tab/account_tab.py:266
 msgid "Disconnect my account"
@@ -683,7 +688,7 @@ msgstr ""
 #: bajoo/gui/tab/creation_share_tab.py:194
 #: bajoo/gui/tab/details_share_tab.py:612
 msgid "Members having access to this share"
-msgstr ""
+msgstr "Members accessing this share"
 
 #: bajoo/gui/tab/creation_share_tab.py:198
 msgid "Share name"
@@ -700,7 +705,7 @@ msgstr ""
 
 #: bajoo/gui/tab/advanced_settings_tab.py:139
 msgid "Send crash reports to Bajoo automatically"
-msgstr ""
+msgstr "Automatically send crash reports to Bajoo"
 
 #: bajoo/gui/tab/advanced_settings_tab.py:140
 msgid "Activate debug mode"
@@ -828,6 +833,8 @@ msgid ""
 "Your member setting has not been saved yet.Do you want to continue and "
 "ignore the changes ?"
 msgstr ""
+"Your member settings have not been saved yet. Do you want to continue and "
+"ignore the changes ?"
 
 #: bajoo/gui/common/message_box.py:53
 msgid "Data not saved"
@@ -850,6 +857,8 @@ msgid ""
 "Enter your Bajoo pasphrase to start the synchronization of your encrypted "
 "files."
 msgstr ""
+"Enter your Bajoo passphrase to start the synchronization of your encrypted "
+"files."
 
 #: bajoo/gui/passphrase_window.py:132
 msgid "Memorize the passphrase"
@@ -1033,7 +1042,7 @@ msgstr ""
 
 #: bajoo/bajoo_app.py:568
 msgid "The synchronization of this share is restarted."
-msgstr ""
+msgid "The synchronization of this share has restarted."
 
 #: bajoo/bajoo_app.py:588
 #, python-format
