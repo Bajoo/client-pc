@@ -86,10 +86,8 @@ class AboutBajooView(BaseView):
         BaseView.__init__(self, about_panel)
         from ..__version__ import __version__
 
-        # See bug http://trac.wxwidgets.org/ticket/17145
-        bg_color = about_panel.GetBackgroundColour()
-
         self.window.SetBackgroundColour(wx.Colour(255, 255, 255))
+        bg_color = about_panel.GetBackgroundColour()
 
         title_font = wx.Font(
             28, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
@@ -257,9 +255,9 @@ class AboutBajooView(BaseView):
 
         self.contact_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.contact_sizer.AddMany([lbl_contact_us,
-                               lbl_contact_us_url,
-                               lbl_contact_or_url,
-                               lbl_contact_dev_url])
+                                    (lbl_contact_us_url, 0, wx.LEFT, 3),
+                                    lbl_contact_or_url,
+                                    lbl_contact_dev_url])
 
         # Add all left-aligned elements
         text_sizer = self.make_sizer(
