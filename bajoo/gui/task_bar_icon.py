@@ -160,7 +160,7 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
 
             # TODO: add account information.
             menu.AppendSeparator()
-            menu.AppendMenu(-1, _('Shares folder'), self._container_menu)
+            menu.AppendMenu(-1, _('Bajoo folder'), self._container_menu)
             menu.Append(self.ID_SUSPEND_SYNC, _('Suspend synchronization')) \
                 .Enable(False)
             menu.Append(self.ID_MANAGE_SHARES, _('Manage my shares...'))
@@ -209,10 +209,21 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
         for item in self._container_menu.GetMenuItems():
             self._container_menu.DestroyItem(item)
 
+        shares_menu = wx.Menu()
+        self._container_menu.AppendSubMenu(
+            shares_menu, _('Shares folder'))
+
         for name, fpath, status in status_list:
-            item = wx.MenuItem(self._container_menu, -1, name)
+            # TODO: Find a way to distinguish 'MyBajoo' folder and a
+            # TODO: shared folder named 'MyBajoo'
+            if name == 'MyBajoo':
+                parent_menu = self._container_menu
+            else:
+                parent_menu = shares_menu
+
+            item = wx.MenuItem(parent_menu, -1, name)
             item.SetBitmap(wx.BitmapFromImage(self._container_icons[status]))
-            self._container_menu.AppendItem(item) \
+            parent_menu.AppendItem(item) \
                 .Enable(bool(fpath) and path.exists(fpath))
 
             def open_container(_evt, folder_path=fpath):
@@ -222,5 +233,5 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
             self.Bind(wx.EVT_MENU, open_container, item)
 
         if not status_list:
-            self._container_menu.Append(
+            shares_menu.Append(
                 -1, _("Looks like you don't\nhave any share")).Enable(False)

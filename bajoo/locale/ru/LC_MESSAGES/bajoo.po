@@ -1182,3 +1182,6 @@ msgid ""
 "Either the shares have been deleted, or your permissions have been revoked."
 msgstr "Либо обмены былиудалены, или ваши права были аннулированы"
 
+# TODO
+msgid "Bajoo folder"
+msgstr ""

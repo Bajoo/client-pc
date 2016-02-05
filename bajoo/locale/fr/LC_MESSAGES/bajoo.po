@@ -1189,3 +1189,6 @@ msgstr "%s partages ont été supprimés."
 msgid ""
 msgid "Either the shares have been deleted, or your permissions have been revoked."
 msgstr "Soit les partages ont été supprimés, soit vos droits ont été révoqués."
+
+msgid "Bajoo folder"
+msgstr "Répertoire Bajoo"

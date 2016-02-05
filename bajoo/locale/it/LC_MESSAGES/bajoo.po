@@ -1320,3 +1320,7 @@ msgstr "%s Le azioni sono state cancellate."
 msgid ""
 "Either the shares have been deleted, or your permissions have been revoked."
 msgstr "O le condivisione sono stati cancellati, o vostri diritti sono stati revocati."
+
+# TODO
+msgid "Bajoo folder"
+msgstr ""

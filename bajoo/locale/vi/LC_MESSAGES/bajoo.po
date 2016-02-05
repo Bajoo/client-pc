@@ -1174,3 +1174,6 @@ msgid ""
 "Either the shares have been deleted, or your permissions have been revoked."
 msgstr ""
 "Có thể các thư mục chia sẻ Bajoo đã bị xóa, hoặc bạn không còn được cấp phép."
+
+msgid "Bajoo folder"
+msgstr "Thư mục Bajoo"
