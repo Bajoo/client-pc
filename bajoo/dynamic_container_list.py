@@ -216,9 +216,18 @@ class DynamicContainerList(object):
             return
 
         if len(new_containers) == 1:
-            self._notify(_('New Bajoo share added'),
-                         _('You have a new Bajoo share:\n%s') %
-                         new_containers[0][1])
+            # TODO: Find a way to distinguish 'MyBajoo' folder and a
+            # TODO: shared folder named 'MyBajoo'
+            if new_containers[0][1] == 'MyBajoo':
+                title = _('Bajoo')
+                message = _('Your MyBajoo folder has been created.')
+            else:
+                title = _('New Bajoo share added')
+                message = \
+                    _('You have a new Bajoo share:\n%s') % \
+                    new_containers[0][1]
+
+            self._notify(title, message)
         else:
             body = _('You have %s new Bajoo shares:') % len(new_containers)
             body += '\n\t- %s' % new_containers[0][1]
@@ -268,6 +277,7 @@ class DynamicContainerList(object):
         Returns:
             Promise<None>: resolved when the refresh is done.
         """
+
         def executor(resolve, _reject):
             self._updater.apply_now(partial(resolve, None))
 
