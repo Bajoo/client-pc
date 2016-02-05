@@ -221,7 +221,7 @@ class BajooApp(wx.App, SoftwareUpdate):
         for widget in (self._home_window, self._main_window,
                        self._about_window, self._task_bar_icon,
                        self._contact_dev_window):
-            if widget is not None:
+            if widget:
                 widget.notify_lang_change()
 
     def OnInit(self):
