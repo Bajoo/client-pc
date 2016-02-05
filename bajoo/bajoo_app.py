@@ -726,6 +726,7 @@ class BajooApp(wx.App, SoftwareUpdate):
 
         if self._home_window:
             self._home_window.Destroy()
+            self._home_window = None
 
         if not self._passphrase_manager:
             self._passphrase_manager = PassphraseManager(self.user_profile)
@@ -766,13 +767,16 @@ class BajooApp(wx.App, SoftwareUpdate):
         """revoke token and return the the home window."""
 
         # TODO: erase profile file
+        self.user_profile.refresh_token = None
         self.user_profile = None
 
         _logger.info('Disconnect user.')
         if self._home_window:
             self._home_window.Destroy()
+            self._home_window = None
         if self._main_window:
             self._main_window.Destroy()
+            self._main_window = None
 
         self._user = None
         self._task_bar_icon.set_state(TaskBarIcon.NOT_CONNECTED)
