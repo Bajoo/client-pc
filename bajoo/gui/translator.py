@@ -70,6 +70,8 @@ class Translator(object):
         elif hasattr(window, 'GetOwner'):
             window = window.GetOwner()
             window.Bind(wx.EVT_WINDOW_DESTROY, self._on_window_destroy)
+        elif isinstance(window, wx.TaskBarIcon):
+            pass  # not a window, no destroy event, same lifetime as the app
         else:
             _logger.warning("Not possible to bind a graphical object in the "
                             "translator system: %s" % str(type(window)))
