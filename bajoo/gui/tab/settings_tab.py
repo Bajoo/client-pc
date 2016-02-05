@@ -83,13 +83,13 @@ class SettingsTabView(BaseView):
 
         # i18n
         set_tab_name = notebook.SetPageText
-        self.register_i18n(notebook,
+        self.register_i18n(self._general,
                            partial(set_tab_name, 0),
                            N_('General settings'))
-        self.register_i18n(notebook,
+        self.register_i18n(self._network,
                            partial(set_tab_name, 1),
                            N_('Network settings'))
-        self.register_i18n(notebook,
+        self.register_i18n(self._advanced,
                            partial(set_tab_name, 2),
                            N_('Advanced settings'))
         self.add_i18n_child(self._general)
