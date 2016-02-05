@@ -11,7 +11,7 @@ import appdirs
 _logger = logging.getLogger(__name__)
 
 
-_appdirs = appdirs.AppDirs(appname='Bajoo2', appauthor=False, roaming=True)
+_appdirs = appdirs.AppDirs(appname='Bajoo', appauthor=False, roaming=True)
 
 
 def _ensure_dir_exists(dir_path):
