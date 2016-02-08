@@ -165,7 +165,8 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
                 .Enable(False)
             menu.Append(self.ID_MANAGE_SHARES, _('Manage my shares...'))
             menu.AppendSeparator()
-            menu.Append(self.ID_CLIENT_SPACE, _('My client space'))
+            menu.Append(self.ID_CLIENT_SPACE, _('My client space')) \
+                .Enable(False)
             menu.Append(self.ID_INVITATION, _('Invite a friend on Bajoo')) \
                 .Enable(False)
             menu.Append(self.ID_HELP, _('Online help'))
