@@ -817,9 +817,12 @@ class BajooApp(wx.App, SoftwareUpdate):
                 zf.write(newest[index], os.path.basename(newest[index]))
 
             # collect config file
-            zf.write(os.path.join(bajoo_path.get_config_dir(),
-                                  'bajoo.ini'),
-                     'bajoo.ini')
+            config_path = os.path.join(bajoo_path.get_config_dir(),
+                                       'bajoo.ini')
+            try:
+                zf.write(config_path, 'bajoo.ini')
+            except (IOError, OSError):
+                pass
 
             # collect OS env
             with tempfile.NamedTemporaryFile() as configfile:
