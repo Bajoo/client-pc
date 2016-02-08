@@ -87,6 +87,7 @@ def _set_autorun_win(autorun=True):
             ws = win32com.client.Dispatch("wscript.shell")
             scut = ws.CreateShortcut(_win_shortcut_path())
             scut.TargetPath = target
+            scut.WorkingDirectory = os.path.dirname(target)
             scut.Save()
     else:
         # Delete shortcut
