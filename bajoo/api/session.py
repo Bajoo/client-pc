@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 
+from .. import promise
 from ..network import json_request, download, upload
 from ..network.errors import HTTPUnauthorizedError
 from .user import User
@@ -43,6 +44,7 @@ class BajooOAuth2Session(object):
 
         return auth, headers
 
+    @promise.reduce_coroutine()
     def fetch_client_token(self, token_url=None):
         """
         Fetch a new client token to use for non-specific-user request.
@@ -59,17 +61,17 @@ class BajooOAuth2Session(object):
             u'grant_type': u'client_credentials'
         }
 
-        response_future = json_request('POST', token_url,
-                                       auth=auth, headers=headers, data=data)
+        response = yield json_request('POST', token_url, auth=auth,
+                                      headers=headers, data=data)
 
-        def _on_request_result(response):
-            # Analyze response and save the tokens
-            if response and response.get('code') == 200:
-                self.token = response.get('content')
-                self._notify_token_changed()
+        # Analyze response and save the tokens
+        if response and response.get('code') == 200:
+            self.token = response.get('content')
+            self._notify_token_changed()
 
-        return response_future.then(_on_request_result)
+        yield None
 
+    @promise.reduce_coroutine()
     def fetch_token(self, token_url, email, password):
         """
         Fetch a new access_token using email & password.
@@ -92,18 +94,18 @@ class BajooOAuth2Session(object):
             u'grant_type': u'password'
         }
 
-        response_future = json_request('POST', token_url,
-                                       auth=auth, headers=headers, data=data)
+        response = yield json_request('POST', token_url, auth=auth,
+                                      headers=headers, data=data)
 
-        def _on_request_result(response):
-            # Analyze response and save the tokens
-            if response and response.get('code') == 200:
-                self.token = response.get('content')
-                self._notify_token_changed()
-                _logger.info('Token fetched = %s', self.token)
+        # Analyze response and save the tokens
+        if response and response.get('code') == 200:
+            self.token = response.get('content')
+            self._notify_token_changed()
+            _logger.info('Token fetched = %s', self.token)
 
-        return response_future.then(_on_request_result)
+        yield None
 
+    @promise.reduce_coroutine()
     def refresh_token(self, token_url=None, refresh_token=None):
         """
         Fetch a new token using the refresh_token.
@@ -129,17 +131,16 @@ class BajooOAuth2Session(object):
             u'grant_type': u'refresh_token'
         }
 
-        request_future = json_request('POST', token_url,
-                                      auth=auth, headers=headers, data=data)
+        response = yield json_request('POST', token_url, auth=auth,
+                                      headers=headers, data=data)
 
-        def _on_request_result(response):
-            # Analyze response and save the tokens
-            if response and response.get('code') == 200:
-                self.token = response.get('content')
-                self._notify_token_changed()
-                _logger.info('Token refreshed = %s', self.token)
+        # Analyze response and save the tokens
+        if response and response.get('code') == 200:
+            self.token = response.get('content')
+            self._notify_token_changed()
+            _logger.info('Token refreshed = %s', self.token)
 
-        return request_future.then(_on_request_result)
+        yield None
 
     def is_authorized(self):
         """
@@ -192,6 +193,7 @@ class Session(BajooOAuth2Session):
 
         return None
 
+    @promise.reduce_coroutine()
     def revoke_refresh_token(self):
         """
         Revoke the refresh_token (and implicitly the access_token)
@@ -204,27 +206,29 @@ class Session(BajooOAuth2Session):
             u'token': self.token.get('refresh_token', '')
         }
 
-        request_future = json_request('POST', REVOKE_TOKEN_URL,
+        response = yield json_request('POST', REVOKE_TOKEN_URL,
                                       auth=auth, headers=headers, data=data)
 
-        def _on_request_result(response):
-            # Analyze response and save the tokens
-            if response and response.get('code') == 200:
-                _logger.debug('Token revoked successfully')
+        # Analyze response and save the tokens
+        if response and response.get('code') == 200:
+            _logger.debug('Token revoked successfully')
 
-        return request_future.then(_on_request_result)
+        yield None
 
-    def _send_bajoo_request(self, request_type, verb, url_path,
-                            will_retry=True, **params):
+    @promise.reduce_coroutine()
+    def _send_bajoo_request(self, api_url, verb, url_path, network_fun,
+                            **params):
         """
         Send a json request to Bajoo server.
         The url will be resolved according to the `request_type`
 
         Args:
-            request_type: 'API' or 'STORAGE', by default `url_path`
+            api_url (str): the api url (storage or identity)
             verb (str): the verb of the RESTful function
             url_path (str): part of the url after the host address,
                 e.g. /user, /storage, etc.
+            network_fun (fun): the network function to execute (download,
+                upload, json_request, ...)
 
         Returns (Future<dict>): the future returned by json_request
         """
@@ -240,41 +244,25 @@ class Session(BajooOAuth2Session):
                 'Authorization': 'Bearer ' + self.token.get('access_token', '')
             } if self.token else {}
 
-            headers.update(params.get('headers', {}))
+            headers.update(param_headers)
             params['headers'] = headers
 
-        # Resolve url according to `request_type`
-        url = {
-            'API': IDENTITY_API_URL + url_path,
-            'STORAGE': STORAGE_API_URL + url_path
-        }.get(request_type, url_path)
+        url = api_url + url_path
 
-        def on_error(error):
-            """
-            Refetch the token and retry if the token expired.
-            """
+        try:
+            yield network_fun(verb, url, **params)
+        except HTTPUnauthorizedError as error:
             # Refresh the token and retry if HTTPUnauthorizedError
-            if type(error) is HTTPUnauthorizedError:
-                try:
-                    error_code = error.response.get('code', 401)
+            try:
+                error_code = error.response.get('code', 401)
+            except AttributeError:  # there is not response
+                raise error
 
-                    if error_code == 401002:  # session expired error
-                        return self.refresh_token().then(
-                            lambda _: self
-                            ._send_bajoo_request(request_type, verb, url_path,
-                                                 False, **params)
-                            .result())
-                except AttributeError:  # there is not response
-                    raise error
+            if error_code != 401002:  # session expired error
+                raise
 
-            raise error
-
-        request_future = json_request(verb, url, **params)
-
-        if will_retry:
-            request_future = request_future.then(None, on_error)
-
-        return request_future
+            yield self.refresh_token()
+            yield network_fun(verb, url, **params)
 
     def send_api_request(self, verb, url_path, **params):
         """
@@ -287,7 +275,8 @@ class Session(BajooOAuth2Session):
 
         Returns (Future<dict>): the future returned by json_request
         """
-        return self._send_bajoo_request('API', verb, url_path, **params)
+        return self._send_bajoo_request(IDENTITY_API_URL, verb, url_path,
+                                        json_request, **params)
 
     def send_storage_request(self, verb, url_path, **params):
         """
@@ -300,7 +289,8 @@ class Session(BajooOAuth2Session):
 
         Returns (Future<dict>): the future returned by json_request
         """
-        return self._send_bajoo_request('STORAGE', verb, url_path, **params)
+        return self._send_bajoo_request(STORAGE_API_URL, verb, url_path,
+                                        json_request, **params)
 
     def download_storage_file(self, verb, url_path, **params):
         """
@@ -314,12 +304,9 @@ class Session(BajooOAuth2Session):
         Returns (Future<TemporaryFile>):
             the future returned by network.download
         """
-        headers = {
-            'Authorization': 'Bearer ' + self.token.get('access_token', '')
-        }
 
-        return download(verb, STORAGE_API_URL + url_path,
-                        headers=headers, **params)
+        return self._send_bajoo_request(STORAGE_API_URL, verb, url_path,
+                                        download, **params)
 
     def upload_storage_file(self, verb, url_path, source, **params):
         """Upload a file into the storage
@@ -334,14 +321,11 @@ class Session(BajooOAuth2Session):
                 str), or file content to upload.
             **params (dict): additional parameters passed to `network.upload`.
         """
-        # TODO: documentation
-        headers = {
-            'Authorization': 'Bearer ' + self.token.get('access_token', '')
-        }
+        params['source'] = source
+        return self._send_bajoo_request(STORAGE_API_URL, verb, url_path,
+                                        upload, **params)
 
-        return upload(verb, STORAGE_API_URL + url_path, source,
-                      headers=headers, **params)
-
+    @promise.reduce_coroutine()
     def disconnect(self):
         """
         Disconnect the session.
@@ -350,11 +334,10 @@ class Session(BajooOAuth2Session):
             Future<None>
         """
 
-        def _on_token_revoked(_result):
-            self.token = None
+        yield self.revoke_refresh_token()
+        self.token = None
 
-        return self.revoke_refresh_token().then(_on_token_revoked)
-
+        yield None
 
 if __name__ == '__main__':
     logging.basicConfig()
