@@ -75,6 +75,7 @@ def _get_gpg_context():
         try:
             _gpg = GPG(verbose=False, gnupghome=_gpg_home_dir, use_agent=False)
         except (IOError, OSError) as e:
+            _logger.exception("GPG() can't be initialized")
             if e.errno == errno.ENOENT:
                 raise EncryptionError('GPG binary executable not found.')
             raise
