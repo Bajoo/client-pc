@@ -1183,3 +1183,15 @@ msgstr ""
 
 msgid "Your MyBajoo folder has been created"
 msgstr "Thư mục MyBajoo của bạn vừa được tạo"
+
+# TODO translate me
+#: bajoo/bajoo_app.py:153
+msgid ""
+"Another instance of Bajoo is actually running.\n"
+"You can't open Bajoo twice."
+msgstr ""
+
+# TODO translate me
+#: bajoo/bajoo_app.py:155
+msgid "Bajoo already started"
+msgstr ""

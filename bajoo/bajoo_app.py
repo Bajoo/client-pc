@@ -124,11 +124,6 @@ class BajooApp(wx.App, SoftwareUpdate):
         # Apply autorun on app startup to match with the config value
         autorun.set_autorun(config.get('autorun'))
 
-        # Set the lang from the config file if available
-        lang = config.get('lang')
-        if lang is not None:
-            set_lang(lang)
-
     def _ensures_single_instance_running(self):
         """Check that only one instance of Bajoo is running per user.
 
@@ -151,9 +146,9 @@ class BajooApp(wx.App, SoftwareUpdate):
         if self._checker.IsAnotherRunning():
             _logger.info('Prevents the user to start a second Bajoo instance.')
 
-            wx.MessageBox("Another instance of Bajoo is actually running.\n"
-                          "You can't open Bajoo twice.",
-                          caption="Bajoo already started")
+            wx.MessageBox(_("Another instance of Bajoo is actually running.\n"
+                          "You can't open Bajoo twice."),
+                          caption=_("Bajoo already started"))
             return False
         return True
 

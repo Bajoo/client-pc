@@ -1198,3 +1198,15 @@ msgstr "https://www.bajoo.fr/assistance"
 
 msgid "Your MyBajoo folder has been created"
 msgstr "Votre dossier MyBajoo a été créé"
+
+#: bajoo/bajoo_app.py:153
+msgid ""
+"Another instance of Bajoo is actually running.\n"
+"You can't open Bajoo twice."
+msgstr ""
+"Une autre instance de Bajoo est demarrée.\n"
+"Vous ne pouvez pas ouvrir Bajoo deux fois."
+
+#: bajoo/bajoo_app.py:155
+msgid "Bajoo already started"
+msgstr "Bajoo déjà démarré"

@@ -1148,4 +1148,13 @@ msgid "https://www.bajoo.fr/help"
 msgstr ""
 
 msgid "Your MyBajoo folder has been created"
+
+#: bajoo/bajoo_app.py:153
+msgid ""
+"Another instance of Bajoo is actually running.\n"
+"You can't open Bajoo twice."
+msgstr ""
+
+#: bajoo/bajoo_app.py:155
+msgid "Bajoo already started"
 msgstr ""
