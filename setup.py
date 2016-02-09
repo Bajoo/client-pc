@@ -91,7 +91,7 @@ On Windows, you can download it from http://wxpython.org/download.php""")
 setup_kwargs = {
     'name': "bajoo",
     'version': __version__,  # noqa
-    'description': "Official client for the cloud storage service Bajoo",
+    'description': "Bajoo storage client",
     'long_description': long_description,
     'url': "https://www.bajoo.fr",
     'author': "Bajoo",
