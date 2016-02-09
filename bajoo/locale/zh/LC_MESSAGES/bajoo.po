@@ -1172,3 +1172,6 @@ msgstr "共享已被删除或您的权限已被撤销。"
 # TODO
 msgid "Bajoo folder"
 msgstr ""
+
+msgid "https://www.bajoo.fr/help"
+msgstr ""

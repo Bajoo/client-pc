@@ -1324,3 +1324,6 @@ msgstr "O le condivisione sono stati cancellati, o vostri diritti sono stati rev
 # TODO
 msgid "Bajoo folder"
 msgstr ""
+
+msgid "https://www.bajoo.fr/help"
+msgstr ""

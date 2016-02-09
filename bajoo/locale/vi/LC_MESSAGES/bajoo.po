@@ -1177,3 +1177,6 @@ msgstr ""
 
 msgid "Bajoo folder"
 msgstr "Thư mục Bajoo"
+
+msgid "https://www.bajoo.fr/help"
+msgstr ""

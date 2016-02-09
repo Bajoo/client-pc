@@ -1185,3 +1185,6 @@ msgstr "Либо обмены былиудалены, или ваши права
 # TODO
 msgid "Bajoo folder"
 msgstr ""
+
+msgid "https://www.bajoo.fr/help"
+msgstr ""

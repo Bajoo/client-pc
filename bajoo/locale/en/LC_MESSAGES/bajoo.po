@@ -1143,3 +1143,6 @@ msgstr ""
 
 msgid "Bajoo folder"
 msgstr ""
+
+msgid "https://www.bajoo.fr/help"
+msgstr ""

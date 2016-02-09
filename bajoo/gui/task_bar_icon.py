@@ -140,8 +140,7 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
             wx.PostEvent(self, self.OpenWindowEvent(
                 -1, target=mapping_open_evt[event.GetId()]))
         elif event.GetId() == self.ID_HELP:
-            # TODO: set real URL
-            webbrowser.open('https://www.bajoo.fr/help')
+            webbrowser.open(_('https://www.bajoo.fr/help'))
         elif event.GetId() == self.ID_CLIENT_SPACE:
             # TODO: set real URL
             webbrowser.open('https://www.bajoo.fr/client_space')
