@@ -1182,9 +1182,13 @@ msgid ""
 "Either the shares have been deleted, or your permissions have been revoked."
 msgstr "Либо обмены былиудалены, или ваши права были аннулированы"
 
-# TODO
+# TODO translate me
 msgid "Bajoo folder"
 msgstr ""
 
 msgid "https://www.bajoo.fr/help"
+msgstr ""
+
+# TODO translate me
+msgid "Your MyBajoo folder has been created"
 msgstr ""

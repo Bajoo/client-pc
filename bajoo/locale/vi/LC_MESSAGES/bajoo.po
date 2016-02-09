@@ -1180,3 +1180,6 @@ msgstr "Thư mục Bajoo"
 
 msgid "https://www.bajoo.fr/help"
 msgstr ""
+
+msgid "Your MyBajoo folder has been created"
+msgstr "Thư mục MyBajoo của bạn vừa được tạo"

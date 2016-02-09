@@ -1146,3 +1146,6 @@ msgstr ""
 
 msgid "https://www.bajoo.fr/help"
 msgstr ""
+
+msgid "Your MyBajoo folder has been created"
+msgstr ""
