@@ -179,6 +179,26 @@ class LocalContainer(object):
         index_path = os.path.join(path, '.bajoo-%s.idx' % self.model.id)
         with io.open(index_path, "w", encoding='utf-8') as index_file:
             index_file.write(u'{}')
+        self._hide_file_if_win(index_path)
+
+    def _save_index(self):
+        index_path = os.path.join(self.model.path,
+                                  '.bajoo-%s.idx' % self.model.id)
+
+        try:
+            os.remove(index_path)
+        except (OSError, IOError):
+            _logger.exception('Unable to remove index %s:' % index_path)
+
+        try:
+            with open(index_path, 'w') as index_file:
+                json.dump(self._index, index_file)
+        except (OSError, IOError):
+            _logger.exception('Unable to save index %s:' % index_path)
+
+        self._hide_file_if_win(index_path)
+
+    def _hide_file_if_win(self, index_path):
         if sys.platform == 'win32':
             try:
                 # Set HIDDEN_FILE_ATTRIBUTE (0x02)
@@ -189,15 +209,6 @@ class LocalContainer(object):
             except:
                 _logger.warning('Tentative to set HIDDEN file attribute to '
                                 '%s failed' % index_path, exc_info=True)
-
-    def _save_index(self):
-        index_path = os.path.join(self.model.path,
-                                  '.bajoo-%s.idx' % self.model.id)
-        try:
-            with open(index_path, 'w+') as index_file:
-                json.dump(self._index, index_file)
-        except (OSError, IOError):
-            _logger.exception('Unable to save index %s:' % index_path)
 
     def acquire_index(self, path, item, is_directory=False,
                       bypass_folder=None):
