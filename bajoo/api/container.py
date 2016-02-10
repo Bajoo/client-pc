@@ -90,7 +90,7 @@ class Container(object):
                                                                    key_url)
             except HTTPNotFoundError:
                 _logger.debug('Container key not found (404)')
-                yield self._generate_key(lock_acquired=True)
+                yield self._generate_key(lock_previously_acquired=True)
                 yield self._encryption_key
                 return
             except Exception as error:
