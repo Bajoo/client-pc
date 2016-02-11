@@ -90,7 +90,7 @@ class Container(object):
                                                                    key_url)
             except HTTPNotFoundError:
                 _logger.debug('Container key not found (404)')
-                yield self._generate_key(lock_acquired=True)
+                yield self._generate_key(lock_previously_acquired=True)
                 yield self._encryption_key
                 return
             except Exception as error:
@@ -147,16 +147,16 @@ class Container(object):
         return
 
     @reduce_coroutine()
-    def _generate_key(self, lock_acquired=False):
+    def _generate_key(self, lock_previously_acquired=False):
         """Generate and upload the GPG key
 
         Args:
-            lock_acquired (boolean): If True, don't acquire the lock before
-                generating the key.
+            lock_previously_acquired (boolean): If True, the key_lock has
+                already been acquired by the caller, so we don't have to do it.
         Returns:
             Promise
         """
-        if not lock_acquired:
+        if not lock_previously_acquired:
             self._key_lock.acquire()
 
         try:
@@ -166,7 +166,7 @@ class Container(object):
             key = yield encryption.create_key(key_name, None, container=True)
             yield self._encrypt_and_upload_key(key)
         finally:
-            if lock_acquired:
+            if not lock_previously_acquired:
                 self._key_lock.release()
 
     @reduce_coroutine()
