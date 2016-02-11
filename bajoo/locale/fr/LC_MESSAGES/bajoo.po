@@ -5,7 +5,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Bajoo 0.3.7\n"
+"Project-Id-Version: Bajoo 0.3.8\n"
 "Report-Msgid-Bugs-To: Bajoo <support-fr@bajoo.fr>\n"
 "POT-Creation-Date: 2015-10-20 12:12+0200\n"
 "PO-Revision-Date: 2016-02-04 09:25+0100\n"
@@ -1198,3 +1198,15 @@ msgstr "https://www.bajoo.fr/assistance"
 
 msgid "Your MyBajoo folder has been created"
 msgstr "Votre dossier MyBajoo a été créé"
+
+#: bajoo/bajoo_app.py:153
+msgid ""
+"Another instance of Bajoo is actually running.\n"
+"You can't open Bajoo twice."
+msgstr ""
+"Une autre instance de Bajoo est demarrée.\n"
+"Vous ne pouvez pas ouvrir Bajoo deux fois."
+
+#: bajoo/bajoo_app.py:155
+msgid "Bajoo already started"
+msgstr "Bajoo déjà démarré"

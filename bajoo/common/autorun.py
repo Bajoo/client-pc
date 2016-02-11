@@ -68,7 +68,10 @@ def _set_autorun_win(autorun=True):
     in user's Startup folder (not in the common Startup folder for All Users).
     """
     if autorun:
-        if not is_autorun():
+        # FIXME: the 'True' is an ugly temporary solution to force creating a
+        # new shortcut, as the first version of Bajoo could create shortcut
+        # without working directory.
+        if True or not is_autorun():
 
             target = sys.executable
             if getattr(sys, 'frozen', False):
