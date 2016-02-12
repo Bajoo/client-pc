@@ -8,6 +8,10 @@ import locale
 import logging
 import os
 import shutil
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 import sys
 import tempfile
 import platform
@@ -796,64 +800,30 @@ class BajooApp(wx.App, SoftwareUpdate):
         _logger.debug("bug repport creation")
         tmpdir = tempfile.mkdtemp()
 
+        # identify where are last log files
+        glob_path = os.path.join(bajoo_path.get_log_dir(), '*.log')
+        newest = sorted(glob.iglob(glob_path),
+                        key=os.path.getmtime,
+                        reverse=True)
+
+        zip_path = os.path.join(tmpdir, "report.zip")
+
         try:
-            zip_path = os.path.join(tmpdir, "report.zip")
-            zf = zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED)
+            with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+                # grab the 5 last log files if exist
+                for index in range(0, min(5, len(newest))):
+                    zf.write(newest[index], os.path.basename(newest[index]))
 
-            # identify where are last log files
-            glob_path = os.path.join(bajoo_path.get_log_dir(), '*.log')
-            newest = sorted(
-                glob.iglob(glob_path),
-                key=os.path.getmtime,
-                reverse=True)
+                # collect config file
+                config_path = os.path.join(bajoo_path.get_config_dir(),
+                                           'bajoo.ini')
+                try:
+                    zf.write(config_path, 'bajoo.ini')
+                except (IOError, OSError):
+                    pass
 
-            # grab the 5 last log files if exist
-            for index in range(0, min(5, len(newest))):
-                zf.write(newest[index], os.path.basename(newest[index]))
+                username = self._generate_report_file(zf, _evt.report)
 
-            # collect config file
-            config_path = os.path.join(bajoo_path.get_config_dir(),
-                                       'bajoo.ini')
-            try:
-                zf.write(config_path, 'bajoo.ini')
-            except (IOError, OSError):
-                pass
-
-            # collect OS env
-            with tempfile.NamedTemporaryFile() as configfile:
-                configfile.write("## Bajoo bug report ##\n\n")
-                configfile.write("Creation date: %s\n" % str(datetime.now()))
-                configfile.write("Bajoo version: %s\n" % __version__)
-                configfile.write("Python version: %s\n" % sys.version)
-                configfile.write("OS type: %s\n" % os.name)
-                configfile.write("Platform type: %s\n" % sys.platform)
-                configfile.write(
-                    "Platform details: %s\n" % platform.platform())
-                configfile.write(
-                    "System default encoding: %s\n" % sys.getdefaultencoding())
-                configfile.write(
-                    "Filesystem encoding: %s\n" % sys.getfilesystemencoding())
-
-                if self.user_profile is None:
-                    username = "Unknown_user"
-                    configfile.write("Connected: No\n")
-                else:
-                    username = self.user_profile.email
-                    configfile.write("Connected: Yes\n")
-                    configfile.write(
-                        "User account: %s\n" % self.user_profile.email)
-                    configfile.write(
-                        "User root directory: %s\n" %
-                        self.user_profile._root_folder_path)
-
-                locales = ", ".join(locale.getdefaultlocale())
-                configfile.write("Default locales: %s\n" % locales)
-                configfile.write("Message: \n\n%s" % _evt.report)
-
-                configfile.flush()
-                zf.write(configfile.name, "MESSAGE")
-
-            zf.close()
             server_path = "/logs/%s/bugreport%s.zip" % \
                 (username,
                  datetime.now().strftime("%Y%m%d-%H%M%S"))
@@ -864,6 +834,45 @@ class BajooApp(wx.App, SoftwareUpdate):
                 log_session = Session()
                 yield log_session.fetch_client_token()
 
-            yield log_session.upload_storage_file('PUT', server_path, zip_path)
+            with open(zip_path, 'rb') as file_content:
+                yield log_session.upload_storage_file(
+                    'PUT', server_path, file_content)
+
         finally:
             shutil.rmtree(tmpdir)
+
+    def _generate_report_file(self, zip_object, message):
+        configfile = StringIO()
+        configfile.write("## Bajoo bug report ##\n\n")
+        configfile.write("Creation date: %s\n" % str(datetime.now()))
+        configfile.write("Bajoo version: %s\n" % __version__)
+        configfile.write("Python version: %s\n" % sys.version)
+        configfile.write("OS type: %s\n" % os.name)
+        configfile.write("Platform type: %s\n" % sys.platform)
+        configfile.write(
+            "Platform details: %s\n" % platform.platform())
+        configfile.write(
+            "System default encoding: %s\n" % sys.getdefaultencoding())
+        configfile.write(
+            "Filesystem encoding: %s\n" % sys.getfilesystemencoding())
+
+        if self.user_profile is None:
+            username = "Unknown_user"
+            configfile.write("Connected: No\n")
+        else:
+            username = self.user_profile.email
+            configfile.write("Connected: Yes\n")
+            configfile.write(
+                "User account: %s\n" % self.user_profile.email)
+            configfile.write(
+                "User root directory: %s\n" %
+                self.user_profile._root_folder_path)
+
+        locales = ", ".join(locale.getdefaultlocale())
+        configfile.write("Default locales: %s\n" % locales)
+        configfile.write("Message: \n\n%s" % message)
+
+        zip_object.writestr("MESSAGE", configfile.getvalue())
+        configfile.close()
+
+        return username
