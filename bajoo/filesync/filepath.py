@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 
+from ..common import config
+
 import ctypes
 import logging
 import os.path
 import sys
 if sys.platform == "darwin":
     import Foundation
+
 
 _logger = logging.getLogger(__name__)
 
@@ -39,6 +42,20 @@ def is_path_allowed(file_path):
             return False
 
     return True
+
+
+def is_hidden_part_in_path(container_path, file_path):
+    if not config.get('exclude_hidden_files'):
+        return False
+
+    container_path = os.path.normpath(container_path)
+
+    p = file_path
+    while p != container_path:
+        if is_hidden(p):
+            return True
+        p = os.path.normpath(os.path.join(p, '..'))
+    return False
 
 
 def is_hidden(path):
