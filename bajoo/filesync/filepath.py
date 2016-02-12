@@ -53,7 +53,8 @@ def is_hidden(path):
     name = os.path.basename(abs_path)
 
     if sys.platform == 'win32':
-        return _is_hidden_under_windows(abs_path)
+        if os.path.exists(abs_path):
+            return _is_hidden_under_windows(abs_path)
     else:
         if name.startswith('.'):
             return True
