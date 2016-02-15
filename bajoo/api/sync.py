@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import os.path
+import sys
 from threading import Timer, Lock
 
 from .container import Container
+from ..filesync.filepath import is_hidden_part_in_path
 
 _logger = logging.getLogger(__name__)
 
@@ -128,9 +131,10 @@ def container_list_updater(session, on_added_containers, on_removed_containers,
                         last_known_list or [], on_unchanged_containers)
 
 
-def files_list_updater(container, on_new_files, on_changed_files,
-                       on_deleted_files, on_initial_files=None,
-                       last_known_list=None, check_period=600):
+def files_list_updater(container, container_path, on_new_files,
+                       on_changed_files, on_deleted_files,
+                       on_initial_files=None, last_known_list=None,
+                       check_period=600):
     """Detect changes in the files of a container.
 
     Each time a file is added, modified or removed, the corresponding callback
@@ -161,6 +165,16 @@ def files_list_updater(container, on_new_files, on_changed_files,
         list_files = container.list_files().result()
 
         for f in list_files:
+            abs_f = f['name']
+
+            if sys.platform in ['win32', 'cygwin', 'win64']:
+                abs_f = abs_f.replace('\\', '/')
+
+            abs_f = os.path.join(container_path, abs_f)
+
+            if is_hidden_part_in_path(container_path, abs_f):
+                continue
+
             new_known_list[f['name']] = f['hash']
             if f['name'] in last_known_list:
                 if f['hash'] != last_known_list[f['name']]:

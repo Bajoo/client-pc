@@ -65,7 +65,7 @@ class ContainerSyncPool(object):
         last_remote_index = local_container.get_remote_index()
 
         updater = files_list_updater(
-            container,
+            container, local_container.model.path,
             partial(self._added_remote_file, container.id),
             partial(self._modified_remote_files, container.id),
             partial(self._removed_remote_files, container.id),

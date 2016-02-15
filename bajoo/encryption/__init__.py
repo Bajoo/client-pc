@@ -49,17 +49,27 @@ _gpg = None
 _gpg_home_dir = None
 
 _tmp_dir = None
-try:
-    _tmp_dir = tempfile.mkdtemp(dir=get_cache_dir())
-except:
-    _logger.warning('Error when creating tmp dir for encryption files',
-                    exc_info=True)
-    pass
+
+
+def _get_tmp_dir():
+    global _tmp_dir
+
+    if _tmp_dir:
+        return _tmp_dir
+    try:
+        return tempfile.mkdtemp(dir=get_cache_dir())
+    except:
+        _logger.warning('Error when creating tmp dir for encryption files',
+                        exc_info=True)
+        raise
 
 
 @atexit.register
 def _clean_tmp():
     global _tmp_dir
+
+    if not _tmp_dir:
+        return
     try:
         os.removedirs(_tmp_dir)
         _tmp_dir = None
@@ -201,7 +211,8 @@ def encrypt(source, recipients):
             for key in recipients:
                 import_key(key)
 
-        with tempfile.NamedTemporaryFile(delete=False, dir=_tmp_dir) as tf:
+        tmp_dir = _get_tmp_dir()
+        with tempfile.NamedTemporaryFile(delete=False, dir=tmp_dir) as tf:
             dst_path = tf.name
 
         f = _thread_pool.submit(context.encrypt_file, source,
@@ -277,7 +288,8 @@ def decrypt(source, key=None, passphrase_callback=None, _retry=0):
         raise error
 
     try:
-        with tempfile.NamedTemporaryFile(delete=False, dir=_tmp_dir) as tf:
+        tmp_dir = _get_tmp_dir()
+        with tempfile.NamedTemporaryFile(delete=False, dir=tmp_dir) as tf:
             dst_path = tf.name
         passphrase = None
         if _retry > 0 and passphrase_callback:
