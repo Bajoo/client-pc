@@ -141,13 +141,13 @@ def create_key(email, passphrase, container=False):
     _logger.debug('Start to generate a new GPG key ...')
     gpg = _get_gpg_context()
 
-    args = {'key_length': 2048, 'name_email': email}
+    args = {'key_length': 2048, 'name_email': email.encode('utf-8')}
 
     # Note: giving an argument passphrase=None to gen_key_input() will create a
     # passphrase 'None'. We must not pass the argument if we don't want a
     # passphrase.
     if passphrase is not None:
-        args['passphrase'] = passphrase
+        args['passphrase'] = passphrase.encode('utf-8')
 
     if container:
         args['name_comment'] = 'Bajoo container key'
