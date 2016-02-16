@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 
-import os.path
 import sys
 
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
-from .filesync.filepath import is_path_allowed, is_hidden
-from .common import config
+from .filesync.filepath import is_path_allowed, is_hidden_part_in_path
 
 _custom_unicode_type = type(u'unicode')
 
@@ -64,7 +62,7 @@ class FileWatcher(FileSystemEventHandler):
             return
 
         dest_path = ensure_unicode(event.dest_path)
-        if self._is_ignored_target(dest_path):
+        if is_hidden_part_in_path(self._container.path, dest_path):
             return
         self._on_moved_files(src_path, dest_path)
 
@@ -72,7 +70,7 @@ class FileWatcher(FileSystemEventHandler):
         src_path = ensure_unicode(event.src_path)
         if event.is_directory or not is_path_allowed(src_path):
             return
-        if self._is_ignored_target(src_path):
+        if is_hidden_part_in_path(self._container.path, src_path):
             return
         self._on_new_files(src_path)
 
@@ -80,7 +78,7 @@ class FileWatcher(FileSystemEventHandler):
         src_path = ensure_unicode(event.src_path)
         if event.is_directory or not is_path_allowed(src_path):
             return
-        if self._is_ignored_target(src_path):
+        if is_hidden_part_in_path(self._container.path, src_path):
             return
         self._on_deleted_files(src_path)
 
@@ -88,22 +86,9 @@ class FileWatcher(FileSystemEventHandler):
         src_path = ensure_unicode(event.src_path)
         if event.is_directory or not is_path_allowed(src_path):
             return
-        if self._is_ignored_target(src_path):
+        if is_hidden_part_in_path(self._container.path, src_path):
             return
         self._on_changed_files(src_path)
-
-    def _is_ignored_target(self, file_path):
-        if not config.get('exclude_hidden_files'):
-            return False
-
-        container_path = os.path.normpath(self._container.path)
-
-        p = file_path
-        while p != container_path:
-            if is_hidden(p):
-                return True
-            p = os.path.normpath(os.path.join(p, '..'))
-        return False
 
 
 def main():
