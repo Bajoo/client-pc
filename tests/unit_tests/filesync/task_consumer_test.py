@@ -67,11 +67,7 @@ class TestTaskConsumer(object):
     def test_all_step_use_dedicated_thread(self):
         """Ensures the code in a task is always executed in a filesync thread.
 
-        The initialization phase (before the first yield) of a Task is always
-        executed immediately in the caller thread.
-        The main goal is to allow it discarding other stale tasks.
-
-        The rest of the code is always executed in a thread belonging to the
+        The generator code is always executed in a thread belonging to the
         filesync threads.
         """
         main_thread = threading.current_thread().ident
@@ -79,7 +75,7 @@ class TestTaskConsumer(object):
         p2, resolve2, _ = self._make_external_promise()
 
         def task():
-            assert threading.current_thread().ident is main_thread
+            assert threading.current_thread().ident is not main_thread
             yield p1
             assert threading.current_thread().ident is not main_thread
             yield p2
