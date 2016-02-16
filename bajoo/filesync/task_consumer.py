@@ -14,6 +14,10 @@ _MAX_WORKER = 5
 _executor = None
 _task_condition = Condition()
 _stop_order = False
+
+# The non-started tasks are stored in `_task_queue` (both high and low
+# priority). The started segmented tasks are stored in `_split_task_queue`.
+_split_task_queue = deque()
 _task_queue = deque()
 
 
@@ -120,17 +124,25 @@ def _iter_generator_error(resolve, reject, gen, reason):
         _call_next_or_set_result(resolve, reject, gen, result)
 
 
-def _call_next_or_set_result(resolve, reject, gen, value, priority=True):
+def _call_next_or_set_result(resolve, reject, gen, value, priority='SPLIT'):
     """When a task has yielded a value, prepare the next step, or resolve.
 
     If the value yielded is a thenable, then we register the next step in the
     task queue.
     Otherwise, the value is the task result, and so the task is fulfilled.
+
+    Args:
+        priority (bool or 'SPLIT', optional): If True, the task is of high
+            priority. The 'SPLIT' priority means the task is split in several
+            steps, and the next step should be called as soon as possible,
+            before high priority tasks.
     """
     def register_iteration(new_value):
         with _task_condition:
             task = (resolve, reject, gen, new_value, False)
-            if priority:
+            if priority is 'SPLIT':
+                _split_task_queue.append(task)
+            elif priority:
                 _task_queue.appendleft(task)
             else:
                 _task_queue.append(task)
@@ -139,7 +151,9 @@ def _call_next_or_set_result(resolve, reject, gen, value, priority=True):
     def register_iteration_error(reason):
         with _task_condition:
             task = (resolve, reject, gen, reason, True)
-            if priority:
+            if priority is 'SPLIT':
+                _split_task_queue.append(task)
+            elif priority:
                 _task_queue.appendleft(task)
             else:
                 _task_queue.append(task)
@@ -169,11 +183,18 @@ def _run_worker(id):
                 return
 
             try:
+                # in-progress tasks
                 (resolve, reject,
-                 generator, value, is_error) = _task_queue.popleft()
+                 generator, value, is_error) = _split_task_queue.popleft()
             except IndexError:
-                _task_condition.wait()
-                continue
+                # New tasks
+                try:
+                    (resolve, reject,
+                     generator, value, is_error) = _task_queue.popleft()
+                except IndexError:
+                    _task_condition.wait()
+                    continue
+
         if is_error:
             _iter_generator_error(resolve, reject, generator, value)
         else:
