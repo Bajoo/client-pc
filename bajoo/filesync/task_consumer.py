@@ -20,25 +20,31 @@ _stop_order = False
 _split_task_queue = deque()
 _task_queue = deque()
 
+_last_worker_id = 0
+
 
 def start():
-    global _executor, _stop_order
+    global _executor, _stop_order, _last_worker_id
 
     def _clean_and_restart(future):
+        global _last_worker_id
+
         error = future.exception()
 
         if error:
             _logger.critical('Filesync task worker has crashed: %s' % error)
             with _task_condition:
                 if not _stop_order:
-                    future = _executor.submit(_run_worker)
+                    _last_worker_id += 1
+                    future = _executor.submit(_run_worker, _last_worker_id)
                     future.add_done_callback(_clean_and_restart)
 
     _executor = ThreadPoolExecutor(max_workers=_MAX_WORKER)
     _stop_order = False
 
     for i in range(_MAX_WORKER):
-        f = _executor.submit(_run_worker, i + 1)
+        _last_worker_id += 1
+        f = _executor.submit(_run_worker, _last_worker_id)
         f.add_done_callback(_clean_and_restart)
 
 
