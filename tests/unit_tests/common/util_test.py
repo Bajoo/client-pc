@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from bajoo.common.util import human_readable_bytes, xor
+from bajoo.common.i18n import _
 
 """### TEST CASES ###
     human_readable_bytes with everyt units
@@ -20,34 +21,38 @@ from bajoo.common.util import human_readable_bytes, xor
 class TestHuman_readable_bytes(object):
 
     def test_123B(self):
-        assert "123 B" == human_readable_bytes(123)
+        assert "123 %s" % _("B") == human_readable_bytes(123)
 
     def test_123KB(self):
-        assert "120.56 KB" == human_readable_bytes(123456)
+        assert "120.56 %s" % _("KB") == human_readable_bytes(123456)
 
     def test_123MB(self):
-        assert "117.74 MB" == human_readable_bytes(123456789)
+        assert "117.74 %s" % _("MB") == human_readable_bytes(123456789)
 
     def test_123GB(self):
-        assert "114.98 GB" == human_readable_bytes(123456789123)
+        assert "114.98 %s" % _("GB") == human_readable_bytes(123456789123)
 
     def test_123TB(self):
-        assert "112.28 TB" == human_readable_bytes(123456789123456)
+        assert "112.28 %s" % _("TB") == human_readable_bytes(123456789123456)
 
     def test_123PB(self):
-        assert "109.65 PB" == human_readable_bytes(123456789123456789)
+        assert "109.65 %s" % _("PB") == human_readable_bytes(
+            123456789123456789)
 
     def test_123EB(self):
-        assert "107.08 EB" == human_readable_bytes(123456789123456789123)
+        assert "107.08 %s" % _("EB") == human_readable_bytes(
+            123456789123456789123)
 
     def test_123ZB(self):
-        assert "104.57 ZB" == human_readable_bytes(123456789123456789123456)
+        assert "104.57 %s" % _("ZB") == human_readable_bytes(
+            123456789123456789123456)
 
     def test_123YB(self):
-        assert "102.12 YB" == human_readable_bytes(123456789123456789123456789)
+        assert "102.12 %s" % _("YB") == human_readable_bytes(
+            123456789123456789123456789)
 
     def test_123456YB(self):
-        assert "102121.06 YB" == human_readable_bytes(
+        assert "102121.06 %s" % _("YB") == human_readable_bytes(
             123456789123456789123456789123)
 
 
