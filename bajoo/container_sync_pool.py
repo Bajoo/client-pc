@@ -109,13 +109,14 @@ class ContainerSyncPool(object):
         """
 
         with self._inner_lock:
-            if container_id in self._local_containers:
+            if container_id in self._local_containers.keys():
                 lc, updater, watcher = self._local_containers[container_id]
 
                 lc.status = lc.STATUS_STOPPED
                 updater.stop()
                 watcher.stop()
                 lc.error_msg = None
+                lc.index_saver.stop()
 
                 del self._local_containers[container_id]
 
@@ -208,6 +209,10 @@ class ContainerSyncPool(object):
                     updater.start()
                     watcher.start()
                     self._create_task(filesync.sync_folder, lc.model.id, u'.')
+
+    def stop(self):
+        for container_id in self._local_containers.keys():
+            self.remove(container_id)
 
     def _increment(self, _arg=None):
         with self._inner_lock:

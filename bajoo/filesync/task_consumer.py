@@ -48,7 +48,8 @@ def stop():
         global _stop_order
         _stop_order = True
         _task_condition.notify_all()
-    _executor.shutdown()
+    if _executor:
+        _executor.shutdown()
 
 
 class Context(object):

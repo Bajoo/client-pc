@@ -34,6 +34,7 @@ class IndexSaver(object):
         self.timer_restart_count = 0
         self.short_timer_started = False
         self.short_timer_lock = threading.Lock()
+        self.last_timer = None
 
     def set_directory(self, directory):
         """Set the index directory
@@ -80,8 +81,9 @@ class IndexSaver(object):
 
         # do not allow two parallel timer
         if self.short_timer_lock.acquire(False):
-            threading.Timer(_SAVE_AFTER_INACTIVE_DURING,
-                            self._short_timer_saving).start()
+            self.last_timer = threading.Timer(_SAVE_AFTER_INACTIVE_DURING,
+                                              self._short_timer_saving)
+            self.last_timer.start()
 
     def load(self):
         """Load the index file
@@ -111,8 +113,9 @@ class IndexSaver(object):
             self.timer_restart_count += 1
 
             if self.timer_restart_count < _MAX_TIMER_RESTART:
-                threading.Timer(_SAVE_AFTER_INACTIVE_DURING,
-                                self._short_timer_saving).start()
+                self.last_timer = threading.Timer(_SAVE_AFTER_INACTIVE_DURING,
+                                                  self._short_timer_saving)
+                self.last_timer.start()
                 return
 
         self.timer_restart_count = 0
@@ -154,3 +157,13 @@ class IndexSaver(object):
             except:
                 _logger.warning('Tentative to set HIDDEN file attribute to '
                                 '%s failed' % self.index_path, exc_info=True)
+
+    def stop(self):
+        if self.last_timer:
+            self.last_timer.cancel()
+
+        # if it fails to get the lock, a timer was running, need to save
+        if not self.short_timer_lock.acquire(False):
+            self._save()
+
+        self.short_timer_lock.release()

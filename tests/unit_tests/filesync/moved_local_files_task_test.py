@@ -3,10 +3,19 @@
 
 from bajoo.filesync.added_local_files_task import AddedLocalFilesTask
 from bajoo.filesync.moved_local_files_task import MovedLocalFilesTask
+from bajoo.filesync.task_consumer import start, stop
 from .utils import TestTaskAbstract, generate_random_string, FakeFile
 
 import os
 import tempfile
+
+
+def setup_module(module):
+    start()
+
+
+def teardown_module(module):
+    stop()
 
 
 def generate_task(tester, src_target, dst_target):

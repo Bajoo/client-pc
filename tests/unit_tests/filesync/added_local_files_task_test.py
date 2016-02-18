@@ -2,11 +2,20 @@
 # -*- coding: utf-8 -*-
 
 from bajoo.filesync.added_local_files_task import AddedLocalFilesTask
+from bajoo.filesync.task_consumer import start, stop
 from .utils import TestTaskAbstract, generate_random_string, assert_content, \
     FakeFile
 
 import os
 import tempfile
+
+
+def setup_module(module):
+    start()
+
+
+def teardown_module(module):
+    stop()
 
 
 def generate_task(tester, target, ignore_missing_file=False):

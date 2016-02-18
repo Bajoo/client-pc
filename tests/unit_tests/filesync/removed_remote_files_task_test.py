@@ -3,9 +3,18 @@
 
 
 from bajoo.filesync.removed_remote_files_task import RemovedRemoteFilesTask
+from bajoo.filesync.task_consumer import start, stop
 from .utils import FakeFile, TestTaskAbstract
 
 import os
+
+
+def setup_module(module):
+    start()
+
+
+def teardown_module(module):
+    stop()
 
 
 def generate_task(tester, target):
