@@ -283,7 +283,7 @@ class _Task(object):
 
         target_path = os.path.join(self.local_path, target.rel_path)
         time_tuple = time.localtime(os.path.getmtime(target_path))
-        time_string = time.strftime("%d_%b_%Y_%H:%M", time_tuple)
+        time_string = time.strftime("%d_%b_%Y_%H_%M", time_tuple)
 
         prefix_name, ext = os.path.splitext(target.rel_path)
         new_name = prefix_name + "(conflict_" + time_string + ")" + ext

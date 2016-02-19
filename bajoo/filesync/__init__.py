@@ -38,12 +38,9 @@ from .moved_local_files_task import MovedLocalFilesTask
 from .removed_remote_files_task import RemovedRemoteFilesTask
 from .removed_local_files_task import RemovedLocalFilesTask
 from .sync_task import SyncTask
-from .task_consumer import add_task, start, stop
+from .task_consumer import add_task, stop
 
-# TODO: the module should be started and stopped by the caller.
-# start the task_consumer service
 import atexit
-start()
 atexit.register(stop)
 
 

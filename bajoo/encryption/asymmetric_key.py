@@ -52,8 +52,15 @@ class AsymmetricKey(object):
             if isinstance(key_file, str):
                 key_file = io.open(key_file, 'rb')
         with key_file:
-            content = key_file.read().decode('utf-8')
+            content = key_file.read()
             import_result = context.import_keys(content)
+
+            # TODO this code is for compatibility backward, to remove
+            # as soon as every key encoded in a such way will be removed
+            # from the server
+            if import_result.count == 0:
+                content = content.decode('utf-8')
+                import_result = context.import_keys(content, 'latin-1')
 
             if not import_result.count:
                 # >>> print(import_result.results)
@@ -74,7 +81,7 @@ class AsymmetricKey(object):
         key_file = tempfile.TemporaryFile()
         content = self._context.export_keys(self.fingerprint, armor=False,
                                             secret=secret)
-        key_file.write(content.encode('utf-8'))
+        key_file.write(content)
         key_file.seek(0)
         return key_file
 

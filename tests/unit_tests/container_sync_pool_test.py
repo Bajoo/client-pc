@@ -7,7 +7,7 @@ from .filesync.fake_container import Fake_container, \
     FakeHTTPEntityTooLargeError, FakePassphraseAbortError
 
 from .filesync.utils import FakeFile
-from bajoo.filesync.task_consumer import add_task
+from bajoo.filesync.task_consumer import add_task, start, stop
 from bajoo.filesync.added_local_files_task import AddedLocalFilesTask
 
 import logging
@@ -35,6 +35,8 @@ def setup_module(module):
     logger = logging.getLogger()
     OLD_LOGGER_HANDLERS = list(logger.handlers)
 
+    start()
+
 
 def teardown_module(module):
     global OLD_LOGGER_HANDLERS
@@ -42,6 +44,8 @@ def teardown_module(module):
     logger = logging.getLogger()
     logger.handlers = OLD_LOGGER_HANDLERS
     logger.setLevel(logging.INFO)
+
+    stop()
 
 
 class FakeFileWatcher(object):

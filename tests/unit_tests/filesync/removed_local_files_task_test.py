@@ -2,7 +2,16 @@
 # -*- coding: utf-8 -*-
 
 from bajoo.filesync.removed_local_files_task import RemovedLocalFilesTask
+from bajoo.filesync.task_consumer import start, stop
 from .utils import FakeFile, TestTaskAbstract
+
+
+def setup_module(module):
+    start()
+
+
+def teardown_module(module):
+    stop()
 
 
 def generate_task(tester, target):

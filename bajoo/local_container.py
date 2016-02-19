@@ -1,17 +1,14 @@
 # -*- coding: utf-8 -*-
 
-import ctypes
 import errno
-import io
-import json
 import logging
 import os
 import shutil
-import sys
 from threading import RLock
 
 from .api.team_share import TeamShare
 from .common.i18n import _, N_
+from .index_saver import IndexSaver
 from .promise import Promise
 
 
@@ -69,6 +66,7 @@ class LocalContainer(object):
         self.container = container
         self.model = model
         self.is_moving = False
+        self.index_saver = IndexSaver(self, self.model.path, self.model.id)
 
     def check_path(self):
         """Check that the path is the folder corresponding to the container.
@@ -80,11 +78,8 @@ class LocalContainer(object):
             boolean: True if all is ok, otherwise False.
         """
 
-        index_path = os.path.join(self.model.path,
-                                  '.bajoo-%s.idx' % self.model.id)
         try:
-            with io.open(index_path, encoding='utf-8') as index_file:
-                self._index = json.load(index_file)
+            self.index_saver.load()
         except (OSError, IOError) as e:
             self.status = self.STATUS_ERROR
 
@@ -100,9 +95,10 @@ class LocalContainer(object):
                 self.error_msg = os.strerror(e.errno)
             return False
         except ValueError:
-            _logger.info('Index file %s seems corrupted:' % index_path,
+            _logger.info('Index file %s seems corrupted:' %
+                         self.index_saver.get_index_path(),
                          exc_info=True)
-            self._init_index_file()
+            self.index_saver.create_empty_file()
 
         self.status = self.STATUS_STOPPED
         return True
@@ -141,7 +137,8 @@ class LocalContainer(object):
 
         try:
             os.makedirs(folder_path)
-            self._init_index_file(folder_path)
+            self.index_saver.set_directory(folder_path)
+            self.index_saver.create_empty_file()
         except (OSError, IOError) as e:
             if e.errno == errno.EEXIST:
                 # TODO test if it's the same index id ?
@@ -151,7 +148,8 @@ class LocalContainer(object):
                     try:
                         folder_path = '%s (%s)' % (base_path, i)
                         os.mkdir(folder_path)
-                        self._init_index_file(folder_path)
+                        self.index_saver.set_directory(folder_path)
+                        self.index_saver.create_empty_file()
                         break
                     except (OSError, IOError) as e:
                         if e.errno == errno.EEXIST:
@@ -167,48 +165,6 @@ class LocalContainer(object):
         self.model.path = folder_path
         self.status = self.STATUS_STOPPED
         return self.model.path
-
-    def _init_index_file(self, path=None):
-        """Create the index file.
-
-        Args:
-            path (str, optional): path of the container folder. If None,
-            ``self.path`` will be used.
-        """
-        path = path or self.model.path
-        index_path = os.path.join(path, '.bajoo-%s.idx' % self.model.id)
-        with io.open(index_path, "w", encoding='utf-8') as index_file:
-            index_file.write(u'{}')
-        self._hide_file_if_win(index_path)
-
-    def _save_index(self):
-        index_path = os.path.join(self.model.path,
-                                  '.bajoo-%s.idx' % self.model.id)
-
-        try:
-            os.remove(index_path)
-        except (OSError, IOError):
-            _logger.exception('Unable to remove index %s:' % index_path)
-
-        try:
-            with open(index_path, 'w') as index_file:
-                json.dump(self._index, index_file)
-        except (OSError, IOError):
-            _logger.exception('Unable to save index %s:' % index_path)
-
-        self._hide_file_if_win(index_path)
-
-    def _hide_file_if_win(self, index_path):
-        if sys.platform == 'win32':
-            try:
-                # Set HIDDEN_FILE_ATTRIBUTE (0x02)
-                ret = ctypes.windll.kernel32.SetFileAttributesW(index_path,
-                                                                0x02)
-                if not ret:
-                    raise ctypes.WinError()
-            except:
-                _logger.warning('Tentative to set HIDDEN file attribute to '
-                                '%s failed' % index_path, exc_info=True)
 
     def acquire_index(self, path, item, is_directory=False,
                       bypass_folder=None):
@@ -305,7 +261,7 @@ class LocalContainer(object):
                     key: value for (key, value) in self._index.items()
                     if key != path and not key.startswith('%s/' % path)}
                 self._index.update(new_index)
-                self._save_index()
+                self.index_saver.trigger_save()
 
             call_list = self._index_booking[path][1]
             del self._index_booking[path]
