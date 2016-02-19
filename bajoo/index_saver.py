@@ -26,9 +26,13 @@ class IndexSaver(object):
     def __init__(self, local_container, directory, model_id):
         self.local_container = local_container
 
-        self.directory = ensure_unicode(directory)
+        self.directory = directory
         self.model_id = model_id
-        self.index_path = os.path.join(directory, u'.bajoo-%s.idx' % model_id)
+
+        if self.directory:
+            ensure_unicode(directory)
+            self.index_path = os.path.join(directory,
+                                           u'.bajoo-%s.idx' % model_id)
 
         self.last_update = 0.0
         self.timer_restart_count = 0
