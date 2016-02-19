@@ -146,7 +146,7 @@ class TestTaskConsumer(object):
             for i in range(40):
                 promises.append(task_consumer.add_task(task))
 
-            result = Promise.all(promises).result(0.01)
+            result = Promise.all(promises).result(0.1)
             print(result)
 
             assert sum(result) is 40
