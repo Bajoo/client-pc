@@ -34,7 +34,7 @@ import tempfile
 from gnupg import GPG
 
 from ..common.path import get_cache_dir
-from ..promise import ThreadPoolExecutor
+from ..promise import ThreadPoolExecutor, reduce_coroutine
 from .asymmetric_key import AsymmetricKey
 from .errors import EncryptionError, KeyGenError, EncryptError, DecryptError
 from .errors import PassphraseAbortError
@@ -141,13 +141,13 @@ def create_key(email, passphrase, container=False):
     _logger.debug('Start to generate a new GPG key ...')
     gpg = _get_gpg_context()
 
-    args = {'key_length': 2048, 'name_email': email}
+    args = {'key_length': 2048, 'name_email': email.encode('utf-8')}
 
     # Note: giving an argument passphrase=None to gen_key_input() will create a
     # passphrase 'None'. We must not pass the argument if we don't want a
     # passphrase.
     if passphrase is not None:
-        args['passphrase'] = passphrase
+        args['passphrase'] = passphrase.encode('utf-8')
 
     if container:
         args['name_comment'] = 'Bajoo container key'
@@ -166,6 +166,7 @@ def create_key(email, passphrase, container=False):
     return f.then(on_key_generated)
 
 
+@reduce_coroutine()
 def encrypt(source, recipients):
     """Asynchronously encrypt a file for a list of recipients.
 
@@ -195,15 +196,7 @@ def encrypt(source, recipients):
         if isinstance(source, str):
             source = io.open(source, 'rb')
 
-    def close_source(result):
-        source.close()
-        return result
-
-    def close_source_err(error):
-        source.close()
-        raise error
-
-    try:
+    with source:
         if len(recipients) == 1:
             context = recipients[0]._context
         else:
@@ -215,26 +208,20 @@ def encrypt(source, recipients):
         with tempfile.NamedTemporaryFile(delete=False, dir=tmp_dir) as tf:
             dst_path = tf.name
 
-        f = _thread_pool.submit(context.encrypt_file, source,
-                                [key.fingerprint for key in recipients],
-                                output=dst_path,
-                                armor=False, always_trust=True)
+        list_fingerprint = [key.fingerprint for key in recipients]
+        result = yield _thread_pool.submit(context.encrypt_file, source,
+                                           list_fingerprint,
+                                           output=dst_path,
+                                           armor=False, always_trust=True)
 
-        def _on_file_encrypted(result):
-            if not result:
-                raise EncryptError('Encryption failed', result)
-            result_file = io.open(dst_path, mode='rb')
-            _patch_autodelete_file(result_file, dst_path)
-            return result_file
-
-        f = f.then(_on_file_encrypted)
-        f.then(close_source, close_source_err)
-        return f
-    except:
-        source.close()
-        raise
+        if not result:
+            raise EncryptError('Encryption failed', result)
+        result_file = io.open(dst_path, mode='rb')
+        _patch_autodelete_file(result_file, dst_path)
+        yield result_file
 
 
+@reduce_coroutine()
 def decrypt(source, key=None, passphrase_callback=None, _retry=0):
     """Asynchronously decrypt a file.
 
@@ -279,15 +266,7 @@ def decrypt(source, key=None, passphrase_callback=None, _retry=0):
         if isinstance(source, str):
             source = io.open(source, 'rb')
 
-    def close_source(result):
-        source.close()
-        return result
-
-    def close_source_err(error):
-        source.close()
-        raise error
-
-    try:
+    with source:
         tmp_dir = _get_tmp_dir()
         with tempfile.NamedTemporaryFile(delete=False, dir=tmp_dir) as tf:
             dst_path = tf.name
@@ -300,37 +279,31 @@ def decrypt(source, key=None, passphrase_callback=None, _retry=0):
                 # The user has refused to give his passphrase.
                 raise PassphraseAbortError()
 
-        f = _thread_pool.submit(context.decrypt_file, source, output=dst_path,
-                                passphrase=passphrase)
+        result = yield _thread_pool.submit(context.decrypt_file, source,
+                                           output=dst_path,
+                                           passphrase=passphrase)
 
-        def on_file_decrypted(result):
-            if not result:
-                # pkdecrypt codes are defined in libgpg-error (in err-codes.h)
-                if '[GNUPG:] ERROR pkdecrypt_failed 11' in result.stderr \
-                        or '[GNUPG:] MISSING_PASSPHRASE' in result.stderr:
-                    if passphrase_callback and _retry <= 4:
-                        source.seek(0)
-                        return decrypt(source, key,
-                                       passphrase_callback=passphrase_callback,
-                                       _retry=_retry+1)
-                    elif '[GNUPG:] MISSING_PASSPHRASE' in result.stderr:
-                        raise DecryptError('Decryption failed: '
-                                           'missing passphrase')
-                    else:
-                        raise DecryptError('Decryption failed: probably a bad'
-                                           'passphrase')
-                raise DecryptError('Decryption failed: %s' % result.status)
+        if not result:
+            # pkdecrypt codes are defined in libgpg-error (in err-codes.h)
+            if '[GNUPG:] ERROR pkdecrypt_failed 11' in result.stderr \
+                    or '[GNUPG:] MISSING_PASSPHRASE' in result.stderr:
+                if passphrase_callback and _retry <= 4:
+                    source.seek(0)
+                    yield decrypt(source, key,
+                                  passphrase_callback=passphrase_callback,
+                                  _retry=_retry+1)
+                    return
+                elif '[GNUPG:] MISSING_PASSPHRASE' in result.stderr:
+                    raise DecryptError('Decryption failed: '
+                                       'missing passphrase')
+                else:
+                    raise DecryptError('Decryption failed: probably a bad'
+                                       'passphrase')
+            raise DecryptError('Decryption failed: %s' % result.status)
 
-            result_file = io.open(dst_path, mode='rb')
-            _patch_autodelete_file(result_file, dst_path)
-            return result_file
-
-        f = f.then(on_file_decrypted)
-        f = f.then(close_source, close_source_err)
-        return f
-    except:
-        source.close()
-        raise
+        result_file = io.open(dst_path, mode='rb')
+        _patch_autodelete_file(result_file, dst_path)
+        yield result_file
 
 
 def import_key(key):

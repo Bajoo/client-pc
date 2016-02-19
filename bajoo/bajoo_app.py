@@ -1,54 +1,55 @@
 # -*- coding: utf-8 -*-
 
-from . import __version__
 
-from datetime import datetime
 import glob
 import locale
 import logging
 import os
+import platform
 import shutil
+import sys
+import tempfile
+import zipfile
+from datetime import datetime
+
 try:
     from StringIO import StringIO
 except ImportError:
     from io import StringIO
-import sys
-import tempfile
-import platform
-import zipfile
 
 import wx
 from wx.lib.softwareupdate import SoftwareUpdate
 
+from . import __version__
 from . import promise
-from .api import TeamShare, Session, Container
-from .common import config, autorun
+from .api import Container, Session, TeamShare
+from .common import autorun, config
 from .common import path as bajoo_path
+from .common.i18n import N_, _, set_lang
 from .connection_registration_process import connect_or_register
 from .container_model import ContainerModel
 from .container_sync_pool import ContainerSyncPool
 from .dynamic_container_list import DynamicContainerList
-from .gui.common.language_box import LanguageBox
-from .gui.bug_report import BugReportWindow
-from .local_container import LocalContainer
+from .filesync import task_consumer
 from .gui.about_window import AboutBajooWindow
+from .gui.bug_report import BugReportWindow, EVT_BUG_REPORT
+from .gui.change_password_window import ChangePasswordWindow
+from .gui.common.language_box import LanguageBox
 from .gui.event_promise import ensure_gui_thread
+from .gui.form.members_share_form import MembersShareForm
 from .gui.home_window import HomeWindow
 from .gui.main_window import MainWindow
 from .gui.message_notifier import MessageNotifier
 from .gui.passphrase_window import PassphraseWindow
 from .gui.proxy_window import EVT_PROXY_FORM
-from .gui.task_bar_icon import TaskBarIcon
-from .gui.tab.account_tab import AccountTab
 from .gui.tab import SettingsTab
-from .gui.tab.creation_share_tab import CreationShareTab
-from .gui.tab.list_shares_tab import ListSharesTab
-from .gui.tab.details_share_tab import DetailsShareTab
+from .gui.tab.account_tab import AccountTab
 from .gui.tab.advanced_settings_tab import AdvancedSettingsTab  # REMOVE
-from .gui.form.members_share_form import MembersShareForm
-from .gui.change_password_window import ChangePasswordWindow
-from .gui.bug_report import EVT_BUG_REPORT
-from .common.i18n import _, N_, set_lang
+from .gui.tab.creation_share_tab import CreationShareTab
+from .gui.tab.details_share_tab import DetailsShareTab
+from .gui.tab.list_shares_tab import ListSharesTab
+from .gui.task_bar_icon import TaskBarIcon
+from .local_container import LocalContainer
 from .passphrase_manager import PassphraseManager
 from .promise import Promise
 
@@ -126,6 +127,8 @@ class BajooApp(wx.App, SoftwareUpdate):
 
         # Apply autorun on app startup to match with the config value
         autorun.set_autorun(config.get('autorun'))
+
+        task_consumer.start()
 
     def _ensures_single_instance_running(self):
         """Check that only one instance of Bajoo is running per user.
@@ -689,10 +692,16 @@ class BajooApp(wx.App, SoftwareUpdate):
             self._contact_dev_window.Destroy()
 
         self._task_bar_icon.Destroy()
-        self._dummy_frame.Destroy()
 
         if self._container_list:
             self._container_list.stop()
+
+        self._container_sync_pool.stop()
+
+        task_consumer.stop()
+
+        self._dummy_frame.Destroy()
+        _logger.debug('Exiting done !')
 
     # Note (Kevin): OnEventLoopEnter(), from wx.App, is inconsistent. run()
     # is used instead.
@@ -781,7 +790,7 @@ class BajooApp(wx.App, SoftwareUpdate):
         if self._passphrase_manager:
             self._passphrase_manager.remove_passphrase()
 
-        self._container_sync_pool.pause()
+        self._container_sync_pool.stop()
         self._container_sync_pool = ContainerSyncPool(
             self._on_global_status_change, self._on_sync_error)
         self._container_list.stop()

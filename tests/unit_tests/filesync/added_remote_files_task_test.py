@@ -2,10 +2,19 @@
 # -*- coding: utf-8 -*-
 
 from bajoo.filesync.added_remote_files_task import AddedRemoteFilesTask
+from bajoo.filesync.task_consumer import start, stop
 from .utils import FakeFile, TestTaskAbstract, assert_content
 
 import os
 import tempfile
+
+
+def setup_module(module):
+    start()
+
+
+def teardown_module(module):
+    stop()
 
 
 def generate_task(tester, target):

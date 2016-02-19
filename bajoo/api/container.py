@@ -138,13 +138,13 @@ class Container(object):
             recipients = [key]
 
         enc_key_content = yield encryption.encrypt(key_content, recipients)
-
-        # Upload key
-        key_url = '/storages/%s/.key' % self.id
-        _logger.debug('Key for container #%s generated.' % self.id)
-        yield self._session.send_storage_request(
-            'PUT', key_url, data=enc_key_content)
-        return
+        with enc_key_content:
+            # Upload key
+            key_url = '/storages/%s/.key' % self.id
+            _logger.debug('Key for container #%s generated.' % self.id)
+            yield self._session.send_storage_request(
+                'PUT', key_url, data=enc_key_content)
+            return
 
     @reduce_coroutine()
     def _generate_key(self, lock_previously_acquired=False):

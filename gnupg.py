@@ -724,11 +724,7 @@ class GPG(object):
         if isinstance(options, str):
             options = [options]
         self.options = options
-        # Changed in 0.3.7 to use Latin-1 encoding rather than
-        # locale.getpreferredencoding falling back to sys.stdin.encoding
-        # falling back to utf-8, because gpg itself uses latin-1 as the default
-        # encoding.
-        self.encoding = 'latin-1'
+        self.encoding = 'utf-8'
         if gnupghome and not os.path.isdir(self.gnupghome):
             os.makedirs(self.gnupghome,0x1C0)
         p = self._open_subprocess(["--version"])
@@ -995,7 +991,7 @@ class GPG(object):
     # KEY MANAGEMENT
     #
 
-    def import_keys(self, key_data):
+    def import_keys(self, key_data, encoding=None):
         """ import the key_data into our keyring
 
         >>> import shutil
@@ -1040,9 +1036,12 @@ class GPG(object):
         >>> assert print2 in pubkeys.fingerprints
 
         """
+        if not encoding:
+            encoding = self.encoding
+
         result = self.result_map['import'](self)
         logger.debug('import_keys: %r', key_data[:256])
-        data = _make_binary_stream(key_data, self.encoding)
+        data = _make_binary_stream(key_data, encoding)
         self._handle_io(['--import'], data, result, binary=True)
         logger.debug('import_keys result: %r', result.__dict__)
         data.close()
@@ -1124,7 +1123,7 @@ class GPG(object):
         result = self.result_map['delete'](self)
         self._collect_output(p, result, stdin=p.stdin)
         logger.debug('export_keys result: %r', result.data)
-        return result.data.decode(self.encoding, self.decode_errors)
+        return result.data
 
     def _get_list_output(self, p, kind):
         # Get the response information
