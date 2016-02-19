@@ -64,7 +64,9 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
         self.Show()
 
         f = EventPromise(self, SetupConfigScreen.EVT_SUBMIT)
-        return f.then(lambda data: (data.bajoo_folder, data.passphrase))
+        return f.then(lambda data: (data.bajoo_folder,
+                                    data.passphrase,
+                                    data.allow_save_on_disk))
 
     @ensure_gui_thread
     def get_register_or_connection_credentials(self, last_username=None,

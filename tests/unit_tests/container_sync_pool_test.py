@@ -1,18 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import bajoo.container_sync_pool as csp
-from .filesync.fake_local_container import FakeLocalContainer
-from .filesync.fake_container import Fake_container, \
-    FakeHTTPEntityTooLargeError, FakePassphraseAbortError
-
-from .filesync.utils import FakeFile
-from bajoo.filesync.task_consumer import add_task, start, stop
-from bajoo.filesync.added_local_files_task import AddedLocalFilesTask
-
 import logging
 import sys
 import threading
+
+import pytest
+
+import bajoo.container_sync_pool as csp
+from bajoo.filesync.task_consumer import add_task, start, stop
+from bajoo.filesync.added_local_files_task import AddedLocalFilesTask
+
+from .filesync.fake_local_container import FakeLocalContainer
+from .filesync.fake_container import Fake_container, \
+    FakeHTTPEntityTooLargeError, FakePassphraseAbortError
+from .filesync.utils import FakeFile
+
 
 # backup module before mock
 OLD_FILEWATCHER = csp.FileWatcher
@@ -32,6 +35,11 @@ OLD_LOGGER_HANDLERS = None
 def setup_module(module):
     global OLD_LOGGER_HANDLERS
 
+    # Some tests expect messages from stdout/stderr. the logging module
+    # interact with std streams, and logging configuration is modified by
+    # these tests.
+    # The setup and teardown ensures the logger stays unchanged after tests
+    # execution.
     logger = logging.getLogger()
     OLD_LOGGER_HANDLERS = list(logger.handlers)
 
@@ -104,7 +112,7 @@ class FakeFileSyncModule(object):
         local_result = self.result.copy()
         for task_name, task_count in expected_tasks.items():
             assert (task_name not in local_result and task_count == 0) \
-                or task_count == local_result[task_name]
+                   or task_count == local_result[task_name]
 
             del local_result[task_name]
 
@@ -148,11 +156,17 @@ class FakeFileSyncModule(object):
         return add_task(FakeTask)
 
 
+@pytest.mark.xfail(
+    condition=True, reason="Error produced due to wrongassumptions. See the"
+                           "method 'on_container_change_state()' bellow.")
 class TestContainerSyncPool(object):
 
     def on_container_change_state(self, new_state):
         self.state_stack.append(new_state)
 
+        # TODO: This method expects a call to this method after every task
+        # resolution (so it assumes one test is finished at each call).
+        # It's not the case if several tests are executed simultaneously.
         if new_state is csp.ContainerSyncPool.STATUS_UP_TO_DATE:
             with self.test_condition:
                 self.test_finished += 1

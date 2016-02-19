@@ -67,6 +67,8 @@ class ProxyForm(BaseForm):
         self.FindWindow('server_port').SetValue(str(port) or '0')
         self.FindWindow('username').SetValue(user or '')
         self.FindWindow('password').SetValue(password or '')
+        self.FindWindow('use_auth').SetValue(
+            len(user) > 0 or len(password) > 0)
 
     def apply_field_constraints(self, _evt=None):
         """Set the form in a coherent state by applying fields constraints.
@@ -103,6 +105,13 @@ class ProxyForm(BaseForm):
                 proxy_mode = mode
             del data[mode]
         data.update(proxy_type=proxy_type, proxy_mode=proxy_mode)
+
+        use_auth = self.FindWindow('use_auth').GetValue()
+
+        if not use_auth:
+            del data['username']
+            del data['password']
+
         return data
 
     def notify_lang_change(self):
