@@ -213,11 +213,13 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
         self._container_menu.AppendSubMenu(
             shares_menu, _('Shares folder'))
 
+        my_bajoo_count = 0
         for name, fpath, status in status_list:
             # TODO: Find a way to distinguish 'MyBajoo' folder and a
             # TODO: shared folder named 'MyBajoo'
             if name == 'MyBajoo':
                 parent_menu = self._container_menu
+                my_bajoo_count += 1
             else:
                 parent_menu = shares_menu
 
@@ -232,6 +234,6 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
 
             self.Bind(wx.EVT_MENU, open_container, item)
 
-        if not status_list:
+        if not status_list or len(status_list) == my_bajoo_count:
             shares_menu.Append(
                 -1, _("Looks like you don't\nhave any share")).Enable(False)

@@ -10,6 +10,9 @@ from ..promise import Promise, is_thenable
 _logger = logging.getLogger(__name__)
 
 
+_MAX_SIMULTANEOUS_TASK = 100
+_nb_ongoing_task = 0
+
 _MAX_WORKER = 5
 _executor = None
 _task_condition = Condition()
@@ -74,12 +77,7 @@ def add_task(task, priority=False):
     The first yielded result who is not a thenable (see promise.is_thenable())
     is used to resolve the returning promise.
 
-    The initialization phase of the task is executed immediately, in the caller
-    thread. It allow the task to performs init operation sooner (typically, to
-    discard other tasks who are no longer useful).
-    IO-bound operations shouldn't be done before the first yield.
-
-    Each following call to the generator is guaranteed to be executed in the
+    Each call to the generator is guaranteed to be executed in the
     Task consumer context, with thread dedicated to IO-bound operations.
 
     Args:
@@ -95,25 +93,42 @@ def add_task(task, priority=False):
     """
     def task_executor(resolve, reject):
         gen = task()
-        try:
-            result = next(gen)
-        except StopIteration:
-            resolve(None)
-        except:
-            reject(*sys.exc_info())
-        else:
-            _call_next_or_set_result(resolve, reject, gen, result, priority)
+        with _task_condition:
+            gen_task = (resolve, reject, gen)
+            if priority:
+                _task_queue.appendleft(gen_task)
+            else:
+                _task_queue.append(gen_task)
+            _task_condition.notify()
 
     return Promise(task_executor)
 
 
+def _start_generator(resolve, reject, gen):
+    global _nb_ongoing_task
+
+    try:
+        result = next(gen)
+    except StopIteration:
+        resolve(None)
+    except:
+        reject(*sys.exc_info())
+    else:
+        _nb_ongoing_task += 1
+        _call_next_or_set_result(resolve, reject, gen, result)
+
+
 def _iter_generator(resolve, reject, gen, value):
     """Execute the next step of a task generator."""
+    global _nb_ongoing_task
+
     try:
         result = gen.send(value)
     except StopIteration:
+        _nb_ongoing_task -= 1
         resolve(value)
     except:
+        _nb_ongoing_task -= 1
         reject(*sys.exc_info())
     else:
         _call_next_or_set_result(resolve, reject, gen, result)
@@ -121,54 +136,45 @@ def _iter_generator(resolve, reject, gen, value):
 
 def _iter_generator_error(resolve, reject, gen, reason):
     """Execute the next step of a task generator, due to a rejected Promise."""
+    global _nb_ongoing_task
+
     try:
         result = gen.throw(reason)
     except StopIteration:
+        _nb_ongoing_task -= 1
         resolve(None)
     except:
+        _nb_ongoing_task -= 1
         reject(*sys.exc_info())
     else:
         _call_next_or_set_result(resolve, reject, gen, result)
 
 
-def _call_next_or_set_result(resolve, reject, gen, value, priority='SPLIT'):
+def _call_next_or_set_result(resolve, reject, gen, value):
     """When a task has yielded a value, prepare the next step, or resolve.
 
     If the value yielded is a thenable, then we register the next step in the
     task queue.
     Otherwise, the value is the task result, and so the task is fulfilled.
-
-    Args:
-        priority (bool or 'SPLIT', optional): If True, the task is of high
-            priority. The 'SPLIT' priority means the task is split in several
-            steps, and the next step should be called as soon as possible,
-            before high priority tasks.
     """
+    global _nb_ongoing_task
+
     def register_iteration(new_value):
         with _task_condition:
             task = (resolve, reject, gen, new_value, False)
-            if priority is 'SPLIT':
-                _split_task_queue.append(task)
-            elif priority:
-                _task_queue.appendleft(task)
-            else:
-                _task_queue.append(task)
+            _split_task_queue.append(task)
             _task_condition.notify()
 
     def register_iteration_error(reason):
         with _task_condition:
             task = (resolve, reject, gen, reason, True)
-            if priority is 'SPLIT':
-                _split_task_queue.append(task)
-            elif priority:
-                _task_queue.appendleft(task)
-            else:
-                _task_queue.append(task)
+            _split_task_queue.append(task)
             _task_condition.notify()
 
     if is_thenable(value):
         value.then(register_iteration, register_iteration_error)
     else:
+        _nb_ongoing_task -= 1
         resolve(value)
         gen.close()
 
@@ -189,20 +195,28 @@ def _run_worker(id):
             if _stop_order:
                 return
 
+            # Try to execute ongoing tasks
             try:
-                # in-progress tasks
                 (resolve, reject,
                  generator, value, is_error) = _split_task_queue.popleft()
             except IndexError:
-                # New tasks
+                pass
+            else:
+                if is_error:
+                    _iter_generator_error(resolve, reject, generator, value)
+                else:
+                    _iter_generator(resolve, reject, generator, value)
+                continue
+
+            # Else, begin the next new task
+            if _nb_ongoing_task < _MAX_SIMULTANEOUS_TASK:
                 try:
-                    (resolve, reject,
-                     generator, value, is_error) = _task_queue.popleft()
+                    (resolve, reject, generator) = _task_queue.popleft()
                 except IndexError:
-                    _task_condition.wait()
+                    pass
+                else:
+                    _start_generator(resolve, reject, generator)
                     continue
 
-        if is_error:
-            _iter_generator_error(resolve, reject, generator, value)
-        else:
-            _iter_generator(resolve, reject, generator, value)
+            # No task to execute.
+            _task_condition.wait()

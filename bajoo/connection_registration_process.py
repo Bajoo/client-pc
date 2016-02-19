@@ -307,8 +307,13 @@ class _ConnectionProcess(object):
         Returns:
             Future<None>: resolve when the settings have been applied.
         """
-        root_folder_path, gpg_passphrase = settings
+        root_folder_path, gpg_passphrase, save_passphrase = settings
         futures = []
+
+        if save_passphrase:
+            self.profile.passphrase = gpg_passphrase
+        else:
+            self.profile.passphrase = None
 
         if self._need_root_folder_config:
             f1 = self.set_root_folder(root_folder_path)

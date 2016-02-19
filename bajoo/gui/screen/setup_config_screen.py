@@ -23,7 +23,8 @@ class SetupConfigScreen(BaseForm):
 
     SubmitEvent, EVT_SUBMIT = NewCommandEvent()
 
-    fields = ['passphrase', 'confirmation', 'no_passphrase', 'bajoo_folder']
+    fields = ['passphrase', 'confirmation', 'no_passphrase', 'bajoo_folder',
+              'allow_save_on_disk']
 
     def __init__(self, parent):
         BaseForm.__init__(self, parent, auto_disable=True)
@@ -50,6 +51,7 @@ class SetupConfigScreen(BaseForm):
         self.FindWindow('confirmation').Enable(use_passphrase)
         self.FindWindow('passphrase_validator').reset()
         self.FindWindow('confirmation_validator').reset()
+        self.FindWindow('allow_save_on_disk').Enable(use_passphrase)
 
     def get_data(self):
         data = BaseForm.get_data(self)
@@ -117,6 +119,9 @@ class SetupConfigScreenView(BaseView):
             target=confirmation, ref=passphrase)
         no_passphrase = wx.CheckBox(encryption_section, name='no_passphrase')
 
+        allow_save_on_disk_checkbox = wx.CheckBox(
+            encryption_section, name='allow_save_on_disk')
+
         bajoo_folder_section = wx.StaticBox(self.window,
                                             name='bajoo_folder_section')
         root_folder_error = BaseValidator(bajoo_folder_section,
@@ -136,6 +141,7 @@ class SetupConfigScreenView(BaseView):
                                "You can use a real phrase to memorize it more "
                                "easily (ex: MyBajooAccount)."),
             no_passphrase: N_("Don't use encryption passphrase"),
+            allow_save_on_disk_checkbox: N_('Memorize the passphrase'),
             bajoo_folder_section: N_('Root folder Bajoo'),
             bajoo_folder_label: N_('Your Bajoo shares will be deposit here:'),
             validate_btn: N_('Validate')
@@ -158,7 +164,7 @@ class SetupConfigScreenView(BaseView):
         encryption_sizer = wx.StaticBoxSizer(encryption_section, wx.VERTICAL)
         self.make_sizer(wx.VERTICAL, [
             gpg_error, encryption_txt, passphrase_sizer, confirmation_sizer,
-            no_passphrase
+            allow_save_on_disk_checkbox, no_passphrase
         ], sizer=encryption_sizer, flag=wx.EXPAND)
 
         bajoo_folder_sizer = wx.StaticBoxSizer(bajoo_folder_section,
