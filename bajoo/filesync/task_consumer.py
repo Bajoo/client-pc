@@ -196,27 +196,25 @@ def _run_worker(id):
                 return
 
             # Try to execute ongoing tasks
+            is_ongoing_task = None
             try:
                 (resolve, reject,
                  generator, value, is_error) = _split_task_queue.popleft()
+                is_ongoing_task = True
             except IndexError:
-                pass
-            else:
-                if is_error:
-                    _iter_generator_error(resolve, reject, generator, value)
-                else:
-                    _iter_generator(resolve, reject, generator, value)
-                continue
+                # Else, begin the next new task
+                if _nb_ongoing_task < _MAX_SIMULTANEOUS_TASK:
+                    try:
+                        (resolve, reject, generator) = _task_queue.popleft()
+                        is_ongoing_task = False
+                    except IndexError:
+                        # No task to execute.
+                        _task_condition.wait()
+                        continue
 
-            # Else, begin the next new task
-            if _nb_ongoing_task < _MAX_SIMULTANEOUS_TASK:
-                try:
-                    (resolve, reject, generator) = _task_queue.popleft()
-                except IndexError:
-                    pass
-                else:
-                    _start_generator(resolve, reject, generator)
-                    continue
-
-            # No task to execute.
-            _task_condition.wait()
+        if not is_ongoing_task:
+            _start_generator(resolve, reject, generator)
+        elif is_error:
+            _iter_generator_error(resolve, reject, generator, value)
+        else:
+            _iter_generator(resolve, reject, generator, value)
