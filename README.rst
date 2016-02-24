@@ -3,10 +3,10 @@ Bajoo client
 
 Official client for the cloud storage service Bajoo.
 
-Bajoo is a service who lets you store your files in the cloud, and share them
+Bajoo is a service which lets you store your files in the cloud, and share them
 into multiples devices and multiples users.
-All files are encrypted client-side (before to be sent to the servers), and the
-keys to decrypt them are never sent to the servers.
+All files are encrypted client-side (before being sent to our servers) with 
+your secret phrase you're the only one to know.
 
 This client is a graphic program aimed to interact with the bajoo service. It
 can synchronize local folders with files stored in the Bajoo cloud.
@@ -35,5 +35,7 @@ Contact
 -------
 
 If you have bug reports, comments, questions, or just want to share a word
-with us, feel free to contact us at support@bajoo.fr
+with us, feel free to contact us at support-fr@bajoo.fr (in french) or 
+support-en@bajoo.fr (english).
 We'll be happy to discuss this with you!
+We don't bite and neither Bajoo does.
