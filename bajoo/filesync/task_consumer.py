@@ -208,9 +208,12 @@ def _run_worker(id):
                         (resolve, reject, generator) = _task_queue.popleft()
                         is_ongoing_task = False
                     except IndexError:
-                        # No task to execute.
-                        _task_condition.wait()
-                        continue
+                        pass
+
+            if is_ongoing_task is None:
+                # No task to execute.
+                _task_condition.wait()
+                continue
 
         if not is_ongoing_task:
             _start_generator(resolve, reject, generator)
