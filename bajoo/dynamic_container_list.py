@@ -313,10 +313,10 @@ def main():
     def stop_container(local):
         print('Stop container %s (%s)' % (local.id, local.name))
 
-    session = Session.create_session('stran+20@bajoo.fr',
-                                     'stran+20@bajoo.fr').result()
+    session = Session.create_session('test+20@bajoo.fr',
+                                     'test+20@bajoo.fr').result()
 
-    user_profile = UserProfile('stran+20@bajoo.fr')
+    user_profile = UserProfile('test+20@bajoo.fr')
     if not user_profile.root_folder_path:
         # DynamicContainerList need it to load new containers
         user_profile.root_folder_path = './tmp'

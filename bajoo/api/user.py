@@ -264,24 +264,24 @@ if __name__ == '__main__':
     from .session import Session
 
     # Load session & change password
-    session = Session.create_session('stran+test_api@bajoo.fr',
-                                     'stran+test_api@bajoo.fr').result()
+    session = Session.create_session('test+test_api@bajoo.fr',
+                                     'test+test_api@bajoo.fr').result()
     user = User.load(session).result()
-    _logger.debug(user.change_password('stran+test_api@bajoo.fr',
-                                       'stran+test_api_1@bajoo.fr')
+    _logger.debug(user.change_password('test+test_api@bajoo.fr',
+                                       'test+test_api_1@bajoo.fr')
                   .result())
 
     # Reset the old password
-    session = Session.create_session('stran+test_api@bajoo.fr',
-                                     'stran+test_api_1@bajoo.fr').result()
+    session = Session.create_session('test+test_api@bajoo.fr',
+                                     'test+test_api_1@bajoo.fr').result()
     user = User.load(session).result()
-    _logger.debug(user.change_password('stran+test_api_1@bajoo.fr',
-                                       'stran+test_api@bajoo.fr').result())
+    _logger.debug(user.change_password('test+test_api_1@bajoo.fr',
+                                       'test+test_api@bajoo.fr').result())
 
     # Load session and get user's information
     user_future = Session \
-        .create_session('stran+test_api_5@bajoo.fr',
-                        'stran+test_api_5@bajoo.fr') \
+        .create_session('test+test_api_5@bajoo.fr',
+                        'test+test_api_5@bajoo.fr') \
         .then(User.load)
     user = user_future.result()
     _logger.debug("User info = %s", user.get_user_info().result())

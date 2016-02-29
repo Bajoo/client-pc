@@ -360,8 +360,8 @@ def main():
     from .form.members_share_form import MembersShareForm
 
     session = Session.create_session(
-        'stran+20@bajoo.fr',
-        'stran+20@bajoo.fr').result()
+        'test+20@bajoo.fr',
+        'test+20@bajoo.fr').result()
 
     def _on_shares_fetched(shares):
         _logger.debug("%d shares fetched", len(shares))

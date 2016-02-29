@@ -343,8 +343,8 @@ if __name__ == '__main__':
     logging.basicConfig()
     _logger.setLevel(logging.DEBUG)
 
-    session1 = Session.create_session('stran+test_api@bajoo.fr',
-                                      'stran+test_api@bajoo.fr').result()
+    session1 = Session.create_session('test+test_api@bajoo.fr',
+                                      'test+test_api@bajoo.fr').result()
     session2 = Session.load_session(session1.get_refresh_token()).result()
 
     try:
@@ -357,8 +357,8 @@ if __name__ == '__main__':
     session2.disconnect().result()
 
     # Test retry on HTTPUnauthorizedError
-    session1 = Session.create_session('stran+test_api@bajoo.fr',
-                                      'stran+test_api@bajoo.fr').result()
+    session1 = Session.create_session('test+test_api@bajoo.fr',
+                                      'test+test_api@bajoo.fr').result()
     # Make the session expired
     session1.token[u'access_token'] = 'invalid_token'
     future = User.load(session1).then(

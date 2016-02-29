@@ -441,8 +441,8 @@ def main():
 
     def _on_request_data(event):
         Session.create_session(
-            'stran+20@bajoo.fr',
-            'stran+20@bajoo.fr') \
+            'test+20@bajoo.fr',
+            'test+20@bajoo.fr') \
             .then(_on_fetch_session) \
             .then(_on_fetch_shares)
 
