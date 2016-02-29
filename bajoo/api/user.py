@@ -2,6 +2,7 @@
 import logging
 from hashlib import sha256
 
+from ..common.strings import ensure_unicode
 from ..network.errors import HTTPNotFoundError
 from .. import encryption
 from ..encryption import AsymmetricKey
@@ -25,22 +26,35 @@ class User(object):
 
     @staticmethod
     @reduce_coroutine()
-    def create(email, password):
+    def create(email, password, lang=None):
         """
         Create a new user using email & password.
 
+        Args:
+            email (unicode): email of the new account
+            password (unicode): password of the new account
+            lang (str, optional): two-character language code, used to set the
+                default language for the new account. Default to 'en'.
         Returns:
             Promise<None>
         """
         from .session import Session
 
+        password = ensure_unicode(password)
+        email = ensure_unicode(email)
+
         session = Session()
         hashed_password = User.hash_password(password)
 
         yield session.fetch_client_token()
+
+        if not lang:
+            lang = 'en'
         yield session.send_api_request('POST', '/users', data={
             u'email': email,
-            u'password': hashed_password})
+            u'password': hashed_password,
+            u'lang': lang
+        })
         yield None
 
     @staticmethod
