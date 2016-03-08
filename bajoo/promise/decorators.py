@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 from .promise import Promise
-from .util import is_thenable
 
 
 def wrap_promise(f):
@@ -17,19 +16,3 @@ def wrap_promise(f):
             return Promise.reject(error)
 
     return wrapper
-
-
-def resolve_rec(result):
-    """Recursively resolve the promise if it returns another Promise.
-
-    In same case, an asynchronous action must be done in many steps, not known
-    at start. resolve_rec() allow a Promise to resolve itself as another
-    Promise object (the next step), and so recursively.
-
-    Returns:
-        Promise<?>: Promise guaranteed to resolve a non-promise result.
-    """
-    if is_thenable(result):
-        return result.then(resolve_rec)
-    else:
-        return Promise.resolve(result)
