@@ -10,7 +10,7 @@ from .common.i18n import _
 from .api.sync import container_list_updater
 from .local_container import LocalContainer
 from .container_model import ContainerModel
-from .promise import Promise
+from .promise import Deferred
 
 
 _logger = logging.getLogger(__name__)
@@ -277,11 +277,10 @@ class DynamicContainerList(object):
         Returns:
             Promise<None>: resolved when the refresh is done.
         """
+        df = Deferred()
+        self._updater.apply_now(partial(df.resolve, None))
 
-        def executor(resolve, _reject):
-            self._updater.apply_now(partial(resolve, None))
-
-        return Promise(executor)
+        return df.promise
 
     def get_list(self):
         """Returns the list of containers.

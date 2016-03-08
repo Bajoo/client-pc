@@ -5,7 +5,7 @@ import logging
 import sys
 from ..generic_executor import GenericExecutor, SharedContext
 from .request import upload, download, json_request
-from ..promise import Promise
+from ..promise import Deferred
 
 _logger = logging.getLogger(__name__)
 
@@ -58,16 +58,15 @@ def add_task(action, verb, url, params, priority=100):
         Promise<???>
     """
     _logger.log(5, "Add request %s %s", verb, url)
+    df = Deferred()
+    with _executor.context:
+        task = (priority, _executor.context.counter, df,
+                action, verb, url, params)
+        heapq.heappush(_executor.context.requests, task)
+        _executor.context.counter += 1
+        _executor.context.condition.notify()
 
-    def execute_request(resolve, reject):
-        with _executor.context:
-            task = (priority, _executor.context.counter, resolve, reject,
-                    action, verb, url, params)
-            heapq.heappush(_executor.context.requests, task)
-            _executor.context.counter += 1
-            _executor.context.condition.notify()
-
-    return Promise(execute_request)
+    return df.promise
 
 
 def _run_worker(context):
@@ -87,7 +86,7 @@ def _run_worker(context):
             if context.stop_order:
                 return
             try:
-                (_priority, _counter, resolve, reject,
+                (_priority, _counter, df,
                  action, verb, url, params) = heapq.heappop(context.requests)
             except IndexError:
                 context.condition.wait()
@@ -98,14 +97,14 @@ def _run_worker(context):
         except KeyError:
             _logger.error("Unknown action '%s' for request: %s %s",
                           action, verb, url)
-            reject(ValueError('Request with unknown type %s' % action))
+            df.reject(ValueError('Request with unknown type %s' % action))
             continue
 
         _logger.log(5, "Start request %s %s", verb, url)
         try:
             result = action_fn(verb, url, **params)
         except:
-            reject(*sys.exc_info())
+            df.reject(*sys.exc_info())
         else:
-            resolve(result)
+            df.resolve(result)
         _logger.log(5, "request %s %s completed", verb, url)

@@ -4,7 +4,7 @@ from collections import deque
 import logging
 import sys
 from ..generic_executor import GenericExecutor, SharedContext
-from ..promise import Promise, is_thenable
+from ..promise import Deferred, is_thenable
 
 _logger = logging.getLogger(__name__)
 
@@ -69,65 +69,65 @@ def add_task(task, priority=False):
         Promise: Promise resolved when the task is done. If the task fails
             (raises an exception), the Promise is rejected with this exception.
     """
-    def task_executor(resolve, reject):
-        gen = task()
-        with _executor.context as ctx:
-            gen_task = (resolve, reject, gen)
-            if priority:
-                ctx.task_queue.appendleft(gen_task)
-            else:
-                ctx.task_queue.append(gen_task)
-            _executor.context.condition.notify()
+    deferred = Deferred()
+    gen = task()
+    with _executor.context as ctx:
+        gen_task = (deferred, gen)
+        if priority:
+            ctx.task_queue.appendleft(gen_task)
+        else:
+            ctx.task_queue.append(gen_task)
+        _executor.context.condition.notify()
 
-    return Promise(task_executor)
+    return deferred.promise
 
 
-def _start_generator(context, resolve, reject, gen):
+def _start_generator(context, deferred, gen):
     try:
         result = next(gen)
     except StopIteration:
-        resolve(None)
+        deferred.resolve(None)
     except:
-        reject(*sys.exc_info())
+        deferred.reject(*sys.exc_info())
     else:
         with context:
             context.nb_ongoing_tasks += 1
-        _call_next_or_set_result(context, resolve, reject, gen, result)
+        _call_next_or_set_result(context, deferred, gen, result)
 
 
-def _iter_generator(context, resolve, reject, gen, value):
+def _iter_generator(context, deferred, gen, value):
     """Execute the next step of a task generator."""
     try:
         result = gen.send(value)
     except StopIteration:
         with context:
             context.nb_ongoing_tasks -= 1
-        resolve(value)
+        deferred.resolve(value)
     except:
         with context:
             context.nb_ongoing_tasks -= 1
-        reject(*sys.exc_info())
+        deferred.reject(*sys.exc_info())
     else:
-        _call_next_or_set_result(context, resolve, reject, gen, result)
+        _call_next_or_set_result(context, deferred, gen, result)
 
 
-def _iter_generator_error(context, resolve, reject, gen, reason):
+def _iter_generator_error(context, deferred, gen, reason):
     """Execute the next step of a task generator, due to a rejected Promise."""
     try:
         result = gen.throw(reason)
     except StopIteration:
         with context:
             context.nb_ongoing_tasks -= 1
-        resolve(None)
+        deferred.resolve(None)
     except:
         with context:
             context.nb_ongoing_tasks -= 1
-        reject(*sys.exc_info())
+        deferred.reject(*sys.exc_info())
     else:
-        _call_next_or_set_result(context, resolve, reject, gen, result)
+        _call_next_or_set_result(context, deferred, gen, result)
 
 
-def _call_next_or_set_result(context, resolve, reject, gen, value):
+def _call_next_or_set_result(context, deferred, gen, value):
     """When a task has yielded a value, prepare the next step, or resolve.
 
     If the value yielded is a thenable, then we register the next step in the
@@ -136,13 +136,13 @@ def _call_next_or_set_result(context, resolve, reject, gen, value):
     """
     def register_iteration(new_value):
         with context:
-            task = (resolve, reject, gen, new_value, False)
+            task = (deferred, gen, new_value, False)
             context.ongoing_task_queue.append(task)
             context.condition.notify()
 
     def register_iteration_error(reason):
         with context:
-            task = (resolve, reject, gen, reason, True)
+            task = (deferred, gen, reason, True)
             context.ongoing_task_queue.append(task)
             context.condition.notify()
 
@@ -151,7 +151,7 @@ def _call_next_or_set_result(context, resolve, reject, gen, value):
     else:
         with context:
             context.nb_ongoing_tasks -= 1
-        resolve(value)
+        deferred.resolve(value)
         gen.close()
 
 
@@ -173,14 +173,14 @@ def _run_worker(context):
             # Try to execute ongoing tasks
             is_ongoing_task = None
             try:
-                (resolve, reject,
-                 generator, value, is_error) = ctx.ongoing_task_queue.popleft()
+                (deferred, generator,
+                 value, is_error) = ctx.ongoing_task_queue.popleft()
                 is_ongoing_task = True
             except IndexError:
                 # Else, begin the next new task
                 if ctx.nb_ongoing_tasks < _MAX_SIMULTANEOUS_TASK:
                     try:
-                        (resolve, reject, generator) = ctx.task_queue.popleft()
+                        (deferred, generator) = ctx.task_queue.popleft()
                         is_ongoing_task = False
                     except IndexError:
                         pass
@@ -191,11 +191,11 @@ def _run_worker(context):
                 continue
 
         if not is_ongoing_task:
-            _start_generator(ctx, resolve, reject, generator)
+            _start_generator(ctx, deferred, generator)
         elif is_error:
-            _iter_generator_error(ctx, resolve, reject, generator, value)
+            _iter_generator_error(ctx, deferred, generator, value)
         else:
-            _iter_generator(ctx, resolve, reject, generator, value)
+            _iter_generator(ctx, deferred, generator, value)
 
 
 def Context():
