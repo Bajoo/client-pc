@@ -392,7 +392,7 @@ class DetailsShareTab(BaseForm):
         if self._share:
             if message_box.message_box_quit_share(self._share.model.name,
                                                   self) \
-                    == wx.YES:
+                    == wx.ID_YES:
                 event = DetailsShareTab.RequestQuitShare(self.GetId())
                 event.share = self._share
                 wx.PostEvent(self, event)
@@ -405,7 +405,7 @@ class DetailsShareTab(BaseForm):
         if self._share:
             if message_box.message_box_delete_share(self._share.model.name,
                                                     self) \
-                    == wx.YES:
+                    == wx.ID_YES:
                 event = DetailsShareTab.RequestDeleteShare(self.GetId())
                 event.share = self._share
                 wx.PostEvent(self, event)
