@@ -4,8 +4,24 @@ try:
     from http.server import HTTPServer, BaseHTTPRequestHandler
 except ImportError:  # Python 2
     from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
+try:
+    from urllib.parse import urlparse, parse_qs
+except ImportError:  # Python 2
+    from urlparse import urlparse, parse_qs
 import random
 import threading
+
+
+class DefaultHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        query = parse_qs(urlparse(self.path).query)
+        response_code = int(query.get('code', [200])[0])
+        response_content = query.get('response', ['{}'])[0]
+
+        self.send_response(response_code)
+        self.send_header('Content-Type', 'application/json')
+        self.end_headers()
+        self.wfile.write(response_content.encode('utf-8'))
 
 
 class DummyHttpServer(object):
@@ -15,13 +31,19 @@ class DummyHttpServer(object):
     must be proceeded manually, by calling handle_request() once per request.
     When the server is no more used, it must be closed by calling close().
 
-    The easiest way to use this server is two prepare all custom handlers, them
-    use the instance as a context manager. The context manager will handle all
-    requests, until the context is closed:
+    By default, only GET request will be handled. a 200 response code will be
+    returned, with an empty object "{}" in json format. The desired response
+    content and/or the desired response code can be asked in the query part:
+
+        url = %s?code=%s&response=%s % (server.uri, 200, '{"foo":"bar"}')
+
+    The easiest way to use this server is too (optionally) prepare all custom
+    handlers, them use the instance as a context manager. The context manager
+    will handle all requests, until the context is closed:
 
         http_server = DummyHttpServer()
 
-        # ... set all handler
+        # Optionally, set custom handler:
         http_server.handler.do_GET = my_handler;
         with http_server:
             # make requests to http_server.uri
@@ -40,7 +62,7 @@ class DummyHttpServer(object):
 
         # A new class is defined for each call, so the test functions can set
         # new methods (like do_GET) without interfering with others instances.
-        class Handler(BaseHTTPRequestHandler):
+        class Handler(DefaultHandler):
             pass
 
         # Try 5 times on different ports to find one who is unused.

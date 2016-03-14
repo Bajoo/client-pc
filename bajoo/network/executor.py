@@ -5,7 +5,8 @@ import logging
 import sys
 from ..generic_executor import GenericExecutor, SharedContext
 from .errors import NetworkError
-from .request import Request, upload, download, json_request
+from .request import Request
+from .send_request import upload, download, json_request
 from .status_table import StatusTable
 from ..promise import Deferred
 
