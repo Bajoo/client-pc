@@ -296,7 +296,7 @@ class MainWindowListbook(wx.Listbook, Translator):
         self.settings_tab = SettingsTab(self)
 
         self.AddPage(self.list_shares_tab,
-                     _("My Shares"), imageId=0)
+                     _("My Folders"), imageId=0)
         self.AddPage(self.account_tab,
                      _("My Account"), imageId=1)
         self.AddPage(self.settings_tab, _("Settings"), imageId=2)
@@ -307,7 +307,7 @@ class MainWindowListbook(wx.Listbook, Translator):
     def notify_lang_change(self):
         Translator.notify_lang_change(self)
 
-        self.SetPageText(0, _("My Shares"))
+        self.SetPageText(0, _("My Folders"))
         self.SetPageText(1, _("My Account"))
         self.SetPageText(2, _("Settings"))
 

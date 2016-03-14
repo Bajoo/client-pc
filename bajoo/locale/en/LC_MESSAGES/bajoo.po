@@ -548,7 +548,7 @@ msgstr ""
 
 #: bajoo/gui/main_window.py:299 bajoo/gui/main_window.py:310
 #: bajoo/gui/tab/list_shares_tab.py:421
-msgid "My Shares"
+msgid "My Folders"
 msgstr ""
 
 #: bajoo/gui/main_window.py:301 bajoo/gui/main_window.py:311

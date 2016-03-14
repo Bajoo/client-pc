@@ -421,7 +421,7 @@ def main():
     _logger.setLevel(logging.DEBUG)
 
     app = wx.App()
-    win = wx.Frame(None, title=N_('My Shares'))
+    win = wx.Frame(None, title=N_('My Folders'))
     app.SetTopWindow(win)
 
     tab = ListSharesTab(win)
