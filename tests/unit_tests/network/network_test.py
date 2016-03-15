@@ -59,18 +59,6 @@ class TestNetwork(object):
         with pytest.raises(bajoo.network.errors.ConnectionError):
             f.result()
 
-    @pytest.mark.xfail()
-    def test_request_timeout_server(self, http_server):
-        """Make a download request to a server who does not respond.
-
-        The target server accept the connexion, but don't send any data.
-        The future should throw an exception after the timeout expires.
-        """
-        f = bajoo.network.download('GET', http_server.base_uri)
-
-        with pytest.raises(bajoo.network.errors.ConnectTimeoutError):
-            f.result()
-
     def test_download_empty_file(self, http_server):
         """Download a file of length 0."""
 

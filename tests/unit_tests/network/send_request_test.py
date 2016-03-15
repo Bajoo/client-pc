@@ -6,6 +6,7 @@ import random
 import pytest
 
 from bajoo.network import send_request
+from bajoo.network.errors import ConnectionError, HTTPError, NetworkError
 from bajoo.network.request import Request
 
 
@@ -78,3 +79,33 @@ class TestSendRequest(object):
         with http_server:
             result = send_request.upload(req)
         assert result.get('code') is 204
+
+    def test_request_with_http_error(self, http_server):
+        url = '%s?code=%s&response=%s' % (http_server.base_uri, 404,
+                                          '{"a":"b"}')
+        req = Request(Request.JSON, 'GET', url, {})
+
+        with pytest.raises(HTTPError) as exc_info:
+            with http_server:
+                send_request.json_request(req)
+        assert exc_info.value.code == 404
+        assert exc_info.value.response == {'a': "b"}
+
+    def test_no_connection_error(self, http_server):
+        req = Request(Request.JSON, 'GET', 'http://not-exist.example.com', {})
+        with pytest.raises(ConnectionError):
+            send_request.json_request(req)
+
+    def test_request_timeout_error(self, http_server):
+        def handler(self):
+            self.send_response(204)
+            import time
+            time.sleep(1)
+            pass
+
+        http_server.handler.do_GET = handler
+        req = Request(Request.JSON, 'GET', http_server.base_uri,
+                      {'timeout': 0.05})
+        with http_server:
+            with pytest.raises(NetworkError):
+                send_request.json_request(req)

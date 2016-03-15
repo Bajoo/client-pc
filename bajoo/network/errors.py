@@ -208,6 +208,9 @@ def handler(func):
         except requests.exceptions.ConnectionError as error:
             raise ConnectionError(error)
         except requests.exceptions.Timeout as error:
+            # Note: urllib3 timeout errors are often (always?) converted into
+            # Request's ConnectionError.
+            # This 'except' case may be not necessary.
             raise TimeoutError(error)
         except requests.exceptions.HTTPError as error:
             err_class = _code2error.get(error.response.status_code, HTTPError)
