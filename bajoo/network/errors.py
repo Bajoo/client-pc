@@ -8,31 +8,43 @@ Bajoo errors have a human-readable message, ready to be displayed.
 They are also more verbose when displayed using 'repr()`.
 """
 
-import logging
-
 import requests.exceptions
 
-from ..common.i18n import N_
-
-
-_logger = logging.getLogger(__name__)
+from ..common.i18n import N_, _
 
 
 class NetworkError(Exception):
     """Base class for bajoo.network errors.
 
     Attributes:
-        message (str): Human readable message, describing the error.
+        message (str): Human readable message, describing the error. The
+            message is translated when
+        reason (Exception): internal exception which've produced this error. It
+            exposes the inner mechanisms of the network module, and should not
+            be used outside of the network module. Can be None.
     """
 
-    def __init__(self, error, message=None):
+    def __init__(self, reason=None, message=None, msg_args=None):
         """
         Args:
-            error: base error
+            reason (Exception, optional): base error
+            message (str, optional): User-friendly message. It should be ready
+                for translation, but not translated yet.
+            msg_args (any, optional): Optional arguments used when formatting
+                the message with the '%' operator. It's applied at read only,
+                to do the translation on demand.
         """
-        self.message = message or N_("A network error has occurred.")
-        Exception.__init__(self, self.message)
-        self.data = error
+        self.reason = reason
+        self._message = message or N_("A network error has occurred.")
+        self._msg_args = msg_args
+        Exception.__init__(self)
+
+    @property
+    def message(self):
+        if '%' in self._message:
+            return _(self._message) % self._msg_args
+        else:
+            return _(self._message)
 
 
 class ConnectionError(NetworkError):
@@ -41,7 +53,7 @@ class ConnectionError(NetworkError):
                               N_("Unable to connect to the Bajoo servers."))
 
 
-class ConnectTimeoutError(NetworkError):
+class TimeoutError(NetworkError):
     def __init__(self, error):
         NetworkError.__init__(self, error,
                               N_("The server did not respond on time."))
@@ -51,8 +63,7 @@ class ProxyError(NetworkError):
     def __init__(self, error, message=None):
         if not message:
             message = N_('Proxy error')
-        NetworkError.__init__(self, error,
-                              message)
+        NetworkError.__init__(self, error, message)
 
 
 class HTTPError(NetworkError):
@@ -62,7 +73,7 @@ class HTTPError(NetworkError):
 
     Attributes:
         code (int): HTTP status code
-        reason (str): HTTP status text
+        status_text (str): HTTP status text
         request (str): representation of the request.
         response (dict or text): If the response content was in json, the
             corresponding dict, else the content as text.
@@ -74,33 +85,33 @@ class HTTPError(NetworkError):
             associated to the error, if any.
     """
 
-    def __init__(self, error, message=None):
+    def __init__(self, error, message=None, msg_args=None):
         """
         Args:
             error (requests.exceptions.HTTPError): base error.
         """
         if not message:
-            message = (N_("The server has returned an HTTP error: "
-                          "%(code)s %(reason)s") %
-                       {"code": error.response.status_code,
-                        "reason": error.response.reason})
+            message = N_("The server has returned an HTTP error: "
+                         "%(code)s %(reason)s")
+            msg_args = {"code": error.response.status_code,
+                        "reason": error.response.reason}
 
-        NetworkError.__init__(self, error, message)
+        NetworkError.__init__(self, error, message, msg_args)
 
         self.code = error.response.status_code
-        self.reason = error.response.reason
+        self.status_text = error.response.reason
         self.request = '%s %s' % (error.request.method, error.request.url)
         self.err_code = None
         self.err_description = None
         self.err_data = None
 
         try:
-            self.response = self.data.response.json()
+            self.response = self.reason.response.json()
             self.err_code = self.response.get('error')
             self.err_description = self.response.get('error_description')
             self.err_data = self.response.get('error_data')
         except ValueError:
-            self.response = self.data.response.text
+            self.response = self.reason.response.text
 
     def __repr__(self):
         if self.err_code:
@@ -112,7 +123,7 @@ class HTTPError(NetworkError):
         else:
             response = '\tResponse: %s' % self.response
 
-        return '\n'.join(("HTTP Error: %s %s" % (self.code, self.reason),
+        return '\n'.join(("HTTP Error: %s %s" % (self.code, self.status_text),
                           "\tRequest: %s" % self.request,
                           response))
 
@@ -196,9 +207,8 @@ def handler(func):
             return func(*args, **kwargs)
         except requests.exceptions.ConnectionError as error:
             raise ConnectionError(error)
-        except (requests.exceptions.ConnectTimeout,
-                requests.exceptions.ReadTimeout) as error:
-            raise ConnectTimeoutError(error)
+        except requests.exceptions.Timeout as error:
+            raise TimeoutError(error)
         except requests.exceptions.HTTPError as error:
             err_class = _code2error.get(error.response.status_code, HTTPError)
             raise err_class(error)
