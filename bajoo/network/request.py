@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import functools
-import logging
-
-_logger = logging.getLogger(__name__)
+try:
+    from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse
 
 
 @functools.total_ordering
@@ -11,11 +12,11 @@ class Request(object):
     """Represents a request waiting to be executed.
 
     Attributes:
-        action (str): one of 'UPLOAD', 'DOWNLOAD' or 'JSON'. Set how to handle
-            upload and download.
+        action (str): one of 'UPLOAD', 'DOWNLOAD', 'JSON' or 'PING'. Set how to
+            handle upload and download.
         verb (str): HTTP verb
         url (str): HTTP URL
-        params (dict):
+        params (dict, optional):
         source (str / File-like): if action is 'UPLOAD', source file.
             It can be a File-like object (in which case it will be send as is),
             or a str containing the path of the file to send.
@@ -30,12 +31,14 @@ class Request(object):
     UPLOAD = 'UPLOAD'
     DOWNLOAD = 'DOWNLOAD'
     JSON = 'JSON'
+    PING = 'PING'
 
-    def __init__(self, action, verb, url, params, source=None, priority=100):
+    def __init__(self, action, verb, url,
+                 params=None, source=None, priority=100):
         self.action = action
         self.verb = verb
         self.url = url
-        self.params = params
+        self.params = params or {}
         self.source = source
         self.priority = priority
         self.increment_id = None
@@ -50,3 +53,11 @@ class Request(object):
     def __lt__(self, other):
         return ((self.priority, self.increment_id) <
                 (other.priority, other.increment_id))
+
+    @property
+    def host(self):
+        return urlparse(self.url).netloc
+
+    @property
+    def scheme(self):
+        return urlparse(self.url).scheme

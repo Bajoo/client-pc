@@ -76,7 +76,8 @@ def _run_worker(context):
     action_mapping = {
         Request.UPLOAD: upload,
         Request.DOWNLOAD: download,
-        Request.JSON: json_request
+        Request.JSON: json_request,
+        Request.PING: json_request
     }
 
     while True:
