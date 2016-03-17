@@ -285,7 +285,7 @@ def main():
         form.load_members(members)
 
     Session.create_session(
-        'stran+21@bajoo.fr', 'stran+21@bajoo.fr') \
+        'test+21@bajoo.fr', 'test+21@bajoo.fr') \
         .then(_on_session_loaded) \
         .then(_on_share_found) \
         .then(_on_get_members)

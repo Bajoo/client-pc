@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from concurrent.futures import ThreadPoolExecutor as Executor
-from . import Promise
+from . import Deferred
 
 
 class ThreadPoolExecutor(object):
@@ -29,15 +29,15 @@ class ThreadPoolExecutor(object):
                 If the callback raise an exception, the promise is rejected
                 with this exception.
         """
-        def _submit(fulfill, reject):
-            def on_future_done(f):
-                try:
-                    fulfill(f.result())
-                except BaseException as error:
-                    reject(error)
+        df = Deferred()
 
-            f = self._executor.submit(callback, *args,
-                                      **kwargs)
-            f.add_done_callback(on_future_done)
+        def on_future_done(f):
+            try:
+                df.resolve(f.result())
+            except BaseException as error:
+                df.reject(error)
 
-        return Promise(_submit)
+        f = self._executor.submit(callback, *args, **kwargs)
+        f.add_done_callback(on_future_done)
+
+        return df.promise

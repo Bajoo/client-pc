@@ -1,7 +1,8 @@
-# -*- coding: utf8 -*-
+# -*- coding: utf-8 -*-
 
 import logging
 import pytest
+import random
 import sys
 from threading import Timer
 from bajoo.promise import Promise, TimeoutError
@@ -302,3 +303,152 @@ class TestThenMethod(object):
 
         out, err = capsys.readouterr()
         assert '[SAFEGUARD]' in out
+
+
+class TestGroupPromiseMethods(object):
+    """Test the method which manipulate group of promises."""
+
+    def test_method_all_with_empty_set(self):
+        p = Promise.all([])
+        assert p.result(0.001) == []
+
+    def test_method_all_with_one_promise(self):
+        p1 = Promise.resolve('RESULT')
+        p = Promise.all([p1])
+        assert p.result(0.001) == ['RESULT']
+
+    def test_method_all_with_one_rejected_promise(self):
+        class MyException(Exception):
+            pass
+
+        p1 = Promise.reject(MyException())
+        p = Promise.all([p1])
+
+        with pytest.raises(MyException):
+            p.result(0.001)
+
+    def test_method_all_with_several_promises(self):
+        promises = [Promise.resolve(1) for _ in range(0, 20)]
+
+        p = Promise.all(promises)
+
+        assert sum(p.result()) is 20
+
+    def test_method_all_with_rejected_promise(self):
+        class MyException(Exception):
+            pass
+
+        promises = [Promise.resolve(1) for _ in range(0, 5)]
+        promises += [Promise.reject(MyException())]
+        promises += [Promise.resolve(1) for _ in range(0, 5)]
+
+        p = Promise.all(promises)
+        with pytest.raises(MyException):
+            p.result()
+
+    def test_method_all_with_async_promises(self):
+        promises = [Promise.resolve(1) for _ in range(0, 5)]
+
+        _resolve_callback = []
+
+        def _init(ok, _error):
+            _resolve_callback.append(ok)
+
+        promises.append(Promise(_init))
+
+        p = Promise.all(promises)
+
+        # The ALL promise is not yet resolved.
+        with pytest.raises(TimeoutError):
+            p.result(0)
+
+        _resolve_callback[0]('OK')
+
+        # Now, all sub-promises are resolved.
+        assert len(p.result(0.001)) is 6
+
+    def test_method_all_must_keep_order(self):
+        promises = []
+        _resolve_callback = []
+
+        for i in range(0, 25):
+            def _promise_init(ok, _error):
+                # Will resolve with the increment value.
+                local_i = i
+                _resolve_callback.append(lambda: ok(local_i))
+
+            promises.append(Promise(_promise_init))
+
+        # promises are ordered.
+        p = Promise.all(promises)
+
+        # Resolves the promises in a random order
+        random.shuffle(_resolve_callback)
+        for callback in _resolve_callback:
+            callback()
+
+        assert p.result(0.001) == list(range(0, 25))
+
+    def test_method_race_with_empty_set(self):
+        with pytest.raises(ValueError):
+            Promise.race([])
+
+    def test_method_race_with_one_promise(self):
+        p1 = Promise.resolve('RESULT')
+        p = Promise.race([p1])
+        assert p.result(0.001) == 'RESULT'
+
+    def test_method_race_with_several_promises(self):
+        _resolve_callback = []
+
+        def _async_promise(ok, _error):
+            _resolve_callback.append(ok)
+
+        # Add non-resolving promises.
+        promises = [Promise(lambda _ok, _err: None) for _ in range(0, 5)]
+
+        promises.append(Promise(_async_promise))
+        promises.append(Promise(_async_promise))
+
+        # Add non-resolving promises.
+        promises += [Promise(lambda _ok, _err: None) for _ in range(0, 5)]
+
+        p = Promise.race(promises)
+
+        with pytest.raises(TimeoutError):
+            p.result(0)
+        _resolve_callback[0]('RESULT')
+
+        # p is resolved after the first Promise resolves.
+        assert p.result(0.001) == 'RESULT'
+
+        # subsequent Promises resolutions should have no effect.
+        _resolve_callback[1]('RESULT2')
+        assert p.result(0.001) == 'RESULT'
+
+    def test_method_race_with_failing_promises(self):
+        class MyException(Exception):
+            pass
+
+        _reject_promise = []
+
+        def _failing_async_promise(_ok, error):
+            _reject_promise.append(error)
+
+        promises = [Promise(_failing_async_promise) for _ in range(0, 15)]
+
+        p = Promise.race(promises)
+
+        with pytest.raises(TimeoutError):
+            p.result(0)
+
+        random.shuffle(_reject_promise)
+        reject = _reject_promise.pop(0)
+        reject(MyException())
+        assert isinstance(p.exception(0.001), MyException)
+
+        # subsequent rejection are ignored
+        for reject in _reject_promise:
+            reject(ValueError())
+
+        assert isinstance(p.exception(0.001), MyException)

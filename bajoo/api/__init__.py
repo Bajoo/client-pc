@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import logging
 
 from .user import User
 from .session import Session
@@ -8,37 +7,23 @@ from .container import Container
 from .team_share import TeamShare
 
 
-_logger = logging.getLogger(__name__)
-
-
-def register(email, password):
-    """
-    Register a new Bajoo user using email & password.
-
-    Returns:
-        Future<None>
-    """
-    return User.create(email, password)
-
-
 if __name__ == '__main__':
-    logging.basicConfig()
-    _logger.setLevel(logging.DEBUG)
-
+    import logging
     from random import choice
     from string import ascii_lowercase
 
+    logging.basicConfig(level=logging.DEBUG)
+
     # generate a random string
-    def gen(length):
-        return ''.join(choice(ascii_lowercase) for _ in range(length))
+    random_id = ''.join(choice(ascii_lowercase) for _ in range(8))
 
     # Create a new account
-    new_email = ''.join(['stran+', gen(8), '@bajoo.fr'])
-    new_password = 'password_test'
+    new_email = u'test+%s@bajoo.fr' % random_id
+    new_password = u'password_test'
 
-    _logger.debug('Create new user <%s>: %s', new_email,
-                  register(new_email, new_password).result())
+    print('> Create new user <%s>: %s' % (
+        new_email, User.create(new_email, new_password).result()))
 
     # TODO: create a test case for deleting account
 
-__all__ = [User, Session, Container, MyBajoo, TeamShare, register]
+__all__ = [User, Session, Container, MyBajoo, TeamShare]

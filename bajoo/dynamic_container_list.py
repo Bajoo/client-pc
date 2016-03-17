@@ -10,7 +10,7 @@ from .common.i18n import _
 from .api.sync import container_list_updater
 from .local_container import LocalContainer
 from .container_model import ContainerModel
-from .promise import Promise
+from .promise import Deferred
 
 
 _logger = logging.getLogger(__name__)
@@ -277,11 +277,10 @@ class DynamicContainerList(object):
         Returns:
             Promise<None>: resolved when the refresh is done.
         """
+        df = Deferred()
+        self._updater.apply_now(partial(df.resolve, None))
 
-        def executor(resolve, _reject):
-            self._updater.apply_now(partial(resolve, None))
-
-        return Promise(executor)
+        return df.promise
 
     def get_list(self):
         """Returns the list of containers.
@@ -313,10 +312,10 @@ def main():
     def stop_container(local):
         print('Stop container %s (%s)' % (local.id, local.name))
 
-    session = Session.create_session('stran+20@bajoo.fr',
-                                     'stran+20@bajoo.fr').result()
+    session = Session.create_session('test+20@bajoo.fr',
+                                     'test+20@bajoo.fr').result()
 
-    user_profile = UserProfile('stran+20@bajoo.fr')
+    user_profile = UserProfile('test+20@bajoo.fr')
     if not user_profile.root_folder_path:
         # DynamicContainerList need it to load new containers
         user_profile.root_folder_path = './tmp'

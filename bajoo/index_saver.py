@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import ctypes
+import errno
 import io
 import json
 import logging
@@ -132,22 +133,30 @@ class IndexSaver(object):
         _logger.debug('save index')
         try:
             os.remove(self.index_path)
-        except (OSError, IOError):
-            _logger.exception('Unable to remove index %s:' % self.index_path)
+        except (OSError, IOError) as e:
+            if e.errno != errno.ENOENT:
+                _logger.exception('Unable to remove index %s:' %
+                                  self.index_path)
+                self.trigger_save()
+                return
         except Exception:
             _logger.exception('Unexpected exception on index removing %s: ' %
                               self.index_path)
+            self.trigger_save()
+            return
 
         try:
             with open(self.index_path, 'w') as index_file:
                 json.dump(self.local_container._index, index_file)
         except (OSError, IOError):
             _logger.exception('Unable to save index %s:' % self.index_path)
+            self.trigger_save()
         except Exception:
             _logger.exception('Unexpected exception on index saving %s: ' %
                               self.index_path)
-
-        self._hide_file_if_win()
+            self.trigger_save()
+        else:
+            self._hide_file_if_win()
 
     def _hide_file_if_win(self):
         if sys.platform in ['win32', 'cygwin', 'win64']:

@@ -325,7 +325,7 @@ class Promise(object):
         The resulting Promise resolve when all of the promises in the list bare
         resolved, and returns a list of all the resulting values, keeping the
         order of the promise list.
-        If a promise is rejected, then the resulting promsie is rejected with
+        If a promise is rejected, then the resulting promise is rejected with
         the same reason, and all results from other promises are ignored.
 
         Args:
@@ -380,7 +380,12 @@ class Promise(object):
             promises (list): list of promises to run at the same time.
         Returns:
             Promise: a promise
+        Raises:
+            ValueError: If the promise list is empty.
         """
+        if len(promises) is 0:
+            raise ValueError('Empty promise list in Promise.race()')
+
         lock = Lock()
         is_resolved = [False]
 

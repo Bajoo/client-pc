@@ -61,7 +61,7 @@ class CreationShareTab(BaseForm):
         if self._view.members_share_form.has_changes:
             confirm = message_box.message_box_members_changed(self)
 
-            if confirm != wx.YES:
+            if confirm != wx.ID_YES:
                 return
 
         share_name = self.FindWindow('txt_share_name').GetValue()

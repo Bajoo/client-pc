@@ -5,7 +5,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Bajoo 0.3.12\n"
+"Project-Id-Version: Bajoo 0.3.13\n"
 "Report-Msgid-Bugs-To: Bajoo <support-fr@bajoo.fr>\n"
 "POT-Creation-Date: 2015-10-20 12:12+0200\n"
 "PO-Revision-Date: 2016-02-04 09:25+0100\n"
@@ -442,8 +442,8 @@ msgid "Suspend synchronization"
 msgstr "Suspendre la synchronisation"
 
 #: bajoo/gui/task_bar_icon.py:165
-msgid "Manage my shares..."
-msgstr "Gérer mes partages"
+msgid "Manage my folders..."
+msgstr "Gérer mes dossiers"
 
 #: bajoo/gui/task_bar_icon.py:167
 msgid "My client space"
@@ -570,8 +570,8 @@ msgstr "C'est fait !"
 
 #: bajoo/gui/main_window.py:299 bajoo/gui/main_window.py:310
 #: bajoo/gui/tab/list_shares_tab.py:421
-msgid "My Shares"
-msgstr "Mes partages"
+msgid "My Folders"
+msgstr "Mes dossiers"
 
 #: bajoo/gui/main_window.py:301 bajoo/gui/main_window.py:311
 #: bajoo/gui/tab/account_tab.py:278 bajoo/gui/tab/network_settings_tab.py:185
