@@ -497,9 +497,10 @@ msgstr "cartella condivisionata"
 msgid "Suspend synchronization"
 msgstr "Mettere in pausa la sincronizzazione"
 
+# TODO translate me
 #: bajoo/gui/task_bar_icon.py:165
-msgid "Manage my shares..."
-msgstr "Gestire mie azioni"
+msgid "Manage my folders..."
+msgstr ""
 
 #: bajoo/gui/task_bar_icon.py:167
 msgid "My client space"

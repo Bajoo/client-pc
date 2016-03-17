@@ -433,9 +433,10 @@ msgstr "共享文件"
 msgid "Suspend synchronization"
 msgstr "暂停同步"
 
+# TODO: translate me
 #: bajoo/gui/task_bar_icon.py:165
-msgid "Manage my shares..."
-msgstr "管理我的共享"
+msgid "Manage my folders..."
+msgstr ""
 
 #: bajoo/gui/task_bar_icon.py:167
 msgid "My client space"

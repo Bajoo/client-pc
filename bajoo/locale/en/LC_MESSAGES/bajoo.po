@@ -424,7 +424,7 @@ msgid "Suspend synchronization"
 msgstr ""
 
 #: bajoo/gui/task_bar_icon.py:165
-msgid "Manage my shares..."
+msgid "Manage my folders..."
 msgstr ""
 
 #: bajoo/gui/task_bar_icon.py:167

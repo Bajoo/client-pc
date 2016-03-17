@@ -439,8 +439,8 @@ msgid "Suspend synchronization"
 msgstr "Tạm ngưng đồng bộ hóa"
 
 #: bajoo/gui/task_bar_icon.py:165
-msgid "Manage my shares..."
-msgstr "Quản lý các thư mục chia sẻ..."
+msgid "Manage my folders..."
+msgstr "Quản lý các thư mục..."
 
 #: bajoo/gui/task_bar_icon.py:167
 msgid "My client space"
