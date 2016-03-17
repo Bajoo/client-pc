@@ -162,7 +162,7 @@ class TaskBarIcon(wx.TaskBarIcon, Translator):
             menu.AppendMenu(-1, _('Bajoo folder'), self._container_menu)
             menu.Append(self.ID_SUSPEND_SYNC, _('Suspend synchronization')) \
                 .Enable(False)
-            menu.Append(self.ID_MANAGE_SHARES, _('Manage my shares...'))
+            menu.Append(self.ID_MANAGE_SHARES, _('Manage my folders...'))
             menu.AppendSeparator()
             menu.Append(self.ID_CLIENT_SPACE, _('My client space')) \
                 .Enable(False)

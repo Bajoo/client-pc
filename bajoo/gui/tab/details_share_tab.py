@@ -392,7 +392,7 @@ class DetailsShareTab(BaseForm):
         if self._share:
             if message_box.message_box_quit_share(self._share.model.name,
                                                   self) \
-                    == wx.YES:
+                    == wx.ID_YES:
                 event = DetailsShareTab.RequestQuitShare(self.GetId())
                 event.share = self._share
                 wx.PostEvent(self, event)
@@ -405,7 +405,7 @@ class DetailsShareTab(BaseForm):
         if self._share:
             if message_box.message_box_delete_share(self._share.model.name,
                                                     self) \
-                    == wx.YES:
+                    == wx.ID_YES:
                 event = DetailsShareTab.RequestDeleteShare(self.GetId())
                 event.share = self._share
                 wx.PostEvent(self, event)
@@ -661,7 +661,7 @@ def main():
 
         return None
 
-    Session.create_session('stran+20@bajoo.fr', 'stran+20@bajoo.fr') \
+    Session.create_session('test+20@bajoo.fr', 'test+20@bajoo.fr') \
         .then(list_containers) \
         .then(set_current_share) \
         .then(set_share_members) \

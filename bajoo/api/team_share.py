@@ -195,8 +195,8 @@ if __name__ == '__main__':
 
     from .session import Session
 
-    session1 = Session.create_session('stran+20@bajoo.fr',
-                                      'stran+20@bajoo.fr').result()
+    session1 = Session.create_session('test+20@bajoo.fr',
+                                      'test+20@bajoo.fr').result()
 
     from random import choice
     from string import ascii_lowercase
@@ -211,35 +211,35 @@ if __name__ == '__main__':
         .result()
     _logger.debug('Created container: %s', container_created)
 
-    # Add stran+21@bajoo.fr as admin
-    _logger.debug('Add stran+21@bajoo.fr: %s',
+    # Add test+21@bajoo.fr as admin
+    _logger.debug('Add test+21@bajoo.fr: %s',
                   container_created.add_member(
-                      'stran+21@bajoo.fr', permission['ADMIN'])
+                      'test+21@bajoo.fr', permission['ADMIN'])
                   .result())
 
     # get list of rights in the newly created container
-    # which should contain stran+21@bajoo.fr as admin
+    # which should contain test+21@bajoo.fr as admin
     _logger.debug('New containter\'s rights: %s',
                   container_created.list_members()
                   .result())
 
-    _logger.debug('Change rights of stran+21@bajoo.fr: %s',
+    _logger.debug('Change rights of test+21@bajoo.fr: %s',
                   container_created.change_permissions(
-                      'stran+21@bajoo.fr', permission['READ_WRITE'])
+                      'test+21@bajoo.fr', permission['READ_WRITE'])
                   .result())
 
     # get list of rights in the newly created container
-    # which should contain stran+21@bajoo.fr as writer
+    # which should contain test+21@bajoo.fr as writer
     _logger.debug('New containter\'s rights: %s',
                   container_created.list_members()
                   .result())
 
-    _logger.debug('Remove access of stran+21@bajoo.fr: %s',
-                  container_created.remove_member('stran+21@bajoo.fr')
+    _logger.debug('Remove access of test+21@bajoo.fr: %s',
+                  container_created.remove_member('test+21@bajoo.fr')
                   .result())
 
     # get list of rights in the newly created container
-    # which should NOT contain stran+21@bajoo.fr.
+    # which should NOT contain test+21@bajoo.fr.
     _logger.debug('New containter\'s rights: %s',
                   container_created.list_members()
                   .result())

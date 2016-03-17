@@ -2,6 +2,7 @@
 import logging
 from hashlib import sha256
 
+from ..common.strings import ensure_unicode
 from ..network.errors import HTTPNotFoundError
 from .. import encryption
 from ..encryption import AsymmetricKey
@@ -25,22 +26,35 @@ class User(object):
 
     @staticmethod
     @reduce_coroutine()
-    def create(email, password):
+    def create(email, password, lang=None):
         """
         Create a new user using email & password.
 
+        Args:
+            email (unicode): email of the new account
+            password (unicode): password of the new account
+            lang (str, optional): two-character language code, used to set the
+                default language for the new account. Default to 'en'.
         Returns:
             Promise<None>
         """
         from .session import Session
 
+        password = ensure_unicode(password)
+        email = ensure_unicode(email)
+
         session = Session()
         hashed_password = User.hash_password(password)
 
         yield session.fetch_client_token()
+
+        if not lang:
+            lang = 'en'
         yield session.send_api_request('POST', '/users', data={
             u'email': email,
-            u'password': hashed_password})
+            u'password': hashed_password,
+            u'lang': lang
+        })
         yield None
 
     @staticmethod
@@ -250,24 +264,24 @@ if __name__ == '__main__':
     from .session import Session
 
     # Load session & change password
-    session = Session.create_session('stran+test_api@bajoo.fr',
-                                     'stran+test_api@bajoo.fr').result()
+    session = Session.create_session('test+test_api@bajoo.fr',
+                                     'test+test_api@bajoo.fr').result()
     user = User.load(session).result()
-    _logger.debug(user.change_password('stran+test_api@bajoo.fr',
-                                       'stran+test_api_1@bajoo.fr')
+    _logger.debug(user.change_password('test+test_api@bajoo.fr',
+                                       'test+test_api_1@bajoo.fr')
                   .result())
 
     # Reset the old password
-    session = Session.create_session('stran+test_api@bajoo.fr',
-                                     'stran+test_api_1@bajoo.fr').result()
+    session = Session.create_session('test+test_api@bajoo.fr',
+                                     'test+test_api_1@bajoo.fr').result()
     user = User.load(session).result()
-    _logger.debug(user.change_password('stran+test_api_1@bajoo.fr',
-                                       'stran+test_api@bajoo.fr').result())
+    _logger.debug(user.change_password('test+test_api_1@bajoo.fr',
+                                       'test+test_api@bajoo.fr').result())
 
     # Load session and get user's information
     user_future = Session \
-        .create_session('stran+test_api_5@bajoo.fr',
-                        'stran+test_api_5@bajoo.fr') \
+        .create_session('test+test_api_5@bajoo.fr',
+                        'test+test_api_5@bajoo.fr') \
         .then(User.load)
     user = user_future.result()
     _logger.debug("User info = %s", user.get_user_info().result())

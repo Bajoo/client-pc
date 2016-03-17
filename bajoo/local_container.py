@@ -9,7 +9,7 @@ from threading import RLock
 from .api.team_share import TeamShare
 from .common.i18n import _, N_
 from .index_saver import IndexSaver
-from .promise import Promise
+from .promise import Deferred, Promise
 
 
 _logger = logging.getLogger(__name__)
@@ -209,31 +209,33 @@ class LocalContainer(object):
                                ('%s/' % bypass_folder).startswith(
                                    '%s/' % parent_path))
                     if not bypass:
-                        def wait_index(resolve, reject):
-                            def cb():
-                                p = self.acquire_index(path, item,
-                                                       is_directory,
-                                                       bypass_folder)
-                                p.then(resolve, reject)
+                        df = Deferred()
 
-                            self._index_booking[parent_path][1].append(cb)
+                        def cb():
+                            p = self.acquire_index(path, item,
+                                                   is_directory,
+                                                   bypass_folder)
+                            p.then(df.resolve, df.reject)
 
-                        return Promise(wait_index)
+                        self._index_booking[parent_path][1].append(cb)
+
+                        return df.promise
 
             if is_directory:
                 for p in [p for p in self._index_lock
                           if p.startwith('%s/' % path)]:
                     if '/' in p[len('%s/' % path):]:
-                        def wait_index(resolve, reject):
-                            def cb():
-                                p = self.acquire_index(path, item,
-                                                       is_directory,
-                                                       bypass_folder)
-                                p.then(resolve, reject)
+                        df = Deferred()
 
-                            self._index_booking[p][1].append(cb)
+                        def cb():
+                            p = self.acquire_index(path, item,
+                                                   is_directory,
+                                                   bypass_folder)
+                            p.then(df.resolve, df.reject)
 
-                        return Promise(wait_index)
+                        self._index_booking[p][1].append(cb)
+
+                        return df.promise
 
             self._index_booking[path] = [item, []]
             if path == '.':

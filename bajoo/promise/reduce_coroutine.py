@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import sys
-from .promise import Promise
+from .deferred import Deferred
 from .util import is_thenable
 
 
@@ -27,48 +27,51 @@ def reduce_coroutine(safeguard=False):
             Returns:
                 Promise<*>
             """
+            df = Deferred(_name='COROUTINE %s' % func.__name__)
+            if safeguard:
+                df.promise.safeguard()
 
-            def executor(on_fulfilled, on_rejected):
+            try:
                 # Create generator; Initialization phase
                 gen = func(*args, **kwargs)
+            except:
+                df.reject(*sys.exc_info())
+                return df.promise
 
-                def _call_next_or_set_result(value):
-                    if is_thenable(value):
-                        value.then(iter_next, iter_error)
-                    else:
-                        gen.close()
-                        return on_fulfilled(value)
+            def _call_next_or_set_result(value):
+                if is_thenable(value):
+                    value.then(iter_next, iter_error)
+                else:
+                    gen.close()
+                    return df.resolve(value)
 
-                def iter_next(yielded_value):
-                    try:
-                        next_value = gen.send(yielded_value)
-                    except StopIteration:
-                        return on_fulfilled(yielded_value)
-                    except:
-                        return on_rejected(*sys.exc_info())
-                    _call_next_or_set_result(next_value)
-
-                def iter_error(raised_error):
-                    try:
-                        next_value = gen.throw(raised_error)
-                    except StopIteration:
-                        return on_rejected(raised_error)
-                    except:
-                        return on_rejected(*sys.exc_info())
-                    _call_next_or_set_result(next_value)
-
-                # Start and resolve loop.
+            def iter_next(yielded_value):
                 try:
-                    f = next(gen)
+                    next_value = gen.send(yielded_value)
                 except StopIteration:
-                    on_fulfilled(None)
-                    return
-                _call_next_or_set_result(f)
+                    return df.resolve(yielded_value)
+                except:
+                    return df.reject(*sys.exc_info())
+                _call_next_or_set_result(next_value)
 
-            p = Promise(executor, _name='COROUTINE %s' % func.__name__)
-            if safeguard:
-                p.safeguard()
-            return p
+            def iter_error(raised_error):
+                try:
+                    next_value = gen.throw(raised_error)
+                except StopIteration:
+                    return df.reject(raised_error)
+                except:
+                    return df.reject(*sys.exc_info())
+                _call_next_or_set_result(next_value)
+
+            # Start and resolve loop.
+            try:
+                f = next(gen)
+            except StopIteration:
+                df.resolve(None)
+                return df.promise
+            _call_next_or_set_result(f)
+
+            return df.promise
 
         return wrapper
     return decorator

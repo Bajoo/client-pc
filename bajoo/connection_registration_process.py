@@ -8,6 +8,7 @@ import sys
 
 from .api import User
 from .api.session import Session
+from .common import config
 from .common.i18n import N_, _
 from .encryption import set_gpg_home_dir
 from .network.errors import HTTPError
@@ -163,7 +164,10 @@ class _ConnectionProcess(object):
 
             try:
                 if action == 'register':
-                    yield User.create(username, password)
+                    # the format of the 'lang' config property is 'EN_us'.
+                    # User.create() expects only the two-character code 'en'.
+                    lang = config.get('lang')[:2]
+                    yield User.create(username, password, lang)
                     self.is_new_account = True
 
                 _logger.debug('Log user "%s" using password ...' % username)

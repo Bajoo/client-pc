@@ -1,72 +1,50 @@
 # -*- coding: utf-8 -*-
 
 from collections import deque
-from concurrent.futures import ThreadPoolExecutor
 import logging
 import sys
-from threading import Condition, current_thread
-from ..promise import Promise, is_thenable
+from ..generic_executor import GenericExecutor, SharedContext
+from ..promise import Deferred, is_thenable
 
 _logger = logging.getLogger(__name__)
 
-
 _MAX_SIMULTANEOUS_TASK = 100
-_nb_ongoing_task = 0
-
 _MAX_WORKER = 5
+
 _executor = None
-_task_condition = Condition()
-_stop_order = False
 
-# The non-started tasks are stored in `_task_queue` (both high and low
-# priority). The started segmented tasks are stored in `_split_task_queue`.
-_split_task_queue = deque()
-_task_queue = deque()
 
-_last_worker_id = 0
+class FilesyncContext(SharedContext):
+    """Custom context for filesync workers
+
+    Attributes:
+        nb_ongoing_tasks (int): number of started tasks. It includes all tasks
+            in `ongoing_task_queue`, but also tasks who are not in any task
+            queue (Promises not yet resolved).
+        ongoing_task_queue (deque): List of started, segmented tasks, waiting
+            for the next step.
+        task_queue (deque): non-started tasks (both high and low priority).
+    """
+
+    def __init__(self):
+        super(FilesyncContext, self).__init__()
+        self.nb_ongoing_tasks = 0
+        self.ongoing_task_queue = deque()
+        self.task_queue = deque()
 
 
 def start():
-    global _executor, _stop_order, _last_worker_id
-
-    def _clean_and_restart(future):
-        global _last_worker_id
-
-        error = future.exception()
-
-        if error:
-            _logger.critical('Filesync task worker has crashed: %s' % error)
-            with _task_condition:
-                if not _stop_order:
-                    _last_worker_id += 1
-                    future = _executor.submit(_run_worker, _last_worker_id)
-                    future.add_done_callback(_clean_and_restart)
-
-    _executor = ThreadPoolExecutor(max_workers=_MAX_WORKER)
-    _stop_order = False
-
-    for i in range(_MAX_WORKER):
-        _last_worker_id += 1
-        f = _executor.submit(_run_worker, _last_worker_id)
-        f.add_done_callback(_clean_and_restart)
+    global _executor
+    if not _executor:
+        _executor = GenericExecutor('filesync', _MAX_WORKER, _run_worker,
+                                    FilesyncContext())
+    _executor.start()
 
 
 def stop():
     """Stop all operations as soon as possible."""
-    with _task_condition:
-        global _stop_order
-        _stop_order = True
-        _task_condition.notify_all()
     if _executor:
-        _executor.shutdown()
-
-
-class Context(object):
-    def __enter__(self):
-        start()
-
-    def __exit__(self, type, value, tb):
-        stop()
+        _executor.stop()
 
 
 def add_task(task, priority=False):
@@ -91,133 +69,137 @@ def add_task(task, priority=False):
         Promise: Promise resolved when the task is done. If the task fails
             (raises an exception), the Promise is rejected with this exception.
     """
-    def task_executor(resolve, reject):
-        gen = task()
-        with _task_condition:
-            gen_task = (resolve, reject, gen)
-            if priority:
-                _task_queue.appendleft(gen_task)
-            else:
-                _task_queue.append(gen_task)
-            _task_condition.notify()
+    deferred = Deferred()
+    gen = task()
+    with _executor.context as ctx:
+        gen_task = (deferred, gen)
+        if priority:
+            ctx.task_queue.appendleft(gen_task)
+        else:
+            ctx.task_queue.append(gen_task)
+        _executor.context.condition.notify()
 
-    return Promise(task_executor)
+    return deferred.promise
 
 
-def _start_generator(resolve, reject, gen):
-    global _nb_ongoing_task
-
+def _start_generator(context, deferred, gen):
     try:
         result = next(gen)
     except StopIteration:
-        resolve(None)
+        deferred.resolve(None)
     except:
-        reject(*sys.exc_info())
+        deferred.reject(*sys.exc_info())
     else:
-        _nb_ongoing_task += 1
-        _call_next_or_set_result(resolve, reject, gen, result)
+        with context:
+            context.nb_ongoing_tasks += 1
+        _call_next_or_set_result(context, deferred, gen, result)
 
 
-def _iter_generator(resolve, reject, gen, value):
+def _iter_generator(context, deferred, gen, value):
     """Execute the next step of a task generator."""
-    global _nb_ongoing_task
-
     try:
         result = gen.send(value)
     except StopIteration:
-        _nb_ongoing_task -= 1
-        resolve(value)
+        with context:
+            context.nb_ongoing_tasks -= 1
+        deferred.resolve(value)
     except:
-        _nb_ongoing_task -= 1
-        reject(*sys.exc_info())
+        with context:
+            context.nb_ongoing_tasks -= 1
+        deferred.reject(*sys.exc_info())
     else:
-        _call_next_or_set_result(resolve, reject, gen, result)
+        _call_next_or_set_result(context, deferred, gen, result)
 
 
-def _iter_generator_error(resolve, reject, gen, reason):
+def _iter_generator_error(context, deferred, gen, reason):
     """Execute the next step of a task generator, due to a rejected Promise."""
-    global _nb_ongoing_task
-
     try:
         result = gen.throw(reason)
     except StopIteration:
-        _nb_ongoing_task -= 1
-        resolve(None)
+        with context:
+            context.nb_ongoing_tasks -= 1
+        deferred.resolve(None)
     except:
-        _nb_ongoing_task -= 1
-        reject(*sys.exc_info())
+        with context:
+            context.nb_ongoing_tasks -= 1
+        deferred.reject(*sys.exc_info())
     else:
-        _call_next_or_set_result(resolve, reject, gen, result)
+        _call_next_or_set_result(context, deferred, gen, result)
 
 
-def _call_next_or_set_result(resolve, reject, gen, value):
+def _call_next_or_set_result(context, deferred, gen, value):
     """When a task has yielded a value, prepare the next step, or resolve.
 
     If the value yielded is a thenable, then we register the next step in the
     task queue.
     Otherwise, the value is the task result, and so the task is fulfilled.
     """
-    global _nb_ongoing_task
-
     def register_iteration(new_value):
-        with _task_condition:
-            task = (resolve, reject, gen, new_value, False)
-            _split_task_queue.append(task)
-            _task_condition.notify()
+        with context:
+            task = (deferred, gen, new_value, False)
+            context.ongoing_task_queue.append(task)
+            context.condition.notify()
 
     def register_iteration_error(reason):
-        with _task_condition:
-            task = (resolve, reject, gen, reason, True)
-            _split_task_queue.append(task)
-            _task_condition.notify()
+        with context:
+            task = (deferred, gen, reason, True)
+            context.ongoing_task_queue.append(task)
+            context.condition.notify()
 
     if is_thenable(value):
         value.then(register_iteration, register_iteration_error)
     else:
-        _nb_ongoing_task -= 1
-        resolve(value)
+        with context:
+            context.nb_ongoing_tasks -= 1
+        deferred.resolve(value)
         gen.close()
 
 
-def _run_worker(id):
+def _run_worker(context):
     """Main loop of the workers (task consumers).
 
     Each Thread wait for tasks, then execute them and handles theirs yielded
     promises.
 
     Args:
-        id (int): number of worker.
+        context (FilesyncContext): context shared between workers.
     """
-    current_thread().name = 'Filesync worker %s' % id
 
     while True:
-        with _task_condition:
-            if _stop_order:
+        with context as ctx:
+            if ctx.stop_order:
                 return
 
             # Try to execute ongoing tasks
             is_ongoing_task = None
             try:
-                (resolve, reject,
-                 generator, value, is_error) = _split_task_queue.popleft()
+                (deferred, generator,
+                 value, is_error) = ctx.ongoing_task_queue.popleft()
                 is_ongoing_task = True
             except IndexError:
                 # Else, begin the next new task
-                if _nb_ongoing_task < _MAX_SIMULTANEOUS_TASK:
+                if ctx.nb_ongoing_tasks < _MAX_SIMULTANEOUS_TASK:
                     try:
-                        (resolve, reject, generator) = _task_queue.popleft()
+                        (deferred, generator) = ctx.task_queue.popleft()
                         is_ongoing_task = False
                     except IndexError:
                         pass
 
             if is_ongoing_task is None:
                 # No task to execute.
-                _task_condition.wait()
+                ctx.condition.wait()
                 continue
 
         if not is_ongoing_task:
-            _start_generator(resolve, reject, generator)
+            _start_generator(ctx, deferred, generator)
         elif is_error:
-            _iter_generator_error(resolve, reject, generator, value)
+            _iter_generator_error(ctx, deferred, generator, value)
         else:
-            _iter_generator(resolve, reject, generator, value)
+            _iter_generator(ctx, deferred, generator, value)
+
+
+def Context():
+    global _executor
+    _executor = GenericExecutor('filesync', _MAX_WORKER, _run_worker,
+                                FilesyncContext())
+    return _executor
