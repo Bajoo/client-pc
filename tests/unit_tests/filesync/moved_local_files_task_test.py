@@ -30,13 +30,13 @@ def generate_task(tester, src_target, dst_target):
 
 
 class FakeMovedLocalFilesTask(MovedLocalFilesTask):
-    def _create_push_task(self, rel_path, ignore_missing_file=False):
+    def _create_push_task(self, rel_path, create_mode=False):
         return AddedLocalFilesTask(self.container,
                                    (generate_random_string(),),
                                    self.local_container,
                                    self.display_error_cb,
                                    parent_path=self._parent_path,
-                                   ignore_missing_file=ignore_missing_file)
+                                   create_mode=create_mode)
 
 
 def generate_fake_task(tester, src_target, dst_target):

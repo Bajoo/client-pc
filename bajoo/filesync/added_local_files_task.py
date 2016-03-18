@@ -16,22 +16,22 @@ _logger = logging.getLogger(__name__)
 
 
 class PushTaskMixin(object):
-    def _create_push_task(self, rel_path, ignore_missing_file=False):
+    def _create_push_task(self, rel_path, create_mode=False):
         return AddedLocalFilesTask(self.container,
                                    (rel_path,), self.local_container,
                                    self.display_error_cb,
                                    parent_path=self._parent_path,
-                                   ignore_missing_file=ignore_missing_file)
+                                   create_mode=create_mode)
 
 
 class AddedLocalFilesTask(_Task, PushTaskMixin):
     def __init__(self, container, target, local_container,
-                 display_error_cb, parent_path=None, ignore_missing_file=True):
+                 display_error_cb, parent_path=None, create_mode=True):
 
         _Task.__init__(self, container, target, local_container,
                        display_error_cb, parent_path)
 
-        self.ignore_missing_file = ignore_missing_file
+        self.create_mode = create_mode
 
     @staticmethod
     def get_type():
@@ -46,7 +46,7 @@ class AddedLocalFilesTask(_Task, PushTaskMixin):
         try:
             file_content = open(src_path, 'rb')
         except (IOError, OSError) as err:
-            if err.errno == errno.ENOENT and self.ignore_missing_file:
+            if err.errno == errno.ENOENT and self.create_mode:
                 _logger.debug("The file is gone before we've done"
                               " anything.")
 

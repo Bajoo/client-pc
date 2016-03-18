@@ -48,7 +48,7 @@ class SyncTask(_Task, PushTaskMixin, RemovedTaskMixin):
                 if not is_path_allowed(rel_path):
                     continue
 
-                ignore_missing_file = True
+                create_mode = True
                 if rel_path in self.index_fragment:
                     # TODO: don't log when file is not modified !
                     del self.index_fragment[rel_path]
@@ -56,9 +56,9 @@ class SyncTask(_Task, PushTaskMixin, RemovedTaskMixin):
                     # if file exists in the directory traversal,
                     # we want to trigger an error if it's removed
                     # during the task
-                    ignore_missing_file = False
+                    create_mode = False
 
-                task = self._create_push_task(rel_path, ignore_missing_file)
+                task = self._create_push_task(rel_path, create_mode)
 
             if task:
                 subtasks.append(add_task(task, priority=True))

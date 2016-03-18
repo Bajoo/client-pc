@@ -18,7 +18,7 @@ def teardown_module(module):
     stop()
 
 
-def generate_task(tester, target, ignore_missing_file=False):
+def generate_task(tester, target, create_mode=False):
     return AddedLocalFilesTask(
         tester.container,
         (target,
@@ -26,7 +26,7 @@ def generate_task(tester, target, ignore_missing_file=False):
         tester.local_container,
         tester.error_append,
         None,
-        ignore_missing_file)
+        create_mode)
 
 
 class Test_Local_file_does_not_exist(TestTaskAbstract):
@@ -38,7 +38,7 @@ class Test_Local_file_does_not_exist(TestTaskAbstract):
 
     def test_CreationMode(self):
         self.execute_task(generate_task(self, self.path,
-                                        ignore_missing_file=True))
+                                        create_mode=True))
         self.assert_no_error_on_task()
         self.check_action()  # no action
         self.assert_conflict(count=0)
@@ -46,7 +46,7 @@ class Test_Local_file_does_not_exist(TestTaskAbstract):
 
     def test_UpdateMode(self):
         task = self.execute_task(generate_task(self, target=self.path,
-                                               ignore_missing_file=False))
+                                               create_mode=False))
 
         # task on error
         self.assert_error_on_task(task)
