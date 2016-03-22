@@ -11,6 +11,10 @@ import bajoo.network
 class TestNetwork(object):
     """Test of the bajoo.network module"""
 
+    def setup(self):
+        bajoo.network.executor.stop()
+        bajoo.network.executor.start()
+
     def test_json_request(self, http_server):
         """Make a simple JSON requests with code 200 OK."""
 
@@ -48,6 +52,8 @@ class TestNetwork(object):
         assert result.get('code') is 204
         assert result.get('content') is None
 
+    @pytest.mark.skipif(not pytest.config.getvalue('slowtest'),
+                        reason='slow test')
     def test_request_bad_server(self):
         """Make a download request to an unavailable server.
 
@@ -57,7 +63,7 @@ class TestNetwork(object):
         f = bajoo.network.download('GET', 'http://example.not_exists/')
 
         with pytest.raises(bajoo.network.errors.ConnectionError):
-            f.result()
+            f.result(10)
 
     def test_download_empty_file(self, http_server):
         """Download a file of length 0."""

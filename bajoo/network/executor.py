@@ -4,7 +4,7 @@ import heapq
 import logging
 import sys
 from ..generic_executor import GenericExecutor, SharedContext
-from .errors import NetworkError
+from .health_checker import HealthChecker
 from .request import Request
 from .send_request import upload, download, json_request
 from .status_table import StatusTable
@@ -30,7 +30,8 @@ class NetworkSharedContext(SharedContext):
         super(NetworkSharedContext, self).__init__()
         self.requests = []
         self.counter = 0
-        self.status = StatusTable()
+        self.health_checker = HealthChecker(add_task)
+        self.status = StatusTable(self.health_checker)
 
 
 def start():
@@ -43,8 +44,10 @@ def start():
 
 
 def stop():
+    global _executor
     if _executor:
         _executor.stop()
+    _executor = None
 
 
 def add_task(request):
@@ -90,11 +93,10 @@ def _run_worker(context):
                 context.condition.wait()
                 continue
 
-            if not context.status.allow_request(request):
-                # TODO: custom exception
-                deferred.reject(NetworkError(
-                    message='The request has been rejected, because there is '
-                            'a network error'))
+            last_error = context.status.reject_request(request)
+            if last_error:
+                # request "rejected"
+                deferred.reject(last_error)
                 continue
 
         try:
@@ -109,9 +111,11 @@ def _run_worker(context):
         try:
             result = action_fn(request)
         except Exception as error:
-            context.status.update(request, error)
+            with context:
+                context.status.update(request, error)
             deferred.reject(*sys.exc_info())
         else:
-            context.status.update(request)
+            with context:
+                context.status.update(request)
             deferred.resolve(result)
         _logger.log(5, "request %s completed", request)
