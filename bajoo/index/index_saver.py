@@ -10,7 +10,7 @@ import sys
 import threading
 import time
 
-from .common.strings import ensure_unicode
+from ..common.strings import ensure_unicode
 
 # To avoid index saving after every file change, the software waits
 # until activity stops during at least 1.0 seconds

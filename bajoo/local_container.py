@@ -8,7 +8,7 @@ from threading import RLock
 
 from .api.team_share import TeamShare
 from .common.i18n import _, N_
-from .index_saver import IndexSaver
+from .index.index_saver import IndexSaver
 from .promise import Deferred, Promise
 
 
