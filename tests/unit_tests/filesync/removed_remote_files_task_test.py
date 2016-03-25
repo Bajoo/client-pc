@@ -32,7 +32,7 @@ class Test_file_does_not_exist(TestTaskAbstract):
         self.assert_no_error_on_task()
         self.check_action()  # no action
         self.assert_conflict(count=0)
-        assert path in self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(path)
 
 
 class Test_file_exists(TestTaskAbstract):
@@ -54,8 +54,7 @@ class Test_file_exists(TestTaskAbstract):
         assert not os.path.exists(self.file.descr.name)
         self.check_action()  # no action
 
-        assert self.file.filename in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.file.filename)
 
     def test_no_local_hash(self):
         self.local_container.inject_hash(self.file.filename,
@@ -67,9 +66,9 @@ class Test_file_exists(TestTaskAbstract):
         flist = (self.file.filename, )
         self.check_action(uploaded=flist, getinfo=flist)
 
-        self.assert_index_on_release(self.file.filename,
-                                     self.file.local_hash,
-                                     self.file.filename + "HASH_UPLOADED")
+        self.assert_hash_in_index(self.file.filename,
+                                  self.file.local_hash,
+                                  self.file.filename + "HASH_UPLOADED")
 
     def test_local_file_has_been_updated(self):
         self.local_container.inject_hash(self.file.filename,
@@ -81,6 +80,6 @@ class Test_file_exists(TestTaskAbstract):
         flist = (self.file.filename, )
         self.check_action(uploaded=flist, getinfo=flist)
 
-        self.assert_index_on_release(self.file.filename,
-                                     self.file.local_hash,
-                                     self.file.filename + "HASH_UPLOADED")
+        self.assert_hash_in_index(self.file.filename,
+                                  self.file.local_hash,
+                                  self.file.filename + "HASH_UPLOADED")

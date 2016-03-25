@@ -30,6 +30,7 @@ def generate_task(tester, src_target, dst_target):
 
 
 class FakeMovedLocalFilesTask(MovedLocalFilesTask):
+
     def _create_push_task(self, rel_path, create_mode=False):
         return AddedLocalFilesTask(self.container,
                                    (generate_random_string(),),
@@ -92,12 +93,12 @@ class Test_special_case(TestTaskAbstract):
 
         self.assert_no_error_on_task()
         flist = (src_file.filename, )
-        self.check_action(uploaded=flist, getinfo=flist)
+        self.check_action(uploaded=flist, getinfo=flist, downloaded=("plop",))
         self.assert_conflict(count=0)
 
-        self.assert_index_on_release(src_file.filename,
-                                     src_file.local_hash,
-                                     src_file.filename + "HASH_UPLOADED")
+        self.assert_hash_in_index(src_file.filename,
+                                  src_file.local_hash,
+                                  src_file.filename + "HASH_UPLOADED")
 
     def test_SRC_file_exist_AND_dest_file_exists(self):
         src_file = FakeFile()
@@ -125,15 +126,15 @@ class Test_special_case(TestTaskAbstract):
         self.check_action(uploaded=flist, getinfo=flist)
         self.assert_conflict(count=0)
 
-        self.assert_index_on_release(src_file.filename,
-                                     src_file.local_hash,
-                                     src_file.filename + "HASH_UPLOADED")
+        self.assert_hash_in_index(src_file.filename,
+                                  src_file.local_hash,
+                                  src_file.filename + "HASH_UPLOADED")
 
-        self.assert_index_on_release(dest_file.filename,
-                                     dest_file.local_hash,
-                                     dest_file.filename + "HASH_UPLOADED")
+        self.assert_hash_in_index(dest_file.filename,
+                                  dest_file.local_hash,
+                                  dest_file.filename + "HASH_UPLOADED")
 
-    def test_DEST_file_does_not_exist(self):
+    def test_no_file_exists(self):
         self.local_container.inject_hash(path="source",
                                          local_hash="plop",
                                          remote_hash="remote plop")
@@ -156,9 +157,8 @@ class Test_special_case(TestTaskAbstract):
         self.check_action(removed=flist, getinfo=flist)
         self.assert_conflict(count=0)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 2
-        assert "source" in self.local_container.updated_index_but_not_in_dict
-        assert "dest" in self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index("source")
+        self.assert_not_in_index("dest")
 
 
 class Test_SRC_no_remote_hash_AND_no_remote_file(TestTaskAbstract):
@@ -197,12 +197,9 @@ class Test_SRC_no_remote_hash_AND_no_remote_file(TestTaskAbstract):
         ulist = (self.destination_file.filename, )
         self.check_action(uploaded=ulist, downloaded=dlist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 1
-        self.assert_index_on_release(
+        self.assert_hash_in_index(
             self.destination_file.filename,
             self.destination_file.local_hash,
             self.destination_file.filename + "HASH_UPLOADED")
@@ -228,14 +225,11 @@ class Test_SRC_no_remote_hash_AND_no_remote_file(TestTaskAbstract):
         dlist = (self.origin_path, self.destination_file.filename, )
         self.check_action(downloaded=dlist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 1
-        self.assert_index_on_release(self.destination_file.filename,
-                                     self.destination_file.local_hash,
-                                     self.destination_file.remote_hash)
+        self.assert_hash_in_index(self.destination_file.filename,
+                                  self.destination_file.local_hash,
+                                  self.destination_file.remote_hash)
 
     def test_DEST_no_remote_hash_AND_remote_not_equal_file(self):
         self.local_container.inject_hash(
@@ -268,18 +262,15 @@ class Test_SRC_no_remote_hash_AND_no_remote_file(TestTaskAbstract):
         ulist = (conflict_filename,)
         self.check_action(downloaded=dlist, uploaded=ulist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 2
-        self.assert_index_on_release(self.destination_file.filename,
-                                     remote_destination_file.local_hash,
-                                     remote_destination_file.remote_hash)
+        self.assert_hash_in_index(self.destination_file.filename,
+                                  remote_destination_file.local_hash,
+                                  remote_destination_file.remote_hash)
 
-        self.assert_index_on_release(conflict_filename,
-                                     self.destination_file.local_hash,
-                                     conflict_filename + "HASH_UPLOADED")
+        self.assert_hash_in_index(conflict_filename,
+                                  self.destination_file.local_hash,
+                                  conflict_filename + "HASH_UPLOADED")
 
     def test_DEST_remote_hash_AND_no_remote_file(self):
         self.local_container.inject_hash(
@@ -299,12 +290,9 @@ class Test_SRC_no_remote_hash_AND_no_remote_file(TestTaskAbstract):
         glist = (self.destination_file.filename,)
         self.check_action(downloaded=dlist, uploaded=ulist, getinfo=glist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 1
-        self.assert_index_on_release(
+        self.assert_hash_in_index(
             self.destination_file.filename,
             self.destination_file.local_hash,
             self.destination_file.filename + "HASH_UPLOADED")
@@ -330,14 +318,11 @@ class Test_SRC_no_remote_hash_AND_no_remote_file(TestTaskAbstract):
         glist = (self.destination_file.filename,)
         self.check_action(downloaded=dlist, getinfo=glist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 1
-        self.assert_index_on_release(self.destination_file.filename,
-                                     self.destination_file.local_hash,
-                                     self.destination_file.remote_hash)
+        self.assert_hash_in_index(self.destination_file.filename,
+                                  self.destination_file.local_hash,
+                                  self.destination_file.remote_hash)
 
     def test_DEST_remote_hash_AND_not_equal(self):
         self.local_container.inject_hash(
@@ -371,18 +356,15 @@ class Test_SRC_no_remote_hash_AND_no_remote_file(TestTaskAbstract):
         glist = (self.destination_file.filename,)
         self.check_action(downloaded=dlist, uploaded=ulist, getinfo=glist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 2
-        self.assert_index_on_release(self.destination_file.filename,
-                                     remote_destination_file.local_hash,
-                                     remote_destination_file.remote_hash)
+        self.assert_hash_in_index(self.destination_file.filename,
+                                  remote_destination_file.local_hash,
+                                  remote_destination_file.remote_hash)
 
-        self.assert_index_on_release(conflict_filename,
-                                     self.destination_file.local_hash,
-                                     conflict_filename + "HASH_UPLOADED")
+        self.assert_hash_in_index(conflict_filename,
+                                  self.destination_file.local_hash,
+                                  conflict_filename + "HASH_UPLOADED")
 
 
 class Test_SRC_no_remote_hash_AND_remote_equal_file(TestTaskAbstract):
@@ -427,12 +409,9 @@ class Test_SRC_no_remote_hash_AND_remote_equal_file(TestTaskAbstract):
         rlist = (self.origin_path,)
         self.check_action(downloaded=dlist, uploaded=ulist, removed=rlist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 1
-        self.assert_index_on_release(
+        self.assert_hash_in_index(
             self.destination_file.filename,
             self.destination_file.local_hash,
             self.destination_file.filename + "HASH_UPLOADED")
@@ -459,14 +438,11 @@ class Test_SRC_no_remote_hash_AND_remote_equal_file(TestTaskAbstract):
         rlist = (self.origin_path,)
         self.check_action(downloaded=dlist, removed=rlist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 1
-        self.assert_index_on_release(self.destination_file.filename,
-                                     self.destination_file.local_hash,
-                                     self.destination_file.remote_hash)
+        self.assert_hash_in_index(self.destination_file.filename,
+                                  self.destination_file.local_hash,
+                                  self.destination_file.remote_hash)
 
     def test_DEST_no_remote_hash_AND_remote_not_equal_file(self):
         self.local_container.inject_hash(
@@ -500,19 +476,15 @@ class Test_SRC_no_remote_hash_AND_remote_equal_file(TestTaskAbstract):
         rlist = (self.origin_path,)
         self.check_action(downloaded=dlist, uploaded=ulist, removed=rlist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 2
+        self.assert_hash_in_index(self.destination_file.filename,
+                                  remote_destination_file.local_hash,
+                                  remote_destination_file.remote_hash)
 
-        self.assert_index_on_release(self.destination_file.filename,
-                                     remote_destination_file.local_hash,
-                                     remote_destination_file.remote_hash)
-
-        self.assert_index_on_release(conflict_filename,
-                                     self.destination_file.local_hash,
-                                     conflict_filename + "HASH_UPLOADED")
+        self.assert_hash_in_index(conflict_filename,
+                                  self.destination_file.local_hash,
+                                  conflict_filename + "HASH_UPLOADED")
 
     def test_DEST_remote_hash_AND_no_remote_file(self):
         self.local_container.inject_hash(
@@ -537,12 +509,9 @@ class Test_SRC_no_remote_hash_AND_remote_equal_file(TestTaskAbstract):
             getinfo=glist,
             removed=rlist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 1
-        self.assert_index_on_release(
+        self.assert_hash_in_index(
             self.destination_file.filename,
             self.destination_file.local_hash,
             self.destination_file.filename + "HASH_UPLOADED")
@@ -570,14 +539,11 @@ class Test_SRC_no_remote_hash_AND_remote_equal_file(TestTaskAbstract):
         rlist = (self.origin_path,)
         self.check_action(downloaded=dlist, getinfo=glist, removed=rlist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 1
-        self.assert_index_on_release(self.destination_file.filename,
-                                     self.destination_file.local_hash,
-                                     self.destination_file.remote_hash)
+        self.assert_hash_in_index(self.destination_file.filename,
+                                  self.destination_file.local_hash,
+                                  self.destination_file.remote_hash)
 
     def test_DEST_remote_hash_AND_not_equal(self):
         self.local_container.inject_hash(
@@ -616,19 +582,15 @@ class Test_SRC_no_remote_hash_AND_remote_equal_file(TestTaskAbstract):
             getinfo=glist,
             removed=rlist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 2
+        self.assert_hash_in_index(self.destination_file.filename,
+                                  remote_destination_file.local_hash,
+                                  remote_destination_file.remote_hash)
 
-        self.assert_index_on_release(self.destination_file.filename,
-                                     remote_destination_file.local_hash,
-                                     remote_destination_file.remote_hash)
-
-        self.assert_index_on_release(conflict_filename,
-                                     self.destination_file.local_hash,
-                                     conflict_filename + "HASH_UPLOADED")
+        self.assert_hash_in_index(conflict_filename,
+                                  self.destination_file.local_hash,
+                                  conflict_filename + "HASH_UPLOADED")
 
 
 class Test_SRC_no_remote_hash_AND_remote_not_equal_file_AND_local_dest_equal(
@@ -675,12 +637,9 @@ class Test_SRC_no_remote_hash_AND_remote_not_equal_file_AND_local_dest_equal(
         rlist = (self.origin_path,)
         self.check_action(downloaded=dlist, uploaded=ulist, removed=rlist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 1
-        self.assert_index_on_release(
+        self.assert_hash_in_index(
             self.destination_file.filename,
             self.remote_src_file.local_hash,
             self.destination_file.filename + "HASH_UPLOADED")
@@ -707,14 +666,11 @@ class Test_SRC_no_remote_hash_AND_remote_not_equal_file_AND_local_dest_equal(
         rlist = (self.origin_path,)
         self.check_action(downloaded=dlist, removed=rlist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 1
-        self.assert_index_on_release(self.destination_file.filename,
-                                     self.remote_src_file.local_hash,
-                                     self.destination_file.remote_hash)
+        self.assert_hash_in_index(self.destination_file.filename,
+                                  self.remote_src_file.local_hash,
+                                  self.destination_file.remote_hash)
 
     def test_DEST_no_remote_hash_AND_remote_not_equal_file(self):
         self.local_container.inject_hash(
@@ -748,19 +704,15 @@ class Test_SRC_no_remote_hash_AND_remote_not_equal_file_AND_local_dest_equal(
         rlist = (self.origin_path,)
         self.check_action(downloaded=dlist, uploaded=ulist, removed=rlist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 2
+        self.assert_hash_in_index(self.destination_file.filename,
+                                  remote_destination_file.local_hash,
+                                  remote_destination_file.remote_hash)
 
-        self.assert_index_on_release(self.destination_file.filename,
-                                     remote_destination_file.local_hash,
-                                     remote_destination_file.remote_hash)
-
-        self.assert_index_on_release(conflict_filename,
-                                     self.remote_src_file.local_hash,
-                                     conflict_filename + "HASH_UPLOADED")
+        self.assert_hash_in_index(conflict_filename,
+                                  self.remote_src_file.local_hash,
+                                  conflict_filename + "HASH_UPLOADED")
 
     def test_DEST_remote_hash_AND_no_remote_file(self):
         self.local_container.inject_hash(
@@ -785,12 +737,9 @@ class Test_SRC_no_remote_hash_AND_remote_not_equal_file_AND_local_dest_equal(
             getinfo=glist,
             removed=rlist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 1
-        self.assert_index_on_release(
+        self.assert_hash_in_index(
             self.destination_file.filename,
             self.remote_src_file.local_hash,
             self.destination_file.filename + "HASH_UPLOADED")
@@ -823,12 +772,9 @@ class Test_SRC_no_remote_hash_AND_remote_not_equal_file_AND_local_dest_equal(
             getinfo=glist,
             removed=rlist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 1
-        self.assert_index_on_release(
+        self.assert_hash_in_index(
             self.destination_file.filename,
             self.remote_src_file.local_hash,
             self.destination_file.filename + "HASH_UPLOADED")
@@ -870,19 +816,15 @@ class Test_SRC_no_remote_hash_AND_remote_not_equal_file_AND_local_dest_equal(
             getinfo=glist,
             removed=rlist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 2
+        self.assert_hash_in_index(self.destination_file.filename,
+                                  remote_destination_file.local_hash,
+                                  remote_destination_file.remote_hash)
 
-        self.assert_index_on_release(self.destination_file.filename,
-                                     remote_destination_file.local_hash,
-                                     remote_destination_file.remote_hash)
-
-        self.assert_index_on_release(conflict_filename,
-                                     self.remote_src_file.local_hash,
-                                     conflict_filename + "HASH_UPLOADED")
+        self.assert_hash_in_index(conflict_filename,
+                                  self.remote_src_file.local_hash,
+                                  conflict_filename + "HASH_UPLOADED")
 
 
 class Test_SRC_no_remote_hash_AND_remote_not_equal_AND_local_dest_not_equal(
@@ -928,13 +870,11 @@ class Test_SRC_no_remote_hash_AND_remote_not_equal_AND_local_dest_not_equal(
         ulist = (self.destination_file.filename, )
         self.check_action(downloaded=dlist, uploaded=ulist)
 
-        assert len(self.local_container.index_on_release) == 2
+        self.assert_hash_in_index(self.origin_path,
+                                  self.remote_src_file.local_hash,
+                                  self.remote_src_file.remote_hash)
 
-        self.assert_index_on_release(self.origin_path,
-                                     self.remote_src_file.local_hash,
-                                     self.remote_src_file.remote_hash)
-
-        self.assert_index_on_release(
+        self.assert_hash_in_index(
             self.destination_file.filename,
             self.destination_file.local_hash,
             self.destination_file.filename + "HASH_UPLOADED")
@@ -960,15 +900,13 @@ class Test_SRC_no_remote_hash_AND_remote_not_equal_AND_local_dest_not_equal(
         dlist = (self.origin_path, self.destination_file.filename,)
         self.check_action(downloaded=dlist)
 
-        assert len(self.local_container.index_on_release) == 2
+        self.assert_hash_in_index(self.origin_path,
+                                  self.remote_src_file.local_hash,
+                                  self.remote_src_file.remote_hash)
 
-        self.assert_index_on_release(self.origin_path,
-                                     self.remote_src_file.local_hash,
-                                     self.remote_src_file.remote_hash)
-
-        self.assert_index_on_release(self.destination_file.filename,
-                                     self.destination_file.local_hash,
-                                     self.destination_file.remote_hash)
+        self.assert_hash_in_index(self.destination_file.filename,
+                                  self.destination_file.local_hash,
+                                  self.destination_file.remote_hash)
 
     def test_DEST_no_remote_hash_AND_remote_not_equal_file(self):
         self.local_container.inject_hash(
@@ -1001,19 +939,17 @@ class Test_SRC_no_remote_hash_AND_remote_not_equal_AND_local_dest_not_equal(
         ulist = (conflict_filename,)
         self.check_action(downloaded=dlist, uploaded=ulist)
 
-        assert len(self.local_container.index_on_release) == 3
+        self.assert_hash_in_index(self.origin_path,
+                                  self.remote_src_file.local_hash,
+                                  self.remote_src_file.remote_hash)
 
-        self.assert_index_on_release(self.origin_path,
-                                     self.remote_src_file.local_hash,
-                                     self.remote_src_file.remote_hash)
+        self.assert_hash_in_index(self.destination_file.filename,
+                                  remote_destination_file.local_hash,
+                                  remote_destination_file.remote_hash)
 
-        self.assert_index_on_release(self.destination_file.filename,
-                                     remote_destination_file.local_hash,
-                                     remote_destination_file.remote_hash)
-
-        self.assert_index_on_release(conflict_filename,
-                                     self.destination_file.local_hash,
-                                     conflict_filename + "HASH_UPLOADED")
+        self.assert_hash_in_index(conflict_filename,
+                                  self.destination_file.local_hash,
+                                  conflict_filename + "HASH_UPLOADED")
 
     def test_DEST_remote_hash_AND_no_remote_file(self):
         self.local_container.inject_hash(
@@ -1033,13 +969,11 @@ class Test_SRC_no_remote_hash_AND_remote_not_equal_AND_local_dest_not_equal(
         glist = (self.destination_file.filename,)
         self.check_action(downloaded=dlist, uploaded=ulist, getinfo=glist)
 
-        assert len(self.local_container.index_on_release) == 2
+        self.assert_hash_in_index(self.origin_path,
+                                  self.remote_src_file.local_hash,
+                                  self.remote_src_file.remote_hash)
 
-        self.assert_index_on_release(self.origin_path,
-                                     self.remote_src_file.local_hash,
-                                     self.remote_src_file.remote_hash)
-
-        self.assert_index_on_release(
+        self.assert_hash_in_index(
             self.destination_file.filename,
             self.destination_file.local_hash,
             self.destination_file.filename + "HASH_UPLOADED")
@@ -1066,15 +1000,13 @@ class Test_SRC_no_remote_hash_AND_remote_not_equal_AND_local_dest_not_equal(
         glist = (self.destination_file.filename,)
         self.check_action(downloaded=dlist, getinfo=glist)
 
-        assert len(self.local_container.index_on_release) == 2
+        self.assert_hash_in_index(self.origin_path,
+                                  self.remote_src_file.local_hash,
+                                  self.remote_src_file.remote_hash)
 
-        self.assert_index_on_release(self.origin_path,
-                                     self.remote_src_file.local_hash,
-                                     self.remote_src_file.remote_hash)
-
-        self.assert_index_on_release(self.destination_file.filename,
-                                     self.destination_file.local_hash,
-                                     self.destination_file.remote_hash)
+        self.assert_hash_in_index(self.destination_file.filename,
+                                  self.destination_file.local_hash,
+                                  self.destination_file.remote_hash)
 
     def test_DEST_remote_hash_AND_not_equal(self):
         self.local_container.inject_hash(
@@ -1108,19 +1040,17 @@ class Test_SRC_no_remote_hash_AND_remote_not_equal_AND_local_dest_not_equal(
         glist = (self.destination_file.filename,)
         self.check_action(downloaded=dlist, uploaded=ulist, getinfo=glist)
 
-        assert len(self.local_container.index_on_release) == 3
+        self.assert_hash_in_index(self.origin_path,
+                                  self.remote_src_file.local_hash,
+                                  self.remote_src_file.remote_hash)
 
-        self.assert_index_on_release(self.origin_path,
-                                     self.remote_src_file.local_hash,
-                                     self.remote_src_file.remote_hash)
+        self.assert_hash_in_index(self.destination_file.filename,
+                                  remote_destination_file.local_hash,
+                                  remote_destination_file.remote_hash)
 
-        self.assert_index_on_release(self.destination_file.filename,
-                                     remote_destination_file.local_hash,
-                                     remote_destination_file.remote_hash)
-
-        self.assert_index_on_release(conflict_filename,
-                                     self.destination_file.local_hash,
-                                     conflict_filename + "HASH_UPLOADED")
+        self.assert_hash_in_index(conflict_filename,
+                                  self.destination_file.local_hash,
+                                  conflict_filename + "HASH_UPLOADED")
 
 
 class Test_SRC_remote_hash_AND_no_remote_file(TestTaskAbstract):
@@ -1159,12 +1089,9 @@ class Test_SRC_remote_hash_AND_no_remote_file(TestTaskAbstract):
         glist = (self.origin_path,)
         self.check_action(downloaded=dlist, uploaded=ulist, getinfo=glist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 1
-        self.assert_index_on_release(
+        self.assert_hash_in_index(
             self.destination_file.filename,
             self.destination_file.local_hash,
             self.destination_file.filename + "HASH_UPLOADED")
@@ -1191,14 +1118,11 @@ class Test_SRC_remote_hash_AND_no_remote_file(TestTaskAbstract):
         glist = (self.origin_path, )
         self.check_action(downloaded=dlist, getinfo=glist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 1
-        self.assert_index_on_release(self.destination_file.filename,
-                                     self.destination_file.local_hash,
-                                     self.destination_file.remote_hash)
+        self.assert_hash_in_index(self.destination_file.filename,
+                                  self.destination_file.local_hash,
+                                  self.destination_file.remote_hash)
 
     def test_DEST_no_remote_hash_AND_remote_not_equal_file(self):
         self.local_container.inject_hash(
@@ -1228,19 +1152,15 @@ class Test_SRC_remote_hash_AND_no_remote_file(TestTaskAbstract):
         glist = (self.origin_path,)
         self.check_action(downloaded=dlist, uploaded=ulist, getinfo=glist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 2
+        self.assert_hash_in_index(self.destination_file.filename,
+                                  remote_destination_file.local_hash,
+                                  remote_destination_file.remote_hash)
 
-        self.assert_index_on_release(self.destination_file.filename,
-                                     remote_destination_file.local_hash,
-                                     remote_destination_file.remote_hash)
-
-        self.assert_index_on_release(conflict_filename,
-                                     self.destination_file.local_hash,
-                                     conflict_filename + "HASH_UPLOADED")
+        self.assert_hash_in_index(conflict_filename,
+                                  self.destination_file.local_hash,
+                                  conflict_filename + "HASH_UPLOADED")
 
     def test_DEST_remote_hash_AND_no_remote_file(self):
         self.local_container.inject_hash(
@@ -1259,12 +1179,9 @@ class Test_SRC_remote_hash_AND_no_remote_file(TestTaskAbstract):
         glist = (self.origin_path, self.destination_file.filename)
         self.check_action(uploaded=ulist, getinfo=glist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 1
-        self.assert_index_on_release(
+        self.assert_hash_in_index(
             self.destination_file.filename,
             self.destination_file.local_hash,
             self.destination_file.filename + "HASH_UPLOADED")
@@ -1290,14 +1207,11 @@ class Test_SRC_remote_hash_AND_no_remote_file(TestTaskAbstract):
         glist = (self.origin_path, self.destination_file.filename)
         self.check_action(getinfo=glist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 1
-        self.assert_index_on_release(self.destination_file.filename,
-                                     self.destination_file.local_hash,
-                                     self.destination_file.remote_hash)
+        self.assert_hash_in_index(self.destination_file.filename,
+                                  self.destination_file.local_hash,
+                                  self.destination_file.remote_hash)
 
     def test_DEST_remote_hash_AND_not_equal(self):
         self.local_container.inject_hash(
@@ -1327,19 +1241,15 @@ class Test_SRC_remote_hash_AND_no_remote_file(TestTaskAbstract):
         glist = (self.origin_path, self.destination_file.filename,)
         self.check_action(downloaded=dlist, uploaded=ulist, getinfo=glist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 2
+        self.assert_hash_in_index(self.destination_file.filename,
+                                  remote_destination_file.local_hash,
+                                  remote_destination_file.remote_hash)
 
-        self.assert_index_on_release(self.destination_file.filename,
-                                     remote_destination_file.local_hash,
-                                     remote_destination_file.remote_hash)
-
-        self.assert_index_on_release(conflict_filename,
-                                     self.destination_file.local_hash,
-                                     conflict_filename + "HASH_UPLOADED")
+        self.assert_hash_in_index(conflict_filename,
+                                  self.destination_file.local_hash,
+                                  conflict_filename + "HASH_UPLOADED")
 
 
 class Test_SRC_remote_hash_AND_equal(TestTaskAbstract):
@@ -1387,12 +1297,9 @@ class Test_SRC_remote_hash_AND_equal(TestTaskAbstract):
             getinfo=glist,
             removed=glist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 1
-        self.assert_index_on_release(
+        self.assert_hash_in_index(
             self.destination_file.filename,
             self.destination_file.local_hash,
             self.destination_file.filename + "HASH_UPLOADED")
@@ -1419,14 +1326,11 @@ class Test_SRC_remote_hash_AND_equal(TestTaskAbstract):
         glist = (self.origin_path,)
         self.check_action(downloaded=dlist, getinfo=glist, removed=glist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 1
-        self.assert_index_on_release(self.destination_file.filename,
-                                     self.destination_file.local_hash,
-                                     self.destination_file.remote_hash)
+        self.assert_hash_in_index(self.destination_file.filename,
+                                  self.destination_file.local_hash,
+                                  self.destination_file.remote_hash)
 
     def test_DEST_no_remote_hash_AND_remote_not_equal_file(self):
         self.local_container.inject_hash(
@@ -1461,19 +1365,15 @@ class Test_SRC_remote_hash_AND_equal(TestTaskAbstract):
             getinfo=glist,
             removed=rlist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 2
+        self.assert_hash_in_index(self.destination_file.filename,
+                                  remote_destination_file.local_hash,
+                                  remote_destination_file.remote_hash)
 
-        self.assert_index_on_release(self.destination_file.filename,
-                                     remote_destination_file.local_hash,
-                                     remote_destination_file.remote_hash)
-
-        self.assert_index_on_release(conflict_filename,
-                                     self.destination_file.local_hash,
-                                     conflict_filename + "HASH_UPLOADED")
+        self.assert_hash_in_index(conflict_filename,
+                                  self.destination_file.local_hash,
+                                  conflict_filename + "HASH_UPLOADED")
 
     def test_DEST_remote_hash_AND_no_remote_file(self):
         self.local_container.inject_hash(
@@ -1493,12 +1393,9 @@ class Test_SRC_remote_hash_AND_equal(TestTaskAbstract):
         rlist = (self.origin_path,)
         self.check_action(uploaded=ulist, getinfo=glist, removed=rlist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 1
-        self.assert_index_on_release(
+        self.assert_hash_in_index(
             self.destination_file.filename,
             self.destination_file.local_hash,
             self.destination_file.filename + "HASH_UPLOADED")
@@ -1525,14 +1422,11 @@ class Test_SRC_remote_hash_AND_equal(TestTaskAbstract):
         rlist = (self.origin_path,)
         self.check_action(getinfo=glist, removed=rlist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 1
-        self.assert_index_on_release(self.destination_file.filename,
-                                     self.destination_file.local_hash,
-                                     self.destination_file.remote_hash)
+        self.assert_hash_in_index(self.destination_file.filename,
+                                  self.destination_file.local_hash,
+                                  self.destination_file.remote_hash)
 
     def test_DEST_remote_hash_AND_not_equal(self):
         self.local_container.inject_hash(
@@ -1567,19 +1461,15 @@ class Test_SRC_remote_hash_AND_equal(TestTaskAbstract):
             getinfo=glist,
             removed=rlist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 2
+        self.assert_hash_in_index(self.destination_file.filename,
+                                  remote_destination_file.local_hash,
+                                  remote_destination_file.remote_hash)
 
-        self.assert_index_on_release(self.destination_file.filename,
-                                     remote_destination_file.local_hash,
-                                     remote_destination_file.remote_hash)
-
-        self.assert_index_on_release(conflict_filename,
-                                     self.destination_file.local_hash,
-                                     conflict_filename + "HASH_UPLOADED")
+        self.assert_hash_in_index(conflict_filename,
+                                  self.destination_file.local_hash,
+                                  conflict_filename + "HASH_UPLOADED")
 
 
 class Test_SRC_remote_hash_AND_not_equal_AND_local_dest_equal(
@@ -1630,12 +1520,9 @@ class Test_SRC_remote_hash_AND_not_equal_AND_local_dest_equal(
             getinfo=glist,
             removed=glist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 1
-        self.assert_index_on_release(
+        self.assert_hash_in_index(
             self.destination_file.filename,
             self.remote_src_file.local_hash,
             self.destination_file.filename + "HASH_UPLOADED")
@@ -1662,14 +1549,11 @@ class Test_SRC_remote_hash_AND_not_equal_AND_local_dest_equal(
         glist = (self.origin_path,)
         self.check_action(downloaded=dlist, getinfo=glist, removed=glist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 1
-        self.assert_index_on_release(self.destination_file.filename,
-                                     self.remote_src_file.local_hash,
-                                     self.destination_file.remote_hash)
+        self.assert_hash_in_index(self.destination_file.filename,
+                                  self.remote_src_file.local_hash,
+                                  self.destination_file.remote_hash)
 
     def test_DEST_no_remote_hash_AND_remote_not_equal_file(self):
         self.local_container.inject_hash(
@@ -1707,19 +1591,15 @@ class Test_SRC_remote_hash_AND_not_equal_AND_local_dest_equal(
             getinfo=glist,
             removed=rlist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 2
+        self.assert_hash_in_index(self.destination_file.filename,
+                                  remote_destination_file.local_hash,
+                                  remote_destination_file.remote_hash)
 
-        self.assert_index_on_release(self.destination_file.filename,
-                                     remote_destination_file.local_hash,
-                                     remote_destination_file.remote_hash)
-
-        self.assert_index_on_release(conflict_filename,
-                                     self.remote_src_file.local_hash,
-                                     conflict_filename + "HASH_UPLOADED")
+        self.assert_hash_in_index(conflict_filename,
+                                  self.remote_src_file.local_hash,
+                                  conflict_filename + "HASH_UPLOADED")
 
     def test_DEST_remote_hash_AND_no_remote_file(self):
         self.local_container.inject_hash(
@@ -1744,12 +1624,9 @@ class Test_SRC_remote_hash_AND_not_equal_AND_local_dest_equal(
             getinfo=glist,
             removed=rlist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 1
-        self.assert_index_on_release(
+        self.assert_hash_in_index(
             self.destination_file.filename,
             self.remote_src_file.local_hash,
             self.destination_file.filename + "HASH_UPLOADED")
@@ -1782,12 +1659,9 @@ class Test_SRC_remote_hash_AND_not_equal_AND_local_dest_equal(
             getinfo=glist,
             removed=rlist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 1
-        self.assert_index_on_release(
+        self.assert_hash_in_index(
             self.destination_file.filename,
             self.remote_src_file.local_hash,
             self.destination_file.filename + "HASH_UPLOADED")
@@ -1829,19 +1703,15 @@ class Test_SRC_remote_hash_AND_not_equal_AND_local_dest_equal(
             getinfo=glist,
             removed=rlist)
 
-        assert len(self.local_container.updated_index_but_not_in_dict) == 1
-        assert self.origin_path in \
-            self.local_container.updated_index_but_not_in_dict
+        self.assert_not_in_index(self.origin_path)
 
-        assert len(self.local_container.index_on_release) == 2
+        self.assert_hash_in_index(self.destination_file.filename,
+                                  remote_destination_file.local_hash,
+                                  remote_destination_file.remote_hash)
 
-        self.assert_index_on_release(self.destination_file.filename,
-                                     remote_destination_file.local_hash,
-                                     remote_destination_file.remote_hash)
-
-        self.assert_index_on_release(conflict_filename,
-                                     self.remote_src_file.local_hash,
-                                     conflict_filename + "HASH_UPLOADED")
+        self.assert_hash_in_index(conflict_filename,
+                                  self.remote_src_file.local_hash,
+                                  conflict_filename + "HASH_UPLOADED")
 
 
 class Test_SRC_remote_hash_AND_not_equal_AND_local_dest_not_equal(
@@ -1889,13 +1759,11 @@ class Test_SRC_remote_hash_AND_not_equal_AND_local_dest_not_equal(
         glist = (self.origin_path,)
         self.check_action(downloaded=dlist, uploaded=ulist, getinfo=glist)
 
-        assert len(self.local_container.index_on_release) == 2
+        self.assert_hash_in_index(self.origin_path,
+                                  self.remote_src_file.local_hash,
+                                  self.remote_src_file.remote_hash)
 
-        self.assert_index_on_release(self.origin_path,
-                                     self.remote_src_file.local_hash,
-                                     self.remote_src_file.remote_hash)
-
-        self.assert_index_on_release(
+        self.assert_hash_in_index(
             self.destination_file.filename,
             self.destination_file.local_hash,
             self.destination_file.filename + "HASH_UPLOADED")
@@ -1922,15 +1790,13 @@ class Test_SRC_remote_hash_AND_not_equal_AND_local_dest_not_equal(
         glist = (self.origin_path, )
         self.check_action(downloaded=dlist, getinfo=glist)
 
-        assert len(self.local_container.index_on_release) == 2
+        self.assert_hash_in_index(self.origin_path,
+                                  self.remote_src_file.local_hash,
+                                  self.remote_src_file.remote_hash)
 
-        self.assert_index_on_release(self.origin_path,
-                                     self.remote_src_file.local_hash,
-                                     self.remote_src_file.remote_hash)
-
-        self.assert_index_on_release(self.destination_file.filename,
-                                     self.destination_file.local_hash,
-                                     self.destination_file.remote_hash)
+        self.assert_hash_in_index(self.destination_file.filename,
+                                  self.destination_file.local_hash,
+                                  self.destination_file.remote_hash)
 
     def test_DEST_no_remote_hash_AND_remote_not_equal_file(self):
         self.local_container.inject_hash(
@@ -1964,19 +1830,17 @@ class Test_SRC_remote_hash_AND_not_equal_AND_local_dest_not_equal(
         glist = (self.origin_path,)
         self.check_action(downloaded=dlist, uploaded=ulist, getinfo=glist)
 
-        assert len(self.local_container.index_on_release) == 3
+        self.assert_hash_in_index(self.origin_path,
+                                  self.remote_src_file.local_hash,
+                                  self.remote_src_file.remote_hash)
 
-        self.assert_index_on_release(self.origin_path,
-                                     self.remote_src_file.local_hash,
-                                     self.remote_src_file.remote_hash)
+        self.assert_hash_in_index(self.destination_file.filename,
+                                  remote_destination_file.local_hash,
+                                  remote_destination_file.remote_hash)
 
-        self.assert_index_on_release(self.destination_file.filename,
-                                     remote_destination_file.local_hash,
-                                     remote_destination_file.remote_hash)
-
-        self.assert_index_on_release(conflict_filename,
-                                     self.destination_file.local_hash,
-                                     conflict_filename + "HASH_UPLOADED")
+        self.assert_hash_in_index(conflict_filename,
+                                  self.destination_file.local_hash,
+                                  conflict_filename + "HASH_UPLOADED")
 
     def test_DEST_remote_hash_AND_no_remote_file(self):
         self.local_container.inject_hash(
@@ -1996,12 +1860,11 @@ class Test_SRC_remote_hash_AND_not_equal_AND_local_dest_not_equal(
         glist = (self.origin_path, self.destination_file.filename, )
         self.check_action(downloaded=dlist, uploaded=ulist, getinfo=glist)
 
-        assert len(self.local_container.index_on_release) == 2
-        self.assert_index_on_release(self.origin_path,
-                                     self.remote_src_file.local_hash,
-                                     self.remote_src_file.remote_hash)
+        self.assert_hash_in_index(self.origin_path,
+                                  self.remote_src_file.local_hash,
+                                  self.remote_src_file.remote_hash)
 
-        self.assert_index_on_release(
+        self.assert_hash_in_index(
             self.destination_file.filename,
             self.destination_file.local_hash,
             self.destination_file.filename + "HASH_UPLOADED")
@@ -2028,14 +1891,13 @@ class Test_SRC_remote_hash_AND_not_equal_AND_local_dest_not_equal(
         glist = (self.origin_path, self.destination_file.filename, )
         self.check_action(downloaded=dlist, getinfo=glist)
 
-        assert len(self.local_container.index_on_release) == 2
-        self.assert_index_on_release(self.origin_path,
-                                     self.remote_src_file.local_hash,
-                                     self.remote_src_file.remote_hash)
+        self.assert_hash_in_index(self.origin_path,
+                                  self.remote_src_file.local_hash,
+                                  self.remote_src_file.remote_hash)
 
-        self.assert_index_on_release(self.destination_file.filename,
-                                     self.destination_file.local_hash,
-                                     self.destination_file.remote_hash)
+        self.assert_hash_in_index(self.destination_file.filename,
+                                  self.destination_file.local_hash,
+                                  self.destination_file.remote_hash)
 
     def test_DEST_remote_hash_AND_not_equal(self):
         self.local_container.inject_hash(
@@ -2068,16 +1930,14 @@ class Test_SRC_remote_hash_AND_not_equal_AND_local_dest_not_equal(
         glist = (self.origin_path, self.destination_file.filename,)
         self.check_action(downloaded=dlist, uploaded=ulist, getinfo=glist)
 
-        assert len(self.local_container.index_on_release) == 3
+        self.assert_hash_in_index(self.origin_path,
+                                  self.remote_src_file.local_hash,
+                                  self.remote_src_file.remote_hash)
 
-        self.assert_index_on_release(self.origin_path,
-                                     self.remote_src_file.local_hash,
-                                     self.remote_src_file.remote_hash)
+        self.assert_hash_in_index(self.destination_file.filename,
+                                  remote_destination_file.local_hash,
+                                  remote_destination_file.remote_hash)
 
-        self.assert_index_on_release(self.destination_file.filename,
-                                     remote_destination_file.local_hash,
-                                     remote_destination_file.remote_hash)
-
-        self.assert_index_on_release(conflict_filename,
-                                     self.destination_file.local_hash,
-                                     conflict_filename + "HASH_UPLOADED")
+        self.assert_hash_in_index(conflict_filename,
+                                  self.destination_file.local_hash,
+                                  conflict_filename + "HASH_UPLOADED")

@@ -82,6 +82,7 @@ class IndexSaver(object):
         This method is used to indicate if a save is needed.
         It also start the period task.
         """
+
         self.last_update = time.time()
 
         # do not allow two parallel timer
@@ -97,7 +98,7 @@ class IndexSaver(object):
         """
 
         with io.open(self.index_path, encoding='utf-8') as index_file:
-            self.local_container._index = json.load(index_file)
+            return json.load(index_file)
 
     def create_empty_file(self):
         """Create the index file.
@@ -131,6 +132,7 @@ class IndexSaver(object):
         # the file index need to be deleted because python is not able to
         # open write access on a hidden file (windows issue)
         _logger.debug('save index')
+
         try:
             os.remove(self.index_path)
         except (OSError, IOError) as e:
@@ -145,9 +147,11 @@ class IndexSaver(object):
             self.trigger_save()
             return
 
+        index = self.local_container.index.generate_dict()
+
         try:
             with open(self.index_path, 'w') as index_file:
-                json.dump(self.local_container._index, index_file)
+                json.dump(index, index_file)
         except (OSError, IOError):
             _logger.exception('Unable to save index %s:' % self.index_path)
             self.trigger_save()

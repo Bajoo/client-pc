@@ -16,6 +16,7 @@ _logger = logging.getLogger(__name__)
 
 
 class PushTaskMixin(object):
+
     def _create_push_task(self, rel_path, create_mode=False):
         return AddedLocalFilesTask(self.container,
                                    (rel_path,), self.local_container,
@@ -25,6 +26,7 @@ class PushTaskMixin(object):
 
 
 class AddedLocalFilesTask(_Task, PushTaskMixin):
+
     def __init__(self, container, target, local_container,
                  display_error_cb, parent_path=None, create_mode=True):
 
@@ -40,29 +42,48 @@ class AddedLocalFilesTask(_Task, PushTaskMixin):
     def _apply_task(self):
         _logger.debug('Execute task %s' % self)
 
-        target = self.target_list[0]
+        target = self.nodes[0]
         src_path = os.path.join(self.local_path, target.rel_path)
 
         try:
             file_content = open(src_path, 'rb')
         except (IOError, OSError) as err:
-            if err.errno == errno.ENOENT and self.create_mode:
+            if err.errno != errno.ENOENT:
+                raise
+
+            if target.remote_md5 is None:
+                try:
+                    metadata, remote_file = yield self.container.download(
+                        target.rel_path)
+                    md5 = self._write_downloaded_file(remote_file, target)
+
+                    target.set_hash(md5, metadata['hash'])
+                    return
+                except HTTPNotFoundError:
+                    pass
+
+            if self.create_mode:
                 _logger.debug("The file is gone before we've done"
                               " anything.")
 
-                yield {}
+                target.set_hash(None, None)
                 return
-            raise
+
+            # the goal is to raise the exception of the first try/catch
+            # that's why it uses specificaly a variable to store the
+            # exception.
+            raise err
 
         with file_content:
             md5 = self._compute_md5_hash(file_content)
             file_content.seek(0)
 
             if md5 == target.local_md5:  # Nothing to do
-                _logger.debug('Local md5 hash has not changed. '
-                              'No need to upload.')
-                yield {target.rel_path: (md5, target.remote_md5)}
-                return
+                _logger.debug('Local md5 hash has not changed. ')
+
+                if target.remote_md5 is not None:
+                    target.set_hash(md5, target.remote_md5)
+                    return
 
             if target.remote_md5 is not None:
                 # get remote distant md5
@@ -80,7 +101,7 @@ class AddedLocalFilesTask(_Task, PushTaskMixin):
 
                     metadata = yield self.container.upload(target.rel_path,
                                                            file_content)
-                    yield {target.rel_path: (md5, metadata['hash'])}
+                    target.set_hash(md5, metadata['hash'])
                     return
 
             try:
@@ -91,7 +112,7 @@ class AddedLocalFilesTask(_Task, PushTaskMixin):
 
                 metadata = yield self.container.upload(target.rel_path,
                                                        file_content)
-                yield {target.rel_path: (md5, metadata['hash'])}
+                target.set_hash(md5, metadata['hash'])
                 return
 
         with remote_file:
@@ -102,7 +123,7 @@ class AddedLocalFilesTask(_Task, PushTaskMixin):
                 _logger.debug('Remote file is the same as the local file. No'
                               ' upload, no conflict, such a beautiful world.')
 
-                yield {target.rel_path: (md5, metadata['hash'])}
+                target.set_hash(md5, metadata['hash'])
                 return
 
             _logger.debug('Conflict detected, splitting file.')
@@ -115,12 +136,11 @@ class AddedLocalFilesTask(_Task, PushTaskMixin):
 
         # push the conflict file
         task = self._create_push_task(conflicting_name)
-        result_hashes = (remote_uncyphered_md5, metadata['hash'], )
-        self._release_index(result={target.rel_path: result_hashes})
+        target.set_hash(remote_uncyphered_md5, metadata['hash'])
+        self._release_index()
         result = yield add_task(task)
 
         if result is not None:
             self._task_errors = (result,)
 
-        yield None
         return

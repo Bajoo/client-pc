@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import tempfile
-from bajoo.promise.promise import Promise
+from bajoo.index.index_tree import IndexTree
 from bajoo.local_container import LocalContainer
 
 
@@ -13,6 +13,7 @@ class FakeModel(object):
 
 
 class FakeLocalContainer(LocalContainer):
+
     def __init__(self, model=None, container=None):
         if model is None:
             self.model = FakeModel()
@@ -20,14 +21,10 @@ class FakeLocalContainer(LocalContainer):
             self.model = model
 
         self.container = container
-        self.index_on_release = {}
-        self.not_updated_index_on_release = set()
-        self.updated_index_but_not_in_dict = set()
-
-        self.hash_couple = {}
-
         self.status_stack = []
         self.status = LocalContainer.STATUS_STARTED
+
+        self.index = IndexTree(None)
 
     def __setattr__(self, name, value):
         self.__dict__[name] = value
@@ -46,32 +43,6 @@ class FakeLocalContainer(LocalContainer):
 
     def _save_index(self):
         raise Exception("Not supposed to be used in task testing")
-
-    def acquire_index(self, path, item, is_directory=False,
-                      bypass_folder=None):
-
-        def executor(on_fulfilled, on_rejected):
-            result = {}
-            for k, v in self.hash_couple.items():
-                if k.startswith(path):
-                    result[k] = v
-
-            if path not in self.hash_couple:
-                result[path] = (None, None)
-
-            on_fulfilled(result)
-
-        return Promise(executor)
-
-    def release_index(self, path, new_index=None):
-        if new_index is None:
-            self.not_updated_index_on_release.add(path)
-        else:
-            for k, v in new_index.items():
-                self.index_on_release[k] = v
-
-            if path not in new_index:
-                self.updated_index_but_not_in_dict.add(path)
 
     def update_index_owner(self, path, new_item):
         raise Exception("Not supposed to be used in task testing")
@@ -99,4 +70,5 @@ class FakeLocalContainer(LocalContainer):
         raise Exception("Not supposed to be used in task testing")
 
     def inject_hash(self, path, local_hash, remote_hash):
-        self.hash_couple[path] = (local_hash, remote_hash, )
+        node = self.index.root.get_or_insert_node(path)
+        node.set_hash(local_hash, remote_hash)

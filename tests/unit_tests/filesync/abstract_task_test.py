@@ -11,9 +11,9 @@ class FakeTask(_Task):
         return "fake"
 
     def _apply_task(self):
-        target = self.target_list[0]
-
-        yield {target.rel_path: ("local", "remote")}
+        target = self.nodes[0]
+        target.set_hash("local", "remote")
+        yield None
         return
 
 
@@ -28,18 +28,18 @@ class TestAbstractTaskTargetEncoding(TestTaskAbstract):
         task = generate_task(self, u"plop")
         self.execute_task(task)
         self.assert_no_error_on_task()
-        self.assert_index_on_release("plop", "local", "remote")
+        self.assert_hash_in_index("plop", "local", "remote")
 
     def test_unicode_special_case(self):
         task = generate_task(self, u"plôp")
         self.execute_task(task)
         self.assert_no_error_on_task()
-        self.assert_index_on_release(u"plôp", "local", "remote")
+        self.assert_hash_in_index(u"plôp", "local", "remote")
 
     def test_unicode_ultra_special_case(self):
         task = generate_task(self, u"pl❤p")
         self.execute_task(task)
         self.assert_no_error_on_task()
-        self.assert_index_on_release(u"pl❤p", "local", "remote")
+        self.assert_hash_in_index(u"pl❤p", "local", "remote")
 
 # TODO test every other methods in abstract_task

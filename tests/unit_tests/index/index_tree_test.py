@@ -70,7 +70,7 @@ class TestTriggering(object):
         new_task, priority = task_added[0]
         assert priority
         assert isinstance(new_task, AddedLocalFilesTask)
-        assert new_task.target_list[0].rel_path == "./aaaa/bbb/ccc"
+        assert new_task.target_list[0] == "./aaaa/bbb/ccc"
 
     def test_trigger_local_delete_task(self):
         global task_added
@@ -80,7 +80,7 @@ class TestTriggering(object):
         new_task, priority = task_added[0]
         assert priority
         assert isinstance(new_task, RemovedLocalFilesTask)
-        assert new_task.target_list[0].rel_path == "./aaaa/bbb/ccc"
+        assert new_task.target_list[0] == "./aaaa/bbb/ccc"
 
     def test_trigger_local_moved_task(self):
         global task_added
@@ -93,8 +93,8 @@ class TestTriggering(object):
         new_task, priority = task_added[0]
         assert priority
         assert isinstance(new_task, MovedLocalFilesTask)
-        assert new_task.target_list[0].rel_path == "./aaaa/bbb/ccc"
-        assert new_task.target_list[1].rel_path == "./aaaa/bbb/cccd"
+        assert new_task.target_list[0] == "./aaaa/bbb/ccc"
+        assert new_task.target_list[1] == "./aaaa/bbb/cccd"
 
 
 def fake_aquire(target_list, task, prior_acquire=False):
@@ -996,7 +996,7 @@ class TestMergeFromLocalMoveTaskOnSrc(object):
         for new_task, priority in task_added:
             assert priority
             assert isinstance(new_task, AddedLocalFilesTask)
-            rel_path = new_task.target_list[0].rel_path
+            rel_path = new_task.target_list[0]
             assert rel_path in targets
             targets.remove(rel_path)
 
@@ -1022,7 +1022,7 @@ class TestMergeFromLocalMoveTaskOnSrc(object):
         for new_task, priority in task_added:
             assert priority
             assert isinstance(new_task, AddedLocalFilesTask)
-            rel_path = new_task.target_list[0].rel_path
+            rel_path = new_task.target_list[0]
             assert rel_path in targets
             targets.remove(rel_path)
 
@@ -1046,7 +1046,7 @@ class TestMergeFromLocalMoveTaskOnSrc(object):
         new_task, priority = task_added[0]
         assert priority
         assert isinstance(new_task, AddedLocalFilesTask)
-        assert new_task.target_list[0].rel_path == "./aaaa/bbb/cccd"
+        assert new_task.target_list[0] == "./aaaa/bbb/cccd"
 
 
 class TestMergeFromLocalMoveTaskOnDst(object):
@@ -1161,13 +1161,13 @@ class TestMergeFromLocalMoveTaskOnDst(object):
         new_task, priority = task_added[0]
         assert priority
         assert isinstance(new_task, RemovedLocalFilesTask)
-        assert new_task.target_list[0].rel_path == "./aaaa/bbb/ccc"
+        assert new_task.target_list[0] == "./aaaa/bbb/ccc"
 
         new_task, priority = task_added[1]
         assert priority
         assert isinstance(new_task, MovedLocalFilesTask)
-        assert new_task.target_list[0].rel_path == "./aaaa/bbb/cccs"
-        assert new_task.target_list[1].rel_path == "./aaaa/bbb/cccd"
+        assert new_task.target_list[0] == "./aaaa/bbb/cccs"
+        assert new_task.target_list[1] == "./aaaa/bbb/cccd"
 
         assert node_cccs.executing_task is not None
 
@@ -1183,7 +1183,7 @@ class TestMergeFromLocalMoveTaskOnDst(object):
         new_task, priority = task_added[0]
         assert priority
         assert isinstance(new_task, RemovedLocalFilesTask)
-        assert new_task.target_list[0].rel_path == "./aaaa/bbb/cccs"
+        assert new_task.target_list[0] == "./aaaa/bbb/cccs"
 
 
 class TestReplaceTask(object):

@@ -19,6 +19,7 @@ def teardown_module(module):
 
 
 class FakeSyncTask(SyncTask,):
+
     def _create_push_task(self, rel_path, create_mode=False):
         return AddedLocalFilesTask(self.container,
                                    (generate_random_string(),),
@@ -39,6 +40,7 @@ def generate_fake_task(tester, target, create_mode=False):
 
 
 class TestSyncTask(TestTaskAbstract):
+
     def test_crash_several_sub_task(self):
         tempDirPath = mkdtemp()
         tempDirPathInTmp = os.path.split(tempDirPath)[1]

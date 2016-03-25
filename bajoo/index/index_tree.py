@@ -570,11 +570,11 @@ class IndexTree(object):
             if isinstance(new_task, MovedLocalFilesTask):
                 node_path = node.get_complete_path()
 
-                task_src = task.target_list[0].rel_path
-                task_dest = task.target_list[1].rel_path
+                task_src = task.target_list[0]
+                task_dest = task.target_list[1]
 
-                new_task_src = new_task.target_list[0].rel_path
-                new_task_dest = new_task.target_list[1].rel_path
+                new_task_src = new_task.target_list[0]
+                new_task_dest = new_task.target_list[1]
 
                 # copy of the same move, discard!
                 if task_src == new_task_src and task_dest == new_task_dest:

@@ -34,6 +34,7 @@ class FakeHTTPEntityTooLargeError(HTTPEntityTooLargeError):
 
 
 class FakePassphraseAbortError(PassphraseAbortError):
+
     def __init__(self):
         pass
 
@@ -128,13 +129,12 @@ class Fake_container(object):
 
             def executor(on_fulfilled, on_rejected):
                 dico = {"hash": self.remote_hash[path][0]}
-                on_fulfilled((dico, self.remote_hash[path][1]))
+                on_fulfilled((dico,
+                              self.remote_hash[path][1],))
 
                 del self.remote_hash[path]
 
         return Promise(executor)
-
-        return path
 
     def upload(self, path, file):
         if self.exception_to_raise_on_upload is not None:

@@ -4,12 +4,11 @@ import errno
 import logging
 import os
 import shutil
-from threading import RLock
 
 from .api.team_share import TeamShare
 from .common.i18n import _, N_
+from .index.index_tree import IndexTree
 from .index.index_saver import IndexSaver
-from .promise import Deferred, Promise
 
 
 _logger = logging.getLogger(__name__)
@@ -60,13 +59,11 @@ class LocalContainer(object):
     def __init__(self, model, container):
         self.status = self.STATUS_UNKNOWN
         self.error_msg = None
-        self._index = {}
-        self._index_lock = RLock()  # Lock both `_index` and `_index_booking`
-        self._index_booking = {}
         self.container = container
         self.model = model
         self.is_moving = False
         self.index_saver = IndexSaver(self, self.model.path, self.model.id)
+        self.index = IndexTree(self.index_saver)
 
     def check_path(self):
         """Check that the path is the folder corresponding to the container.
@@ -79,7 +76,7 @@ class LocalContainer(object):
         """
 
         try:
-            self.index_saver.load()
+            self.index.load(self.index_saver.load())
         except (OSError, IOError) as e:
             self.status = self.STATUS_ERROR
 
@@ -166,127 +163,6 @@ class LocalContainer(object):
         self.status = self.STATUS_STOPPED
         return self.model.path
 
-    def acquire_index(self, path, item, is_directory=False,
-                      bypass_folder=None):
-        """Acquire a part of the index, and returns corresponding values.
-
-        Marks the path as 'acquired', and associate an item to it.
-        If the path correspond to some hashes, these hashes are returned.
-
-        The result is returned encapsulated in a Promise: the promise is
-        resolved as soon as the index is acquired.
-
-        Args:
-            path (str): filename of a file or directory to acquire. It will
-                prevents any following calls to acquire the same path (or a
-                sub-path if the path correspond to a directory).
-            item (*): This object will be associated to the acquired
-                path.
-            is_directory (boolean): if True, additional checks are
-                done to ensures any file in the target folder are reserved.
-            bypass_folder (str): If set, the reservation of this folder, and
-                parent folders are non-blocking.
-        Returns:
-            Promise<dict>: The dict contains a list of path (or subpath)
-                associated to a couple (local_hash, remote_hash).
-        """
-        _logger.debug('Acquire index part of %s' % path)
-        if path.endswith('/'):
-            path = path[:-1]
-        parent_path = '/'.join(path.split('/')[:-1]) or '.'
-
-        # Generate paths of all possible parents and itself.
-        ancestor_paths = ['.']
-        words = path.split('/')
-        for i in range(1, len(words) + 1):
-            ancestor_paths.append('/'.join(words[:i]))
-
-        with self._index_lock:
-            for parent_path in ancestor_paths:
-                if parent_path in self._index_booking:
-                    bypass = bypass_folder is not None
-                    bypass &= (parent_path == '.' or
-                               ('%s/' % bypass_folder).startswith(
-                                   '%s/' % parent_path))
-                    if not bypass:
-                        df = Deferred()
-
-                        def cb():
-                            p = self.acquire_index(path, item,
-                                                   is_directory,
-                                                   bypass_folder)
-                            p.then(df.resolve, df.reject)
-
-                        self._index_booking[parent_path][1].append(cb)
-
-                        return df.promise
-
-            if is_directory:
-                for p in [p for p in self._index_lock
-                          if p.startwith('%s/' % path)]:
-                    if '/' in p[len('%s/' % path):]:
-                        df = Deferred()
-
-                        def cb():
-                            p = self.acquire_index(path, item,
-                                                   is_directory,
-                                                   bypass_folder)
-                            p.then(df.resolve, df.reject)
-
-                        self._index_booking[p][1].append(cb)
-
-                        return df.promise
-
-            self._index_booking[path] = [item, []]
-            if path == '.':
-                return Promise.resolve(dict(self._index.items()))
-            return Promise.resolve(
-                {key: tuple(hashes) for (key, hashes)
-                 in self._index.items()
-                 if key == path or key.startswith('%s/' % path)})
-
-    def release_index(self, path, new_index=None):
-        """Release an acquired index part, and update it.
-
-        Args:
-            new_index (dict, optional): If set, replace all values (hashes)
-                corresponding to the path and its sub-paths. If None, the
-                values are kept intact.
-        """
-        _logger.debug('Release index part of %s' % path)
-
-        if path.endswith('/'):
-            path = path[:-1]
-        with self._index_lock:
-            if new_index is not None:
-                self._index = {
-                    key: value for (key, value) in self._index.items()
-                    if key != path and not key.startswith('%s/' % path)}
-                self._index.update(new_index)
-                self.index_saver.trigger_save()
-
-            call_list = self._index_booking[path][1]
-            del self._index_booking[path]
-
-            # Call next callback
-            while call_list and path not in self._index_booking:
-                callback = call_list[0]
-                del call_list[0]
-                self._index_lock.release()
-                try:
-                    callback()
-                finally:
-                    self._index_lock.acquire()
-            if call_list:
-                self._index_booking[path][1] = call_list
-
-    def update_index_owner(self, path, new_item):
-        """Update the item associated to a acquired path."""
-        if path.endswith('/'):
-            path = path[:-1]
-        with self._index_lock:
-            self._index_booking[path][0] = new_item
-
     def get_remote_index(self):
         """Returns the remote part of the index.
 
@@ -294,8 +170,8 @@ class LocalContainer(object):
             dict: list of files, of the form {'file/name': md5sum}, with md5sum
                 the md5 hash of the remote file.
         """
-        with self._index_lock:
-            return {key: self._index[key][1] for key in self._index}
+
+        return self.index.generate_dict_with_remote_hash_only()
 
     def is_up_to_date(self):
         """
@@ -305,8 +181,8 @@ class LocalContainer(object):
         """
         if self.status != self.STATUS_STARTED:
             return False
-        with self._index_lock:
-            return not bool(self._index_booking)
+
+        return not self.index.is_locked()
 
     def get_stats(self):
         """

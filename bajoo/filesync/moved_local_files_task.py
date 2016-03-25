@@ -37,7 +37,6 @@ class MovedStateMachineStatus(object):
         self.source_target = source_target
         self.destination_target = destination_target
         self.task_list = None
-        self.files_status = None
         self.remote_src_file_content = None
         self.remote_src_file_cyphered_md5 = None
         self.current_local_dest_md5 = None
@@ -62,12 +61,6 @@ class MovedStateMachineStatus(object):
 
         return self.current_local_dest_md5
 
-    def set_file_status(self, rel_path, local_hash, remote_hash):
-        if self.files_status is None:
-            self.files_status = {}
-
-        self.files_status[rel_path] = (local_hash, remote_hash,)
-
 
 class MovedLocalFilesTask(_Task, PushTaskMixin, RemovedTaskMixin):
 
@@ -84,8 +77,9 @@ class MovedLocalFilesTask(_Task, PushTaskMixin, RemovedTaskMixin):
     def _apply_task(self):
         _logger.debug('Execute task %s' % self)
 
-        state = MovedStateMachineStatus(self, self.target_list[0],
-                                        self.target_list[1])
+        state = MovedStateMachineStatus(self,
+                                        self.nodes[0],
+                                        self.nodes[1])
         next_action = ACTION_CHECK_LOCAL_SRC_FILE
 
         while next_action != ACTION_EXIT:
@@ -172,9 +166,8 @@ class MovedLocalFilesTask(_Task, PushTaskMixin, RemovedTaskMixin):
 
                 current_local_dest_md5 = state.get_current_local_dest_md5()
 
-                state.set_file_status(state.destination_target.rel_path,
-                                      current_local_dest_md5,
-                                      metadata['hash'])
+                state.destination_target.set_hash(current_local_dest_md5,
+                                                  metadata['hash'])
 
                 next_action = ACTION_REMOVE_REMOTE_SRC_FILE
 
@@ -200,9 +193,7 @@ class MovedLocalFilesTask(_Task, PushTaskMixin, RemovedTaskMixin):
                 next_action = ACTION_EXIT
 
         if state.task_list is not None and len(state.task_list) > 0:
-            self._release_index(result=state.files_status)
-            state.files_status = None
-
+            self._release_index()
             results = yield Promise.all(state.task_list)
             failed_tasks = itertools.chain(*filter(None, results))
             failed_tasks = list(failed_tasks)
@@ -210,7 +201,6 @@ class MovedLocalFilesTask(_Task, PushTaskMixin, RemovedTaskMixin):
             if failed_tasks:
                 self._task_errors = failed_tasks
 
-        yield state.files_status
         return
 
     def check_local_source_file(self, state):
@@ -255,18 +245,20 @@ class MovedLocalFilesTask(_Task, PushTaskMixin, RemovedTaskMixin):
 
         return ACTION_EXIT
 
-    def check_remote_src_file(self, state, remote_hash):
-        if remote_hash is None or \
-           state.source_target.remote_md5 == remote_hash:
+    def check_remote_src_file(self, state, remote_md5):
+        if remote_md5 is None or \
+           state.source_target.remote_md5 == remote_md5:
+            state.source_target.set_hash(None, None)
             return ACTION_CHECK_REMOTE_DEST_FILE
 
-        _logger.debug('Don\t know if remote source is the same or if remote'
+        _logger.debug('Don\'t know if remote source is the same or if remote'
                       ' hash is different, download it and check.')
 
         return ACTION_RISK_OF_CONFLICT_REMOTE_SRC_FILE
 
     def conflict_remote_src_file(self, state):
         if state.remote_src_file_content is None:
+            state.source_target.set_hash(None, None)
             return ACTION_CHECK_REMOTE_DEST_FILE
 
         try:
@@ -276,17 +268,26 @@ class MovedLocalFilesTask(_Task, PushTaskMixin, RemovedTaskMixin):
             state.remote_src_file_content.close()
             raise
 
-        if state.source_target.local_md5 == md5:
-            state.remote_src_file_content.close()
-            return ACTION_CHECK_REMOTE_DEST_FILE
-        else:
-            _logger.debug('Conflict with the remote source file!')
+        if state.source_target.local_md5 is None:
+            current_local_dest_md5 = state.get_current_local_dest_md5()
 
-            return ACTION_TRY_TO_OVERWRITE_LOCAL_DEST
+            if md5 == current_local_dest_md5:
+                state.remote_src_file_content.close()
+                state.source_target.set_hash(None, None)
+                return ACTION_CHECK_REMOTE_DEST_FILE
+
+        elif state.source_target.local_md5 == md5:
+            state.remote_src_file_content.close()
+            state.source_target.set_hash(None, None)
+            return ACTION_CHECK_REMOTE_DEST_FILE
+
+        _logger.debug('Conflict with the remote source file!')
+        return ACTION_TRY_TO_OVERWRITE_LOCAL_DEST
 
     def try_to_overwrite_local_dest_file(self, state):
         if state.remote_src_file_content is None:
             _logger.debug('No conflict anymore.')
+            state.source_target.set_hash(None, None)
             return ACTION_CHECK_REMOTE_DEST_FILE
 
         current_local_dest_md5 = state.get_current_local_dest_md5()
@@ -297,6 +298,7 @@ class MovedLocalFilesTask(_Task, PushTaskMixin, RemovedTaskMixin):
             state.current_local_dest_md5 = self._write_downloaded_file(
                 state.remote_src_file_content,
                 state.destination_target)
+            state.source_target.set_hash(None, None)
         else:
             _logger.debug('Conflict with the file at the new destination!  '
                           'Recreate at source.  ')
@@ -305,8 +307,8 @@ class MovedLocalFilesTask(_Task, PushTaskMixin, RemovedTaskMixin):
                 state.remote_src_file_content,
                 state.source_target)
 
-            state.set_file_status(state.source_target.rel_path, local_src_md5,
-                                  state.remote_src_file_cyphered_md5)
+            state.source_target.set_hash(local_src_md5,
+                                         state.remote_src_file_cyphered_md5)
 
             state.skip_remote_source_remove = True
 
@@ -320,9 +322,8 @@ class MovedLocalFilesTask(_Task, PushTaskMixin, RemovedTaskMixin):
             current_local_dest_md5 = state.get_current_local_dest_md5()
 
             if state.destination_target.local_md5 == current_local_dest_md5:
-                state.set_file_status(state.destination_target.rel_path,
-                                      current_local_dest_md5,
-                                      remote_dest_cyphered_md5)
+                state.destination_target.set_hash(current_local_dest_md5,
+                                                  remote_dest_cyphered_md5)
 
                 _logger.debug('Remote dest file is equal to local file. (1)')
 
@@ -368,8 +369,7 @@ class MovedLocalFilesTask(_Task, PushTaskMixin, RemovedTaskMixin):
             _logger.debug('Remote dest file is equal to local file. (2)')
             remote_dest_file_content.close()
 
-        state.set_file_status(state.destination_target.rel_path,
-                              remote_uncyphered_md5,
-                              remote_dest_cyphered_md5)
+        state.destination_target.set_hash(remote_uncyphered_md5,
+                                          remote_dest_cyphered_md5)
 
         return ACTION_REMOVE_REMOTE_SRC_FILE
