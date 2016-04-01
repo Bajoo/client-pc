@@ -17,9 +17,8 @@ Non-caught exceptions are logged before the program quit.
 """
 
 import atexit
-import datetime
-import errno
 import logging
+import logging.handlers
 import os.path
 import sys
 
@@ -51,38 +50,25 @@ def _support_color_output():
 def _get_file_handler():
     """Open a new file for using as a log output.
 
-    Create and open a new file used for log. The name of the file will contains
-    the date of the day, and an increment if previous files has been created.
+    The handler will automatically rotate the log files, each days, and
+    removes files older than 14 days.
+    'bajoo.log' is always the current log file (the last one).
+    Logs older than a day are renamed with the format 'bajoo.log.YYYY-MM-DD'.
 
     Returns:
         FileHandler: a valid fileHandler using the log file, or None if the
             file creation has failed.
     """
-
-    base_name_file = datetime.date.today().strftime('bajoo-%Y.%m.%d')
-    log_path = os.path.join(bajoo_path.get_log_dir(),
-                            '%s.log' % base_name_file)
-    counter = 1
-
     try:
-        # Loop until we found a non-existing file.
-        while True:
-            # Python3 has mode 'x' (creation only), but not Python2.7
-            if sys.version_info[0] is 3:
-                try:
-                    return logging.FileHandler(log_path, mode='x')
-                except FileExistsError as e:  # noqa
-                    if e.errno != errno.EEXIST:
-                        raise
-            else:
-                if not os.path.exists(log_path):
-                    return logging.FileHandler(log_path, mode='w')
-            counter += 1
-            log_path = os.path.join(bajoo_path.get_log_dir(),
-                                    '%s (%s).log' % (base_name_file, counter))
+        log_path = os.path.join(bajoo_path.get_log_dir(), 'bajoo.log')
+        handler = logging.handlers.TimedRotatingFileHandler(
+            log_path, when='midnight', backupCount=7)
+        handler.doRollover()  # rename 'bajoo.log' of the previous execution.
+        return handler
     except:
         logging.getLogger(__name__).warning('Unable to create the log file',
                                             exc_info=True)
+        return None
 
 
 class ColoredFormatter(logging.Formatter):
