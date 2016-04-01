@@ -2,7 +2,9 @@
 import logging
 
 from .. import promise
+from ..common.i18n import N_
 from ..network import json_request, download, upload
+from ..network.errors import NetworkError
 from ..network.errors import HTTPUnauthorizedError
 from .user import User
 
@@ -19,201 +21,141 @@ TOKEN_URL = '/'.join([IDENTITY_API_URL, 'token'])
 REVOKE_TOKEN_URL = '/'.join([IDENTITY_API_URL, 'token', 'revoke'])
 
 
-class BajooOAuth2Session(object):
-    """Represent a OAuth2 session for connecting to Bajoo server."""
+class InvalidDataError(NetworkError):
+    def __init__(self, data):
+        message = N_("The authentication server has returned invalid data.")
+        super(InvalidDataError, self).__init__(None, message=message)
+        self.data = data
+
+
+class OAuth2Session(object):
+    """Generic OAuth2 Session.
+
+    Attributes:
+        refresh_token
+        access_token
+        token_changed_callback (callable): A callback that can be assigned to
+            be informed of token changes.
+    """
 
     def __init__(self):
-        self.token = None
+        self.refresh_token = None
+        self.access_token = None
         self.token_changed_callback = None
 
-    def _notify_token_changed(self):
-        if self.token_changed_callback and self.token:
-            self.token_changed_callback(self.token.get('refresh_token', None))
+    @classmethod
+    def from_client_credentials(cls):
+        """Instantiate a new client-only session.
 
-    def _prepare_request(self):
-        """
-        Create common fields to send with the request.
+        A client session is a session associated with no user. It's used to
+        performs non-user related actions, as creating a new user.
 
-        Returns (tuple): (headers, data)
+        Returns:
+            Promise<Session>
         """
+        request_data = {
+            u'grant_type': u'client_credentials'
+        }
+        return cls._send_auth_request(cls(), request_data)
+
+    @classmethod
+    def from_user_credentials(cls, username, password):
+        """Instantiate a new user session from a couple username and password.
+
+        Args:
+            username (unicode): username credential
+            password (unicode): password credential
+        Returns:
+            Promise<Session>
+        """
+        request_data = {
+            u'username': username,
+            u'password': password,
+            u'grant_type': u'password'
+        }
+        return cls._send_auth_request(cls(), request_data)
+
+    @classmethod
+    def from_refresh_token(cls, refresh_token):
+        """Instantiate a new user session from a refresh_token.
+
+        Args:
+            refresh_token: refresh token of a previous session.
+        Returns:
+            Promise<Session>
+        """
+        request_data = {
+            u'refresh_token': refresh_token,
+            u'grant_type': u'refresh_token'
+        }
+        return cls._send_auth_request(cls(), request_data)
+
+    @staticmethod
+    @promise.reduce_coroutine()
+    def _send_auth_request(session, request_data):
+        """Generic method to send authentication request."""
         auth = (CLIENT_ID, CLIENT_SECRET)
         headers = {
             'Accept': 'application/json',
             'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
         }
 
-        return auth, headers
+        response = yield json_request('POST', TOKEN_URL, auth=auth,
+                                      headers=headers, data=request_data)
+        content = response['content']
+
+        try:
+            session.access_token = content['access_token']
+        except:
+            raise InvalidDataError(content)
+        session.refresh_token = content.get('refresh_token')
+        session._notify_token_changed()
+
+        yield session
 
     @promise.reduce_coroutine()
-    def fetch_client_token(self, token_url=None):
-        """
-        Fetch a new client token to use for non-specific-user request.
+    def revoke(self):
+        """Revoke all permissions granted by the session.
 
-        Args:
-            token_url (str): the url to which the request will be sent
+        The refresh_token and the access_token will both be revoked.
+        The two token attributes are set to None immediately (ie, without
+        waiting the revocation request).
 
         Returns:
-            Future<None>
+            Future<None>: Resolve when the revocation is done.
         """
-        token_url = token_url or TOKEN_URL
-        auth, headers = self._prepare_request()
+        auth = (CLIENT_ID, CLIENT_SECRET)
+        headers = {
+            'Accept': 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+        }
         data = {
-            u'grant_type': u'client_credentials'
+            u'token': self.refresh_token
         }
 
-        response = yield json_request('POST', token_url, auth=auth,
-                                      headers=headers, data=data)
-
-        # Analyze response and save the tokens
-        if response and response.get('code') == 200:
-            self.token = response.get('content')
-            self._notify_token_changed()
-
+        self.refresh_token = None
+        self.access_token = None
+        yield json_request('POST', REVOKE_TOKEN_URL,
+                           auth=auth, headers=headers, data=data)
         yield None
 
-    @promise.reduce_coroutine()
-    def fetch_token(self, token_url, email, password):
-        """
-        Fetch a new access_token using email & password.
-
-        Args:
-            token_url (str): the url to which the request will be sent
-            email (str): user email
-            password (str): user (plain) password
-
-        Returns:
-            Future<None>
-        """
-
-        # Send request to token url
-        token_url = token_url or TOKEN_URL
-        auth, headers = self._prepare_request()
-        data = {
-            u'username': email,
-            u'password': User.hash_password(password),
-            u'grant_type': u'password'
-        }
-
-        response = yield json_request('POST', token_url, auth=auth,
-                                      headers=headers, data=data)
-
-        # Analyze response and save the tokens
-        if response and response.get('code') == 200:
-            self.token = response.get('content')
-            self._notify_token_changed()
-            _logger.info('Token fetched = %s', self.token)
-
-        yield None
-
-    @promise.reduce_coroutine()
-    def refresh_token(self, token_url=None, refresh_token=None):
-        """
-        Fetch a new token using the refresh_token.
-
-        Args:
-            token_url (str, optional): the url to which the request will be
-                sent. TOKEN_URL by default.
-            refresh_token (str, optional): the existing refresh token.
-                If not provided, the current token.refresh_token will be used.
-
-        Returns:
-            Future<None>
-        """
-        token_url = token_url or TOKEN_URL
-        refresh_token = refresh_token or self.token.get('refresh_token', None)
-
-        if not refresh_token:
-            raise ValueError("Missing refresh token")
-
-        auth, headers = self._prepare_request()
-        data = {
-            u'refresh_token': refresh_token,
-            u'grant_type': u'refresh_token'
-        }
-
-        response = yield json_request('POST', token_url, auth=auth,
-                                      headers=headers, data=data)
-
-        # Analyze response and save the tokens
-        if response and response.get('code') == 200:
-            self.token = response.get('content')
-            self._notify_token_changed()
-            _logger.info('Token refreshed = %s', self.token)
-
-        yield None
-
-    def is_authorized(self):
-        """
-        A boolean value indicating whether this session has an
-        OAuth2 access token.
-
-        Returns:
-            True if this session has an access token, otherwise False.
-        """
-        return bool(self.token.get('access_token', None))
+    def _notify_token_changed(self):
+        if self.token_changed_callback:
+            self.token_changed_callback(self)
 
 
-class Session(BajooOAuth2Session):
-    def __init__(self):
-        BajooOAuth2Session.__init__(self)
+class Session(OAuth2Session):
 
-    @staticmethod
-    def create_session(email, password):
+    @classmethod
+    def from_user_credentials(cls, email, password):
         """
         Create a new session using email & password.
 
         Returns:
             Future<Session>
         """
-        new_session = Session()
-        return new_session.fetch_token(TOKEN_URL, email, password) \
-            .then(lambda __: new_session)
-
-    @staticmethod
-    def load_session(refresh_token):
-        """
-        Restore an old session using refresh_token.
-
-        Returns:
-            Future<Session>
-        """
-        new_session = Session()
-        return new_session.refresh_token(TOKEN_URL, refresh_token) \
-            .then(lambda __: new_session)
-
-    def get_refresh_token(self):
-        """
-        Get the refresh_token.
-
-        Returns:
-            (str) The refresh token
-        """
-        if self.token:
-            return self.token.get('refresh_token', None)
-
-        return None
-
-    @promise.reduce_coroutine()
-    def revoke_refresh_token(self):
-        """
-        Revoke the refresh_token (and implicitly the access_token)
-
-        Returns:
-            Future<None>
-        """
-        auth, headers = self._prepare_request()
-        data = {
-            u'token': self.token.get('refresh_token', '')
-        }
-
-        response = yield json_request('POST', REVOKE_TOKEN_URL,
-                                      auth=auth, headers=headers, data=data)
-
-        # Analyze response and save the tokens
-        if response and response.get('code') == 200:
-            _logger.debug('Token revoked successfully')
-
-        yield None
+        password = User.hash_password(password)
+        return super(Session, cls).from_user_credentials(email, password)
 
     @promise.reduce_coroutine()
     def _send_bajoo_request(self, api_url, verb, url_path, network_fun,
@@ -235,14 +177,14 @@ class Session(BajooOAuth2Session):
         # Replace the old token if neccessary
         param_headers = params.get('headers', {})
 
-        if 'Authorization' in param_headers and self.token:
+        if 'Authorization' in param_headers and self.access_token:
             param_headers['Authorization'] = \
-                'Bearer ' + self.token.get('access_token', '')
+                'Bearer ' + self.access_token
         else:
             # Add default headers params if not exist
             headers = {
-                'Authorization': 'Bearer ' + self.token.get('access_token', '')
-            } if self.token else {}
+                'Authorization': 'Bearer ' + self.access_token
+            } if self.access_token else {}
 
             headers.update(param_headers)
             params['headers'] = headers
@@ -261,7 +203,11 @@ class Session(BajooOAuth2Session):
             if error_code != 401002:  # session expired error
                 raise
 
-            yield self.refresh_token()
+            request_data = {
+                u'refresh_token': self.refresh_token,
+                u'grant_type': u'refresh_token'
+            }
+            yield self._send_auth_request(self, request_data)
             yield network_fun(verb, url, **params)
 
     def send_api_request(self, verb, url_path, **params):
@@ -325,27 +271,14 @@ class Session(BajooOAuth2Session):
         return self._send_bajoo_request(STORAGE_API_URL, verb, url_path,
                                         upload, **params)
 
-    @promise.reduce_coroutine()
-    def disconnect(self):
-        """
-        Disconnect the session.
-
-        Returns:
-            Future<None>
-        """
-
-        yield self.revoke_refresh_token()
-        self.token = None
-
-        yield None
 
 if __name__ == '__main__':
     logging.basicConfig()
     _logger.setLevel(logging.DEBUG)
 
-    session1 = Session.create_session('test+test_api@bajoo.fr',
-                                      'test+test_api@bajoo.fr').result()
-    session2 = Session.load_session(session1.get_refresh_token()).result()
+    session1 = Session.from_user_credentials('test+test_api@bajoo.fr',
+                                             'test+test_api@bajoo.fr').result()
+    session2 = Session.from_refresh_token(session1.refresh_token).result()
 
     try:
         # This should throw 404 error
@@ -357,8 +290,8 @@ if __name__ == '__main__':
     session2.disconnect().result()
 
     # Test retry on HTTPUnauthorizedError
-    session1 = Session.create_session('test+test_api@bajoo.fr',
-                                      'test+test_api@bajoo.fr').result()
+    session1 = Session.from_user_credentials('test+test_api@bajoo.fr',
+                                             'test+test_api@bajoo.fr').result()
     # Make the session expired
     session1.token[u'access_token'] = 'invalid_token'
     future = User.load(session1).then(

@@ -359,7 +359,7 @@ def main():
     from ..promise import Promise
     from .form.members_share_form import MembersShareForm
 
-    session = Session.create_session(
+    session = Session.from_user_credentials(
         'test+20@bajoo.fr',
         'test+20@bajoo.fr').result()
 

@@ -98,7 +98,7 @@ class BugReportView(BaseView):
 
 if __name__ == '__main__':
     ex = wx.App()
-    dial = BugReportWindow(None, -1)
+    dial = BugReportWindow(None)
     dial.Show(True)
 
     def _fake_send_bug(event):

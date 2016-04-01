@@ -669,10 +669,11 @@ class BajooApp(wx.App, SoftwareUpdate):
                 self._main_window.on_password_change_error(
                     N_('Failure when attempting to change password.'))
         else:
-            new_session = yield Session.create_session(self._user.name,
-                                                       new_password)
-            self._session.token = new_session.token
-            self.user_profile.refresh_token = new_session.get_refresh_token()
+            new_session = yield Session.from_user_credentials(self._user.name,
+                                                              new_password)
+            self._session.access_token = new_session.access_token
+            self._session.refresh_token = new_session.refresh_token
+            self.user_profile.refresh_token = new_session.refresh_token
 
             if self._main_window:
                 self._main_window.on_password_changed()
@@ -727,9 +728,9 @@ class BajooApp(wx.App, SoftwareUpdate):
     def _on_connection(self, session_and_user):
         self._session, self._user, self.user_profile = session_and_user
 
-        def _on_refresh_token_changed(refresh_token):
+        def _on_refresh_token_changed(session):
             if self.user_profile:
-                self.user_profile.refresh_token = refresh_token
+                self.user_profile.refresh_token = session.refresh_token
 
         self._session.token_changed_callback = _on_refresh_token_changed
 
@@ -798,7 +799,7 @@ class BajooApp(wx.App, SoftwareUpdate):
         self._container_list.stop()
         self._container_list = None
 
-        yield self._session.disconnect()
+        yield self._session.revoke()
         self._session = None
 
         _logger.debug('Now restart the connection process...')
@@ -841,8 +842,7 @@ class BajooApp(wx.App, SoftwareUpdate):
             if self._session:
                 log_session = self._session
             else:
-                log_session = Session()
-                yield log_session.fetch_client_token()
+                log_session = yield Session.from_client_credentials()
 
             with open(zip_path, 'rb') as file_content:
                 yield log_session.upload_storage_file(

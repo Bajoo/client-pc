@@ -661,7 +661,7 @@ def main():
 
         return None
 
-    Session.create_session('test+20@bajoo.fr', 'test+20@bajoo.fr') \
+    Session.from_user_credentials('test+20@bajoo.fr', 'test+20@bajoo.fr') \
         .then(list_containers) \
         .then(set_current_share) \
         .then(set_share_members) \

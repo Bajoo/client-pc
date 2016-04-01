@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
-import logging
 
 from .container import Container
-
-_logger = logging.getLogger(__name__)
 
 
 class MyBajoo(Container):
@@ -21,8 +18,3 @@ class MyBajoo(Container):
         Override the representational string of the container object.
         """
         return "<MyBajoo (id=%s, encrypted=%s)>" % (self.id, self.is_encrypted)
-
-
-if __name__ == '__main__':
-    logging.basicConfig()
-    _logger.setLevel(logging.DEBUG)
