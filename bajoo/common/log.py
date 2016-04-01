@@ -19,6 +19,8 @@ Non-caught exceptions are logged before the program quit.
 import atexit
 import logging
 import logging.handlers
+import fnmatch
+import os
 import os.path
 import sys
 
@@ -59,6 +61,20 @@ def _get_file_handler():
         FileHandler: a valid fileHandler using the log file, or None if the
             file creation has failed.
     """
+
+    # TODO: this block of code cleans logs from v0.3.13 and older.
+    # It should be executed as a "hook" during application update.
+    try:
+        log_dir = bajoo_path.get_log_dir()
+        all_log_files = os.listdir(log_dir)
+        for f in fnmatch.filter(all_log_files, 'bajoo-*.log'):
+            try:
+                os.remove(os.path.join(log_dir, f))
+            except (OSError, IOError):
+                pass
+    except:
+        pass
+
     try:
         log_path = os.path.join(bajoo_path.get_log_dir(), 'bajoo.log')
         handler = logging.handlers.TimedRotatingFileHandler(
