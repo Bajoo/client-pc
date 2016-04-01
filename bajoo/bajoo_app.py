@@ -52,6 +52,7 @@ from .gui.task_bar_icon import TaskBarIcon
 from .local_container import LocalContainer
 from .passphrase_manager import PassphraseManager
 from .promise import Promise
+from .software_updater import SoftwareUpdater
 
 
 _logger = logging.getLogger(__name__)
@@ -88,6 +89,8 @@ class BajooApp(wx.App, SoftwareUpdate):
 
     def __init__(self):
         self._checker = None
+        # TODO: Set real value for production.
+        self._updater = SoftwareUpdater(self, "http://dev.bajoo.fr/dowloads/")
         self._home_window = None
         self._main_window = None
         self._about_window = None
@@ -118,7 +121,7 @@ class BajooApp(wx.App, SoftwareUpdate):
         self.InitUpdates(base_url, base_url + "/" + 'ChangeLog.txt')
 
         if config.get('auto_update'):
-            self.AutoCheckForUpdate(0)
+            self._updater.start()
 
         # Note: the loop event only works if at least one wx.Window exists. As
         # wx.TaskBarIcon is not a wx.Window, we need to keep this unused frame.
@@ -677,7 +680,7 @@ class BajooApp(wx.App, SoftwareUpdate):
             if self._main_window:
                 self._main_window.on_password_changed()
 
-    def _exit(self, _event):
+    def _exit(self, _event=None):
         """Close all resources and quit the app."""
         _logger.debug('Exiting ...')
 
@@ -885,3 +888,8 @@ class BajooApp(wx.App, SoftwareUpdate):
         configfile.close()
 
         return username
+
+    def restart_when_idle(self, software_updater):
+        # TODO: restart only when no windows is opened.
+        software_updater.register_restart_on_exit()
+        self._exit(None)
