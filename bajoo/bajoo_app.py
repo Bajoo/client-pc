@@ -671,9 +671,8 @@ class BajooApp(wx.App, SoftwareUpdate):
         else:
             new_session = yield Session.from_user_credentials(self._user.name,
                                                               new_password)
-            self._session.access_token = new_session.access_token
-            self._session.refresh_token = new_session.refresh_token
-            self.user_profile.refresh_token = new_session.refresh_token
+            self._session.update(new_session.access_token,
+                                 new_password.refresh_token)
 
             if self._main_window:
                 self._main_window.on_password_changed()

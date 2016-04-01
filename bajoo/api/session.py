@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
+
 import logging
+import threading
 
 from .. import promise
 from ..common.i18n import N_
 from ..network import json_request, download, upload
 from ..network.errors import NetworkError
 from ..network.errors import HTTPUnauthorizedError
+from ..promise import Deferred, Promise
 from .user import User
 
 
@@ -42,6 +45,11 @@ class OAuth2Session(object):
         self.refresh_token = None
         self.access_token = None
         self.token_changed_callback = None
+
+        # Lock used when acceding the access_token, after initialization.
+        # It prevents race condition.
+        # It must be locked only on instant operations.
+        self._lock = threading.Lock()
 
     @classmethod
     def from_client_credentials(cls):
@@ -108,7 +116,8 @@ class OAuth2Session(object):
             session.access_token = content['access_token']
         except:
             raise InvalidDataError(content)
-        session.refresh_token = content.get('refresh_token')
+        with session._lock:
+            session.refresh_token = content.get('refresh_token')
         session._notify_token_changed()
 
         yield session
@@ -146,6 +155,18 @@ class OAuth2Session(object):
 
 class Session(OAuth2Session):
 
+    def __init__(self):
+        super(Session, self).__init__()
+
+        # The flag is raised (set to True) by default. It's set to False when
+        # there is a refreshment.
+        self._token_refreshment_event = threading.Event()
+        self._token_refreshment_event.set()
+
+        # Deferred used for async waiting of token operations.
+        # Must be protected by self._lock
+        self._defer_retry = None
+
     @classmethod
     def from_user_credentials(cls, email, password):
         """
@@ -159,10 +180,8 @@ class Session(OAuth2Session):
 
     @promise.reduce_coroutine()
     def _send_bajoo_request(self, api_url, verb, url_path, network_fun,
-                            **params):
-        """
-        Send a json request to Bajoo server.
-        The url will be resolved according to the `request_type`
+                            headers=None, **params):
+        """Send a request to a Bajoo server, using OAuth2 authentication.
 
         Args:
             api_url (str): the api url (storage or identity)
@@ -171,44 +190,120 @@ class Session(OAuth2Session):
                 e.g. /user, /storage, etc.
             network_fun (fun): the network function to execute (download,
                 upload, json_request, ...)
-
-        Returns (Future<dict>): the future returned by json_request
+            headers (dict, optional): HTTP headers, transmitted to network_fun
+            **params (dict): optional parameters, transmitted to network_fun
+        Returns:
+            Promise<dict>: the promise returned by the network function.
         """
-        # Replace the old token if neccessary
-        param_headers = params.get('headers', {})
 
-        if 'Authorization' in param_headers and self.access_token:
-            param_headers['Authorization'] = \
-                'Bearer ' + self.access_token
-        else:
-            # Add default headers params if not exist
-            headers = {
-                'Authorization': 'Bearer ' + self.access_token
-            } if self.access_token else {}
+        # Force waiting if there is an operation on token.
+        yield self._async_wait_for_refreshment()
 
-            headers.update(param_headers)
-            params['headers'] = headers
+        with self._lock:
+            access_token = self.access_token
 
+        if not headers:
+            headers = {}
+        headers['Authorization'] = 'Bearer %s' % access_token
         url = api_url + url_path
 
         try:
-            yield network_fun(verb, url, **params)
+            yield network_fun(verb, url, headers=headers, **params)
         except HTTPUnauthorizedError as error:
             # Refresh the token and retry if HTTPUnauthorizedError
-            try:
-                error_code = error.response.get('code', 401)
-            except AttributeError:  # there is not response
-                raise error
 
-            if error_code != 401002:  # session expired error
-                raise
+            # If the response has a code, it's a bajoo-api response. Otherwise,
+            # it's a storage server response, and we don't have details on the
+            # 401 reason.
+            if isinstance(error.response, dict):
+                if error.response.get('code', 401002) != 401002:
+                    raise  # not a session expired error
 
-            request_data = {
-                u'refresh_token': self.refresh_token,
-                u'grant_type': u'refresh_token'
-            }
-            yield self._send_auth_request(self, request_data)
-            yield network_fun(verb, url, **params)
+            need_refresh_token = False
+            with self._lock:
+                if self.access_token == access_token:
+                    if self._token_refreshment_event.is_set():
+                        # We keep the refreshment event to False until the auth
+                        # request returns, to force subsequent requests to wait
+                        # the token refreshment.
+                        self._token_refreshment_event.clear()
+                        need_refresh_token = True
+
+            if need_refresh_token:
+                # It's the first request to catch the 401 error.
+
+                request_data = {
+                    u'refresh_token': self.refresh_token,
+                    u'grant_type': u'refresh_token'
+                }
+
+                try:
+                    yield self._send_auth_request(self, request_data)
+                finally:
+                    self._token_refreshment_event.set()
+            else:
+                # At this point, we are in a network thread (the one which has
+                # executed network_fin()). We must not block the current
+                # thread. Using self._async_wait_for_refreshment() ensures the
+                # current thread will not block.
+                yield self._async_wait_for_refreshment()
+
+            # Token refreshed, we retry.
+            yield self._send_bajoo_request(api_url, verb, url_path,
+                                           network_fun, headers, **params)
+
+    def _async_wait_for_refreshment(self):
+        """Wait for the token refreshment to finish.
+
+        If there is no token refreshment, the promise returned resolves
+        immediately (in the caller thread).
+
+        However, if there is a token refreshment ongoing, a dedicated thread is
+        used, and the promise will resolve at this moment.
+
+        Returns:
+            Promise (None): resolved as soon as there is no token refreshment.
+        """
+        with self._lock:
+            if self._token_refreshment_event.is_set():
+                return Promise.resolve(None)  # No need no wait.
+
+            if self._defer_retry:
+                start_new_thread = False
+                defer_retry = self._defer_retry  # reuse waiting thread
+            else:
+                # new waiting thread.
+                self._defer_retry = Deferred()
+                defer_retry = self._defer_retry
+                start_new_thread = True
+        if start_new_thread:
+            t = threading.Thread(target=self._wait_for_refreshment,
+                                 args=(defer_retry,),
+                                 name='Token refreshment waiting')
+            t.daemon = True
+            t.start()
+        return defer_retry.promise
+
+    def _wait_for_refreshment(self, deferred):
+        self._token_refreshment_event.wait()
+        with self._lock:
+            self._defer_retry = None
+        deferred.resolve(None)
+
+    def update(self, access_token, refresh_token):
+        """Manually update the session.
+
+        It's useful in case of change provoked by an external action, like a
+        password change.
+
+        Args:
+            access_token
+            refresh_token
+        """
+        with self._lock:
+            self.access_token = access_token
+            self.refresh_token = refresh_token
+            self._notify_token_changed()
 
     def send_api_request(self, verb, url_path, **params):
         """
