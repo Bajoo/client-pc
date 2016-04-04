@@ -111,8 +111,8 @@ class FakeFileSyncModule(object):
     def assertTaskCreation(self, **expected_tasks):
         local_result = self.result.copy()
         for task_name, task_count in expected_tasks.items():
-            assert (task_name not in local_result and task_count == 0) \
-                   or task_count == local_result[task_name]
+            assert ((task_name not in local_result and task_count == 0) or
+                    task_count == local_result[task_name])
 
             del local_result[task_name]
 
