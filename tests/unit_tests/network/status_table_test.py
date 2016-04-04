@@ -94,4 +94,20 @@ class TestStatusTable(object):
         st.update(req)
         assert not st.reject_request(req)
 
-    # TODO: callbacks !
+    def test_general_callbacks(self):
+        checker = FakeChecker()
+        st = StatusTable(checker)
+        context = {'status': None}
+
+        def cb(status):
+            context['status'] = status
+
+        st.on_status_change(cb)
+
+        req = Request(Request.JSON, 'GET', 'http://www.bajoo.fr/')
+        error = NetworkError()
+        st.update(req, error)
+        assert context['status'] is False
+
+        st.update(req)
+        assert context['status'] is True

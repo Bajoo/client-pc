@@ -14,12 +14,17 @@ class StatusTable(object):
     requests to be sent if they will fails (to avoid flooding the network), and
     informs others of network changes.
 
+    It also can informs whenever the network status changes, globally or per
+    host.
+
     Attributes:
         general_error (Exception): if None, the network is operational.
             Otherwise, contains the last global network error.
         host_errors (dict): a list of status per host. The key is the HTTP host
             (eg: storage.bajoo.fr) and the value is the current Error, or None
             if there is no error.
+        callbacks (list): each element is a tuple (url_host, callback).
+            The corresponding callbacks are called when a status changes.
     """
 
     def __init__(self, health_checker):
@@ -32,6 +37,7 @@ class StatusTable(object):
         self.general_error = None
         self.host_errors = {}
 
+        self.callbacks = []
         self._health_checker = health_checker
 
     def reject_request(self, request):
@@ -57,6 +63,8 @@ class StatusTable(object):
 
     def update(self, request, error=None):
         """Update status according to the result of the request.
+
+        Execute callbacks triggered by status changes.
 
         Args:
             request (Request): request terminated (either by successfully
@@ -126,6 +134,9 @@ class StatusTable(object):
         return self._set_error(error, request, host=True)
 
     def _set_error(self, error, request, general=True, host=False):
+        already_in_general_error = self.general_error is not None
+        host_change = host and self.host_errors.get(request.host, None) is None
+
         if general:
             self.general_error = error
         if host:
@@ -133,7 +144,38 @@ class StatusTable(object):
 
         self._health_checker.check('%s://%s' % (request.scheme, request.host))
 
+        if already_in_general_error:
+            return []
+
+        triggered_callback = []
+        for (cb_host, callback) in self.callbacks:
+            if general and self.host_errors.get(cb_host, None) is None:
+                    # catch both cb_host == None and valid hosts.
+                    triggered_callback.append(callback)
+            elif host_change and cb_host == request.host:
+                triggered_callback.append(callback)
+
+        for cb in triggered_callback:
+            cb(False)
+
     def _remove_error(self, host=None):
+        previously_in_general_error = self.general_error is not None
+        host_change = host and self.host_errors.get(host, None) is not None
+
         self.general_error = None
         if host:
             self.host_errors.pop(host, None)
+
+        triggered_callback = []
+        for (cb_host, callback) in self.callbacks:
+            if previously_in_general_error:
+                if self.host_errors.get(cb_host, None) is None:
+                    triggered_callback.append(callback)
+            elif host_change and cb_host == host:
+                triggered_callback.append(callback)
+
+        for cb in triggered_callback:
+            cb(True)
+
+    def on_status_change(self, callback, url=None):
+        self.callbacks.append((url, callback))
