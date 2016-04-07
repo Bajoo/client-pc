@@ -108,6 +108,7 @@ class _Task(object):
                 self.target_list,
                 self)
         except RedundantTaskInterruption:
+            yield self._task_errors
             return
 
         self._index_acquired = True
