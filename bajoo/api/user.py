@@ -43,10 +43,8 @@ class User(object):
         password = ensure_unicode(password)
         email = ensure_unicode(email)
 
-        session = Session()
         hashed_password = User.hash_password(password)
-
-        yield session.fetch_client_token()
+        session = yield Session.from_client_credentials()
 
         if not lang:
             lang = 'en'
@@ -66,7 +64,6 @@ class User(object):
         Before using it, you should call `get_user_info()`
         It include s`self.name`
 
-
         Args:
             session (bajoo.api.Session): an authorized session
 
@@ -75,10 +72,6 @@ class User(object):
         """
         if not session:
             raise ValueError("Empty or null session")
-
-        # Refresh token if necessary
-        if not session.is_authorized():
-            yield session.refresh_token()
 
         yield User(session=session)
 
@@ -264,24 +257,25 @@ if __name__ == '__main__':
     from .session import Session
 
     # Load session & change password
-    session = Session.create_session('test+test_api@bajoo.fr',
-                                     'test+test_api@bajoo.fr').result()
+    session = Session.from_user_credentials('test+test_api@bajoo.fr',
+                                            'test+test_api@bajoo.fr').result()
     user = User.load(session).result()
     _logger.debug(user.change_password('test+test_api@bajoo.fr',
                                        'test+test_api_1@bajoo.fr')
                   .result())
 
     # Reset the old password
-    session = Session.create_session('test+test_api@bajoo.fr',
-                                     'test+test_api_1@bajoo.fr').result()
+    session = Session.from_user_credentials('test+test_api@bajoo.fr',
+                                            'test+test_api_1@bajoo.fr')\
+        .result()
     user = User.load(session).result()
     _logger.debug(user.change_password('test+test_api_1@bajoo.fr',
                                        'test+test_api@bajoo.fr').result())
 
     # Load session and get user's information
     user_future = Session \
-        .create_session('test+test_api_5@bajoo.fr',
-                        'test+test_api_5@bajoo.fr') \
+        .from_user_credentials('test+test_api_5@bajoo.fr',
+                               'test+test_api_5@bajoo.fr') \
         .then(User.load)
     user = user_future.result()
     _logger.debug("User info = %s", user.get_user_info().result())

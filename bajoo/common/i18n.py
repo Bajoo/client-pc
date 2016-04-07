@@ -134,4 +134,5 @@ available_langs = {
 
 # NOOP operation used for deferred translations.
 # N_ is recognized by gettext utilities.
-def N_(msg): return msg
+def N_(msg):
+    return msg

@@ -22,14 +22,14 @@ class RemovedRemoteFilesTask(_Task, PushTaskMixin):
     def _apply_task(self):
         _logger.debug('Execute task %s' % self)
 
-        target = self.target_list[0]
+        target = self.nodes[0]
         src_path = os.path.join(self.local_path, target.rel_path)
 
         if not os.path.exists(src_path):
             _logger.debug('The file to delete is not present on the disk: '
                           'nothing to do.')
 
-            yield {}
+            target.set_hash(None, None)
             return
 
         if target.local_md5 is None:
@@ -37,13 +37,12 @@ class RemovedRemoteFilesTask(_Task, PushTaskMixin):
 
             # send back the file
             task = self._create_push_task(target.rel_path)
-            self._release_index(result=None)  # do not update the index
+            self._release_index()  # do not update the index
             result = yield add_task(task)
 
             if result is not None:
                 self._task_errors = (result,)
 
-            yield None
             return
 
         with open(src_path, 'rb') as file_content:
@@ -55,13 +54,12 @@ class RemovedRemoteFilesTask(_Task, PushTaskMixin):
 
             # send back the file
             task = self._create_push_task(target.rel_path)
-            self._release_index(result=None)  # do not update the index
+            self._release_index()  # do not update the index
             result = yield add_task(task)
 
             if result is not None:
                 self._task_errors = (result,)
 
-            yield None
             return
 
         try:
@@ -73,5 +71,5 @@ class RemovedRemoteFilesTask(_Task, PushTaskMixin):
             _logger.debug('The file to delete is not present on the disk: '
                           'nothing to do.')
 
-        yield {}
+        target.set_hash(None, None)
         return

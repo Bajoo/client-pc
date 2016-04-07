@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import pytest
+
 from bajoo import promise
 
 
@@ -158,3 +160,29 @@ class TestReduceCoroutine(object):
 
         p = generator()
         assert p.result(0.01) is None
+
+    @pytest.fixture
+    def replace_safeguard(self, request):
+        safeguard = promise.Promise.safeguard
+        context = {'flag': False}
+
+        def raise_flag(*args):
+            context['flag'] = True
+        promise.Promise.safeguard = raise_flag
+
+        def _reset_safeguard():
+            promise.Promise.safeguard = safeguard
+        request.addfinalizer(_reset_safeguard)
+        return context
+
+    def test_use_safeguard(self, replace_safeguard):
+        class Err(Exception):
+            pass
+
+        @promise.reduce_coroutine(safeguard=True)
+        def generator():
+                raise Err()
+
+        p = generator()
+        assert isinstance(p.exception(0.001), Err)
+        assert replace_safeguard['flag']

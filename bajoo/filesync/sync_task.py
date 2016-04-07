@@ -19,6 +19,7 @@ _logger = logging.getLogger(__name__)
 
 
 class SyncTask(_Task, PushTaskMixin, RemovedTaskMixin):
+
     @staticmethod
     def get_type():
         return TASK_NAME
@@ -26,46 +27,47 @@ class SyncTask(_Task, PushTaskMixin, RemovedTaskMixin):
     def _apply_task(self):
         _logger.debug('Execute task %s' % self)
 
-        target = self.target_list[0]
-        src_path = os.path.join(self.local_path, target.rel_path)
+        target = self.nodes[0]
+        src_path = os.path.join(self.local_path, target.get_complete_path())
         subtasks = []
 
-        for name in os.listdir(src_path):
-            abs_path = os.path.join(src_path, name)
-            rel_path = os.path.relpath(abs_path, self.local_path)
-            task = None
+        # clean mark on file node
+        for file_node in target.traverse_only_file_node():
+            file_node.visited = False
 
-            if config.get('exclude_hidden_files') and is_hidden(abs_path):
+        # iterate on file in directory
+        for dirpath, dirnames, filenames in os.walk(src_path):
+            # no file in this directory
+            if len(filenames) == 0:
                 continue
-            if os.path.isdir(abs_path):
-                self.index_fragment = {
-                    k: v for (k, v) in self.index_fragment.items()
-                    if not k.startswith('%s/' % rel_path)}
-                task = SyncTask(self.container, (rel_path,),
-                                self.local_container, self.display_error_cb,
-                                parent_path=target.rel_path)
-            else:
+
+            for filename in filenames:
+                abs_path = os.path.join(dirpath, filename)
+                rel_path = os.path.relpath(abs_path, self.local_path)
+
+                if config.get('exclude_hidden_files') and is_hidden(abs_path):
+                    continue
+
                 if not is_path_allowed(rel_path):
                     continue
 
-                ignore_missing_file = True
-                if rel_path in self.index_fragment:
-                    # TODO: don't log when file is not modified !
-                    del self.index_fragment[rel_path]
+                node = self.local_container.index.get_node(rel_path)
+                create_mode = True
 
-                    # if file exists in the directory traversal,
-                    # we want to trigger an error if it's removed
-                    # during the task
-                    ignore_missing_file = False
+                if node is not None:
+                    create_mode = False
+                    node.visited = True
 
-                task = self._create_push_task(rel_path, ignore_missing_file)
+                task = self._create_push_task(rel_path, create_mode)
+                subtasks.append(add_task(task))
 
-            if task:
-                subtasks.append(add_task(task, priority=True))
+        # search for deleted files
+        for file_node in target.traverse_only_file_node():
+            if file_node.visited:
+                file_node.visited = False
+                continue
 
-        # locally removed items, present in the index, but not in local.
-        for child_path in self.index_fragment:
-            task = self._create_a_remove_task(child_path)
+            task = self._create_a_remove_task(file_node.rel_path)
             subtasks.append(add_task(task, priority=True))
 
         self._release_index()

@@ -76,7 +76,7 @@ def added_local_files(container, local_container, filename, display_error_cb):
             happened.
     """
     task = AddedLocalFilesTask(container, (filename,), local_container,
-                               display_error_cb, ignore_missing_file=True)
+                               display_error_cb, create_mode=True)
     return add_task(task)
 
 
@@ -93,7 +93,7 @@ def changed_local_files(container, local_container, filename,
             happened.
     """
     task = AddedLocalFilesTask(container, (filename,), local_container,
-                               display_error_cb, ignore_missing_file=False)
+                               display_error_cb, create_mode=False)
     return add_task(task)
 
 

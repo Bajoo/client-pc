@@ -134,7 +134,7 @@ class PassphraseWindowView(BaseView):
 
 def main():
     wx.App()
-    win = PassphraseWindow(None)
+    win = PassphraseWindow()
 
     if win.ShowModal() == wx.ID_OK:
         print('OK')

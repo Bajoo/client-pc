@@ -195,8 +195,8 @@ if __name__ == '__main__':
 
     from .session import Session
 
-    session1 = Session.create_session('test+20@bajoo.fr',
-                                      'test+20@bajoo.fr').result()
+    session1 = Session.from_user_credentials('test+20@bajoo.fr',
+                                             'test+20@bajoo.fr').result()
 
     from random import choice
     from string import ascii_lowercase

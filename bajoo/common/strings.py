@@ -5,6 +5,7 @@ import warnings
 
 # _unicode_type is portable Python2 and Python3
 _unicode_type = type(u'unicode')
+warnings.simplefilter('always', UnicodeWarning)
 
 
 def _check_type_expectation(value, expected_type):

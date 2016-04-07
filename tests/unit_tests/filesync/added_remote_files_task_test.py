@@ -39,8 +39,8 @@ class Test_Remote_File_does_not_exist(TestTaskAbstract):
         self.check_action(downloaded=(path,))
         self.assert_conflict(count=0)
 
-        # check md5 update
-        assert path in self.local_container.updated_index_but_not_in_dict
+        # check md5 update, no update in index
+        self.assert_not_in_index(path)
 
 
 class Test_Remote_File_exists_but_not_local(TestTaskAbstract):
@@ -67,9 +67,9 @@ class Test_Remote_File_exists_but_not_local(TestTaskAbstract):
         self.assert_no_error_on_task()
         self.check_action(downloaded=(self.local_path,))
         self.assert_conflict(count=0)
-        self.assert_index_on_release(self.local_path,
-                                     self.remote_file.local_hash,
-                                     self.remote_file.remote_hash)
+        self.assert_hash_in_index(self.local_path,
+                                  self.remote_file.local_hash,
+                                  self.remote_file.remote_hash)
 
 
 class Test_Remote_and_Local_File_exist(TestTaskAbstract):
@@ -102,9 +102,9 @@ class Test_Remote_and_Local_File_exist(TestTaskAbstract):
         self.assert_no_error_on_task()
         self.check_action(downloaded=(self.local_file.filename,))
         self.assert_conflict(count=0)
-        self.assert_index_on_release(self.local_file.filename,
-                                     self.remote_file.local_hash,
-                                     self.remote_file.remote_hash)
+        self.assert_hash_in_index(self.local_file.filename,
+                                  self.remote_file.local_hash,
+                                  self.remote_file.remote_hash)
 
     def test_not_registered_locally_AND_not_equal(self):
         self.local_file.writeRandom()
@@ -120,13 +120,13 @@ class Test_Remote_and_Local_File_exist(TestTaskAbstract):
         uploaded = (conflict_filename, )
         self.check_action(downloaded=downloaded, uploaded=uploaded)
 
-        self.assert_index_on_release(self.local_file.filename,
-                                     self.remote_file.local_hash,
-                                     self.remote_file.remote_hash)
+        self.assert_hash_in_index(self.local_file.filename,
+                                  self.remote_file.local_hash,
+                                  self.remote_file.remote_hash)
 
-        self.assert_index_on_release(conflict_filename,
-                                     self.local_file.local_hash,
-                                     conflict_filename + "HASH_UPLOADED")
+        self.assert_hash_in_index(conflict_filename,
+                                  self.local_file.local_hash,
+                                  conflict_filename + "HASH_UPLOADED")
 
         assert_content(self.local_file.descr.name, self.remote_file.local_hash)
         conflict_path = os.path.join(tempfile.gettempdir(), conflict_filename)
@@ -142,9 +142,9 @@ class Test_Remote_and_Local_File_exist(TestTaskAbstract):
         self.check_action(downloaded=(self.local_file.filename,))
         self.assert_conflict(count=0)
 
-        self.assert_index_on_release(self.local_file.filename,
-                                     self.remote_file.local_hash,
-                                     self.remote_file.remote_hash)
+        self.assert_hash_in_index(self.local_file.filename,
+                                  self.remote_file.local_hash,
+                                  self.remote_file.remote_hash)
 
     def test_registered_locally_AND_not_equal(self):
         self.registerFiles(localRegistration=True)
@@ -160,13 +160,13 @@ class Test_Remote_and_Local_File_exist(TestTaskAbstract):
         uploaded = (conflict_filename, )
         self.check_action(downloaded=downloaded, uploaded=uploaded)
 
-        self.assert_index_on_release(self.local_file.filename,
-                                     self.remote_file.local_hash,
-                                     self.remote_file.remote_hash)
+        self.assert_hash_in_index(self.local_file.filename,
+                                  self.remote_file.local_hash,
+                                  self.remote_file.remote_hash)
 
-        self.assert_index_on_release(conflict_filename,
-                                     self.local_file.local_hash,
-                                     conflict_filename + "HASH_UPLOADED")
+        self.assert_hash_in_index(conflict_filename,
+                                  self.local_file.local_hash,
+                                  conflict_filename + "HASH_UPLOADED")
 
         assert_content(self.local_file.descr.name, self.remote_file.local_hash)
         conflict_path = os.path.join(tempfile.gettempdir(), conflict_filename)

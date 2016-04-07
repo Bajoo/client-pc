@@ -4,7 +4,10 @@ import heapq
 import logging
 import sys
 from ..generic_executor import GenericExecutor, SharedContext
-from .request import upload, download, json_request
+from .health_checker import HealthChecker
+from .request import Request
+from .send_request import upload, download, json_request
+from .status_table import StatusTable
 from ..promise import Deferred
 
 _logger = logging.getLogger(__name__)
@@ -27,6 +30,8 @@ class NetworkSharedContext(SharedContext):
         super(NetworkSharedContext, self).__init__()
         self.requests = []
         self.counter = 0
+        self.health_checker = HealthChecker(add_task)
+        self.status = StatusTable(self.health_checker)
 
 
 def start():
@@ -39,29 +44,25 @@ def start():
 
 
 def stop():
+    global _executor
     if _executor:
         _executor.stop()
+    _executor = None
 
 
-def add_task(action, verb, url, params, priority=100):
+def add_task(request):
     """Add a request to send.
 
     Args:
-        action (str): type of the request. Should be one of 'UPLOAD',
-            'DOWNLOAD' or 'QUERY'
-        verb (str): HTTP verb
-        url (unicode): url
-        params (dict): optional arguments passed as **kwargs.
-        priority (int, optional): default to 100. Smallest values are executed
-            first.
+        request (Request)
     Returns:
-        Promise<???>
+        Promise
     """
-    _logger.log(5, "Add request %s %s", verb, url)
+    _logger.log(5, "Add request %s", request)
     df = Deferred()
     with _executor.context:
-        task = (priority, _executor.context.counter, df,
-                action, verb, url, params)
+        request.increment_id = _executor.context.counter
+        task = (request, df)
         heapq.heappush(_executor.context.requests, task)
         _executor.context.counter += 1
         _executor.context.condition.notify()
@@ -76,9 +77,10 @@ def _run_worker(context):
         context (NetworkSharedContext)
     """
     action_mapping = {
-        'UPLOAD': upload,
-        'DOWNLOAD': download,
-        'REQUEST': json_request
+        Request.UPLOAD: upload,
+        Request.DOWNLOAD: download,
+        Request.JSON: json_request,
+        Request.PING: json_request
     }
 
     while True:
@@ -86,25 +88,34 @@ def _run_worker(context):
             if context.stop_order:
                 return
             try:
-                (_priority, _counter, df,
-                 action, verb, url, params) = heapq.heappop(context.requests)
+                (request, deferred) = heapq.heappop(context.requests)
             except IndexError:
                 context.condition.wait()
                 continue
 
+            last_error = context.status.reject_request(request)
+            if last_error:
+                # request "rejected"
+                deferred.reject(last_error)
+                continue
+
         try:
-            action_fn = action_mapping[action]
+            action_fn = action_mapping[request.action]
         except KeyError:
-            _logger.error("Unknown action '%s' for request: %s %s",
-                          action, verb, url)
-            df.reject(ValueError('Request with unknown type %s' % action))
+            _logger.error("Unknown action for request: %s", request)
+            deferred.reject(ValueError('Request with unknown type %s' %
+                                       request.action))
             continue
 
-        _logger.log(5, "Start request %s %s", verb, url)
+        _logger.log(5, "Start request %s", request)
         try:
-            result = action_fn(verb, url, **params)
-        except:
-            df.reject(*sys.exc_info())
+            result = action_fn(request)
+        except Exception as error:
+            with context:
+                context.status.update(request, error)
+            deferred.reject(*sys.exc_info())
         else:
-            df.resolve(result)
-        _logger.log(5, "request %s %s completed", verb, url)
+            with context:
+                context.status.update(request)
+            deferred.resolve(result)
+        _logger.log(5, "request %s completed", request)
