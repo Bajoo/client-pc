@@ -284,7 +284,7 @@ def main():
         _logger.debug(members)
         form.load_members(members)
 
-    Session.create_session(
+    Session.from_user_credentials(
         'test+21@bajoo.fr', 'test+21@bajoo.fr') \
         .then(_on_session_loaded) \
         .then(_on_share_found) \

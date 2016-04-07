@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from bajoo.promise.promise import Promise
+
 from .fake_container import Fake_container
 from .fake_local_container import FakeLocalContainer
 
@@ -137,10 +138,17 @@ class TestTaskAbstract(object):
         self.generate_conflict_file_list()
         assert len(self.conflict_list) == count
 
-    def assert_index_on_release(self, path, local_hash, remote_hash):
-        assert path in self.local_container.index_on_release
-        stored_md5 = self.local_container.index_on_release[path]
-        assert stored_md5 == (local_hash, remote_hash,)
+    def assert_hash_in_index(self, path, local_hash, remote_hash):
+        node = self.local_container.index.get_node(path)
+        assert node is not None
+        assert hasattr(node, 'local_md5')
+        assert hasattr(node, 'remote_md5')
+
+        assert node.local_md5 == local_hash
+        assert node.remote_md5 == remote_hash
+
+    def assert_not_in_index(self, path):
+        assert self.local_container.index.get_node(path) is None
 
 
 def assert_content(path, hash):

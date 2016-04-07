@@ -206,6 +206,8 @@ else:
         setup_kwargs['data_files'] = [('.', glob('gpg/*.exe') +
                                        glob('gpg/*.dll')),
                                       ('requests', [cacert_path])]
+        for f in glob('docs/*'):
+            setup_kwargs['data_files'].append(('../%s' % f, glob('%s/*' % f)))
 
 
 setup(**setup_kwargs)

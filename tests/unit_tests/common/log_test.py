@@ -51,22 +51,11 @@ class TestLogAtexit(object):
 
 class TestLogFormating(object):
 
-    def test_getFileHandler_without_existing_file(self):
+    def test_getFileHandler(self):
         # TODO should backup existing log file then restore them
         shutil.rmtree(get_log_dir())
         filePath = _get_file_handler()
-        expected = datetime.date.today().strftime('bajoo-%Y.%m.%d.log')
-        assert filePath.baseFilename.endswith(expected)
-        # TODO should delete created files
-
-    def test_getFileHandler_with_existing_file(self):
-        # TODO should backup existing log file then restore them
-        shutil.rmtree(get_log_dir())
-        filePath = _get_file_handler()
-        filePath = _get_file_handler()
-        filePath = _get_file_handler()
-        expected = datetime.date.today().strftime('bajoo-%Y.%m.%d (3).log')
-        assert filePath.baseFilename.endswith(expected)
+        assert filePath.baseFilename.endswith('bajoo.log')
         # TODO should delete created files
 
     def test_colorize_DEBUG(self):

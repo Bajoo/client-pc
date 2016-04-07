@@ -143,7 +143,7 @@ class _ConnectionProcess(object):
         if refresh_token:  # Login automatic
             _logger.debug('Log user "%s" using refresh token ...' % username)
             try:
-                yield Session.load_session(refresh_token)
+                yield Session.from_refresh_token(refresh_token)
             except Exception as error:
                 yield self._connection_error_handler(
                     error, username, refresh_token=refresh_token)
@@ -171,7 +171,7 @@ class _ConnectionProcess(object):
                     self.is_new_account = True
 
                 _logger.debug('Log user "%s" using password ...' % username)
-                yield Session.create_session(username, password)
+                yield Session.from_user_credentials(username, password)
             except Exception as error:
                 yield self._connection_error_handler(error, username,
                                                      password=password)
@@ -246,7 +246,7 @@ class _ConnectionProcess(object):
         """
         if not self.profile or self.profile.email != self._username:
             self.profile = UserProfile(self._username)
-        self.profile.refresh_token = session.get_refresh_token()
+        self.profile.refresh_token = session.refresh_token
 
         return session
 

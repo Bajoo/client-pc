@@ -19,26 +19,28 @@ def teardown_module(module):
 
 
 class FakeSyncTask(SyncTask,):
-    def _create_push_task(self, rel_path, ignore_missing_file=False):
+
+    def _create_push_task(self, rel_path, create_mode=False):
         return AddedLocalFilesTask(self.container,
                                    (generate_random_string(),),
                                    self.local_container,
                                    self.display_error_cb,
                                    parent_path=self._parent_path,
-                                   ignore_missing_file=ignore_missing_file)
+                                   create_mode=create_mode)
 
 
-def generate_fake_task(tester, target, ignore_missing_file=False):
+def generate_fake_task(tester, target, create_mode=False):
     return FakeSyncTask(
         tester.container,
         (target,),
         tester.local_container,
         tester.error_append,
         None,
-        ignore_missing_file)
+        create_mode)
 
 
 class TestSyncTask(TestTaskAbstract):
+
     def test_crash_several_sub_task(self):
         tempDirPath = mkdtemp()
         tempDirPathInTmp = os.path.split(tempDirPath)[1]

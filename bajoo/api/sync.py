@@ -218,8 +218,8 @@ def main():
     def removed(deleted_containers):
         print('Removed container(s):\n\t%s' % deleted_containers)
 
-    session = Session.create_session('test+20@bajoo.fr',
-                                     'test+20@bajoo.fr').result()
+    session = Session.from_user_credentials('test+20@bajoo.fr',
+                                            'test+20@bajoo.fr').result()
     updater = container_list_updater(session, added, removed,
                                      check_period=5)
 

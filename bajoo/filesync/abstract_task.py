@@ -10,26 +10,12 @@ import sys
 import time
 
 from ..common.i18n import _
-from ..promise import Promise
+from ..common.strings import ensure_unicode
 from ..network.errors import HTTPEntityTooLargeError
 from ..encryption.errors import PassphraseAbortError
+from .exception import RedundantTaskInterruption
 
 _logger = logging.getLogger(__name__)
-
-
-class _Target(object):
-
-    def __init__(self, rel_path):
-        self.rel_path = rel_path
-        self.local_md5 = None
-        self.remote_md5 = None
-
-    def __str__(self):
-        # Python 2 with type unicode.
-        if not isinstance(self.rel_path, str):
-            return self.rel_path.encode('utf-8')
-
-        return self.rel_path
 
 
 class _Task(object):
@@ -70,23 +56,33 @@ class _Task(object):
         self.target_list = []
         self.local_container = local_container
         self.local_path = local_container.model.path
-        self.index_fragment = {}
         self.display_error_cb = display_error_cb
         self._parent_path = parent_path
+        self.nodes = []
 
         if sys.platform in ['win32', 'cygwin', 'win64']:
             for t in target:
-                self.target_list.append(_Target(t.replace('\\', '/')))
+                t = ensure_unicode(t)
+                self.target_list.append(t.replace('\\', '/'))
         else:
             for t in target:
-                self.target_list.append(_Target(t))
+                t = ensure_unicode(t)
+                self.target_list.append(t)
 
         # If set, list of tasks who've failed.
         self._task_errors = None
         self.error = None
 
     def __repr__(self):
-        targetString = ', '.join(str(x) for x in self.target_list)
+        encoded_string = []
+
+        for string in self.target_list:
+            if not isinstance(string, str):
+                encoded_string.append(string.encode('utf-8'))
+            else:
+                encoded_string.append(string)
+
+        targetString = ', '.join(encoded_string)
 
         if not isinstance(self.local_path, str):
             # Python 2 with type unicode.
@@ -107,33 +103,15 @@ class _Task(object):
 
         _logger.debug('Prepare task %s' % self)
 
-        # sort the target by rel_path to avoid deadlock during index acquiring
-        # for more details: see Dining philosophers problem
-        promises_list = []
-        deadlock_avoider_target_list = sorted(self.target_list,
-                                              key=lambda t: t.rel_path)
-
-        # Initialization: we acquire the index
-        for target in deadlock_avoider_target_list:
-            promises_list.append(self.local_container.acquire_index(
-                target.rel_path,
-                (self, None),
-                bypass_folder=self._parent_path))
-
-        item_list = yield Promise.all(promises_list)
+        try:
+            self.nodes = yield self.local_container.index.acquire(
+                self.target_list,
+                self)
+        except RedundantTaskInterruption:
+            yield self._task_errors
+            return
 
         self._index_acquired = True
-        self.index_fragment = {}
-        for item in item_list:
-            if item is None:
-                continue
-
-            self.index_fragment.update(item)
-
-        for target in self.target_list:
-            target.local_md5, target.remote_md5 = self.index_fragment.get(
-                target.rel_path,
-                (None, None))
 
         # Execution of the _apply_task generator
         # This code is a 'yield from', compatible python 2 and 3.
@@ -164,8 +142,7 @@ class _Task(object):
         finally:
             gen.close()
 
-        self._release_index(result)
-
+        self._release_index()
         yield self._task_errors  # return
 
     @staticmethod
@@ -183,23 +160,9 @@ class _Task(object):
 
         return "abstract"
 
-    def _release_index(self, result=None):
+    def _release_index(self):
         if self._index_acquired:
-            if sys.platform in ['win32', 'cygwin', 'win64'] and result:
-                result = {key.replace('\\', '/'): value
-                          for (key, value) in result.items()}
-
-            for target in self.target_list:
-                tmp_result = None
-                if result is not None:
-                    if target.rel_path in result:
-                        tmp_result = {}
-                        tmp_result[target.rel_path] = result[target.rel_path]
-                    else:
-                        tmp_result = result
-
-                self.local_container.release_index(target.rel_path, tmp_result)
-
+            self.local_container.index.release(self.target_list, self)
             self._index_acquired = False
 
     def _manage_error(self, error):
