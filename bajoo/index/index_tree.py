@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
-from threading import Lock
+from threading import RLock
 
 from ..promise import Deferred, Promise
 from ..filesync.added_local_files_task import AddedLocalFilesTask
@@ -94,7 +94,7 @@ class IndexTree(object):
 
         self.root = DirectoryNode(path_part=u"")
         self.locked_count = 0
-        self.lock = Lock()
+        self.lock = RLock()
         self.promise_waiting_for_task = {}
         self.index_saver = index_saver
 
