@@ -58,43 +58,43 @@ class TestTriggering(object):
 
         self.lc = FakeLocalContainer()
         self.previous_task = AddedRemoteFilesTask(container=None,
-                                                  target=("./aaaa/bbb/ccc",),
+                                                  target=("aaaa/bbb/ccc",),
                                                   local_container=self.lc,
                                                   display_error_cb=None)
 
     def test_trigger_local_create_task(self):
         global task_added
 
-        trigger_local_create_task("./aaaa/bbb/ccc", self.previous_task)
+        trigger_local_create_task("aaaa/bbb/ccc", self.previous_task)
         assert len(task_added) == 1
         new_task, priority = task_added[0]
         assert priority
         assert isinstance(new_task, AddedLocalFilesTask)
-        assert new_task.target_list[0] == "./aaaa/bbb/ccc"
+        assert new_task.target_list[0] == "aaaa/bbb/ccc"
 
     def test_trigger_local_delete_task(self):
         global task_added
 
-        trigger_local_delete_task("./aaaa/bbb/ccc", self.previous_task)
+        trigger_local_delete_task("aaaa/bbb/ccc", self.previous_task)
         assert len(task_added) == 1
         new_task, priority = task_added[0]
         assert priority
         assert isinstance(new_task, RemovedLocalFilesTask)
-        assert new_task.target_list[0] == "./aaaa/bbb/ccc"
+        assert new_task.target_list[0] == "aaaa/bbb/ccc"
 
     def test_trigger_local_moved_task(self):
         global task_added
 
         trigger_local_moved_task(
-            "./aaaa/bbb/ccc",
-            "./aaaa/bbb/cccd",
+            "aaaa/bbb/ccc",
+            "aaaa/bbb/cccd",
             self.previous_task)
         assert len(task_added) == 1
         new_task, priority = task_added[0]
         assert priority
         assert isinstance(new_task, MovedLocalFilesTask)
-        assert new_task.target_list[0] == "./aaaa/bbb/ccc"
-        assert new_task.target_list[1] == "./aaaa/bbb/cccd"
+        assert new_task.target_list[0] == "aaaa/bbb/ccc"
+        assert new_task.target_list[1] == "aaaa/bbb/cccd"
 
 
 def fake_aquire(target_list, task, prior_acquire=False):
@@ -106,11 +106,11 @@ class TestIndexTree(object):
     def setup_method(self, method):
         self.fake_saver = FakeIndexSaver()
 
-        self.input_idx = {"./aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
-                          "./aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
-                          "./aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
-                          "./fff/eee": ["local_eee", "remote_eee"],
-                          "./ggg": ["local_ggg", "remote_ggg"]}
+        self.input_idx = {"aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
+                          "aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
+                          "aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
+                          "fff/eee": ["local_eee", "remote_eee"],
+                          "ggg": ["local_ggg", "remote_ggg"]}
 
         self.tree = IndexTree(self.fake_saver, self.input_idx)
 
@@ -121,71 +121,71 @@ class TestIndexTree(object):
         assert tree.index_saver == "saver"
 
     def test_init_with_dict(self):
-        node = self.tree.root.get_or_insert_node("./aaaa/bbb/ccc",
+        node = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
                                                  create=False)
         assert node is not None
 
-        node = self.tree.root.get_or_insert_node("./aaaa/bbb/ddd",
+        node = self.tree.root.get_or_insert_node("aaaa/bbb/ddd",
                                                  create=False)
         assert node is not None
 
-        node = self.tree.root.get_or_insert_node("./aaaa/bbb/hhh",
+        node = self.tree.root.get_or_insert_node("aaaa/bbb/hhh",
                                                  create=False)
         assert node is not None
 
-        node = self.tree.root.get_or_insert_node("./fff/eee", create=False)
+        node = self.tree.root.get_or_insert_node("fff/eee", create=False)
         assert node is not None
 
-        node = self.tree.root.get_or_insert_node("./ggg", create=False)
+        node = self.tree.root.get_or_insert_node("ggg", create=False)
         assert node is not None
 
     def test_inner_release_file_locked(self):
         task = "task"
-        node1 = self.tree.root.get_or_insert_node("./aaaa/bbb/ccc",
+        node1 = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
                                                   create=False)
         node1.lock(executing_task=task)
 
-        node2 = self.tree.root.get_or_insert_node("./aaaa/bbb/ddd",
+        node2 = self.tree.root.get_or_insert_node("aaaa/bbb/ddd",
                                                   create=False)
         node2.lock(executing_task=task)
 
-        self.tree.release(("./aaaa/bbb/ccc", "./aaaa/bbb/ddd"), task)
+        self.tree.release(("aaaa/bbb/ccc", "aaaa/bbb/ddd"), task)
 
         assert not node1.is_locked()
         assert not node2.is_locked()
 
     def test_inner_release_file_locked_not_owner(self):
         task = "task"
-        node1 = self.tree.root.get_or_insert_node("./aaaa/bbb/ccc",
+        node1 = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
                                                   create=False)
         node1.lock(executing_task=task)
 
-        node2 = self.tree.root.get_or_insert_node("./aaaa/bbb/ddd",
+        node2 = self.tree.root.get_or_insert_node("aaaa/bbb/ddd",
                                                   create=False)
         node2.lock("owner", executing_task=task)
 
-        self.tree.release(("./aaaa/bbb/ccc", "./aaaa/bbb/ddd"), task)
+        self.tree.release(("aaaa/bbb/ccc", "aaaa/bbb/ddd"), task)
 
         assert not node1.is_locked()
         assert node2.is_locked()
 
     def test_inner_release_dir_completly_locked(self):
         task = "task"
-        node0 = self.tree.root.get_or_insert_node("./aaaa/bbb",
+        node0 = self.tree.root.get_or_insert_node("aaaa/bbb",
                                                   create=False)
         node0.lock(executing_task=task)
 
         node0.lock
 
-        node1 = self.tree.root.get_or_insert_node("./aaaa/bbb/ccc",
+        node1 = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
                                                   create=False)
         node1.lock(owner=node0)
 
-        node2 = self.tree.root.get_or_insert_node("./aaaa/bbb/ddd",
+        node2 = self.tree.root.get_or_insert_node("aaaa/bbb/ddd",
                                                   create=False)
         node2.lock(owner=node0)
 
-        self.tree.release(("./aaaa/bbb/",), task)
+        self.tree.release(("aaaa/bbb/",), task)
 
         assert not node0.is_locked()
         assert not node1.is_locked()
@@ -197,12 +197,12 @@ class TestIndexTree(object):
 
     def test_generate_waiting_promise(self):
         task = "task"
-        node = self.tree.root.get_or_insert_node("./aaaa/bbb/ccc",
+        node = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
                                                  create=False)
 
         self.tree.acquire = fake_aquire
         p = self.tree._generate_waiting_promise(
-            node, ("./aaaa/bbb/ccc", ), task)
+            node, ("aaaa/bbb/ccc", ), task)
 
         assert node.waiting_task is task
         assert node.waiting_task_callback is not None
@@ -213,12 +213,12 @@ class TestIndexTree(object):
 
     def test_generate_waiting_promise_with_cancel(self):
         task = "task"
-        node = self.tree.root.get_or_insert_node("./aaaa/bbb/ccc",
+        node = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
                                                  create=False)
 
         self.tree.acquire = fake_aquire
         p = self.tree._generate_waiting_promise(
-            node, ("./aaaa/bbb/ccc", ), task)
+            node, ("aaaa/bbb/ccc", ), task)
 
         assert node.waiting_task is task
         assert node.waiting_task_callback is not None
@@ -229,16 +229,16 @@ class TestIndexTree(object):
             p.result()
 
     def test_steal_sync_task_on_children(self):
-        node_bbb = self.tree.root.get_or_insert_node("./aaaa/bbb",
+        node_bbb = self.tree.root.get_or_insert_node("aaaa/bbb",
                                                      create=False)
 
-        node_ccc = self.tree.root.get_or_insert_node("./aaaa/bbb/ccc",
+        node_ccc = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
                                                      create=False)
 
-        node_ddd = self.tree.root.get_or_insert_node("./aaaa/bbb/ddd",
+        node_ddd = self.tree.root.get_or_insert_node("aaaa/bbb/ddd",
                                                      create=False)
 
-        node_fff = self.tree.root.get_or_insert_node("./fff",
+        node_fff = self.tree.root.get_or_insert_node("fff",
                                                      create=False)
 
         node_ccc.lock(owner=node_bbb)
@@ -285,11 +285,11 @@ class TestIndexTree(object):
             assert child.lock_owner is node
 
     def test_lock_children_one_locked_children(self):
-        node_ccc = self.tree.root.get_or_insert_node("./aaaa/bbb/ccc",
+        node_ccc = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
                                                      create=False)
         node_ccc.lock(self.tree.root)
 
-        node_ddd = self.tree.root.get_or_insert_node("./aaaa/bbb/ddd",
+        node_ddd = self.tree.root.get_or_insert_node("aaaa/bbb/ddd",
                                                      create=False)
 
         node_ddd.lock(node_ddd, "task")
@@ -315,20 +315,20 @@ class TestMergeMisc(object):
     def setup_method(self, method):
         self.fake_saver = FakeIndexSaver()
 
-        self.input_idx = {"./aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
-                          "./aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
-                          "./aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
-                          "./fff/eee": ["local_eee", "remote_eee"],
-                          "./ggg": ["local_ggg", "remote_ggg"]}
+        self.input_idx = {"aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
+                          "aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
+                          "aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
+                          "fff/eee": ["local_eee", "remote_eee"],
+                          "ggg": ["local_ggg", "remote_ggg"]}
 
         self.tree = IndexTree(self.fake_saver, self.input_idx)
-        self.node = self.tree.root.get_or_insert_node("./aaaa/bbb/ccc",
+        self.node = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
                                                       create=False)
         self.lc = FakeLocalContainer()
         self.ft = FakeTask()
 
         self.current_task = AddedLocalFilesTask(container=None,
-                                                target=("./aaaa/bbb/ccc",),
+                                                target=("aaaa/bbb/ccc",),
                                                 local_container=self.lc,
                                                 display_error_cb=None,
                                                 create_mode=True)
@@ -350,20 +350,20 @@ class TestMergeFromLocalCreateTask(object):
     def setup_method(self, method):
         self.fake_saver = FakeIndexSaver()
 
-        self.input_idx = {"./aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
-                          "./aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
-                          "./aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
-                          "./fff/eee": ["local_eee", "remote_eee"],
-                          "./ggg": ["local_ggg", "remote_ggg"]}
+        self.input_idx = {"aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
+                          "aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
+                          "aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
+                          "fff/eee": ["local_eee", "remote_eee"],
+                          "ggg": ["local_ggg", "remote_ggg"]}
 
         self.tree = IndexTree(self.fake_saver, self.input_idx)
-        self.node = self.tree.root.get_or_insert_node("./aaaa/bbb/ccc",
+        self.node = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
                                                       create=False)
         self.lc = FakeLocalContainer()
         self.ft = FakeTask()
 
         self.current_task = AddedLocalFilesTask(container=None,
-                                                target=("./aaaa/bbb/ccc",),
+                                                target=("aaaa/bbb/ccc",),
                                                 local_container=self.lc,
                                                 display_error_cb=None,
                                                 create_mode=True)
@@ -374,7 +374,7 @@ class TestMergeFromLocalCreateTask(object):
 
     def test_replace_with_a_local_create_task(self):
         new_task = AddedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/ccc",),
+                                       target=("aaaa/bbb/ccc",),
                                        local_container=self.lc,
                                        display_error_cb=None,
                                        create_mode=True)
@@ -385,7 +385,7 @@ class TestMergeFromLocalCreateTask(object):
 
     def test_replace_with_a_local_update_task(self):
         new_task = AddedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/ccc",),
+                                       target=("aaaa/bbb/ccc",),
                                        local_container=self.lc,
                                        display_error_cb=None,
                                        create_mode=False)
@@ -396,7 +396,7 @@ class TestMergeFromLocalCreateTask(object):
 
     def test_replace_with_a_local_delete_task_and_valid_remote_hash(self):
         new_task = RemovedLocalFilesTask(container=None,
-                                         target=("./aaaa/bbb/ccc",),
+                                         target=("aaaa/bbb/ccc",),
                                          local_container=self.lc,
                                          display_error_cb=None)
 
@@ -405,7 +405,7 @@ class TestMergeFromLocalCreateTask(object):
     def test_replace_with_a_local_delete_task_and_not_valid_remote_hash(self):
         self.node.set_hash(None, None)
         new_task = RemovedLocalFilesTask(container=None,
-                                         target=("./aaaa/bbb/ccc",),
+                                         target=("aaaa/bbb/ccc",),
                                          local_container=self.lc,
                                          display_error_cb=None)
 
@@ -415,7 +415,7 @@ class TestMergeFromLocalCreateTask(object):
 
     def test_replace_with_a_remote_add_task(self):
         new_task = AddedRemoteFilesTask(container=None,
-                                        target=("./aaaa/bbb/ccc",),
+                                        target=("aaaa/bbb/ccc",),
                                         local_container=self.lc,
                                         display_error_cb=None)
 
@@ -425,7 +425,7 @@ class TestMergeFromLocalCreateTask(object):
 
     def test_replace_with_a_remote_remove_task(self):
         new_task = RemovedRemoteFilesTask(container=None,
-                                          target=("./aaaa/bbb/ccc",),
+                                          target=("aaaa/bbb/ccc",),
                                           local_container=self.lc,
                                           display_error_cb=None)
 
@@ -435,8 +435,8 @@ class TestMergeFromLocalCreateTask(object):
 
     def test_replace_with_a_move_as_src_task(self):
         new_task = MovedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/ccc",
-                                               "./aaaa/bbb/cccd"),
+                                       target=("aaaa/bbb/ccc",
+                                               "aaaa/bbb/cccd"),
                                        local_container=self.lc,
                                        display_error_cb=None)
 
@@ -446,8 +446,8 @@ class TestMergeFromLocalCreateTask(object):
 
     def test_replace_with_a_move_as_dst_task(self):
         new_task = MovedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/cccs",
-                                               "./aaaa/bbb/ccc"),
+                                       target=("aaaa/bbb/cccs",
+                                               "aaaa/bbb/ccc"),
                                        local_container=self.lc,
                                        display_error_cb=None)
 
@@ -461,20 +461,20 @@ class TestMergeFromLocalUpdateTask(object):
     def setup_method(self, method):
         self.fake_saver = FakeIndexSaver()
 
-        self.input_idx = {"./aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
-                          "./aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
-                          "./aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
-                          "./fff/eee": ["local_eee", "remote_eee"],
-                          "./ggg": ["local_ggg", "remote_ggg"]}
+        self.input_idx = {"aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
+                          "aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
+                          "aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
+                          "fff/eee": ["local_eee", "remote_eee"],
+                          "ggg": ["local_ggg", "remote_ggg"]}
 
         self.tree = IndexTree(self.fake_saver, self.input_idx)
-        self.node = self.tree.root.get_or_insert_node("./aaaa/bbb/ccc",
+        self.node = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
                                                       create=False)
         self.lc = FakeLocalContainer()
         self.ft = FakeTask()
 
         self.current_task = AddedLocalFilesTask(container=None,
-                                                target=("./aaaa/bbb/ccc",),
+                                                target=("aaaa/bbb/ccc",),
                                                 local_container=self.lc,
                                                 display_error_cb=None,
                                                 create_mode=False)
@@ -485,7 +485,7 @@ class TestMergeFromLocalUpdateTask(object):
 
     def test_replace_with_a_local_create_task(self):
         new_task = AddedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/ccc",),
+                                       target=("aaaa/bbb/ccc",),
                                        local_container=self.lc,
                                        display_error_cb=None,
                                        create_mode=True)
@@ -497,7 +497,7 @@ class TestMergeFromLocalUpdateTask(object):
 
     def test_replace_with_a_local_update_task(self):
         new_task = AddedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/ccc",),
+                                       target=("aaaa/bbb/ccc",),
                                        local_container=self.lc,
                                        display_error_cb=None,
                                        create_mode=False)
@@ -509,7 +509,7 @@ class TestMergeFromLocalUpdateTask(object):
 
     def test_replace_with_a_local_delete_task_and_valid_remote_hash(self):
         new_task = RemovedLocalFilesTask(container=None,
-                                         target=("./aaaa/bbb/ccc",),
+                                         target=("aaaa/bbb/ccc",),
                                          local_container=self.lc,
                                          display_error_cb=None)
 
@@ -520,7 +520,7 @@ class TestMergeFromLocalUpdateTask(object):
     def test_replace_with_a_local_delete_task_and_not_valid_remote_hash(self):
         self.node.set_hash(None, None)
         new_task = RemovedLocalFilesTask(container=None,
-                                         target=("./aaaa/bbb/ccc",),
+                                         target=("aaaa/bbb/ccc",),
                                          local_container=self.lc,
                                          display_error_cb=None)
 
@@ -530,7 +530,7 @@ class TestMergeFromLocalUpdateTask(object):
 
     def test_replace_with_a_remote_add_task(self):
         new_task = AddedRemoteFilesTask(container=None,
-                                        target=("./aaaa/bbb/ccc",),
+                                        target=("aaaa/bbb/ccc",),
                                         local_container=self.lc,
                                         display_error_cb=None)
 
@@ -541,7 +541,7 @@ class TestMergeFromLocalUpdateTask(object):
 
     def test_replace_with_a_remote_remove_task(self):
         new_task = RemovedRemoteFilesTask(container=None,
-                                          target=("./aaaa/bbb/ccc",),
+                                          target=("aaaa/bbb/ccc",),
                                           local_container=self.lc,
                                           display_error_cb=None)
 
@@ -552,8 +552,8 @@ class TestMergeFromLocalUpdateTask(object):
 
     def test_replace_with_a_move_as_src_task(self):
         new_task = MovedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/ccc",
-                                               "./aaaa/bbb/cccd"),
+                                       target=("aaaa/bbb/ccc",
+                                               "aaaa/bbb/cccd"),
                                        local_container=self.lc,
                                        display_error_cb=None)
 
@@ -563,8 +563,8 @@ class TestMergeFromLocalUpdateTask(object):
 
     def test_replace_with_a_move_as_dst_task(self):
         new_task = MovedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/cccs",
-                                               "./aaaa/bbb/ccc"),
+                                       target=("aaaa/bbb/cccs",
+                                               "aaaa/bbb/ccc"),
                                        local_container=self.lc,
                                        display_error_cb=None)
 
@@ -578,20 +578,20 @@ class TestMergeFromLocalRemoveTask(object):
     def setup_method(self, method):
         self.fake_saver = FakeIndexSaver()
 
-        self.input_idx = {"./aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
-                          "./aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
-                          "./aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
-                          "./fff/eee": ["local_eee", "remote_eee"],
-                          "./ggg": ["local_ggg", "remote_ggg"]}
+        self.input_idx = {"aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
+                          "aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
+                          "aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
+                          "fff/eee": ["local_eee", "remote_eee"],
+                          "ggg": ["local_ggg", "remote_ggg"]}
 
         self.tree = IndexTree(self.fake_saver, self.input_idx)
-        self.node = self.tree.root.get_or_insert_node("./aaaa/bbb/ccc",
+        self.node = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
                                                       create=False)
         self.lc = FakeLocalContainer()
         self.ft = FakeTask()
 
         self.current_task = RemovedLocalFilesTask(container=None,
-                                                  target=("./aaaa/bbb/ccc",),
+                                                  target=("aaaa/bbb/ccc",),
                                                   local_container=self.lc,
                                                   display_error_cb=None)
         self.node.add_waiting_node(self)
@@ -601,7 +601,7 @@ class TestMergeFromLocalRemoveTask(object):
 
     def test_replace_with_a_local_create_task(self):
         new_task = AddedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/ccc",),
+                                       target=("aaaa/bbb/ccc",),
                                        local_container=self.lc,
                                        display_error_cb=None,
                                        create_mode=True)
@@ -612,7 +612,7 @@ class TestMergeFromLocalRemoveTask(object):
 
     def test_replace_with_a_local_update_task(self):
         new_task = AddedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/ccc",),
+                                       target=("aaaa/bbb/ccc",),
                                        local_container=self.lc,
                                        display_error_cb=None,
                                        create_mode=False)
@@ -623,7 +623,7 @@ class TestMergeFromLocalRemoveTask(object):
 
     def test_replace_with_a_local_delete_task(self):
         new_task = RemovedLocalFilesTask(container=None,
-                                         target=("./aaaa/bbb/ccc",),
+                                         target=("aaaa/bbb/ccc",),
                                          local_container=self.lc,
                                          display_error_cb=None)
 
@@ -633,7 +633,7 @@ class TestMergeFromLocalRemoveTask(object):
 
     def test_replace_with_a_remote_add_task(self):
         new_task = AddedRemoteFilesTask(container=None,
-                                        target=("./aaaa/bbb/ccc",),
+                                        target=("aaaa/bbb/ccc",),
                                         local_container=self.lc,
                                         display_error_cb=None)
 
@@ -643,7 +643,7 @@ class TestMergeFromLocalRemoveTask(object):
 
     def test_replace_with_a_remote_remove_task(self):
         new_task = RemovedRemoteFilesTask(container=None,
-                                          target=("./aaaa/bbb/ccc",),
+                                          target=("aaaa/bbb/ccc",),
                                           local_container=self.lc,
                                           display_error_cb=None)
 
@@ -653,8 +653,8 @@ class TestMergeFromLocalRemoveTask(object):
 
     def test_replace_with_a_move_as_src_task(self):
         new_task = MovedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/ccc",
-                                               "./aaaa/bbb/cccd"),
+                                       target=("aaaa/bbb/ccc",
+                                               "aaaa/bbb/cccd"),
                                        local_container=self.lc,
                                        display_error_cb=None)
 
@@ -664,8 +664,8 @@ class TestMergeFromLocalRemoveTask(object):
 
     def test_replace_with_a_move_as_dst_task(self):
         new_task = MovedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/cccs",
-                                               "./aaaa/bbb/ccc"),
+                                       target=("aaaa/bbb/cccs",
+                                               "aaaa/bbb/ccc"),
                                        local_container=self.lc,
                                        display_error_cb=None)
 
@@ -679,20 +679,20 @@ class TestMergeFromRemoteAddTask(object):
     def setup_method(self, method):
         self.fake_saver = FakeIndexSaver()
 
-        self.input_idx = {"./aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
-                          "./aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
-                          "./aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
-                          "./fff/eee": ["local_eee", "remote_eee"],
-                          "./ggg": ["local_ggg", "remote_ggg"]}
+        self.input_idx = {"aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
+                          "aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
+                          "aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
+                          "fff/eee": ["local_eee", "remote_eee"],
+                          "ggg": ["local_ggg", "remote_ggg"]}
 
         self.tree = IndexTree(self.fake_saver, self.input_idx)
-        self.node = self.tree.root.get_or_insert_node("./aaaa/bbb/ccc",
+        self.node = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
                                                       create=False)
         self.lc = FakeLocalContainer()
         self.ft = FakeTask()
 
         self.current_task = AddedRemoteFilesTask(container=None,
-                                                 target=("./aaaa/bbb/ccc",),
+                                                 target=("aaaa/bbb/ccc",),
                                                  local_container=self.lc,
                                                  display_error_cb=None)
         self.node.add_waiting_node(self)
@@ -702,7 +702,7 @@ class TestMergeFromRemoteAddTask(object):
 
     def test_replace_with_a_local_create_task(self):
         new_task = AddedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/ccc",),
+                                       target=("aaaa/bbb/ccc",),
                                        local_container=self.lc,
                                        display_error_cb=None,
                                        create_mode=True)
@@ -713,7 +713,7 @@ class TestMergeFromRemoteAddTask(object):
 
     def test_replace_with_a_local_update_task(self):
         new_task = AddedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/ccc",),
+                                       target=("aaaa/bbb/ccc",),
                                        local_container=self.lc,
                                        display_error_cb=None,
                                        create_mode=False)
@@ -724,7 +724,7 @@ class TestMergeFromRemoteAddTask(object):
 
     def test_replace_with_a_local_delete_task(self):
         new_task = RemovedLocalFilesTask(container=None,
-                                         target=("./aaaa/bbb/ccc",),
+                                         target=("aaaa/bbb/ccc",),
                                          local_container=self.lc,
                                          display_error_cb=None)
 
@@ -734,7 +734,7 @@ class TestMergeFromRemoteAddTask(object):
 
     def test_replace_with_a_remote_add_task(self):
         new_task = AddedRemoteFilesTask(container=None,
-                                        target=("./aaaa/bbb/ccc",),
+                                        target=("aaaa/bbb/ccc",),
                                         local_container=self.lc,
                                         display_error_cb=None)
 
@@ -744,7 +744,7 @@ class TestMergeFromRemoteAddTask(object):
 
     def test_replace_with_a_remote_remove_task_and_valid_local_hash(self):
         new_task = RemovedRemoteFilesTask(container=None,
-                                          target=("./aaaa/bbb/ccc",),
+                                          target=("aaaa/bbb/ccc",),
                                           local_container=self.lc,
                                           display_error_cb=None)
 
@@ -754,7 +754,7 @@ class TestMergeFromRemoteAddTask(object):
 
     def test_replace_with_a_remote_remove_task_and_not_valid_local_hash(self):
         new_task = RemovedRemoteFilesTask(container=None,
-                                          target=("./aaaa/bbb/ccc",),
+                                          target=("aaaa/bbb/ccc",),
                                           local_container=self.lc,
                                           display_error_cb=None)
 
@@ -765,8 +765,8 @@ class TestMergeFromRemoteAddTask(object):
 
     def test_replace_with_a_move_as_src_task(self):
         new_task = MovedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/ccc",
-                                               "./aaaa/bbb/cccd"),
+                                       target=("aaaa/bbb/ccc",
+                                               "aaaa/bbb/cccd"),
                                        local_container=self.lc,
                                        display_error_cb=None)
 
@@ -776,8 +776,8 @@ class TestMergeFromRemoteAddTask(object):
 
     def test_replace_with_a_move_as_dst_task(self):
         new_task = MovedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/cccs",
-                                               "./aaaa/bbb/ccc"),
+                                       target=("aaaa/bbb/cccs",
+                                               "aaaa/bbb/ccc"),
                                        local_container=self.lc,
                                        display_error_cb=None)
 
@@ -791,20 +791,20 @@ class TestMergeFromRemoteRemoveTask(object):
     def setup_method(self, method):
         self.fake_saver = FakeIndexSaver()
 
-        self.input_idx = {"./aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
-                          "./aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
-                          "./aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
-                          "./fff/eee": ["local_eee", "remote_eee"],
-                          "./ggg": ["local_ggg", "remote_ggg"]}
+        self.input_idx = {"aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
+                          "aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
+                          "aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
+                          "fff/eee": ["local_eee", "remote_eee"],
+                          "ggg": ["local_ggg", "remote_ggg"]}
 
         self.tree = IndexTree(self.fake_saver, self.input_idx)
-        self.node = self.tree.root.get_or_insert_node("./aaaa/bbb/ccc",
+        self.node = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
                                                       create=False)
         self.lc = FakeLocalContainer()
         self.ft = FakeTask()
 
         self.current_task = RemovedRemoteFilesTask(container=None,
-                                                   target=("./aaaa/bbb/ccc",),
+                                                   target=("aaaa/bbb/ccc",),
                                                    local_container=self.lc,
                                                    display_error_cb=None)
         self.node.add_waiting_node(self)
@@ -814,7 +814,7 @@ class TestMergeFromRemoteRemoveTask(object):
 
     def test_replace_with_a_local_create_task(self):
         new_task = AddedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/ccc",),
+                                       target=("aaaa/bbb/ccc",),
                                        local_container=self.lc,
                                        display_error_cb=None,
                                        create_mode=True)
@@ -825,7 +825,7 @@ class TestMergeFromRemoteRemoveTask(object):
 
     def test_replace_with_a_local_update_task(self):
         new_task = AddedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/ccc",),
+                                       target=("aaaa/bbb/ccc",),
                                        local_container=self.lc,
                                        display_error_cb=None,
                                        create_mode=False)
@@ -836,7 +836,7 @@ class TestMergeFromRemoteRemoveTask(object):
 
     def test_replace_with_a_local_delete_task(self):
         new_task = RemovedLocalFilesTask(container=None,
-                                         target=("./aaaa/bbb/ccc",),
+                                         target=("aaaa/bbb/ccc",),
                                          local_container=self.lc,
                                          display_error_cb=None)
 
@@ -846,7 +846,7 @@ class TestMergeFromRemoteRemoveTask(object):
 
     def test_replace_with_a_remote_add_task(self):
         new_task = AddedRemoteFilesTask(container=None,
-                                        target=("./aaaa/bbb/ccc",),
+                                        target=("aaaa/bbb/ccc",),
                                         local_container=self.lc,
                                         display_error_cb=None)
 
@@ -856,7 +856,7 @@ class TestMergeFromRemoteRemoveTask(object):
 
     def test_replace_with_a_remote_remove_task(self):
         new_task = RemovedRemoteFilesTask(container=None,
-                                          target=("./aaaa/bbb/ccc",),
+                                          target=("aaaa/bbb/ccc",),
                                           local_container=self.lc,
                                           display_error_cb=None)
 
@@ -866,8 +866,8 @@ class TestMergeFromRemoteRemoveTask(object):
 
     def test_replace_with_a_move_as_src_task(self):
         new_task = MovedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/ccc",
-                                               "./aaaa/bbb/cccd"),
+                                       target=("aaaa/bbb/ccc",
+                                               "aaaa/bbb/cccd"),
                                        local_container=self.lc,
                                        display_error_cb=None)
 
@@ -877,8 +877,8 @@ class TestMergeFromRemoteRemoveTask(object):
 
     def test_replace_with_a_move_as_dst_task(self):
         new_task = MovedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/cccs",
-                                               "./aaaa/bbb/ccc"),
+                                       target=("aaaa/bbb/cccs",
+                                               "aaaa/bbb/ccc"),
                                        local_container=self.lc,
                                        display_error_cb=None)
 
@@ -894,21 +894,21 @@ class TestMergeFromLocalMoveTaskOnSrc(object):
 
         self.fake_saver = FakeIndexSaver()
 
-        self.input_idx = {"./aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
-                          "./aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
-                          "./aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
-                          "./fff/eee": ["local_eee", "remote_eee"],
-                          "./ggg": ["local_ggg", "remote_ggg"]}
+        self.input_idx = {"aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
+                          "aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
+                          "aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
+                          "fff/eee": ["local_eee", "remote_eee"],
+                          "ggg": ["local_ggg", "remote_ggg"]}
 
         self.tree = IndexTree(self.fake_saver, self.input_idx)
-        self.node = self.tree.root.get_or_insert_node("./aaaa/bbb/ccc",
+        self.node = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
                                                       create=False)
         self.lc = FakeLocalContainer()
         self.ft = FakeTask()
 
         self.current_task = MovedLocalFilesTask(container=None,
-                                                target=("./aaaa/bbb/ccc",
-                                                        "./aaaa/bbb/cccd"),
+                                                target=("aaaa/bbb/ccc",
+                                                        "aaaa/bbb/cccd"),
                                                 local_container=self.lc,
                                                 display_error_cb=None)
         self.node.add_waiting_node(self)
@@ -920,7 +920,7 @@ class TestMergeFromLocalMoveTaskOnSrc(object):
 
     def test_replace_with_a_local_create_task(self):
         new_task = AddedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/ccc",),
+                                       target=("aaaa/bbb/ccc",),
                                        local_container=self.lc,
                                        display_error_cb=None,
                                        create_mode=True)
@@ -931,7 +931,7 @@ class TestMergeFromLocalMoveTaskOnSrc(object):
 
     def test_replace_with_a_local_update_task(self):
         new_task = AddedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/ccc",),
+                                       target=("aaaa/bbb/ccc",),
                                        local_container=self.lc,
                                        display_error_cb=None,
                                        create_mode=False)
@@ -942,7 +942,7 @@ class TestMergeFromLocalMoveTaskOnSrc(object):
 
     def test_replace_with_a_local_delete_task(self):
         new_task = RemovedLocalFilesTask(container=None,
-                                         target=("./aaaa/bbb/ccc",),
+                                         target=("aaaa/bbb/ccc",),
                                          local_container=self.lc,
                                          display_error_cb=None)
 
@@ -952,7 +952,7 @@ class TestMergeFromLocalMoveTaskOnSrc(object):
 
     def test_replace_with_a_remote_add_task(self):
         new_task = AddedRemoteFilesTask(container=None,
-                                        target=("./aaaa/bbb/ccc",),
+                                        target=("aaaa/bbb/ccc",),
                                         local_container=self.lc,
                                         display_error_cb=None)
 
@@ -962,7 +962,7 @@ class TestMergeFromLocalMoveTaskOnSrc(object):
 
     def test_replace_with_a_remote_remove_task(self):
         new_task = RemovedRemoteFilesTask(container=None,
-                                          target=("./aaaa/bbb/ccc",),
+                                          target=("aaaa/bbb/ccc",),
                                           local_container=self.lc,
                                           display_error_cb=None)
 
@@ -972,8 +972,8 @@ class TestMergeFromLocalMoveTaskOnSrc(object):
 
     def test_replace_with_the_same_move(self):
         new_task = MovedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/ccc",
-                                               "./aaaa/bbb/cccd"),
+                                       target=("aaaa/bbb/ccc",
+                                               "aaaa/bbb/cccd"),
                                        local_container=self.lc,
 
                                        display_error_cb=None)
@@ -983,8 +983,8 @@ class TestMergeFromLocalMoveTaskOnSrc(object):
 
     def test_replace_with_a_move_as_src_task(self):
         new_task = MovedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/ccc",
-                                               "./aaaa/bbb/cccd2"),
+                                       target=("aaaa/bbb/ccc",
+                                               "aaaa/bbb/cccd2"),
                                        local_container=self.lc,
                                        display_error_cb=None)
 
@@ -992,7 +992,7 @@ class TestMergeFromLocalMoveTaskOnSrc(object):
         assert self.ft.cancel
         assert len(task_added) == 3
 
-        targets = ["./aaaa/bbb/ccc", "./aaaa/bbb/cccd", "./aaaa/bbb/cccd2"]
+        targets = ["aaaa/bbb/ccc", "aaaa/bbb/cccd", "aaaa/bbb/cccd2"]
         for new_task, priority in task_added:
             assert priority
             assert isinstance(new_task, AddedLocalFilesTask)
@@ -1002,14 +1002,14 @@ class TestMergeFromLocalMoveTaskOnSrc(object):
 
     def test_replace_with_a_move_as_src_task_with_dests_exist(self):
         new_task = MovedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/ccc",
-                                               "./aaaa/bbb/cccd2"),
+                                       target=("aaaa/bbb/ccc",
+                                               "aaaa/bbb/cccd2"),
                                        local_container=self.lc,
                                        display_error_cb=None)
 
-        node_cccd = self.tree.root.get_or_insert_node("./aaaa/bbb/cccd")
+        node_cccd = self.tree.root.get_or_insert_node("aaaa/bbb/cccd")
         node_cccd.set_hash("local", "remote", False)
-        node_cccd2 = self.tree.root.get_or_insert_node("./aaaa/bbb/cccd2")
+        node_cccd2 = self.tree.root.get_or_insert_node("aaaa/bbb/cccd2")
         node_cccd2.set_hash("local", "remote", False)
 
         assert not self.tree._use_the_new_task(self.node, new_task)
@@ -1018,7 +1018,7 @@ class TestMergeFromLocalMoveTaskOnSrc(object):
         assert node_cccd.is_invalidate_remote()
         assert node_cccd2.is_invalidate_remote()
 
-        targets = ["./aaaa/bbb/ccc", "./aaaa/bbb/cccd", "./aaaa/bbb/cccd2"]
+        targets = ["aaaa/bbb/ccc", "aaaa/bbb/cccd", "aaaa/bbb/cccd2"]
         for new_task, priority in task_added:
             assert priority
             assert isinstance(new_task, AddedLocalFilesTask)
@@ -1030,13 +1030,13 @@ class TestMergeFromLocalMoveTaskOnSrc(object):
         global task_added
 
         new_task = MovedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/cccs",
-                                               "./aaaa/bbb/ccc"),
+                                       target=("aaaa/bbb/cccs",
+                                               "aaaa/bbb/ccc"),
                                        local_container=self.lc,
                                        display_error_cb=None)
 
         old_dest = self.tree.root.get_or_insert_node(
-            "./aaaa/bbb/cccd",
+            "aaaa/bbb/cccd",
             index_saver=self.fake_saver)
         old_dest.set_hash(None, "remote")
 
@@ -1046,7 +1046,7 @@ class TestMergeFromLocalMoveTaskOnSrc(object):
         new_task, priority = task_added[0]
         assert priority
         assert isinstance(new_task, AddedLocalFilesTask)
-        assert new_task.target_list[0] == "./aaaa/bbb/cccd"
+        assert new_task.target_list[0] == "aaaa/bbb/cccd"
 
 
 class TestMergeFromLocalMoveTaskOnDst(object):
@@ -1056,21 +1056,21 @@ class TestMergeFromLocalMoveTaskOnDst(object):
 
         self.fake_saver = FakeIndexSaver()
 
-        self.input_idx = {"./aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
-                          "./aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
-                          "./aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
-                          "./fff/eee": ["local_eee", "remote_eee"],
-                          "./ggg": ["local_ggg", "remote_ggg"]}
+        self.input_idx = {"aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
+                          "aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
+                          "aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
+                          "fff/eee": ["local_eee", "remote_eee"],
+                          "ggg": ["local_ggg", "remote_ggg"]}
 
         self.tree = IndexTree(self.fake_saver, self.input_idx)
-        self.node = self.tree.root.get_or_insert_node("./aaaa/bbb/ccc",
+        self.node = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
                                                       create=False)
         self.lc = FakeLocalContainer()
         self.ft = FakeTask()
 
         self.current_task = MovedLocalFilesTask(container=None,
-                                                target=("./aaaa/bbb/cccs",
-                                                        "./aaaa/bbb/ccc"),
+                                                target=("aaaa/bbb/cccs",
+                                                        "aaaa/bbb/ccc"),
                                                 local_container=self.lc,
                                                 display_error_cb=None)
         self.node.add_waiting_node(self)
@@ -1082,7 +1082,7 @@ class TestMergeFromLocalMoveTaskOnDst(object):
 
     def test_replace_with_a_local_create_task(self):
         new_task = AddedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/ccc",),
+                                       target=("aaaa/bbb/ccc",),
                                        local_container=self.lc,
                                        display_error_cb=None,
                                        create_mode=True)
@@ -1093,7 +1093,7 @@ class TestMergeFromLocalMoveTaskOnDst(object):
 
     def test_replace_with_a_local_update_task(self):
         new_task = AddedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/ccc",),
+                                       target=("aaaa/bbb/ccc",),
                                        local_container=self.lc,
                                        display_error_cb=None,
                                        create_mode=False)
@@ -1104,7 +1104,7 @@ class TestMergeFromLocalMoveTaskOnDst(object):
 
     def test_replace_with_a_local_delete_task(self):
         new_task = RemovedLocalFilesTask(container=None,
-                                         target=("./aaaa/bbb/ccc",),
+                                         target=("aaaa/bbb/ccc",),
                                          local_container=self.lc,
                                          display_error_cb=None)
 
@@ -1114,7 +1114,7 @@ class TestMergeFromLocalMoveTaskOnDst(object):
 
     def test_replace_with_a_remote_add_task(self):
         new_task = AddedRemoteFilesTask(container=None,
-                                        target=("./aaaa/bbb/ccc",),
+                                        target=("aaaa/bbb/ccc",),
                                         local_container=self.lc,
                                         display_error_cb=None)
 
@@ -1124,7 +1124,7 @@ class TestMergeFromLocalMoveTaskOnDst(object):
 
     def test_replace_with_a_remote_remove_task(self):
         new_task = RemovedRemoteFilesTask(container=None,
-                                          target=("./aaaa/bbb/ccc",),
+                                          target=("aaaa/bbb/ccc",),
                                           local_container=self.lc,
                                           display_error_cb=None)
 
@@ -1134,8 +1134,8 @@ class TestMergeFromLocalMoveTaskOnDst(object):
 
     def test_replace_with_the_same_move(self):
         new_task = MovedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/cccs",
-                                               "./aaaa/bbb/ccc"),
+                                       target=("aaaa/bbb/cccs",
+                                               "aaaa/bbb/ccc"),
                                        local_container=self.lc,
 
                                        display_error_cb=None)
@@ -1145,12 +1145,12 @@ class TestMergeFromLocalMoveTaskOnDst(object):
 
     def test_replace_with_a_move_as_src_task(self):
         new_task = MovedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/ccc",
-                                               "./aaaa/bbb/cccd"),
+                                       target=("aaaa/bbb/ccc",
+                                               "aaaa/bbb/cccd"),
                                        local_container=self.lc,
                                        display_error_cb=None)
 
-        node_cccs = self.tree.root.get_or_insert_node("./aaaa/bbb/cccs")
+        node_cccs = self.tree.root.get_or_insert_node("aaaa/bbb/cccs")
         node_cccs.executing_task = self.current_task
 
         assert not self.tree._use_the_new_task(self.node, new_task)
@@ -1161,20 +1161,20 @@ class TestMergeFromLocalMoveTaskOnDst(object):
         new_task, priority = task_added[0]
         assert priority
         assert isinstance(new_task, RemovedLocalFilesTask)
-        assert new_task.target_list[0] == "./aaaa/bbb/ccc"
+        assert new_task.target_list[0] == "aaaa/bbb/ccc"
 
         new_task, priority = task_added[1]
         assert priority
         assert isinstance(new_task, MovedLocalFilesTask)
-        assert new_task.target_list[0] == "./aaaa/bbb/cccs"
-        assert new_task.target_list[1] == "./aaaa/bbb/cccd"
+        assert new_task.target_list[0] == "aaaa/bbb/cccs"
+        assert new_task.target_list[1] == "aaaa/bbb/cccd"
 
         assert node_cccs.executing_task is not None
 
     def test_replace_with_a_move_as_dst_task(self):
         new_task = MovedLocalFilesTask(container=None,
-                                       target=("./aaaa/bbb/cccs2",
-                                               "./aaaa/bbb/ccc"),
+                                       target=("aaaa/bbb/cccs2",
+                                               "aaaa/bbb/ccc"),
                                        local_container=self.lc,
                                        display_error_cb=None)
 
@@ -1183,7 +1183,7 @@ class TestMergeFromLocalMoveTaskOnDst(object):
         new_task, priority = task_added[0]
         assert priority
         assert isinstance(new_task, RemovedLocalFilesTask)
-        assert new_task.target_list[0] == "./aaaa/bbb/cccs"
+        assert new_task.target_list[0] == "aaaa/bbb/cccs"
 
 
 class TestReplaceTask(object):
@@ -1193,20 +1193,20 @@ class TestReplaceTask(object):
 
         self.fake_saver = FakeIndexSaver()
 
-        self.input_idx = {"./aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
-                          "./aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
-                          "./aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
-                          "./fff/eee": ["local_eee", "remote_eee"],
-                          "./ggg": ["local_ggg", "remote_ggg"]}
+        self.input_idx = {"aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
+                          "aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
+                          "aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
+                          "fff/eee": ["local_eee", "remote_eee"],
+                          "ggg": ["local_ggg", "remote_ggg"]}
 
         self.tree = IndexTree(self.fake_saver, self.input_idx)
-        self.node = self.tree.root.get_or_insert_node("./aaaa/bbb/ccc",
+        self.node = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
                                                       create=False)
         self.lc = FakeLocalContainer()
         self.ft = FakeTask()
 
         self.current_task = AddedRemoteFilesTask(container=None,
-                                                 target=("./aaaa/bbb/ccc",),
+                                                 target=("aaaa/bbb/ccc",),
                                                  local_container=self.lc,
                                                  display_error_cb=None)
         self.node.add_waiting_node(self)
@@ -1254,19 +1254,19 @@ class TestAcquire(object):
 
         self.fake_saver = FakeIndexSaver()
 
-        self.input_idx = {"./aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
-                          "./aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
-                          "./aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
-                          "./fff/eee": ["local_eee", "remote_eee"],
-                          "./ggg": ["local_ggg", "remote_ggg"]}
+        self.input_idx = {"aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
+                          "aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
+                          "aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
+                          "fff/eee": ["local_eee", "remote_eee"],
+                          "ggg": ["local_ggg", "remote_ggg"]}
 
         self.tree = IndexTree(self.fake_saver, self.input_idx)
-        self.node = self.tree.root.get_or_insert_node("./aaaa/bbb/ccc",
+        self.node = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
                                                       create=False)
 
         self.lc = FakeLocalContainer()
         self.task = AddedLocalFilesTask(container=None,
-                                        target=("./aaaa/bbb/ccc",),
+                                        target=("aaaa/bbb/ccc",),
                                         local_container=self.lc,
                                         display_error_cb=None,
                                         create_mode=True)
@@ -1280,29 +1280,29 @@ class TestAcquire(object):
             assert not node.is_locked()
 
     def test_simple_aquire(self):
-        self.tree.acquire(("./aaaa/bbb/ccc",), "task")
+        self.tree.acquire(("aaaa/bbb/ccc",), "task")
         assert self.node.is_locked()
         assert self.tree.is_locked()
 
     def test_aquire_with_too_many_path(self):
         with pytest.raises(Exception):
-            self.tree.acquire(("./aaaa/bbb/ccc",
-                               "./aaaa/bbb/ccc1",
-                               "./aaaa/bbb/ccc2",
-                               "./aaaa/bbb/ccc3"), "task")
+            self.tree.acquire(("aaaa/bbb/ccc",
+                               "aaaa/bbb/ccc1",
+                               "aaaa/bbb/ccc2",
+                               "aaaa/bbb/ccc3"), "task")
 
     def test_aquire_lock_already_acquired(self):
         self.node.lock(self.node, self.task)
 
-        p = self.tree.acquire(("./aaaa/bbb/ccc", ), self.task)
+        p = self.tree.acquire(("aaaa/bbb/ccc", ), self.task)
         r = p.result()
         assert isinstance(r, list)
         assert len(r) == 1
 
     def test_aquire_sync_task_on_parent(self):
-        node_aaa = self.tree.root.get_or_insert_node("./aaaa", create=False)
+        node_aaa = self.tree.root.get_or_insert_node("aaaa", create=False)
         node_aaa.waiting_task = "task"
-        p = self.tree.acquire(("./aaaa/bbb",), "task", prior_acquire=True)
+        p = self.tree.acquire(("aaaa/bbb",), "task", prior_acquire=True)
 
         with pytest.raises(RedundantTaskInterruption):
             p.result()
@@ -1311,14 +1311,14 @@ class TestAcquire(object):
         self.node.waiting_task = self.task
 
         p = self.tree.acquire(
-            ("./aaaa/bbb/ccc",), self.task, prior_acquire=True)
+            ("aaaa/bbb/ccc",), self.task, prior_acquire=True)
 
         with pytest.raises(RedundantTaskInterruption):
             p.result()
 
     def test_acquire_a_task_already_waits_and_merge(self):
         task = RemovedRemoteFilesTask(container=None,
-                                      target=("./aaaa/bbb/ccc",),
+                                      target=("aaaa/bbb/ccc",),
                                       local_container=self.lc,
                                       display_error_cb=None)
         task.prior = True
@@ -1326,31 +1326,31 @@ class TestAcquire(object):
         fake_task = FakeTask()
         self.node.waiting_task = task
         self.node.waiting_task_callback = fake_task.callback
-        self.tree.acquire(("./aaaa/bbb/ccc",), self.task, prior_acquire=True)
+        self.tree.acquire(("aaaa/bbb/ccc",), self.task, prior_acquire=True)
 
         assert fake_task.cancel
         assert self.node.waiting_task is self.task
 
     def test_acquire_nodes_is_locked_but_no_waiting_task(self):
-        node_ccc = self.tree.root.get_or_insert_node("./aaaa/bbb/ccc")
+        node_ccc = self.tree.root.get_or_insert_node("aaaa/bbb/ccc")
         owner = FakeDirectoryNode()
         node_ccc.lock(owner)
-        p = self.tree.acquire(("./aaaa/bbb/ccc",), self.task)
+        p = self.tree.acquire(("aaaa/bbb/ccc",), self.task)
         node_ccc.unlock(owner)
         node_ccc.trigger_waiting_task()
         assert isinstance(p.result(), list)
 
     def test_acquire_a_parent_is_locked(self):
-        node_aaa = self.tree.root.get_or_insert_node("./aaaa", create=False)
+        node_aaa = self.tree.root.get_or_insert_node("aaaa", create=False)
         node_aaa.lock()
-        p = self.tree.acquire(("./aaaa/1234",), self.task)
+        p = self.tree.acquire(("aaaa/1234",), self.task)
         node_aaa.unlock()
 
         node_aaa.trigger_waiting_nodes()
         assert isinstance(p.result(), list)
 
     def test_acquire_a_child_is_locked(self):
-        node_ccc = self.tree.root.get_or_insert_node("./aaaa/bbb/ccc")
+        node_ccc = self.tree.root.get_or_insert_node("aaaa/bbb/ccc")
         node_ccc.lock()
         p = self.tree.acquire((".",), "task")
         node_ccc.unlock()
