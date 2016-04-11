@@ -136,8 +136,6 @@ class IndexTree(object):
                 by the merge algorithm, the Promise will be rejected with
                 a RedundantTaskInterruption.
         """
-        _logger.debug('A task has started an acquiring process: %s' % task)
-
         # the task was created during the merge algorithm and already has a
         # assigned promise waiting for it.
         if task in self.promise_waiting_for_task:
@@ -280,8 +278,6 @@ class IndexTree(object):
             target_list<List<string>>: a list of path to unlock
             task<object>: the task used to lock the list of path
         """
-        _logger.debug('A task has started a releasing process: %s' % task)
-
         with self.lock:
             self._inner_release(target_list, task)
 
