@@ -100,7 +100,7 @@ class TestGet_or_insert_node(object):
         node4 = DirectoryNode("part3", node3)
         node3.children["part3"] = node4
 
-        sub_node = node1.get_or_insert_node("./part1/part2/part3/")
+        sub_node = node1.get_or_insert_node("part1/part2/part3/")
         assert sub_node is node4
 
     def test_getinsert_long_path_and_last_leaf_not_exist(self):
@@ -110,7 +110,7 @@ class TestGet_or_insert_node(object):
         node3 = DirectoryNode("part2", node2)
         node2.children["part2"] = node3
 
-        sub_node = node1.get_or_insert_node("./part1/part2/part3/")
+        sub_node = node1.get_or_insert_node("part1/part2/part3/")
         assert sub_node is not None
         assert isinstance(sub_node, FileNode)
         assert sub_node.parent is node3
@@ -125,7 +125,7 @@ class TestGet_or_insert_node(object):
         node2.children["part2"] = node3
 
         sub_node = node1.get_or_insert_node(
-            "./part1/part2/part3/", create=False)
+            "part1/part2/part3/", create=False)
         assert sub_node is None
         assert "part3" not in node3.children
 
@@ -137,7 +137,7 @@ class TestGet_or_insert_node(object):
         node2.children["part2"] = node3
 
         sub_node = node1.get_or_insert_node(
-            "./part1/part2/part3/", only_directory=True)
+            "part1/part2/part3/", only_directory=True)
         assert sub_node is not None
         assert isinstance(sub_node, DirectoryNode)
         assert sub_node.parent is node3
@@ -149,7 +149,7 @@ class TestGet_or_insert_node(object):
         node2 = DirectoryNode("part1", node1)
         node1.children["part1"] = node2
 
-        sub_node = node1.get_or_insert_node("./part1/part2/part3/")
+        sub_node = node1.get_or_insert_node("part1/part2/part3/")
         assert sub_node is not None
         assert isinstance(sub_node, FileNode)
         sub_node_parent = sub_node.parent
@@ -164,7 +164,7 @@ class TestGet_or_insert_node(object):
         node1.children["part1"] = node2
 
         sub_node = node1.get_or_insert_node(
-            "./part1/part2/part3/", create=False)
+            "part1/part2/part3/", create=False)
         assert sub_node is None
         assert len(node2.children) == 0
 
@@ -174,7 +174,7 @@ class TestGet_or_insert_node(object):
         node1.children["part1"] = node2
 
         sub_node = node1.get_or_insert_node(
-            "./part1/part2/part3/", only_directory=True)
+            "part1/part2/part3/", only_directory=True)
         assert sub_node is not None
         assert isinstance(sub_node, DirectoryNode)
         sub_node_parent = sub_node.parent
@@ -224,14 +224,14 @@ class TestAbstractNode(object):
         node2 = FullAbstractNode("path_part2", node1)
         node3 = FullAbstractNode("path_part3", node2)
 
-        result = "./path_part2/path_part3"
+        result = "path_part2/path_part3"
         assert node3.get_complete_path() == result
 
     def test_get_complete_path2(self):
         node1 = FullAbstractNode("", None)
         node2 = FullAbstractNode("path_part", node1)
 
-        assert node2.get_complete_path() == "./path_part"
+        assert node2.get_complete_path() == "path_part"
 
     def test_get_complete_path3(self):
         node = FullAbstractNode("", None)
@@ -686,10 +686,10 @@ class TestDirectoryNode(object):
 
     def test_traverse_only_dir_tree(self):
         node1 = DirectoryNode("", None)
-        node2 = node1.get_or_insert_node("./part1/part2/part3")
-        node5 = node1.get_or_insert_node("./part1/part6/part7")
-        node6 = node1.get_or_insert_node("./part8/part9")
-        node8 = node1.get_or_insert_node("./part11", only_directory=True)
+        node2 = node1.get_or_insert_node("part1/part2/part3")
+        node5 = node1.get_or_insert_node("part1/part6/part7")
+        node6 = node1.get_or_insert_node("part8/part9")
+        node8 = node1.get_or_insert_node("part11", only_directory=True)
 
         def collect(node):
             return isinstance(node, DirectoryNode)
@@ -705,12 +705,12 @@ class TestDirectoryNode(object):
 
     def test_traverse_various_node_tree(self):
         node1 = DirectoryNode("", None)
-        node2 = node1.get_or_insert_node("./part1/part2/part3")
-        node3 = node1.get_or_insert_node("./part1/part2/part4")
-        node4 = node1.get_or_insert_node("./part1/part2/part5")
-        node5 = node1.get_or_insert_node("./part1/part6/part7")
-        node6 = node1.get_or_insert_node("./part8/part9")
-        node7 = node1.get_or_insert_node("./part10")
+        node2 = node1.get_or_insert_node("part1/part2/part3")
+        node3 = node1.get_or_insert_node("part1/part2/part4")
+        node4 = node1.get_or_insert_node("part1/part2/part5")
+        node5 = node1.get_or_insert_node("part1/part6/part7")
+        node6 = node1.get_or_insert_node("part8/part9")
+        node7 = node1.get_or_insert_node("part10")
 
         def collect(node):
             return isinstance(node, FileNode)
@@ -1088,9 +1088,9 @@ class TestCollect(object):
 
     def test_traverse_only_directory_node(self):
         node1 = DirectoryNode("", None)
-        node2 = node1.get_or_insert_node("./part1/part2/part3")
-        node5 = node1.get_or_insert_node("./part1/part6/part7")
-        node6 = node1.get_or_insert_node("./part8/part9")
+        node2 = node1.get_or_insert_node("part1/part2/part3")
+        node5 = node1.get_or_insert_node("part1/part6/part7")
+        node6 = node1.get_or_insert_node("part8/part9")
 
         node_list = list(node1.traverse_only_directory_node())
 
@@ -1103,12 +1103,12 @@ class TestCollect(object):
 
     def test_traverse_only_file_node(self):
         node1 = DirectoryNode("", None)
-        node2 = node1.get_or_insert_node("./part1/part2/part3")
-        node3 = node1.get_or_insert_node("./part1/part2/part4")
-        node4 = node1.get_or_insert_node("./part1/part2/part5")
-        node5 = node1.get_or_insert_node("./part1/part6/part7")
-        node6 = node1.get_or_insert_node("./part8/part9")
-        node7 = node1.get_or_insert_node("./part10")
+        node2 = node1.get_or_insert_node("part1/part2/part3")
+        node3 = node1.get_or_insert_node("part1/part2/part4")
+        node4 = node1.get_or_insert_node("part1/part2/part5")
+        node5 = node1.get_or_insert_node("part1/part6/part7")
+        node6 = node1.get_or_insert_node("part8/part9")
+        node7 = node1.get_or_insert_node("part10")
 
         node_list = list(node1.traverse_only_file_node())
 

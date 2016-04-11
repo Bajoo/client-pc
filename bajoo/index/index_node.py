@@ -111,7 +111,7 @@ class AbstractNode(object):
         if len(joined_path) == 0:
             return u"."
 
-        return u".%s" % joined_path
+        return u"%s" % joined_path[1:]
 
     def __str__(self):
         return to_str(self.get_complete_path())
