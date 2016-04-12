@@ -82,7 +82,7 @@ class _Task(object):
             else:
                 encoded_string.append(string)
 
-        targetString = ', '.join(encoded_string)
+        target_string = ', '.join(encoded_string)
 
         if not isinstance(self.local_path, str):
             # Python 2 with type unicode.
@@ -91,7 +91,7 @@ class _Task(object):
             local_path = self.local_path
 
         s = '<Task %s (%s) local_path=%s>' % (self.get_type().upper(),
-                                              targetString, local_path)
+                                              target_string, local_path)
         return s
 
     def __call__(self):
@@ -138,7 +138,7 @@ class _Task(object):
                     except StopIteration:
                         result = value
         except Exception as error:
-            result = self._manage_error(error)
+            self._manage_error(error)
         finally:
             gen.close()
 
@@ -181,7 +181,7 @@ class _Task(object):
         self.error = error
 
         if not isinstance(error, PassphraseAbortError) and \
-           not isinstance(error, HTTPEntityTooLargeError):
+                not isinstance(error, HTTPEntityTooLargeError):
             if self.container.error:
                 self.display_error_cb(
                     _('Error during the sync of the "%(name)s" container:'
@@ -189,14 +189,12 @@ class _Task(object):
                     % {'name': self.container.name, 'error': error})
                 raise self.container.error
             else:
-                targetString = ', '.join(str(x) for x in self.target_list)
+                target_string = ', '.join(str(x) for x in self.target_list)
                 self.display_error_cb(
                     _('Error during sync of the file(s) "%(filename)s" '
                       'in the "%(name)s" container:\n%(error)s')
-                    % {'filename': targetString, 'name': self.container.name,
+                    % {'filename': target_string, 'name': self.container.name,
                        'error': error})
-
-        return None
 
     @abc.abstractmethod
     def _apply_task(self):
@@ -249,13 +247,13 @@ class _Task(object):
         time_string = time.strftime("%d_%b_%Y_%H_%M", time_tuple)
 
         prefix_name, ext = os.path.splitext(target.rel_path)
-        new_name = prefix_name + "(conflict_" + time_string + ")" + ext
+        new_name = "%s (conflict %s)%s" % (prefix_name, time_string, ext)
 
         counter = 1
 
         while os.path.exists(os.path.join(self.local_path, new_name)):
-            new_name = prefix_name + \
-                "(conflict" + str(counter) + "_" + time_string + ")" + ext
+            new_name = "%s (conflict %s %s)%s" % (prefix_name, str(counter),
+                                                  time_string, ext)
             counter += 1
 
         return new_name
