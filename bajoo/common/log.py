@@ -16,7 +16,6 @@ Non-caught exceptions are logged before the program quit.
 
 """
 
-import atexit
 import logging
 import logging.handlers
 import fnmatch
@@ -25,16 +24,6 @@ import os.path
 import sys
 
 from . import path as bajoo_path
-
-
-def _on_exit():
-    """Add an exit message.
-
-    This function will be called when the programs exit.
-    """
-    logging.getLogger(__name__).info('Application exiting ...')
-
-atexit.register(_on_exit)
 
 
 def _support_color_output():
@@ -145,49 +134,65 @@ def _excepthook(exctype, value, traceback):
                                          exc_info=(exctype, value, traceback))
 
 
-def init():
-    """Open the log file and prepare the logging module before first use."""
+class Context(object):
+    """Context class used to open and close log handlers."""
 
-    logging.captureWarnings(True)
+    def __init__(self):
+        self._stderr = None
+        self._stdout = None
 
-    root_logger = logging.getLogger()
+    def __enter__(self):
+        """Open the log file and prepare the logging module."""
 
-    date_format = '%Y-%m-%d %H:%M:%S'
-    string_format = '%(asctime)s %(levelname)-7s %(name)s - %(message)s'
-    formatter = logging.Formatter(fmt=string_format, datefmt=date_format)
+        logging.captureWarnings(True)
 
-    if getattr(sys, 'frozen', False):
-        # In frozen mode, this is a GUI app, and there is no stdout.
+        root_logger = logging.getLogger()
 
-        STDOUT_LEVEL = logging.WARNING + 1
-        STDERR_LEVEL = logging.WARNING + 2
+        date_format = '%Y-%m-%d %H:%M:%S'
+        string_format = '%(asctime)s %(levelname)-7s %(name)s - %(message)s'
+        formatter = logging.Formatter(fmt=string_format, datefmt=date_format)
 
-        logging.addLevelName(STDOUT_LEVEL, 'STDOUT')
-        logging.addLevelName(STDERR_LEVEL, 'STDERR')
+        if getattr(sys, 'frozen', False):
+            # In frozen mode, this is a GUI app, and there is no stdout.
 
-        sys.stdout = OutLogger(STDOUT_LEVEL)
-        sys.stderr = OutLogger(STDERR_LEVEL)
-    else:
-        stdout_handler = logging.StreamHandler()
+            STDOUT_LEVEL = logging.WARNING + 1
+            STDERR_LEVEL = logging.WARNING + 2
 
-        if _support_color_output():
-            colored_formatter = ColoredFormatter(fmt=string_format,
-                                                 datefmt=date_format)
-            stdout_handler.setFormatter(colored_formatter)
+            logging.addLevelName(STDOUT_LEVEL, 'STDOUT')
+            logging.addLevelName(STDERR_LEVEL, 'STDERR')
+
+            self._stderr = sys.stderr
+            self._stdout = sys.stdout
+            sys.stdout = OutLogger(STDOUT_LEVEL)
+            sys.stderr = OutLogger(STDERR_LEVEL)
         else:
-            stdout_handler.setFormatter(formatter)
-        root_logger.addHandler(stdout_handler)
+            stdout_handler = logging.StreamHandler()
 
-    file_handler = _get_file_handler()
-    if file_handler:
-        file_handler.setFormatter(formatter)
-        root_logger.addHandler(file_handler)
+            if _support_color_output():
+                colored_formatter = ColoredFormatter(fmt=string_format,
+                                                     datefmt=date_format)
+                stdout_handler.setFormatter(colored_formatter)
+            else:
+                stdout_handler.setFormatter(formatter)
+            root_logger.addHandler(stdout_handler)
 
-    # Before any configuration, all messages should be displayed.
-    set_debug_mode(True)
+        file_handler = _get_file_handler()
+        if file_handler:
+            file_handler.setFormatter(formatter)
+            root_logger.addHandler(file_handler)
 
-    # Log all uncaught exceptions
-    sys.excepthook = _excepthook
+        # Before any configuration, all messages should be displayed.
+        set_debug_mode(True)
+
+        # Log all uncaught exceptions
+        sys.excepthook = _excepthook
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Release resources (log files, ...)"""
+        logging.getLogger(__name__).debug('Stop logger ...')
+        logging.shutdown()
+        sys.stderr = self._stderr
+        sys.stdout = self._stdout
 
 
 def set_logs_level(levels):
@@ -222,19 +227,19 @@ def set_debug_mode(debug):
 
 
 def main():
-    init()
-    logger = logging.getLogger(__name__)
-    bajoo_logger = logging.getLogger('bajoo')
+    with Context():
+        logger = logging.getLogger(__name__)
+        bajoo_logger = logging.getLogger('bajoo')
 
-    logger.info('This message should be displayed.')
-    logger.error('Error messages are red in the console.')
-    logger.warning('We also have yellow warning messages.')
-    set_debug_mode(False)
-    logger.info('This one should never appears.')
-    bajoo_logger.debug('Neither this one.')
-    bajoo_logger.info('But "bajoo" info message will be displayed.')
-    set_debug_mode(True)
-    logger.info('The "exit" log entry be displayed will between this line.')
+        logger.info('This message should be displayed.')
+        logger.error('Error messages are red in the console.')
+        logger.warning('We also have yellow warning messages.')
+        set_debug_mode(False)
+        logger.info('This one should never appears.')
+        bajoo_logger.debug('Neither this one.')
+        bajoo_logger.info('But "bajoo" info message will be displayed.')
+        set_debug_mode(True)
+        logger.info('The "exit" log entry will be displayed after this line:')
 
 if __name__ == "__main__":
     main()
