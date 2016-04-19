@@ -12,8 +12,8 @@ class TestNetwork(object):
     """Test of the bajoo.network module"""
 
     def setup(self):
-        bajoo.network.executor.stop()
-        bajoo.network.executor.start()
+        bajoo.network._service.stop()
+        bajoo.network._service.start()
 
     def test_json_request(self, http_server):
         """Make a simple JSON requests with code 200 OK."""

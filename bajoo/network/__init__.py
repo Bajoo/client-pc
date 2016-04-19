@@ -25,78 +25,26 @@ is updated.
 
 import atexit
 from . import errors  # noqa
-from . import executor
-from .executor import start, stop  # noqa
-from .proxy import prepare_proxy
-from .request import Request
+from .service import Service
 
 
 # Start network worker at start.
-executor.start()
-atexit.register(executor.stop)
+_service = Service()
 
+_service.start()
+atexit.register(_service.stop)
 
-def json_request(verb, url, priority=10, **params):
-    """
-    Send a request and get the json from its response.
-
-    Args:
-        verb: (str)
-        url: (str)
-        priority (int, optional): requests with lower priority are executed
-            first. Default to 10 (high priority)
-        params: additional parameters
-    Returns: Future<dict>
-        A Future object containing the json object from the response
-    """
-    params = dict(params)
-    request = Request(Request.JSON, verb, url, params, priority=priority)
-    return executor.add_task(request)
-
-
-def download(verb, url, priority=100, **params):
-    """
-    Download a file and save it as a temporary file.
-
-    Args:
-        verb: (str)
-        url: (str)
-        priority (int, optional): requests with lower priority are executed
-            first. Default to 100 (normal priority)
-        params: additional parameters
-    Returns: Future<File>
-        A Future object contains the temporary file object
-    """
-    params = dict(params)
-    request = Request(Request.DOWNLOAD, verb, url, params, priority=priority)
-    return executor.add_task(request)
-
-
-def upload(verb, url, source, priority=100, **params):
-    """
-    Upload a file to an address.
-
-    Note: if a file-like object is passed as source, it will be automatically
-    closed after the upload.
-
-    Args:
-        verb: (str)
-        url: (str)
-        source (str/File): Path of the file to upload (if type is str), or
-            file-like object to upload.
-        priority (int, optional): requests with lower priority are executed
-            first. Default to 100 (normal priority)
-        params: additional parameters
-    """
-    params = dict(params)
-    request = Request(Request.UPLOAD, verb, url, params, source, priority)
-    return executor.add_task(request)
+# Copy methods from the service instance.
+json_request = _service.json_request
+download = _service.download
+upload = _service.upload
 
 
 if __name__ == "__main__":
     import os
     import io
     import logging
+    from .proxy import prepare_proxy
 
     logging.basicConfig(level=logging.DEBUG)
     print('get proxy: %s' % prepare_proxy())
