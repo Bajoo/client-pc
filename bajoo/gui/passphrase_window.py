@@ -21,10 +21,12 @@ class PassphraseWindow(wx.Dialog):
 
     If created manually, this window should be called as a modal window:
 
-    >>> window = PassphraseWindow(False)
-    >>> if window.ShowModal() == wx.ID_OK  # Can be either ID_OK or ID_CANCEL
-    >>>     print(window.get_passphrase())
-    >>>     print(window.allow_save_on_disk())
+    >>> def example():
+    ...     window = PassphraseWindow(False)
+    ...     # ShowModal() can return either ID_OK or ID_CANCEL
+    ...     if window.ShowModal() == wx.ID_OK:
+    ...         print(window.get_passphrase())
+    ...         print(window.allow_save_on_disk())
 
     Internal window elements:
      - "passphrase" is the wx.TextCtrl for the passphrase

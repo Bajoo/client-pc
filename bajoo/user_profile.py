@@ -15,17 +15,20 @@ _logger = logging.getLogger(__name__)
 def _write_action_attr(attr, callback):
     """make a proxy of an attribute, who call a callback on write operations.
 
-    >>> class Foo(object)
-    >>>   bar = 3
-    >>>   baz = _write_action_attr('bar', lambda: print('Write action!'))
-    >>>
-    >>> foo = Foo()
-    >>> print(foo.baz)
-    3
-    >>> foo.baz = 5
-    Write action!
-    >>> print(foo.bar)
-    5
+    Example:
+
+        >>> def on_write_callback(foo_instance):
+        ...     print('Write action!')
+        >>> class Foo(object):
+        ...   bar = 3
+        ...   baz = _write_action_attr('bar', on_write_callback)
+        >>> foo = Foo()
+        >>> print(foo.baz)
+        3
+        >>> foo.baz = 5
+        Write action!
+        >>> print(foo.bar)
+        5
 
     Note: the passphrase is "encrypted" with a simple xor using the email as
     key. It's not very secure, but still better than a clear passphrase.

@@ -21,6 +21,27 @@ When we are not connected, requests are done periodically, to check if the
 status has changed. As soon as the Bajoo servers responds a 200 OK, the status
 is updated.
 
+
+Examples:
+
+    Use of json_request:
+
+    >>> promise = json_request('GET', 'https://api.bajoo.fr/healthcheck')
+    >>> # Raises an exception if the request takes more than 10 seconds.
+    >>> result_dict = promise.result(10)
+    >>> print(result_dict['content'])
+    {u'status': u'ok'}
+
+    Use of download:
+
+    >>> import tempfile
+    >>> promise = download('GET', 'https://www.bajoo.fr/favicon.ico')
+    >>> result = promise.result(10)
+    >>> with tempfile.TemporaryFile('wb') as target_file:
+    ...     buffer = result['content'].read(10240)
+    ...     while buffer:
+    ...         target_file.write(buffer)
+    ...         buffer = result['content'].read(10240)
 """
 
 import atexit
@@ -38,28 +59,3 @@ atexit.register(_service.stop)
 json_request = _service.json_request
 download = _service.download
 upload = _service.upload
-
-
-if __name__ == "__main__":
-    import os
-    import io
-    import logging
-    from .proxy import prepare_proxy
-
-    logging.basicConfig(level=logging.DEBUG)
-    print('get proxy: %s' % prepare_proxy())
-
-    # Test JSON_request
-    json_future = json_request('GET', 'http://ip.jsontest.com/')
-    print("JSON response content: %s" % json_future.result())
-
-    # Test download
-    # Remove file before downloading
-    sample_file_name = "sample.pdf"
-    if os.path.exists(sample_file_name):
-        os.remove(sample_file_name)
-
-    future_download = download('GET', 'http://www.pdf995.com/samples/pdf.pdf')
-    with io.open(sample_file_name, "wb") as sample_file, \
-            future_download.result()['content'] as tmp_file:
-        sample_file.write(tmp_file.read())
