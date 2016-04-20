@@ -26,36 +26,65 @@ Examples:
 
     Use of json_request:
 
-    >>> promise = json_request('GET', 'https://api.bajoo.fr/healthcheck')
-    >>> # Raises an exception if the request takes more than 10 seconds.
-    >>> result_dict = promise.result(10)
-    >>> print(result_dict['content'])
+    >>> with NetworkService() as service:
+    ...     promise = service.json_request(
+    ...         'GET', 'https://api.bajoo.fr/healthcheck')
+    ...     # Raises an exception if the request takes more than 10 seconds.
+    ...     result_dict = promise.result(10)
+    ...     print(result_dict['content'])
     {u'status': u'ok'}
 
     Use of download:
 
     >>> import tempfile
-    >>> promise = download('GET', 'https://www.bajoo.fr/favicon.ico')
-    >>> result = promise.result(10)
-    >>> with tempfile.TemporaryFile('wb') as target_file:
-    ...     buffer = result['content'].read(10240)
-    ...     while buffer:
-    ...         target_file.write(buffer)
+    >>> with NetworkService() as service:
+    ...     promise = service.download(
+    ...         'GET', 'https://www.bajoo.fr/favicon.ico')
+    ...     result = promise.result(10)
+    ...     with tempfile.TemporaryFile('wb') as target_file:
     ...         buffer = result['content'].read(10240)
+    ...         while buffer:
+    ...             target_file.write(buffer)
+    ...             buffer = result['content'].read(10240)
 """
 
-import atexit
 from . import errors  # noqa
 from .service import Service
 
 
-# Start network worker at start.
-_service = Service()
+class Context(object):
+    def __init__(self):
+        self._service = None
 
-_service.start()
-atexit.register(_service.stop)
+    def start(self):
+        global json_request, download, upload
 
-# Copy methods from the service instance.
-json_request = _service.json_request
-download = _service.download
-upload = _service.upload
+        self._service = Service()
+        self._service.start()
+
+        # Copy methods from the service instance.
+        json_request = self._service.json_request
+        download = self._service.download
+        upload = self._service.upload
+
+    def stop(self):
+        global json_request, download, upload
+
+        if self._service:
+            self._service.stop()
+
+        json_request = None
+        download = None
+        upload = None
+
+    def __enter__(self):
+        self.start()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop()
+
+
+# The context must be used to set theses methods.
+json_request = None
+download = None
+upload = None

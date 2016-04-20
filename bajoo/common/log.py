@@ -126,7 +126,10 @@ class OutLogger(object):
         self._level = level
 
     def write(self, txt):
-        logging.log(self._level, txt)
+        try:
+            logging.log(self._level, txt)
+        except:
+            pass  # There is nothing we can do.
 
 
 def _excepthook(exctype, value, traceback):

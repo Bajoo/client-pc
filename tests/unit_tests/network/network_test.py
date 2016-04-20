@@ -11,9 +11,15 @@ import bajoo.network
 class TestNetwork(object):
     """Test of the bajoo.network module"""
 
+    def __init__(self):
+        self._context = None
+
     def setup(self):
-        bajoo.network._service.stop()
-        bajoo.network._service.start()
+        self._context = bajoo.network.Context()
+        self._context.start()
+
+    def teardown(self):
+        self._context.stop()
 
     def test_json_request(self, http_server):
         """Make a simple JSON requests with code 200 OK."""
