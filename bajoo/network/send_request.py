@@ -5,8 +5,10 @@ import logging
 import tempfile
 
 from requests import Session
+from requests import __version__ as requests_version
 from requests.adapters import HTTPAdapter
 
+from .. import __version__ as bajoo_version
 from . import errors
 from .proxy import prepare_proxy
 
@@ -46,6 +48,9 @@ def json_request(request):
     session = _prepare_session()
     params.setdefault('timeout', 4)
     params.setdefault('proxies', prepare_proxy())
+    params.setdefault('headers', {})
+    params['headers']['User-Agent'] = 'Bajoo-client/%s python-requests/%s' % (
+        bajoo_version, requests_version)
     response = session.request(method=request.verb, url=request.url, **params)
 
     _logger.log(5, 'request %s -> %s', request, response.status_code)
@@ -81,6 +86,9 @@ def download(request):
     session = _prepare_session()
     params.setdefault('timeout', 4)
     params.setdefault('proxies', prepare_proxy())
+    params.setdefault('headers', {})
+    params['headers']['User-Agent'] = 'Bajoo-client/%s python-requests/%s' % (
+        bajoo_version, requests_version)
     response = session.request(method=request.verb, url=request.url,
                                stream=True, **params)
 
@@ -132,6 +140,9 @@ def upload(request):
     session = _prepare_session()
     params.setdefault('timeout', 4)
     params.setdefault('proxies', prepare_proxy())
+    params.setdefault('headers', {})
+    params['headers']['User-Agent'] = 'Bajoo-client/%s python-requests/%s' % (
+        bajoo_version, requests_version)
     file = request.source
 
     try:

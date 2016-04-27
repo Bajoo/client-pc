@@ -4,6 +4,7 @@
 import itertools
 import logging
 import os
+import sys
 
 from .abstract_task import _Task
 from .added_local_files_task import PushTaskMixin
@@ -48,6 +49,9 @@ class SyncTask(_Task, PushTaskMixin, RemovedTaskMixin):
                 if config.get('exclude_hidden_files') and is_hidden(abs_path):
                     continue
 
+                if sys.platform in ['win32', 'cygwin', 'win64']:
+                    rel_path = rel_path.replace('\\', '/')
+
                 if not is_path_allowed(rel_path):
                     continue
 
@@ -78,5 +82,3 @@ class SyncTask(_Task, PushTaskMixin, RemovedTaskMixin):
             failed_tasks = list(failed_tasks)
             if failed_tasks:
                 self._task_errors = failed_tasks
-        yield None
-        return
