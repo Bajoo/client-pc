@@ -16,12 +16,13 @@ Non-caught exceptions are logged before the program quit.
 
 """
 
+import itertools
 import logging
 import logging.handlers
-import fnmatch
 import os
 import os.path
 import sys
+import time
 
 from . import path as bajoo_path
 
@@ -38,6 +39,160 @@ def _support_color_output():
     return False
 
 
+class RotatingLogHandler(logging.FileHandler):
+    """Log handler who use a file rotated every day.
+
+    'bajoo.log' is always the most recent logfile. When the program is started,
+    The last log file (if it exists) is renamed to 'bajoo-$date.log', with
+    $date the day of the last modification of the file (format %Y.%m.%d).
+
+    If Bajoo is started several times the same day, log files are renamed with
+    an increment. 'bajoo.log' is the most recent, then 'bajoo.$today.log',
+    followed by 'bajoo.$today.1.log`, 'bajoo.$today.2.log`, and so on.
+
+    Note that the file rotation is done at midnight and does not require a
+    restart.
+    """
+    def __init__(self, filename, nb_max_files=7):
+        """
+        Args:
+            filename (str): base filename for log file. Ex: "bajoo.log"
+            nb_max_files (int, optional): maximum number of log files. When
+                there is more files than this values, older files are removed.
+        """
+        logging.FileHandler.__init__(self, filename, mode='a',
+                                     encoding='utf-8')
+        self.nb_max_files = nb_max_files
+        if os.path.exists(filename):
+            stats = os.stat(filename)
+            if stats.st_size:
+                self.rollover_at = os.stat(filename).st_mtime
+                self.do_rollover()
+            else:
+                self.rollover_at = self.compute_next_rollover()
+        else:
+            self.rollover_at = self.compute_next_rollover()
+
+    def emit(self, record):
+        """Emit a record.
+
+        If needed, performs a rollover before writing the record.
+        """
+        try:
+            if time.time() >= self.rollover_at:
+                self.do_rollover()
+            logging.FileHandler.emit(self, record)
+        except:
+            self.handleError(record)
+
+    def compute_next_rollover(self):
+        """Work out the rollover time based on the specified time.
+
+        Returns:
+            Int: timestamp of the next rollover.
+        """
+        now = time.time()
+        t = time.localtime(now)
+        current_hour, current_minute, current_second = t[3:6]
+        result = now + 3600 * 24 - (
+            (current_hour * 60 + current_minute) * 60 + current_second)
+
+        dst_now = t.tm_isdst
+        dst_at_rollover = time.localtime(result).tm_isdst
+        if dst_now != dst_at_rollover:
+            result += 3600 if dst_now else -3600
+        return result
+
+    def rollover(self, src, filename, str_date, extension, inc=0):
+        """Recursive renaming function.
+
+        'bajoo.log' is renamed into 'bajoo.$date.log'
+        'bajoo.$date.log' is renamed into 'bajoo.$date.1.log', and so on.
+        """
+        if inc is 0:
+            dest = '%s.%s%s' % (filename, str_date, extension)
+        else:
+            dest = '%s.%s.%s%s' % (filename, str_date, inc, extension)
+
+        if os.path.exists(dest):
+            inc += 1
+            if (inc + 1) > self.nb_max_files:
+                try:
+                    os.remove(dest)
+                except (OSError, IOError):
+                    pass
+            else:
+                self.rollover(dest, filename, str_date, extension, inc)
+        try:
+            os.rename(src, dest)
+        except (OSError, IOError):
+            pass
+
+    def remove_old_files(self):
+        """Remove old log files when there are more than the allowed."""
+        log_dir = bajoo_path.get_log_dir()
+        all_log_files = os.listdir(log_dir)
+
+        recent_log_file = []
+
+        # Remove old logs
+        for f in all_log_files:
+            if f.startswith('bajoo-') or f.startswith('bajoo.log.'):
+                # Log formats pre 0.3.18
+                try:
+                    os.remove(os.path.join(log_dir, f))
+                except (OSError, IOError):
+                    pass
+            else:
+                recent_log_file.append(f)
+
+        # 1st sort by date
+        recent_log_file = sorted(recent_log_file, reverse=True)
+
+        def key_date(path):
+            return path.split('.')[1]
+
+        def key_inc(path):
+            split_path = path.split('.')
+            return split_path[2] if len(split_path) >= 4 else '0'
+
+        # sort, for each days, by increment
+        recent_log_file = [
+            p
+            for _, one_day_paths
+            in itertools.groupby(recent_log_file, key=key_date)
+            for p in sorted(one_day_paths, key=key_inc)
+            ]
+
+        # Keep "nb_max_files" files, then delete the rest.
+        for path in recent_log_file[self.nb_max_files:]:
+            try:
+                os.remove(os.path.join(log_dir, path))
+            except (OSError, IOError):
+                pass
+
+    def do_rollover(self):
+        if self.stream:
+            self.stream.close()
+            self.stream = None
+
+        now = int(time.time())
+        dst_now = time.localtime(now).tm_isdst
+        time_tuple = time.localtime(self.rollover_at)
+        if dst_now != time_tuple.tm_isdst:
+            addend = 3600 if dst_now else -3600
+            time_tuple = time.localtime(self.rollover_at + addend)
+        str_date = time.strftime('%Y-%m-%d', time_tuple)
+
+        filename, extension = os.path.splitext(self.baseFilename)
+
+        self.rollover(self.baseFilename, filename, str_date, extension)
+        self.remove_old_files()
+
+        self.stream = self._open()
+        self.rollover_at = self.compute_next_rollover()
+
+
 def _get_file_handler():
     """Open a new file for using as a log output.
 
@@ -51,28 +206,16 @@ def _get_file_handler():
             file creation has failed.
     """
 
-    # TODO: this block of code cleans logs from v0.3.13 and older.
-    # It should be executed as a "hook" during application update.
-    try:
-        log_dir = bajoo_path.get_log_dir()
-        all_log_files = os.listdir(log_dir)
-        for f in fnmatch.filter(all_log_files, 'bajoo-*.log'):
-            try:
-                os.remove(os.path.join(log_dir, f))
-            except (OSError, IOError):
-                pass
-    except:
-        pass
-
     try:
         log_path = os.path.join(bajoo_path.get_log_dir(), 'bajoo.log')
-        handler = logging.handlers.TimedRotatingFileHandler(
-            log_path, when='midnight', backupCount=7)
-        handler.doRollover()  # rename 'bajoo.log' of the previous execution.
+        handler = RotatingLogHandler(log_path)
         return handler
     except:
-        logging.getLogger(__name__).warning('Unable to create the log file',
-                                            exc_info=True)
+        try:
+            logging.getLogger(__name__).warning(
+                'Unable to create the log file', exc_info=True)
+        except:
+            pass  # We can't log the fact that we can't log in this file.
         return None
 
 
@@ -133,8 +276,11 @@ class OutLogger(object):
 
 
 def _excepthook(exctype, value, traceback):
-    logging.getLogger(__name__).critical('Uncaught exception',
-                                         exc_info=(exctype, value, traceback))
+    try:
+        logging.getLogger(__name__).critical(
+            'Uncaught exception', exc_info=(exctype, value, traceback))
+    except:
+        pass  # Avoid recursive logging attempt.
 
 
 class Context(object):
