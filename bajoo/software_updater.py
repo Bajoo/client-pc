@@ -4,7 +4,8 @@ import atexit
 import logging
 import os
 import sys
-import threading
+from .common.periodic_task import PeriodicTask
+
 if hasattr(sys, 'frozen'):
     import esky
     import esky.util
@@ -47,14 +48,13 @@ class SoftwareUpdater(object):
                 stored.
         """
         self.app = app
-        self.base_url = base_url
-        self.interval = 24 * 3600
-        self._timer = None
         self._esky = None
         self._abort_flag = False
+        self._periodic_task = PeriodicTask('App Updater', 3600 * 24,
+                                           self._timer_thread)
 
         if hasattr(sys, 'frozen'):
-            self._esky = esky.Esky(sys.executable, self.base_url)
+            self._esky = esky.Esky(sys.executable, base_url)
             try:
                 # Remove old files from previous versions.
                 self._esky.cleanup()
@@ -64,19 +64,11 @@ class SoftwareUpdater(object):
     def start(self):
         if not self._esky:
             return
-
-        _logger.debug('Start Software updater service')
-
-        self._timer = threading.Timer(0, self._timer_thread)
-        self._timer.name = 'App Updater'
-        self._timer.daemon = True
-        self._timer.start()
+        self._periodic_task.start()
 
     def stop(self):
         self._abort_flag = True
-        if self._timer:
-            _logger.debug('Stop Software updater service')
-            self._timer.cancel()
+        self._periodic_task.stop()
 
     def _timer_thread(self):
         """Check for update at regular interval."""
@@ -87,11 +79,6 @@ class SoftwareUpdater(object):
             _logger.debug('Update operation aborted.')
         except:
             _logger.warn('Check update failed', exc_info=True)
-
-        self._timer = threading.Timer(self.interval, self._timer_thread)
-        self._timer.name = 'App Updater'
-        self._timer.daemon = True
-        self._timer.start()
 
     def _background_check_update(self):
         if not self._esky:
