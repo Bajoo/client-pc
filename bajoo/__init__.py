@@ -2,6 +2,9 @@
 
 from .__version__ import __version__  # noqa
 
+import logging
+import os
+
 from .bajoo_app import BajooApp
 from .common import log
 from .common import config
@@ -14,6 +17,10 @@ def main():
 
     # Start log and load config
     with log.Context():
+
+        logger = logging.getLogger(__name__)
+        logger.debug('Current working directory is : "%s"', os.getcwd())
+
         with network.Context():
             config.load()
             log.set_debug_mode(config.get('debug_mode'))
