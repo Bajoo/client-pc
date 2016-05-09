@@ -108,7 +108,7 @@ class TestTaskAbstract(object):
 
     def assert_no_error_on_task(self):
         assert self.error_string == ""
-        assert self.result is None
+        assert self.result == []
 
     def assert_error_on_task(self, task):
         assert isinstance(self.result, list)

@@ -359,7 +359,7 @@ class ContainerSyncPool(object):
                             [local_container]) \
                 .start()
 
-    def _on_task_success(self, _arg=None):
+    def _on_task_success(self, errors):
         """This method can be called in three different cases:
         A) the task and its subtasks are successful
         B) the task is successful but a subtask failed
@@ -374,34 +374,33 @@ class ContainerSyncPool(object):
         failing tasks
 
         Args:
-            _arg(list(_Task)): None or the list of failing taks
-
+            errors (list(_Task)): the list of failing taks. Empty list if no
+                error occurred.
         """
 
         # TODO: If the task factory returns a list of failed tasks, the tasks
         # should be retried and the concerned files should be excluded of
         # the sync for a period of 24h if they keep failing.
 
-        if _arg is not None:
-            upload_limit_reached = False
-            passphrase_not_set = False
+        upload_limit_reached = False
+        passphrase_not_set = False
 
-            for task in _arg:
-                if isinstance(task.error, HTTPEntityTooLargeError):
-                    upload_limit_reached = True
+        for task in errors:
+            if isinstance(task.error, HTTPEntityTooLargeError):
+                upload_limit_reached = True
 
-                if isinstance(task.error, PassphraseAbortError):
-                    passphrase_not_set = True
+            if isinstance(task.error, PassphraseAbortError):
+                passphrase_not_set = True
 
-                if hasattr(task.error, 'container_id'):
-                    self._manage_container_error(task.error)
+            if hasattr(task.error, 'container_id'):
+                self._manage_container_error(task.error)
 
-            if upload_limit_reached:
-                local_container = task.local_container
-                self.delay_upload(local_container)
+        if upload_limit_reached:
+            local_container = task.local_container
+            self.delay_upload(local_container)
 
-            if passphrase_not_set:
-                self._pause_if_need_the_passphrase()
+        if passphrase_not_set:
+            self._pause_if_need_the_passphrase()
 
         self._decrement()
 

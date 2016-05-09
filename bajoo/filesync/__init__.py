@@ -26,10 +26,13 @@ When done, it generates a dict containing the new values for theses hashes. If
 the dict is empty (or if some items are missing), the original hash values are
 removed. When an error occurs, the new index fragment is not generated. In this
 case, the original hash values are not modified.
-The Promise returns True or False, according to the success of the operation.
-The task should be executed again latter if it returns False.
-Sometimes, a task is ignored (duplicate tasks); In this case, the function
-doesn't returns a Promise, but directly None.
+
+The promise returns a list of failed tasks. If the operation is successful,
+the list will be empty. If the task is a simple task and fails, the list will
+contains the task itself.
+If the task is more complex, and involves many subtasks, the list contains each
+of the failed subtasks.
+The failed tasks should be executed again latter.
 """
 
 from .added_local_files_task import AddedLocalFilesTask
@@ -72,8 +75,7 @@ def added_local_files(container, local_container, filename, display_error_cb):
         local_container (LocalContainer)
         filename (str): filename of the file created, relative to base_path.
     Returns:
-        Promise<boolean>: True if the task is successful; False if an error
-            happened.
+        Promise<list of _Task>: List of failed tasks. Empty list if no error.
     """
     task = AddedLocalFilesTask(container, (filename,), local_container,
                                display_error_cb, create_mode=True)
@@ -89,8 +91,7 @@ def changed_local_files(container, local_container, filename,
         local_container (LocalContainer)
         filename (str): filename of the modified file, relative to base_path.
     Returns:
-        Promise<boolean>: True if the task is successful; False if an error
-            happened.
+        Promise<list of _Task>: List of failed tasks. Empty list if no error.
     """
     task = AddedLocalFilesTask(container, (filename,), local_container,
                                display_error_cb, create_mode=False)
@@ -106,8 +107,7 @@ def removed_local_files(container, local_container, filename,
         local_container (LocalContainer)
         filename (str): filename of the deleted file, relative to base_path.
     Returns:
-        Promise<boolean>: True if the task is successful; False if an error
-            happened.
+        Promise<list of _Task>: List of failed tasks. Empty list if no error.
     """
     task = RemovedLocalFilesTask(container, (filename,), local_container,
                                  display_error_cb)
@@ -126,8 +126,7 @@ def moved_local_files(container, local_container, src_filename, dest_filename,
         dest_filename (str): destination filename of the movedfile, relative to
             base_path.
     Returns:
-        Promise<boolean>: True if the task is successful; False if an error
-            happened.
+        Promise<list of _Task>: List of failed tasks. Empty list if no error.
     """
 
     task = MovedLocalFilesTask(container, (src_filename, dest_filename,),
@@ -141,10 +140,9 @@ def sync_folder(container, local_container, folder_path, display_error_cb):
     Args:
         container (Container)
         local_container (LocalContainer)
-        filename (str): path of the directory, relative to base_path.
+        folder_path (str): path of the directory, relative to base_path.
     Returns:
-        Promise<boolean>: True if the task is successful; False if an error
-            happened.
+        Promise<list of _Task>: List of failed tasks. Empty list if no error.
     """
     task = SyncTask(container, (folder_path,), local_container,
                     display_error_cb)

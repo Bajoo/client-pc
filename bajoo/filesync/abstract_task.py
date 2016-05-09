@@ -69,8 +69,9 @@ class _Task(object):
                 t = ensure_unicode(t)
                 self.target_list.append(t)
 
-        # If set, list of tasks who've failed.
-        self._task_errors = None
+        # list of tasks who've failed.
+        # If there is no error, it's an empty list.
+        self._task_errors = []
         self.error = None
 
     def __repr__(self):
@@ -99,6 +100,9 @@ class _Task(object):
 
         The task will be added to the ref task index during the initialization
         phase.
+        Returns:
+            Promise<list>: List of task in error. If there is no error, returns
+                an empty list.
         """
 
         _logger.debug('Prepare task %s' % self)
@@ -174,8 +178,6 @@ class _Task(object):
 
         _logger.exception('Exception on %s task:' % self.get_type())
 
-        if not self._task_errors:
-            self._task_errors = []
         self._task_errors.append(self)
 
         self.error = error

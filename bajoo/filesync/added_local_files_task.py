@@ -140,7 +140,5 @@ class AddedLocalFilesTask(_Task, PushTaskMixin):
         self._release_index()
         result = yield add_task(task)
 
-        if result is not None:
-            self._task_errors = (result,)
-
+        self._task_errors.extend(result)
         return
