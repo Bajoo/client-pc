@@ -810,7 +810,7 @@ class BajooApp(wx.App, SoftwareUpdate):
 
     @promise.reduce_coroutine(safeguard=True)
     def send_bug_report(self, _evt):
-        _logger.debug("bug repport creation")
+        _logger.debug("bug report creation")
         tmpdir = tempfile.mkdtemp()
 
         # identify where are last log files
@@ -835,11 +835,12 @@ class BajooApp(wx.App, SoftwareUpdate):
                 except (IOError, OSError):
                     pass
 
-                username = self._generate_report_file(zf, _evt.report)
+                username = self._generate_report_file(zf, _evt.report,
+                                                      _evt.email)
 
             server_path = "/logs/%s/bugreport%s.zip" % \
-                (username,
-                 datetime.now().strftime("%Y%m%d-%H%M%S"))
+                          (username,
+                           datetime.now().strftime("%Y%m%d-%H%M%S"))
 
             if self._session:
                 log_session = self._session
@@ -849,11 +850,24 @@ class BajooApp(wx.App, SoftwareUpdate):
             with open(zip_path, 'rb') as file_content:
                 yield log_session.upload_storage_file(
                     'PUT', server_path, file_content)
-
+        except Exception as e:
+            if self._contact_dev_window:
+                try:
+                    message = str(e)
+                except:
+                    pass
+                if not message:
+                    message = _('An error happened! Consult the logs for more'
+                                ' details')
+                self._contact_dev_window.set_error_message(message)
+            raise e
+        else:
+            if self._contact_dev_window:
+                self._contact_dev_window.display_confirmation()
         finally:
             shutil.rmtree(tmpdir)
 
-    def _generate_report_file(self, zip_object, message):
+    def _generate_report_file(self, zip_object, message, reply_email):
         configfile = StringIO()
         configfile.write("## Bajoo bug report ##\n\n")
         configfile.write("Creation date: %s\n" % str(datetime.now()))
@@ -867,6 +881,7 @@ class BajooApp(wx.App, SoftwareUpdate):
             "System default encoding: %s\n" % sys.getdefaultencoding())
         configfile.write(
             "Filesystem encoding: %s\n" % sys.getfilesystemencoding())
+        configfile.write("Reply email: %s\n" % reply_email)
 
         if self.user_profile is None:
             username = "Unknown_user"
@@ -884,7 +899,7 @@ class BajooApp(wx.App, SoftwareUpdate):
         configfile.write("Default locales: %s\n" % locales)
         configfile.write("Message: \n\n%s" % message)
 
-        zip_object.writestr("MESSAGE", configfile.getvalue())
+        zip_object.writestr("MESSAGE", configfile.getvalue().encode('utf-8'))
         configfile.close()
 
         return username
