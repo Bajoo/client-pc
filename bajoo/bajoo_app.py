@@ -169,7 +169,7 @@ class BajooApp(wx.App, SoftwareUpdate):
         config.set('proxy_port', event.server_port)
         if event.use_auth:
             config.set('proxy_user', event.username)
-            config.set('proxy_password', event.proxy_password)
+            config.set('proxy_password', event.password)
         else:
             config.set('proxy_user', None)
             config.set('proxy_password', None)
