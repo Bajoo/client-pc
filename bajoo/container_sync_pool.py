@@ -431,5 +431,6 @@ class ContainerSyncPool(object):
         # what is it supposed to do ?
 
         local_container = self.remove(error.container_id)
-        local_container.status = local_container.STATUS_ERROR
-        local_container.error_msg = str(error)
+        if local_container is not None:
+            local_container.status = local_container.STATUS_ERROR
+            local_container.error_msg = str(error)
