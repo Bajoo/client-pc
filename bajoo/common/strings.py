@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import locale
 import warnings
 
 
@@ -46,6 +47,36 @@ def to_str(input_str, expected_type=None, in_enc='utf-8',
         return to_bytes(input_str, in_enc=in_enc, out_enc=out_enc)
     else:
         return to_unicode(input_str, in_enc=in_enc)
+
+
+def err2unicode(err):
+    """Convert an error into unicode string in a safe way.
+
+    Args:
+        err (Exception|bytes|unicode): error to convert. It can be either an
+            Exception, or the corresponding str message.
+    Returns:
+        unicode: unicode error message.
+    """
+    if isinstance(err, _unicode_type):
+        return err
+
+    if isinstance(err, bytes):
+        msg = err
+    else:
+        msg = str(err)
+
+    if isinstance(msg, _unicode_type):
+        return msg
+
+    try:
+        return msg.decode('utf-8')
+    except UnicodeError:
+        try:
+            # System errors sometimes uses this encoding.
+            return msg.decode(locale.getpreferredencoding(False))
+        except UnicodeError:
+            return msg.decode('utf-8', errors='replace')
 
 
 def to_unicode(input_str, expected_type=None, in_enc='utf-8'):

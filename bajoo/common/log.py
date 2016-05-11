@@ -25,6 +25,7 @@ import sys
 import time
 
 from . import path as bajoo_path
+from .strings import err2unicode
 
 
 def _support_color_output():
@@ -219,7 +220,19 @@ def _get_file_handler():
         return None
 
 
-class ColoredFormatter(logging.Formatter):
+class UnicodeFormatter(logging.Formatter):
+    """EncodingError-safe formatter.
+
+    Convert formatted exception message into unicode values.
+    It avoids unicode errors when OS produces messages not encoded in UTF-8.
+    """
+
+    def formatException(self, ei):
+        res = logging.Formatter.formatException(self, ei)
+        return err2unicode(res)
+
+
+class ColoredFormatter(UnicodeFormatter):
     """Formatter who display colored messages using ANSI escape codes."""
 
     _colors = {
@@ -247,7 +260,7 @@ class ColoredFormatter(logging.Formatter):
             # Real stacktrace, before being moved by the Futures.
             msg = ei[1]._origin_stack[:-1]
         else:
-            msg = logging.Formatter.formatException(self, ei)
+            msg = UnicodeFormatter.formatException(self, ei)
         msg_lines = msg.split('\n')
         last_line = msg_lines[-1]
         result = '\n'.join(msg_lines[:-1]) + '\n'
@@ -299,7 +312,7 @@ class Context(object):
 
         date_format = '%Y-%m-%d %H:%M:%S'
         string_format = '%(asctime)s %(levelname)-7s %(name)s - %(message)s'
-        formatter = logging.Formatter(fmt=string_format, datefmt=date_format)
+        formatter = UnicodeFormatter(fmt=string_format, datefmt=date_format)
 
         if getattr(sys, 'frozen', False):
             # In frozen mode, this is a GUI app, and there is no stdout.
