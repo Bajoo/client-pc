@@ -33,8 +33,10 @@ class PeriodicTask(object):
             try:
                 self._args = self._task(*args, **kwargs)
             except:
-                _logger.exception('Periodic task %s has raised exception' %
+                _logger.exception('Periodic task %s has raised exception',
                                   self._task)
+            if self._args is None:
+                self._args = ()
             self._timer = Timer(self._delay, self._exec_task, args=self._args)
             self._timer.name = self._name
             self._timer.daemon = True
