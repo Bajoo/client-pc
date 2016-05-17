@@ -62,7 +62,7 @@ class RotatingLogHandler(logging.FileHandler):
                 there is more files than this values, older files are removed.
         """
         logging.FileHandler.__init__(self, filename, mode='a',
-                                     encoding='utf-8')
+                                     encoding=None)
         self.nb_max_files = nb_max_files
         if os.path.exists(filename):
             stats = os.stat(filename)
