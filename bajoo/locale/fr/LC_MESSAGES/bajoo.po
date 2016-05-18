@@ -60,7 +60,7 @@ msgstr "Il y a déjà un compte utilisant cet email."
 #: bajoo/connection_registration_process.py:230
 #, python-format
 msgid "An error happened: %s"
-msgstr "Une erreur s'est arrivée : %s"
+msgstr "Une erreur s'est produite : %s"
 
 #: bajoo/connection_registration_process.py:336
 #, python-format
@@ -86,7 +86,7 @@ msgid ""
 "Error during the GPG key check:\n"
 " %s"
 msgstr ""
-"Erreur dans la vérification de la clé GPG :\n"
+"Erreur lors de la vérification de la clé GPG :\n"
 " %s"
 
 #: bajoo/connection_registration_process.py:382
