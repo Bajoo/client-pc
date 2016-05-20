@@ -4,11 +4,13 @@ from .__version__ import __version__  # noqa
 
 import logging
 import os
+import sys
 
 from .bajoo_app import BajooApp
 from .common import log
 from .common import config
 from .common.i18n import set_lang
+from .common.strings import to_unicode
 from . import network
 
 
@@ -19,7 +21,8 @@ def main():
     with log.Context():
 
         logger = logging.getLogger(__name__)
-        logger.debug('Current working directory is : "%s"', os.getcwd())
+        cwd = to_unicode(os.getcwd(), in_enc=sys.getfilesystemencoding())
+        logger.debug('Current working directory is : "%s"', cwd)
 
         with network.Context():
             config.load()

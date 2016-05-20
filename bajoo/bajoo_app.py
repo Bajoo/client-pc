@@ -18,7 +18,6 @@ except ImportError:
     from io import StringIO
 
 import wx
-from wx.lib.softwareupdate import SoftwareUpdate
 
 from . import __version__
 from . import promise
@@ -44,7 +43,7 @@ from .gui.passphrase_window import PassphraseWindow
 from .gui.proxy_window import EVT_PROXY_FORM
 from .gui.tab import SettingsTab
 from .gui.tab.account_tab import AccountTab
-from .gui.tab.advanced_settings_tab import AdvancedSettingsTab  # REMOVE
+from .gui.tab.advanced_settings_tab import AdvancedSettingsTab
 from .gui.tab.creation_share_tab import CreationShareTab
 from .gui.tab.details_share_tab import DetailsShareTab
 from .gui.tab.list_shares_tab import ListSharesTab
@@ -58,7 +57,7 @@ from .software_updater import SoftwareUpdater
 _logger = logging.getLogger(__name__)
 
 
-class BajooApp(wx.App, SoftwareUpdate):
+class BajooApp(wx.App):
     """Main class who start and manages the user interface.
 
     This is the first class created, just after the loading of configuration
@@ -90,7 +89,7 @@ class BajooApp(wx.App, SoftwareUpdate):
     def __init__(self):
         self._checker = None
         # TODO: Set real value for production.
-        self._updater = SoftwareUpdater(self, "http://dev.bajoo.fr/dowloads/")
+        self._updater = SoftwareUpdater(self, "http://dev.bajoo.fr/downloads/")
         self._home_window = None
         self._main_window = None
         self._about_window = None
@@ -103,6 +102,7 @@ class BajooApp(wx.App, SoftwareUpdate):
         self._container_sync_pool = ContainerSyncPool(
             self._on_global_status_change, self._on_sync_error)
         self._passphrase_manager = None
+        self._exit_flag = False  # When True, the app is exiting.
 
         self.user_profile = None
 
@@ -115,10 +115,6 @@ class BajooApp(wx.App, SoftwareUpdate):
         wx.App.__init__(self, redirect=False)
 
         self.SetAppName("Bajoo")
-
-        # TODO: Set real value for production.
-        base_url = "http://192.168.1.120:8000"
-        self.InitUpdates(base_url, base_url + "/" + 'ChangeLog.txt')
 
         if config.get('auto_update'):
             self._updater.start()
@@ -157,7 +153,7 @@ class BajooApp(wx.App, SoftwareUpdate):
             _logger.info('Prevents the user to start a second Bajoo instance.')
 
             wx.MessageBox(_("Another instance of Bajoo is actually running.\n"
-                          "You can't open Bajoo twice."),
+                            "You can't open Bajoo twice."),
                           caption=_("Bajoo already started"))
             return False
         return True
@@ -214,8 +210,9 @@ class BajooApp(wx.App, SoftwareUpdate):
         window = cls()
 
         # clean variable when destroyed.
-        def clean(_evt):
+        def clean(evt):
             setattr(self, attribute, None)
+            evt.Skip()
 
         self.Bind(wx.EVT_WINDOW_DESTROY, clean, source=window)
 
@@ -251,8 +248,10 @@ class BajooApp(wx.App, SoftwareUpdate):
         self.Bind(ListSharesTab.EVT_CONTAINER_DETAIL_REQUEST,
                   self._on_request_container_details)
         self.Bind(SettingsTab.EVT_CONFIG_REQUEST, self._on_request_config)
-        self.Bind(AdvancedSettingsTab.EVT_CHECK_UPDATES_REQUEST,
-                  self._on_request_check_updates)
+        self.Bind(AdvancedSettingsTab.EVT_GET_UPDATER_REQUEST,
+                  self._on_request_get_updater)
+        self.Bind(AdvancedSettingsTab.EVT_RESTART_REQUEST,
+                  self._restart_for_update)
         self.Bind(MembersShareForm.EVT_SUBMIT,
                   self._on_add_share_member)
         self.Bind(MembersShareForm.EVT_REMOVE_MEMBER,
@@ -390,9 +389,8 @@ class BajooApp(wx.App, SoftwareUpdate):
         if self._main_window:
             self._main_window.load_config(config)
 
-    def _on_request_check_updates(self, _event):
-        _logger.debug("Check for updates...")
-        self.CheckForUpdate()
+    def _on_request_get_updater(self, event):
+        event.EventObject.set_updater(self._updater)
 
     @promise.reduce_coroutine(safeguard=True)
     def _on_add_share_member(self, event):
@@ -682,6 +680,9 @@ class BajooApp(wx.App, SoftwareUpdate):
 
     def _exit(self, _event=None):
         """Close all resources and quit the app."""
+        if self._exit_flag:
+            return
+        self._exit_flag = True
         _logger.debug('Exiting ...')
 
         if self._home_window:
@@ -904,7 +905,42 @@ class BajooApp(wx.App, SoftwareUpdate):
 
         return username
 
-    def restart_when_idle(self, software_updater):
-        # TODO: restart only when no windows is opened.
-        software_updater.register_restart_on_exit()
+    def _restart_if_idle(self, evt):
+        evt.Skip()
+        if not evt.GetEventObject().IsTopLevel():
+            return
+
+        window_being_destroyed = None
+        if evt.GetEventType() == wx.EVT_WINDOW_DESTROY.typeId:
+            window_being_destroyed = evt.GetEventObject()
+        self.restart_when_idle(_already_bound=True,
+                               _window_being_destroyed=window_being_destroyed)
+
+    @ensure_gui_thread
+    def restart_when_idle(self, _already_bound=False,
+                          _window_being_destroyed=None):
+        # Under Windows, the window being destroyed during EVT_WINDOW_DESTROY
+        # is still alive and visible. "_window_being_destroyed" contains this
+        # window, so we can ignore it.
+        if not _already_bound:
+            _logger.info('Will restart Bajoo when all windows will be closed.')
+        all_windows = (self._home_window, self._main_window,
+                       self._about_window, self._contact_dev_window)
+
+        if any(w and w is not _window_being_destroyed and w.IsShown()
+               for w in all_windows):
+            if not _already_bound:
+                self.Bind(wx.EVT_SHOW, self._restart_if_idle)
+                self.Bind(wx.EVT_WINDOW_DESTROY, self._restart_if_idle)
+        else:
+            self.Unbind(wx.EVT_SHOW, handler=self._restart_if_idle)
+            self.Unbind(wx.EVT_WINDOW_DESTROY, handler=self._restart_if_idle)
+            return self._restart_for_update()
+
+    @ensure_gui_thread
+    def _restart_for_update(self, _evt=None):
+        if self._exit_flag:
+            return
+        _logger.info('Restart Bajoo now.')
+        self._updater.register_restart_on_exit()
         self._exit(None)

@@ -107,9 +107,10 @@ class Translator(object):
 
         Args:
             method_name (str): method member of each window.
-            windows (list of item): each item can be either the text to
-                translate, or a tuple (text, format_arg) with format_arg an
-                argument to pass to the '%' operator applied on text.
+            windows (dict): the keys are window objects containing the text.
+                Each value can be either the text to translate, or a tuple
+                (text, format_arg) with format_arg an argument to pass to the
+                '%' operator applied on text.
         """
         for (window, text) in windows.items():
             format_arg = None
