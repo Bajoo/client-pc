@@ -221,7 +221,7 @@ class _Task(object):
         return d.hexdigest()
 
     def _write_downloaded_file(self, file_content, target):
-        """Write the downloaded file on the disk.
+        """Write the downloaded file on the disk and close it.
 
         Returns:
             str: the local md5 hash
