@@ -26,7 +26,7 @@ Examples:
 
     Use of json_request:
 
-    >>> with NetworkService() as service:
+    >>> with Service() as service:
     ...     promise = service.json_request(
     ...         'GET', 'https://api.bajoo.fr/healthcheck')
     ...     # Raises an exception if the request takes more than 10 seconds.
@@ -37,7 +37,7 @@ Examples:
     Use of download:
 
     >>> import tempfile
-    >>> with NetworkService() as service:
+    >>> with Service() as service:
     ...     promise = service.download(
     ...         'GET', 'https://www.bajoo.fr/favicon.ico')
     ...     result = promise.result(10)
