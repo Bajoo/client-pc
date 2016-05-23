@@ -234,49 +234,51 @@ class ContainerSyncPool(object):
                     self._on_state_change(self._global_status)
 
     def _added_remote_file(self, container_id, files):
-        _logger.info('Added (remote): %s' % files)
+        _logger.info('Added (remote): %s files', len(files))
         for f in files:
             if is_path_allowed(f['name']):
                 self._create_task(filesync.added_remote_files, container_id,
                                   f['name'])
 
     def _removed_remote_files(self, container_id, files):
-        _logger.info('Removed (remote): %s' % files)
+        _logger.info('Removed (remote): %s files', len(files))
         for f in files:
             if is_path_allowed(f['name']):
                 self._create_task(filesync.removed_remote_files, container_id,
                                   f['name'])
 
     def _modified_remote_files(self, container_id, files):
-        _logger.info('Modified (remote): %s' % files)
+        _logger.info('Modified (remote): %s files ', len(files))
         for f in files:
             if is_path_allowed(f['name']):
                 self._create_task(filesync.changed_remote_files, container_id,
                                   f['name'])
 
     def _added_local_file(self, container_id, file_path):
-        _logger.info('Added (local): %s for %s' % (file_path, container_id))
+        _logger.info('Added (local): %s files for %s', file_path, container_id)
         local_container, u, w = self._local_containers[container_id]
         filename = os.path.relpath(file_path, local_container.model.path)
 
         self._create_task(filesync.added_local_files, container_id, filename)
 
     def _removed_local_files(self, container_id, file_path):
-        _logger.info('Removed (local): %s for %s' % (file_path, container_id))
+        _logger.info('Removed (local): %s files for %s', file_path,
+                     container_id)
         local_container, u, w = self._local_containers[container_id]
         filename = os.path.relpath(file_path, local_container.model.path)
 
         self._create_task(filesync.removed_local_files, container_id, filename)
 
     def _modified_local_files(self, container_id, file_path):
-        _logger.info('Modified (local): %s for %s' % (file_path, container_id))
+        _logger.info('Modified (local): %s files for %s', file_path,
+                     container_id)
         local_container, u, w = self._local_containers[container_id]
         filename = os.path.relpath(file_path, local_container.model.path)
 
         self._create_task(filesync.changed_local_files, container_id, filename)
 
     def _moved_local_files(self, container_id, src_path, dest_path):
-        _logger.info('Moved (local): %s -> %s' % (src_path, dest_path))
+        _logger.info('Moved (local): %s -> %s', src_path, dest_path)
         local_container, u, w = self._local_containers[container_id]
         src_filename = os.path.relpath(src_path, local_container.model.path)
         dest_filename = os.path.relpath(dest_path, local_container.model.path)
