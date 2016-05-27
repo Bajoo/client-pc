@@ -124,9 +124,9 @@ class SoftwareUpdater(object):
 
     def check_update(self):
         """Start checking for update as soon as possible."""
-        self._periodic_task.apply_now()
+        return self._periodic_task.apply_now()
 
-    def _background_check_update(self):
+    def _background_check_update(self, _periodic_task):
         if not self._esky:
             raise NotFrozenException()
         if self._abort_flag:
