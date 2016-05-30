@@ -60,7 +60,7 @@ class ContainerSyncPool(object):
             local_container (LocalContainer)
         """
         container = local_container.container
-        _logger.debug('Add container %s to sync list' % container)
+        _logger.debug('Add container %s to sync list', container)
 
         last_remote_index = local_container.get_remote_index()
 
@@ -120,7 +120,7 @@ class ContainerSyncPool(object):
 
                 del self._local_containers[container_id]
 
-                _logger.debug('Remove container %s from sync list' % lc)
+                _logger.debug('Remove container %s from sync list', lc)
 
                 return lc
 

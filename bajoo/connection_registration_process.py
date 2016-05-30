@@ -256,7 +256,7 @@ class _ConnectionProcess(object):
     def load_user_info(self, session):
         """Load the user info of the session's user.
 
-        When done, the self.user atgtribute will be a fully-loaded user.
+        When done, the self.user attribute will be a fully-loaded user.
 
         Returns:
             Future<Session>

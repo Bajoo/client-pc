@@ -7,6 +7,7 @@ import shutil
 
 from .api.team_share import TeamShare
 from .common.i18n import _, N_
+from .common.strings import err2unicode
 from .index.index_tree import IndexTree
 from .index.index_saver import IndexSaver
 
@@ -78,6 +79,8 @@ class LocalContainer(object):
         try:
             self.index.load(self.index_saver.load())
         except (OSError, IOError) as e:
+            _logger.warn('Check path of container %s failed: %s',
+                         self.container.id, err2unicode(e))
             self.status = self.STATUS_ERROR
 
             if e.errno == errno.ENOENT:
@@ -89,7 +92,7 @@ class LocalContainer(object):
                 else:
                     self.error_msg = _('The local folder is missing.')
             else:
-                self.error_msg = os.strerror(e.errno)
+                self.error_msg = err2unicode(e.strerror)
             return False
         except ValueError:
             _logger.info('Index file %s seems corrupted:' %
@@ -156,9 +159,13 @@ class LocalContainer(object):
             else:
                 self.status = self.STATUS_ERROR
                 self.error_msg = (_('Folder creation failed: %s') %
-                                  os.strerror(e.errno))
+                                  err2unicode(e.strerror))
+                _logger.warn('Folder creation failed (for container %s): %s',
+                             self.container.id, err2unicode(e))
                 return None
 
+        _logger.info('Creation of folder "%s" for container %s',
+                     self.model.path, self.container.id)
         self.model.path = folder_path
         self.status = self.STATUS_STOPPED
         return self.model.path
@@ -194,6 +201,7 @@ class LocalContainer(object):
         n_folders = 0
         n_files = 0
 
+        _logger.debug('Get stats about container %s ..', self.container.id)
         if self.model.path and os.path.exists(self.model.path):
             for dir_path, dir_names, files_names in os.walk(self.model.path):
                 n_folders += 1
@@ -203,6 +211,8 @@ class LocalContainer(object):
                     file_path = os.path.join(dir_path, file_name)
                     total_size += os.path.getsize(file_path)
 
+            _logger.log(5, 'Stat collected for container %s',
+                        self.container.id)
             return n_folders, n_files, total_size
 
         return 0, 0, 0
@@ -219,5 +229,5 @@ class LocalContainer(object):
 
     def remove_on_disk(self):
         """Remove the folder synchronised and its content."""
-        _logger.info('Remove container of the disk: rm %s' % self.model.path)
+        _logger.info('Remove container of the disk: rm %s', self.model.path)
         shutil.rmtree(self.model.path, ignore_errors=True)

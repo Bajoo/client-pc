@@ -7,6 +7,7 @@ import logging
 import os.path
 import pickle
 from .common.path import get_data_dir
+from .common.strings import err2unicode
 from .common.util import xor
 
 _logger = logging.getLogger(__name__)
@@ -134,6 +135,7 @@ class UserProfile(object):
             UserProfile: if we've loaded a profile; otherwise None.
         """
 
+        _logger.debug('Search last profile used ..')
         last_profile_path = os.path.join(get_data_dir(), 'last_profile')
 
         try:
@@ -142,7 +144,8 @@ class UserProfile(object):
         except (OSError, IOError, UnicodeError) as error:
             if getattr(error, 'errno') == errno.ENOENT:
                 return None  # there is no last profile
-            _logger.info('Failed to open last_profile file: %s' % repr(error))
+            _logger.info('Failed to open last_profile file: %s',
+                         err2unicode(error))
             return None
 
         UserProfile._last_profile = email_hash
@@ -154,7 +157,7 @@ class UserProfile(object):
             return UserProfile(None, _profile_file_path=profile_path)
         except _InvalidUserProfile:
             _logger.info('Failed to open the profile file "%s", '
-                         'referenced in last_profile' % profile_file_name)
+                         'referenced in last_profile', profile_file_name)
             return None
 
     def _get_profile_path(self):
@@ -186,7 +189,7 @@ class UserProfile(object):
 
                 email = data.get('email', None)
                 if self.email and self.email != email:
-                    _logger.warning('Corrupted %s profile file.' % self.email)
+                    _logger.warning('Corrupted %s profile file.', self.email)
                     return
 
                 self.email = email
@@ -202,11 +205,12 @@ class UserProfile(object):
 
         except (OSError, IOError, UnicodeError, TypeError, ValueError,
                 KeyError, EOFError, pickle.PickleError) as error:
-            _logger.info('Failed to open last profile "%s": %s'
-                         % (file_path, repr(error)))
+            _logger.info('Failed to open last profile "%s": %s',
+                         file_path, err2unicode(error))
 
         if self.email is None:
             raise _InvalidUserProfile()
+        _logger.debug('User profile %s loaded', self.email)
         self._update_last_profile()
 
     def _save_data(self):
@@ -232,8 +236,10 @@ class UserProfile(object):
                 pickle.dump(data, profile_file)
         except (OSError, IOError, UnicodeError, TypeError,
                 pickle.PickleError) as error:
-            _logger.info('Failed to update profile file %s: %s' %
-                         (profile_file_path, repr(error)))
+            _logger.info('Failed to update profile file %s: %s',
+                         profile_file_path, err2unicode(error))
+        else:
+            _logger.debug('User profile file has been updated.')
 
     def _update_last_profile(self):
         email_hash = hashlib.md5(self.email.encode('utf-8')).hexdigest()
@@ -243,9 +249,9 @@ class UserProfile(object):
             try:
                 with open(last_profile_path, mode='w+') as last_profile_file:
                     last_profile_file.write(email_hash)
-            except (OSError, IOError, UnicodeError):
-                _logger.info('Failed to update last_profile file',
-                             exc_info=True)
+            except (OSError, IOError, UnicodeError) as err:
+                _logger.info('Failed to update last_profile file: %s',
+                             err2unicode(err))
 
     refresh_token = _write_action_attr('_refresh_token', _save_data)
     root_folder_path = _write_action_attr('_root_folder_path', _save_data)

@@ -106,6 +106,7 @@ class DynamicContainerList(object):
             container (Container):
             model (ContainerModel):
         """
+        _logger.debug('Add container: %s', model.name)
         with self._list_lock:
             self.user_profile.set_container(model.id, model)
             self._append_local_container(model, container, is_new=True)
