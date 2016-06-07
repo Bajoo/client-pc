@@ -47,7 +47,12 @@ from .gui.tab.advanced_settings_tab import AdvancedSettingsTab
 from .gui.tab.creation_share_tab import CreationShareTab
 from .gui.tab.details_share_tab import DetailsShareTab
 from .gui.tab.list_shares_tab import ListSharesTab
-from .gui.task_bar_icon import TaskBarIcon
+from .gui.task_bar_icon.abstract_task_bar_icon import AbstractTaskBarIcon
+from .gui.task_bar_icon.abstract_task_bar_icon_wx_interface import \
+    AbstractTaskBarIconWxInterface
+from .gui.task_bar_icon.task_bar_icon import TaskBarIcon
+from .gui.task_bar_icon.unity_task_bar_icon_wx_interface import \
+    UnityTaskBarIconWxInterface
 from .local_container import LocalContainer
 from .passphrase_manager import PassphraseManager
 from .promise import Promise
@@ -232,13 +237,27 @@ class BajooApp(wx.App):
         if not self._ensures_single_instance_running():
             return False
 
-        self._task_bar_icon = TaskBarIcon()
+        unity_desktop = False
+        if sys.platform not in ["win32", "cygwin", "darwin"]:
+            desktop_session = os.environ.get("DESKTOP_SESSION")
+
+            if (desktop_session is not None and
+               desktop_session.startswith("ubuntu")):
+                unity_desktop = True
+
+        if unity_desktop:
+            self._task_bar_icon = UnityTaskBarIconWxInterface(self)
+            self._task_bar_icon.notify_lang_change()
+        else:
+            self._task_bar_icon = TaskBarIcon()
+
         self._notifier = MessageNotifier(self._task_bar_icon)
 
-        self.Bind(TaskBarIcon.EVT_OPEN_WINDOW, self._show_window)
-        self.Bind(TaskBarIcon.EVT_EXIT, self._exit)
+        self.Bind(AbstractTaskBarIconWxInterface.EVT_OPEN_WINDOW,
+                  self._show_window)
+        self.Bind(AbstractTaskBarIconWxInterface.EVT_EXIT, self._exit)
         self.Bind(LanguageBox.EVT_LANG, self._on_lang_changed)
-        self.Bind(TaskBarIcon.EVT_CONTAINER_STATUS_REQUEST,
+        self.Bind(AbstractTaskBarIconWxInterface.EVT_CONTAINER_STATUS_REQUEST,
                   self._container_status_request)
 
         self.Bind(CreationShareTab.EVT_CREATE_SHARE_REQUEST,
@@ -279,21 +298,21 @@ class BajooApp(wx.App):
         """Catch event from tray icon, asking to show a window."""
         window = None
 
-        if event.target == TaskBarIcon.OPEN_HOME:
+        if event.target == AbstractTaskBarIcon.OPEN_HOME:
             self._show_home_window()
-        elif event.target == TaskBarIcon.OPEN_ABOUT:
+        elif event.target == AbstractTaskBarIcon.OPEN_ABOUT:
             window = self.get_window('_about_window', AboutBajooWindow)
-        elif event.target == TaskBarIcon.OPEN_SUSPEND:
+        elif event.target == AbstractTaskBarIcon.OPEN_SUSPEND:
             pass  # TODO: open window
-        elif event.target == TaskBarIcon.OPEN_INVITATION:
+        elif event.target == AbstractTaskBarIcon.OPEN_INVITATION:
             pass  # TODO: open window
-        elif event.target == TaskBarIcon.OPEN_SETTINGS:
+        elif event.target == AbstractTaskBarIcon.OPEN_SETTINGS:
             window = self.get_window('_main_window', MainWindow)
             window.show_settings_tab()
-        elif event.target == TaskBarIcon.OPEN_SHARES:
+        elif event.target == AbstractTaskBarIcon.OPEN_SHARES:
             window = self.get_window('_main_window', MainWindow)
             window.show_list_shares_tab()
-        elif event.target == TaskBarIcon.OPEN_DEV_CONTACT:
+        elif event.target == AbstractTaskBarIcon.OPEN_DEV_CONTACT:
             window = self.get_window('_contact_dev_window', BugReportWindow)
         else:
             _logger.error('Unexpected "Open Window" event: %s' % event)
@@ -346,20 +365,22 @@ class BajooApp(wx.App):
             return
 
         mapping = {
-            LocalContainer.STATUS_ERROR: TaskBarIcon.SYNC_ERROR,
-            LocalContainer.STATUS_PAUSED: TaskBarIcon.SYNC_PAUSE,
-            LocalContainer.STATUS_QUOTA_EXCEEDED: TaskBarIcon.SYNC_ERROR,
-            LocalContainer.STATUS_WAIT_PASSPHRASE: TaskBarIcon.SYNC_ERROR,
-            LocalContainer.STATUS_STOPPED: TaskBarIcon.SYNC_STOP,
-            LocalContainer.STATUS_UNKNOWN: TaskBarIcon.SYNC_PROGRESS
+            LocalContainer.STATUS_ERROR: AbstractTaskBarIcon.SYNC_ERROR,
+            LocalContainer.STATUS_PAUSED: AbstractTaskBarIcon.SYNC_PAUSE,
+            LocalContainer.STATUS_QUOTA_EXCEEDED:
+            AbstractTaskBarIcon.SYNC_ERROR,
+            LocalContainer.STATUS_WAIT_PASSPHRASE:
+            AbstractTaskBarIcon.SYNC_ERROR,
+            LocalContainer.STATUS_STOPPED: AbstractTaskBarIcon.SYNC_STOP,
+            LocalContainer.STATUS_UNKNOWN: AbstractTaskBarIcon.SYNC_PROGRESS
         }
         containers_status = []
         for container in self._container_list.get_list():
             if container.status == LocalContainer.STATUS_STARTED:
                 if container.is_up_to_date():
-                    status = TaskBarIcon.SYNC_DONE
+                    status = AbstractTaskBarIcon.SYNC_DONE
                 else:
-                    status = TaskBarIcon.SYNC_PROGRESS
+                    status = AbstractTaskBarIcon.SYNC_PROGRESS
             else:
                 status = mapping[container.status]
             row = (container.model.name, container.model.path, status)
@@ -753,7 +774,7 @@ class BajooApp(wx.App):
             self._session, self.user_profile, self._notifier.send_message,
             self._container_sync_pool.add,
             self._container_sync_pool.remove)
-        self._task_bar_icon.set_state(TaskBarIcon.SYNC_PROGRESS)
+        self._task_bar_icon.set_state(AbstractTaskBarIcon.SYNC_PROGRESS)
 
     @ensure_gui_thread
     def _on_global_status_change(self, status):
@@ -765,9 +786,11 @@ class BajooApp(wx.App):
             return  # We are in a disconnection phase.
 
         mapping = {
-            ContainerSyncPool.STATUS_PAUSE: TaskBarIcon.SYNC_PAUSE,
-            ContainerSyncPool.STATUS_SYNCING: TaskBarIcon.SYNC_PROGRESS,
-            ContainerSyncPool.STATUS_UP_TO_DATE: TaskBarIcon.SYNC_DONE
+            ContainerSyncPool.STATUS_PAUSE: AbstractTaskBarIcon.SYNC_PAUSE,
+            ContainerSyncPool.STATUS_SYNCING:
+            AbstractTaskBarIcon.SYNC_PROGRESS,
+            ContainerSyncPool.STATUS_UP_TO_DATE:
+            AbstractTaskBarIcon.SYNC_DONE
         }
         if self._task_bar_icon:
             self._task_bar_icon.set_state(mapping[status])
@@ -792,7 +815,7 @@ class BajooApp(wx.App):
             self._main_window = None
 
         self._user = None
-        self._task_bar_icon.set_state(TaskBarIcon.NOT_CONNECTED)
+        self._task_bar_icon.set_state(AbstractTaskBarIcon.NOT_CONNECTED)
         if self._passphrase_manager:
             self._passphrase_manager.remove_passphrase()
 
