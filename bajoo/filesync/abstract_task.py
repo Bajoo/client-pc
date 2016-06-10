@@ -10,7 +10,7 @@ import sys
 import time
 
 from ..common.i18n import _
-from ..common.strings import ensure_unicode
+from ..common.strings import ensure_unicode, err2unicode
 from ..network.errors import HTTPEntityTooLargeError
 from ..encryption.errors import PassphraseAbortError
 from .exception import RedundantTaskInterruption
@@ -188,15 +188,16 @@ class _Task(object):
                 self.display_error_cb(
                     _('Error during the sync of the "%(name)s" container:'
                       '\n%(error)s')
-                    % {'name': self.container.name, 'error': error})
+                    % {'name': self.container.name,
+                       'error': err2unicode(error)})
                 raise self.container.error
             else:
-                target_string = ', '.join(str(x) for x in self.target_list)
+                target_string = ', '.join(self.target_list)
                 self.display_error_cb(
                     _('Error during sync of the file(s) "%(filename)s" '
                       'in the "%(name)s" container:\n%(error)s')
                     % {'filename': target_string, 'name': self.container.name,
-                       'error': error})
+                       'error': err2unicode(error)})
 
     @abc.abstractmethod
     def _apply_task(self):
