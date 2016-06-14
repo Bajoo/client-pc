@@ -54,6 +54,7 @@ from .gui.task_bar_icon.task_bar_icon import TaskBarIcon
 from .gui.task_bar_icon.unity_task_bar_icon_wx_interface import \
     UnityTaskBarIconWxInterface
 from .local_container import LocalContainer
+from .network.errors import NetworkError
 from .passphrase_manager import PassphraseManager
 from .promise import Promise
 from .software_updater import SoftwareUpdater
@@ -825,7 +826,10 @@ class BajooApp(wx.App):
         self._container_list.stop()
         self._container_list = None
 
-        yield self._session.revoke()
+        try:
+            yield self._session.revoke()
+        except NetworkError:
+            _logger.warn('Token revocation failed', exc_info=True)
         self._session = None
 
         _logger.debug('Now restart the connection process...')
