@@ -55,6 +55,8 @@ class TestEnsure_dir_exists(object):
         assert out == '' and err == ''
         os.rmdir(newRandomPath)
 
+    @pytest.mark.skipif(os.geteuid() == 0, reason='this test does not work if'
+                        'executed with admin rights')
     @pytest.mark.skipif(not sys.platform.startswith("linux"), reason='do not '
                         'know a directory without write right on windows...')
     def test_dir_does_not_exist_and_not_allowed_to_create(self, capsys):

@@ -31,7 +31,7 @@ import logging
 from multiprocessing import cpu_count
 import os.path
 import tempfile
-from gnupg import GPG
+from ..gnupg import GPG
 
 from ..common.path import get_cache_dir
 from ..promise import ThreadPoolExecutor, reduce_coroutine

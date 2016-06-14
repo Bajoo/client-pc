@@ -115,18 +115,13 @@ setup_kwargs = {
         'appdirs==1.4',
         'requests[security]>=2.6.0',
         'futures>=2.2.0',
-        'python-gnupg',
-        'watchdog',
-        'pysocks',
-        'psutil>=2.0.0'
+        'watchdog>=0.8.3',
+        'pysocks>=1.5.6',
+        'psutil>=3.4.2',
+        'pyasn1>=0.1.9',
+        'ndg-httpsclient>=0.4.0'
     ],
     'tests_require': ['tox'],
-    'include_package_data': True,
-    'package_data': {
-        # Note: esky build doesn't support 'include_package_data'
-        'bajoo': ['locale/*/LC_MESSAGES/*.mo', 'assets/*.png',
-                  'assets/images/*.png', 'assets/images/*/*.png']
-    },
     'dependency_links': ['http://wxpython.org/Phoenix/snapshot-builds/'],
     'entry_points': {
         "console_scripts": [
@@ -161,22 +156,48 @@ setup_kwargs = {
     }
 }
 
-
-if sys.version_info[0] is 3:  # Python3 only
+setup_kwargs['include_package_data'] = True
+if sys.platform not in ['win32', 'cygwin', 'win64']:
     setup_kwargs['install_requires'] += [
-        'wxpython>=Phoenix-3.0.0.dev,<Phoenix-9999',
+        'notify2>=0.3'
+    ]
+
+    if sys.platform.startswith('linux'):
+        setup_kwargs['data_files'] = [
+            ('share/applications', ['bajoo/assets/bajoo.desktop']),
+            ('share/bajoo/assets/images', glob('bajoo/assets/images/*.png')),
+            ('share/bajoo/assets/images/container_status',
+             glob('bajoo/assets/images/container_status/*.png')),
+            ('share/bajoo/assets/images/trayicon_status',
+             glob('bajoo/assets/images/trayicon_status/*.png')),
+            ('share/bajoo/assets', ['bajoo/assets/exe_icon.ico',
+                                    'bajoo/assets/window_icon.png', ])
+        ]
+
+        setup_kwargs['data_files'] += [
+            (os.path.join('share', mo_dir[6:]),
+             [os.path.join(mo_dir, 'bajoo.mo')])
+            for mo_dir in glob('bajoo/locale/*/LC_MESSAGES')]
+
+        setup_kwargs['data_files'] += [
+            (os.path.join('share/icons/hicolor', mo_dir[19:], 'apps'),
+             glob(os.path.join(mo_dir, "*")))
+            for mo_dir in glob('bajoo/assets/icons/*')]
+
+        setup_kwargs['include_package_data'] = False
+
+elif sys.platform in ['win32', 'win64']:
+    setup_kwargs['install_requires'] += [
+        'pypiwin32'
         'py2exe'
     ]
 
-if sys.platform not in ['win32', 'cygwin', 'win64']:
-    setup_kwargs['install_requires'] += [
-        'notify2'
-    ]
-
-if sys.platform in ['win32', 'win64']:
-    setup_kwargs['install_requires'] += [
-        'pypiwin32'
-    ]
+if setup_kwargs['include_package_data']:
+    setup_kwargs['package_data'] = {
+        # Note: esky build doesn't support 'include_package_data'
+        'bajoo': ['locale/*/LC_MESSAGES/*.mo', 'assets/*.png',
+                  'assets/images/*.png', 'assets/images/*/*.png']
+    }
 
 
 try:
