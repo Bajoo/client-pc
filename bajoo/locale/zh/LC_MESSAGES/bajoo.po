@@ -34,15 +34,13 @@ msgstr "已达到配额限制"
 msgid ""
 "Your quota has exceeded. All upload operations are delayed in the next 5 "
 "minutes."
-msgstr ""
-"您的配额已经超过了"
-" 所有上传操作将延迟至5分钟之后"
+msgstr "您的配额已经超过了 所有上传操作将延迟至5分钟之后"
 
 #: bajoo/connection_registration_process.py:214
 msgid ""
 "This program's version is no longer supported by Bajoo service. Please "
 "update to continue.\n"
-msgstr "这个版本将不再被Bajoo服务器支持。请更新。"
+msgstr "这个版本将不再被Bajoo服务器支持。请更新。\n"
 
 #: bajoo/connection_registration_process.py:218
 msgid "Invalid username or password."
@@ -67,7 +65,8 @@ msgstr "错误: %s"
 msgid ""
 "Error when applying the Bajoo root folder config:\n"
 " %s"
-msgstr "Bajoo根文件配置应用错误 :\n"
+msgstr ""
+"Bajoo根文件配置应用错误 :\n"
 " %s"
 
 #: bajoo/connection_registration_process.py:350
@@ -79,7 +78,8 @@ msgstr "您还没有输入GPG密钥。"
 msgid ""
 "Error during the GPG key check:\n"
 " %s"
-msgstr "GPG密钥检查过程中出错 :\n"
+msgstr ""
+"GPG密钥检查过程中出错 :\n"
 " %s"
 
 #: bajoo/connection_registration_process.py:382
@@ -139,14 +139,6 @@ msgstr "本地文件夹丢失。"
 msgid "Folder creation failed: %s"
 msgstr "文件创建失败 : %s"
 
-#: bajoo/gui/bug_report.py:33
-msgid "Need bug description"
-msgstr "需要错误描述"
-
-#: bajoo/gui/bug_report.py:34
-msgid "No message sent!"
-msgstr "无信息发送！"
-
 #: bajoo/gui/bug_report.py:55
 msgid "Send a message to the developers"
 msgstr "给开发者发送信息"
@@ -186,8 +178,7 @@ msgid ""
 "you want to use."
 msgstr ""
 "您将要更改您的密码。\n"
-"为此，您必须输入您当前的密码以及"
-"您想要使用的新的密码。"
+"为此，您必须输入您当前的密码以及您想要使用的新的密码。"
 
 #: bajoo/gui/form/change_password_form.py:130
 msgid "Then you will receive a confirmation email.\n"
@@ -489,10 +480,8 @@ msgid ""
 "It should contains at least 8 characters.You can use a real phrase to "
 "memorize it more easily (ex: MyBajooAccount)."
 msgstr ""
-"您是唯一一个知道密码。 这是被用作 "
-"加密您的文件。\n"
-"密码应当包含8个字母。 您可以使用 "
-"一个实际的排列便于记忆。"
+"您是唯一一个知道密码。 这是被用作 加密您的文件。\n"
+"密码应当包含8个字母。 您可以使用 一个实际的排列便于记忆。"
 
 #: bajoo/gui/screen/setup_config_screen.py:138
 msgid "Don't use encryption passphrase"
@@ -550,8 +539,7 @@ msgid ""
 "You should follow that link to continue."
 msgstr ""
 "为了继续, 您应该激活您的行号。\n"
-"几分钟您将会收到一封带有激活链接的 "
-"电子邮件。\n"
+"几分钟您将会收到一封带有激活链接的 电子邮件。\n"
 "您必须按照此链接去激活您的账号。"
 
 #: bajoo/gui/screen/activation_screen.py:78
@@ -716,9 +704,10 @@ msgstr "共享名"
 msgid "<< Back to share list"
 msgstr "<< 返回共享目录"
 
-#: bajoo/gui/tab/advanced_settings_tab.py:138
-msgid "Actual version:"
-msgstr "当前版本:"
+#: bajoo/gui/tab/advanced_settings_tab.py:161
+#, fuzzy, python-format
+msgid "Actual version: %s"
+msgstr "当前版本: %s"
 
 #: bajoo/gui/tab/advanced_settings_tab.py:139
 msgid "Send crash reports to Bajoo automatically"
@@ -732,8 +721,9 @@ msgstr "启动除错程序"
 msgid "Apply the updates automatically"
 msgstr "自动更新应用"
 
-#: bajoo/gui/tab/advanced_settings_tab.py:142
-msgid "Check for updates"
+#: bajoo/gui/tab/advanced_settings_tab.py:198
+#, fuzzy
+msgid "Check updates"
 msgstr "检查更新"
 
 #: bajoo/gui/tab/advanced_settings_tab.py:143
@@ -800,8 +790,7 @@ msgstr "删除此共享"
 
 #: bajoo/gui/tab/details_share_tab.py:473
 msgid "Loading ..."
-msgstr "Chargement..."
-"载入中..."
+msgstr "Chargement...载入中..."
 
 #: bajoo/gui/tab/details_share_tab.py:586
 #: bajoo/gui/tab/details_share_tab.py:619
@@ -850,9 +839,7 @@ msgstr "退出团队共享"
 msgid ""
 "Your member setting has not been saved yet.Do you want to continue and "
 "ignore the changes ?"
-msgstr ""
-"您的成员设置尚未保存。您想要 "
-"继续并忽略更改 ?"
+msgstr "您的成员设置尚未保存。您想要 继续并忽略更改 ?"
 
 #: bajoo/gui/common/message_box.py:53
 msgid "Data not saved"
@@ -874,9 +861,7 @@ msgstr "Bajoo - 要求密令"
 msgid ""
 "Enter your Bajoo pasphrase to start the synchronization of your encrypted "
 "files."
-msgstr ""
-"输入您的Bajoo密码开始同步您的 "
-"加密文件。"
+msgstr "输入您的Bajoo密码开始同步您的 加密文件。"
 
 #: bajoo/gui/passphrase_window.py:132
 msgid "Memorize the passphrase"
@@ -941,9 +926,7 @@ msgid ""
 "Error during sync of the file(s) \"%(filename)s\" in the \"%(name)s\" "
 "container:\n"
 "%(error)s"
-msgstr ""
-"文件同步时出错 \"%(filename)s\" 在 "
-"文件夹 \"%(name)s\":%(error)s"
+msgstr "文件同步时出错 \"%(filename)s\" 在 文件夹 \"%(name)s\":%(error)s"
 
 #: bajoo/network/errors.py:33
 msgid "A network error has occurred."
@@ -970,9 +953,7 @@ msgstr "服务器返回一个HTTP错误 : %(code)s %(reason)s"
 msgid ""
 "The HTTP request is invalid. This is a bug, either in the client or in the "
 "server. Sorry for the inconvenience :("
-msgstr ""
-"HTTP请求无效。 这是一个服务器或客户端之间的 "
-"错误。 造成不便深感抱歉 :("
+msgstr "HTTP请求无效。 这是一个服务器或客户端之间的 错误。 造成不便深感抱歉 :("
 
 #: bajoo/network/errors.py:132
 msgid "Your session has expired."
@@ -1006,7 +987,9 @@ msgstr "已达到限额限制"
 msgid ""
 "Proxy is activate, but no URL is present.\n"
 "Check your configuration."
-msgstr "代理服务器已被激活，但不存在URL。\n请检查您的配置。"
+msgstr ""
+"代理服务器已被激活，但不存在URL。\n"
+"请检查您的配置。"
 
 #: bajoo/bajoo_app.py:332
 #, python-format
@@ -1049,9 +1032,7 @@ msgstr "创建共享失败 %s。"
 msgid ""
 "Some members cannot be added to this team share. Please verify the email "
 "addresses."
-msgstr ""
-"一些成员不能加入到该团队共享。 "
-"请检查一下电子邮件地址。"
+msgstr "一些成员不能加入到该团队共享。 请检查一下电子邮件地址。"
 
 #: bajoo/bajoo_app.py:511
 #, python-format
@@ -1178,9 +1159,10 @@ msgstr ""
 msgid "https://www.bajoo.fr/help"
 msgstr ""
 
-# TODO translate me
-msgid "Your MyBajoo folder has been created"
-msgstr ""
+#: bajoo/dynamic_container_list.py:222
+#, fuzzy
+msgid "Your MyBajoo folder has been created."
+msgstr "一个Bajoo共享已被删除。"
 
 #: bajoo/bajoo_app.py:153
 msgid ""
@@ -1192,3 +1174,109 @@ msgstr ""
 #: bajoo/bajoo_app.py:155
 msgid "Bajoo already started"
 msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:210
+msgid "Restart"
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:240
+msgid "Checking last update available ..."
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:241
+msgid ""
+"Automatic Bajoo updates are available only for the packaged Windows version."
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:243
+msgid "Update attempt has been aborted."
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:244
+msgid "Your software is up to date."
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:245
+msgid "Searching new updates ..."
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:246
+#, python-format
+msgid "New version found: %s"
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:247
+msgid "Downloading the new version ..."
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:248
+#, fuzzy
+msgid "Retrying after an error happened ..."
+msgstr "发生错误 :("
+
+#: bajoo/gui/tab/advanced_settings_tab.py:249
+#, fuzzy, python-format
+msgid ""
+"An error happened:\n"
+"%s"
+msgstr "发生错误 : %s"
+
+#: bajoo/gui/tab/advanced_settings_tab.py:250
+msgid "New version ready to be installed ..."
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:251
+#, fuzzy
+msgid "Install in progress ..."
+msgstr "正在连接中 ..."
+
+#: bajoo/gui/tab/advanced_settings_tab.py:252
+msgid "Cleaning up old files"
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:253
+#, python-format
+msgid ""
+"Bajoo has been updated to version %s. It must be restarted to apply changes."
+msgstr ""
+
+#: bajoo/gui/bug_report.py:35
+#, fuzzy
+msgid "The bug description is required"
+msgstr "需要错误描述"
+
+#: bajoo/gui/bug_report.py:39
+#, fuzzy
+msgid "The email field is required"
+msgstr "必填项"
+
+#: bajoo/gui/bug_report.py:43
+#, fuzzy
+msgid "The email must be valid."
+msgstr "该电子邮件无效。"
+
+#: bajoo/gui/bug_report.py:74
+msgid ""
+"Your message has been sent to the developers. They will reply to you be "
+"email."
+msgstr ""
+
+#: bajoo/gui/bug_report.py:78
+msgid "Bug report sent!"
+msgstr ""
+
+#: bajoo/gui/bug_report.py:96
+#, fuzzy
+msgid "Email:"
+msgstr "电子邮件"
+
+#: bajoo/api/session.py:29
+msgid "The authentication server has returned invalid data."
+msgstr ""
+
+#: bajoo/bajoo_app.py:888
+msgid "An error happened! Consult the logs for more details"
+msgstr ""
+
+#~ msgid "No message sent!"
+#~ msgstr "无信息发送！"

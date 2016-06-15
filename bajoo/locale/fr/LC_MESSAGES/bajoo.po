@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Bajoo 0.3.17\n"
-"Report-Msgid-Bugs-To: Bajoo <support-fr@bajoo.fr>\n"
+"Report-Msgid-Bugs-To: Bajoo <support-en@bajoo.fr>\n"
 "POT-Creation-Date: 2015-10-20 12:12+0200\n"
 "PO-Revision-Date: 2016-02-04 09:25+0100\n"
 "Last-Translator: Guillaume\n"
@@ -20,15 +20,12 @@ msgstr ""
 #: bajoo/container_sync_pool.py:92 bajoo/container_sync_pool.py:153
 #: bajoo/container_sync_pool.py:204
 msgid "No passphrase set.  Syncing is disabled"
-msgstr ""
-"La phrase secrète n'est pas définie, la synchronisation est "
-"désactivée"
+msgstr "La phrase secrète n'est pas définie, la synchronisation est désactivée"
 
 #: bajoo/container_sync_pool.py:137
 msgid "No passphrase set.  Cyphered containers will be paused"
 msgstr ""
-"La phrase secrète n'est pas définie, les dossiers chiffrés "
-"sont arrêtés"
+"La phrase secrète n'est pas définie, les dossiers chiffrés sont arrêtés"
 
 #: bajoo/container_sync_pool.py:347
 msgid "Quota limit reached"
@@ -39,15 +36,16 @@ msgid ""
 "Your quota has exceeded. All upload operations are delayed in the next 5 "
 "minutes."
 msgstr ""
-"Limite de quota atteinte."
-" Toutes les opérations sont suspendues durant les prochaines 5 minutes"
+"Limite de quota atteinte. Toutes les opérations sont suspendues durant les "
+"prochaines 5 minutes"
 
 #: bajoo/connection_registration_process.py:214
 msgid ""
 "This program's version is no longer supported by Bajoo service. Please "
 "update to continue.\n"
-msgstr "La version de ce logiciel n'est plus supportée par les services "
-"Bajoo. Veuillez le mettre à jour.\n"
+msgstr ""
+"La version de ce logiciel n'est plus supportée par les services Bajoo. "
+"Veuillez le mettre à jour.\n"
 
 #: bajoo/connection_registration_process.py:218
 msgid "Invalid username or password."
@@ -148,14 +146,6 @@ msgstr "Le dossier local est manquant."
 msgid "Folder creation failed: %s"
 msgstr "La création de dossier a échoué : %s"
 
-#: bajoo/gui/bug_report.py:33
-msgid "Need bug description"
-msgstr "Un descriptif de bug est nécessaire"
-
-#: bajoo/gui/bug_report.py:34
-msgid "No message sent!"
-msgstr "Le message n'a pas été envoyé!"
-
 #: bajoo/gui/bug_report.py:55
 msgid "Send a message to the developers"
 msgstr "Envoyer un message aux développeurs"
@@ -195,8 +185,8 @@ msgid ""
 "you want to use."
 msgstr ""
 "Vous êtes sur le point de modifier votre mot de passe.\n"
-"Pour cela, vous devriez entrer votre mot de passe actuel, et le nouveau "
-"que vous voulez utiliser."
+"Pour cela, vous devriez entrer votre mot de passe actuel, et le nouveau que "
+"vous voulez utiliser."
 
 #: bajoo/gui/form/change_password_form.py:130
 msgid "Then you will receive a confirmation email.\n"
@@ -206,7 +196,7 @@ msgstr "Puis vous recevez un email de confirmation.\n"
 #: bajoo/gui/form/change_password_form.py:141 bajoo/gui/base_view.py:121
 #: bajoo/gui/proxy_window.py:72 bajoo/gui/passphrase_window.py:46
 msgid "OK"
-msgstr ""
+msgstr "OK"
 
 #: bajoo/gui/form/change_password_form.py:137
 msgid "Current password"
@@ -230,7 +220,7 @@ msgstr "Droits"
 
 #: bajoo/gui/form/members_share_form.py:161
 msgid "Email"
-msgstr ""
+msgstr "Email"
 
 #: bajoo/gui/form/members_share_form.py:168
 #: bajoo/gui/form/members_share_form.py:169
@@ -249,7 +239,7 @@ msgstr "Lecture seule"
 #: bajoo/gui/form/members_share_form.py:206
 #: bajoo/gui/form/members_share_form.py:227
 msgid "Admin"
-msgstr ""
+msgstr "Admin"
 
 #: bajoo/gui/form/register_form.py:71 bajoo/gui/form/register_form.py:92
 msgid "8 characters minimum"
@@ -302,7 +292,7 @@ msgstr "Serveur"
 
 #: bajoo/gui/form/proxy_form.py:144
 msgid "Port"
-msgstr ""
+msgstr "Port"
 
 #: bajoo/gui/form/proxy_form.py:153
 msgid "Proxy type:"
@@ -310,7 +300,7 @@ msgstr "Type de proxy :"
 
 #: bajoo/gui/form/proxy_form.py:187
 msgid "Proxy"
-msgstr ""
+msgstr "Proxy"
 
 #: bajoo/gui/validator.py:95
 msgid "This field is required."
@@ -355,7 +345,7 @@ msgstr "Bajoo est une marque déposée."
 
 #: bajoo/gui/about_window.py:131 bajoo/gui/about_window.py:293
 msgid "www.bajoo.fr"
-msgstr ""
+msgstr "www.bajoo.fr"
 
 #: bajoo/gui/about_window.py:135 bajoo/gui/about_window.py:294
 msgid "List of frequently asked questions."
@@ -526,7 +516,7 @@ msgstr "Confirmation de la phrase secrète"
 
 #: bajoo/gui/screen/home_screen.py:71
 msgid "Bajoo"
-msgstr ""
+msgstr "Bajoo"
 
 #: bajoo/gui/screen/home_screen.py:94
 msgid "Make an account"
@@ -635,9 +625,7 @@ msgstr "Activer l'icône de statut et le menu contextuel"
 
 #: bajoo/gui/tab/general_settings_tab.py:139
 msgid "Display a notification when finish downloading file modifications"
-msgstr ""
-"Afficher une notification après le téléchargement de "
-"fichiers"
+msgstr "Afficher une notification après le téléchargement de fichiers"
 
 #: bajoo/gui/tab/general_settings_tab.py:141
 msgid "Language"
@@ -649,8 +637,8 @@ msgid ""
 "%(name)d share folders use %(quota)s, so %(percent)0.2f%% of your Bajoo "
 "storage."
 msgstr ""
-"%(name)d dossiers partagés utilise %(quota)s, donc %(percent)0.2f%% de "
-"votre stockage."
+"%(name)d dossiers partagés utilise %(quota)s, donc %(percent)0.2f%% de votre "
+"stockage."
 
 #: bajoo/gui/tab/account_tab.py:261
 msgid "You are connected as:"
@@ -725,9 +713,10 @@ msgstr "Nom de partage"
 msgid "<< Back to share list"
 msgstr "<< Revenir à la liste des partages"
 
-#: bajoo/gui/tab/advanced_settings_tab.py:138
-msgid "Actual version:"
-msgstr "Version actuelle :"
+#: bajoo/gui/tab/advanced_settings_tab.py:161
+#, python-format
+msgid "Actual version: %s"
+msgstr "Version actuelle : %s"
 
 #: bajoo/gui/tab/advanced_settings_tab.py:139
 msgid "Send crash reports to Bajoo automatically"
@@ -741,8 +730,8 @@ msgstr "Activer le mode debug"
 msgid "Apply the updates automatically"
 msgstr "Appliquer automatiquement les mises à jour"
 
-#: bajoo/gui/tab/advanced_settings_tab.py:142
-msgid "Check for updates"
+#: bajoo/gui/tab/advanced_settings_tab.py:198
+msgid "Check updates"
 msgstr "Vérifier les mises à jour"
 
 #: bajoo/gui/tab/advanced_settings_tab.py:143
@@ -791,8 +780,7 @@ msgstr "Non chiffré"
 #, python-format
 msgid "This share contains %(n_folders)d folders and %(n_files)d files,"
 msgstr ""
-"Ce partage contient %(n_folders)d dossier(s) "
-"et %(n_files)d fichier(s),"
+"Ce partage contient %(n_folders)d dossier(s) et %(n_files)d fichier(s),"
 
 #: bajoo/gui/tab/details_share_tab.py:276
 #, python-format
@@ -870,7 +858,7 @@ msgstr "Données non sauvegardées"
 
 #: bajoo/gui/proxy_window.py:64
 msgid "Bajoo - Proxy"
-msgstr ""
+msgstr "Bajoo - Proxy"
 
 #: bajoo/gui/passphrase_window.py:44
 msgid "Invalid passphrase!"
@@ -934,7 +922,7 @@ msgstr "Yo"
 
 #: bajoo/common/i18n.py:99
 msgid "Auto"
-msgstr ""
+msgstr "Auto"
 
 #: bajoo/filesync/abstract_task.py:224
 #, python-format
@@ -982,8 +970,8 @@ msgid ""
 "The HTTP request is invalid. This is a bug, either in the client or in the "
 "server. Sorry for the inconvenience :("
 msgstr ""
-"La requête HTTP est invalide. Une erreur est survenue côté client ou "
-"côté serveur. Désolé pour ce désagrément :("
+"La requête HTTP est invalide. Une erreur est survenue côté client ou côté "
+"serveur. Désolé pour ce désagrément :("
 
 #: bajoo/network/errors.py:132
 msgid "Your session has expired."
@@ -1067,8 +1055,8 @@ msgid ""
 "Some members cannot be added to this team share. Please verify the email "
 "addresses."
 msgstr ""
-"Certains membres n'ont pas pu être ajoutés au partage collaboratif. Merci "
-"de vérifier les adresses email."
+"Certains membres n'ont pas pu être ajoutés au partage collaboratif. Merci de "
+"vérifier les adresses email."
 
 #: bajoo/bajoo_app.py:511
 #, python-format
@@ -1177,7 +1165,7 @@ msgstr "Un partage Bajoo a été supprimé."
 
 #: bajoo/dynamic_container_list.py:252
 msgid ""
-msgid "Either the share has been deleted or your permissions have been revoked."
+"Either the share has been deleted or your permissions have been revoked."
 msgstr "Soit le partage a été supprimé, soit vos droits ont été révoqués."
 
 #: bajoo/dynamic_container_list.py:255
@@ -1187,7 +1175,7 @@ msgstr "%s partages ont été supprimés."
 
 #: bajoo/dynamic_container_list.py:256
 msgid ""
-msgid "Either the shares have been deleted, or your permissions have been revoked."
+"Either the shares have been deleted, or your permissions have been revoked."
 msgstr "Soit les partages ont été supprimés, soit vos droits ont été révoqués."
 
 msgid "Bajoo folder"
@@ -1196,8 +1184,9 @@ msgstr "Répertoire Bajoo"
 msgid "https://www.bajoo.fr/help"
 msgstr "https://www.bajoo.fr/assistance"
 
-msgid "Your MyBajoo folder has been created"
-msgstr "Votre dossier MyBajoo a été créé"
+#: bajoo/dynamic_container_list.py:222
+msgid "Your MyBajoo folder has been created."
+msgstr "Votre dossier MyBajoo a été créé."
 
 #: bajoo/bajoo_app.py:153
 msgid ""
@@ -1210,3 +1199,109 @@ msgstr ""
 #: bajoo/bajoo_app.py:155
 msgid "Bajoo already started"
 msgstr "Bajoo déjà démarré"
+
+#: bajoo/gui/tab/advanced_settings_tab.py:210
+msgid "Restart"
+msgstr "Rédémarrer"
+
+#: bajoo/gui/tab/advanced_settings_tab.py:240
+msgid "Checking last update available ..."
+msgstr "Vérification de la dernière version disponible ..."
+
+#: bajoo/gui/tab/advanced_settings_tab.py:241
+msgid ""
+"Automatic Bajoo updates are available only for the packaged Windows version."
+msgstr ""
+"Les mises à jour automatiques ne sont disponibles que pour la version "
+"officielle Windows."
+
+#: bajoo/gui/tab/advanced_settings_tab.py:243
+msgid "Update attempt has been aborted."
+msgstr "La tentative de mise à jour a été interrompue."
+
+#: bajoo/gui/tab/advanced_settings_tab.py:244
+msgid "Your software is up to date."
+msgstr "Votre logiciel est à jour."
+
+#: bajoo/gui/tab/advanced_settings_tab.py:245
+msgid "Searching new updates ..."
+msgstr "Recherche de mise à jour ..."
+
+#: bajoo/gui/tab/advanced_settings_tab.py:246
+#, python-format
+msgid "New version found: %s"
+msgstr "Nouvelle version détectée: %s"
+
+#: bajoo/gui/tab/advanced_settings_tab.py:247
+msgid "Downloading the new version ..."
+msgstr "Téléchargement de la nouvelle version ..."
+
+#: bajoo/gui/tab/advanced_settings_tab.py:248
+msgid "Retrying after an error happened ..."
+msgstr "Nouvel essai après qu'Une erreur soit survenue ..."
+
+#: bajoo/gui/tab/advanced_settings_tab.py:249
+#, python-format
+msgid ""
+"An error happened:\n"
+"%s"
+msgstr ""
+"Une erreur s'est produite :\n"
+"%s"
+
+#: bajoo/gui/tab/advanced_settings_tab.py:250
+msgid "New version ready to be installed ..."
+msgstr "Nouvelle version prête à être installé ..."
+
+#: bajoo/gui/tab/advanced_settings_tab.py:251
+msgid "Install in progress ..."
+msgstr "Installation en cours ..."
+
+#: bajoo/gui/tab/advanced_settings_tab.py:252
+msgid "Cleaning up old files"
+msgstr "Suppression des anciens fichiers"
+
+#: bajoo/gui/tab/advanced_settings_tab.py:253
+#, python-format
+msgid ""
+"Bajoo has been updated to version %s. It must be restarted to apply changes."
+msgstr ""
+"Bajoo a été mis à jour à la version %s. Il doit être redémarré pour "
+"appliquer les changements."
+
+#: bajoo/gui/bug_report.py:35
+msgid "The bug description is required"
+msgstr "Un descriptif de bug est nécessaire"
+
+#: bajoo/gui/bug_report.py:39
+msgid "The email field is required"
+msgstr "Le champ email est obligatoire"
+
+#: bajoo/gui/bug_report.py:43
+msgid "The email must be valid."
+msgstr "Cet email doit être valide."
+
+#: bajoo/gui/bug_report.py:74
+msgid ""
+"Your message has been sent to the developers. They will reply to you be "
+"email."
+msgstr ""
+"Votre message a été transmis aux développeurs. Ils vous répondrons par mail."
+
+#: bajoo/gui/bug_report.py:78
+msgid "Bug report sent!"
+msgstr "Rapport de bug envoyé !"
+
+#: bajoo/gui/bug_report.py:96
+msgid "Email:"
+msgstr "Email :"
+
+#: bajoo/api/session.py:29
+msgid "The authentication server has returned invalid data."
+msgstr "Le serveur d'authentification a retourné des données invalides."
+
+#: bajoo/bajoo_app.py:888
+msgid "An error happened! Consult the logs for more details"
+msgstr ""
+"Une erreur s'est produite ! Consultez les journaux d'évènements pour plus de "
+"détails"

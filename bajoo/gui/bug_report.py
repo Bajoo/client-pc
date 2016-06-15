@@ -72,7 +72,7 @@ class BugReportWindow(wx.Dialog):
     def display_confirmation(self):
         """Display a confirmation message, then closes the window."""
         message = _('Your message has been sent to the developers. They will'
-                    ' reply to you be email.')
+                    ' reply to you by email.')
         dlg = wx.MessageDialog(self,
                                message,
                                _('Bug report sent!'),

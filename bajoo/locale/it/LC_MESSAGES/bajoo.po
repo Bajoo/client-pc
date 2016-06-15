@@ -140,7 +140,8 @@ msgstr ""
 #: bajoo/local_container.py:95
 msgid "The corresponding folder exists, but the Bajoo index file is missing."
 msgstr ""
-"La cartella per la condivisione esiste, ma il file di indice di Bajoo è mancante. "
+"La cartella per la condivisione esiste, ma il file di indice di Bajoo è "
+"mancante. "
 
 #: bajoo/local_container.py:98
 msgid "The local folder is missing."
@@ -150,16 +151,6 @@ msgstr "La cartella locale non è prensente."
 #, python-format
 msgid "Folder creation failed: %s"
 msgstr "La creazione della cartella è fallita : %s"
-
-# TODO translate me
-#: bajoo/gui/bug_report.py:33
-msgid "Need bug description"
-msgstr ""
-
-# TODO translate me
-#: bajoo/gui/bug_report.py:34
-msgid "No message sent!"
-msgstr ""
 
 # TODO translate me
 #: bajoo/gui/bug_report.py:55
@@ -820,9 +811,9 @@ msgstr ""
 msgid "<< Back to share list"
 msgstr ""
 
-# TODO translate me
-#: bajoo/gui/tab/advanced_settings_tab.py:138
-msgid "Actual version:"
+#: bajoo/gui/tab/advanced_settings_tab.py:161
+#, python-format
+msgid "Actual version: %s"
 msgstr ""
 
 # TODO translate me
@@ -840,9 +831,8 @@ msgstr ""
 msgid "Apply the updates automatically"
 msgstr ""
 
-# TODO translate me
-#: bajoo/gui/tab/advanced_settings_tab.py:142
-msgid "Check for updates"
+#: bajoo/gui/tab/advanced_settings_tab.py:198
+msgid "Check updates"
 msgstr ""
 
 # TODO translate me
@@ -1004,8 +994,8 @@ msgid ""
 "Enter your Bajoo pasphrase to start the synchronization of your encrypted "
 "files."
 msgstr ""
-"Inserisce suo Bajoo password per iniziare la sincronizzazione dei "
-"file crittografati."
+"Inserisce suo Bajoo password per iniziare la sincronizzazione dei file "
+"crittografati."
 
 #: bajoo/gui/passphrase_window.py:132
 msgid "Memorize the passphrase"
@@ -1111,8 +1101,8 @@ msgid ""
 "The HTTP request is invalid. This is a bug, either in the client or in the "
 "server. Sorry for the inconvenience :("
 msgstr ""
-"La richiesta HTTP non è valida. E stato un errore lato server o "
-"cliente. ci scusiamo per l'inconveniente :("
+"La richiesta HTTP non è valida. E stato un errore lato server o cliente. ci "
+"scusiamo per l'inconveniente :("
 
 #: bajoo/network/errors.py:132
 msgid "Your session has expired."
@@ -1232,7 +1222,8 @@ msgstr "Non ha piu accesso alla condivisione collaborativa %s."
 
 #: bajoo/bajoo_app.py:624
 msgid "A team share has been successfully deleted from server."
-msgstr "Una condivisione collaborativa è stata cancellata dal server con successo."
+msgstr ""
+"Una condivisione collaborativa è stata cancellata dal server con successo."
 
 #: bajoo/bajoo_app.py:629
 #, python-format
@@ -1311,7 +1302,8 @@ msgstr "Una condivizione bajoo è stata cancellata."
 #: bajoo/dynamic_container_list.py:252
 msgid ""
 "Either the share has been deleted or your permissions have been revoked."
-msgstr "O la condivisione è stata cancellata o vostri diritti sono stati revocati."
+msgstr ""
+"O la condivisione è stata cancellata o vostri diritti sono stati revocati."
 
 #: bajoo/dynamic_container_list.py:255
 #, python-format
@@ -1321,7 +1313,9 @@ msgstr "%s Le azioni sono state cancellate."
 #: bajoo/dynamic_container_list.py:256
 msgid ""
 "Either the shares have been deleted, or your permissions have been revoked."
-msgstr "O le condivisione sono stati cancellati, o vostri diritti sono stati revocati."
+msgstr ""
+"O le condivisione sono stati cancellati, o vostri diritti sono stati "
+"revocati."
 
 # TODO translate me
 msgid "Bajoo folder"
@@ -1330,8 +1324,10 @@ msgstr ""
 msgid "https://www.bajoo.fr/help"
 msgstr ""
 
-# TODO translate me
-msgid "Your MyBajoo folder has been created"
+#: bajoo/dynamic_container_list.py:222
+#, fuzzy
+msgid "Your MyBajoo folder has been created."
+msgstr "Una condivizione bajoo è stata cancellata."
 
 #: bajoo/bajoo_app.py:153
 msgid ""
@@ -1342,4 +1338,101 @@ msgstr ""
 # TODO translate me
 #: bajoo/bajoo_app.py:155
 msgid "Bajoo already started"
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:210
+msgid "Restart"
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:240
+msgid "Checking last update available ..."
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:241
+msgid ""
+"Automatic Bajoo updates are available only for the packaged Windows version."
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:243
+msgid "Update attempt has been aborted."
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:244
+msgid "Your software is up to date."
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:245
+msgid "Searching new updates ..."
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:246
+#, python-format
+msgid "New version found: %s"
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:247
+msgid "Downloading the new version ..."
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:248
+msgid "Retrying after an error happened ..."
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:249
+#, fuzzy, python-format
+msgid ""
+"An error happened:\n"
+"%s"
+msgstr "E verificato un errore : %s"
+
+#: bajoo/gui/tab/advanced_settings_tab.py:250
+msgid "New version ready to be installed ..."
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:251
+msgid "Install in progress ..."
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:252
+msgid "Cleaning up old files"
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:253
+#, python-format
+msgid ""
+"Bajoo has been updated to version %s. It must be restarted to apply changes."
+msgstr ""
+
+#: bajoo/gui/bug_report.py:35
+msgid "The bug description is required"
+msgstr ""
+
+#: bajoo/gui/bug_report.py:39
+msgid "The email field is required"
+msgstr ""
+
+#: bajoo/gui/bug_report.py:43
+msgid "The email must be valid."
+msgstr ""
+
+#: bajoo/gui/bug_report.py:74
+msgid ""
+"Your message has been sent to the developers. They will reply to you be "
+"email."
+msgstr ""
+
+#: bajoo/gui/bug_report.py:78
+msgid "Bug report sent!"
+msgstr ""
+
+#: bajoo/gui/bug_report.py:96
+msgid "Email:"
+msgstr ""
+
+#: bajoo/api/session.py:29
+msgid "The authentication server has returned invalid data."
+msgstr ""
+
+#: bajoo/bajoo_app.py:888
+msgid "An error happened! Consult the logs for more details"
 msgstr ""

@@ -24,7 +24,9 @@ msgstr "Chuỗi khóa mã hóa chưa thiết lập. Tiến trình đồng bộ h
 
 #: bajoo/container_sync_pool.py:137
 msgid "No passphrase set.  Cyphered containers will be paused"
-msgstr "Chuỗi khóa mã hóa chưa thiết lập. Các thư mục được mã hóa sẽ tạm ngưng đồng bộ"
+msgstr ""
+"Chuỗi khóa mã hóa chưa thiết lập. Các thư mục được mã hóa sẽ tạm ngưng đồng "
+"bộ"
 
 #: bajoo/container_sync_pool.py:347
 msgid "Quota limit reached"
@@ -35,16 +37,15 @@ msgid ""
 "Your quota has exceeded. All upload operations are delayed in the next 5 "
 "minutes."
 msgstr ""
-"Bạn đã dùng vượt quota."
-" Mọi thao tác tải lên sẽ bị ngừng trong 5 phút tới."
+"Bạn đã dùng vượt quota. Mọi thao tác tải lên sẽ bị ngừng trong 5 phút tới."
 
 #: bajoo/connection_registration_process.py:214
 msgid ""
 "This program's version is no longer supported by Bajoo service. Please "
 "update to continue.\n"
 msgstr ""
-"Phiên bản Bajoo này không còn được hỗ trợ. Mời bạn vui lòng cập "
-"nhật phiên bản mới để tiếp tục.\n"
+"Phiên bản Bajoo này không còn được hỗ trợ. Mời bạn vui lòng cập nhật phiên "
+"bản mới để tiếp tục.\n"
 
 #: bajoo/connection_registration_process.py:218
 msgid "Invalid username or password."
@@ -144,14 +145,6 @@ msgstr "Thư mục tương ứng trên máy bạn không còn."
 #, python-format
 msgid "Folder creation failed: %s"
 msgstr "Lỗi khi tạo thư mục trên máy bạn: %s"
-
-#: bajoo/gui/bug_report.py:33
-msgid "Need bug description"
-msgstr "Vui lòng mô tả lỗi"
-
-#: bajoo/gui/bug_report.py:34
-msgid "No message sent!"
-msgstr "Tin nhắn không được gửi!"
 
 #: bajoo/gui/bug_report.py:55
 msgid "Send a message to the developers"
@@ -340,7 +333,8 @@ msgstr "Phần mềm này được phân phối dưới giấy phép MIT."
 
 #: bajoo/gui/about_window.py:118 bajoo/gui/about_window.py:289
 msgid "It is freely redistributable, the source code is available"
-msgstr "Mọi người có toàn quyền tái phân phối nó, mã nguồn có thể được truy cập"
+msgstr ""
+"Mọi người có toàn quyền tái phân phối nó, mã nguồn có thể được truy cập"
 
 #: bajoo/gui/about_window.py:122 bajoo/gui/about_window.py:291
 msgid "on GitHub."
@@ -642,8 +636,8 @@ msgid ""
 "%(name)d share folders use %(quota)s, so %(percent)0.2f%% of your Bajoo "
 "storage."
 msgstr ""
-"%(name)d thư mục sử dụng %(quota)s, tức %(percent)0.2f%% lượng "
-"lưu trữ cho phép."
+"%(name)d thư mục sử dụng %(quota)s, tức %(percent)0.2f%% lượng lưu trữ cho "
+"phép."
 
 #: bajoo/gui/tab/account_tab.py:261
 msgid "You are connected as:"
@@ -718,9 +712,10 @@ msgstr "Tên chia sẻ"
 msgid "<< Back to share list"
 msgstr "<< Quay lại danh sách chia sẻ"
 
-#: bajoo/gui/tab/advanced_settings_tab.py:138
-msgid "Actual version:"
-msgstr "Phiên bản hiện tại:"
+#: bajoo/gui/tab/advanced_settings_tab.py:161
+#, fuzzy, python-format
+msgid "Actual version: %s"
+msgstr "Phiên bản hiện tại: %s"
 
 #: bajoo/gui/tab/advanced_settings_tab.py:139
 msgid "Send crash reports to Bajoo automatically"
@@ -734,8 +729,9 @@ msgstr "Kích hoạt chế độ debug"
 msgid "Apply the updates automatically"
 msgstr "Cập nhật tự động"
 
-#: bajoo/gui/tab/advanced_settings_tab.py:142
-msgid "Check for updates"
+#: bajoo/gui/tab/advanced_settings_tab.py:198
+#, fuzzy
+msgid "Check updates"
 msgstr "Kiểm tra bản cập nhật"
 
 #: bajoo/gui/tab/advanced_settings_tab.py:143
@@ -1006,7 +1002,9 @@ msgstr "Bạn đã dùng vượt quota"
 msgid ""
 "Proxy is activate, but no URL is present.\n"
 "Check your configuration."
-msgstr "Proxy đã được bật, nhưng không có URL.\nVui lòng kiểm tra thông tin."
+msgstr ""
+"Proxy đã được bật, nhưng không có URL.\n"
+"Vui lòng kiểm tra thông tin."
 
 #: bajoo/bajoo_app.py:332
 #, python-format
@@ -1181,7 +1179,9 @@ msgstr "Thư mục Bajoo"
 msgid "https://www.bajoo.fr/help"
 msgstr ""
 
-msgid "Your MyBajoo folder has been created"
+#: bajoo/dynamic_container_list.py:222
+#, fuzzy
+msgid "Your MyBajoo folder has been created."
 msgstr "Thư mục MyBajoo của bạn vừa được tạo"
 
 # TODO translate me
@@ -1195,3 +1195,108 @@ msgstr ""
 #: bajoo/bajoo_app.py:155
 msgid "Bajoo already started"
 msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:210
+msgid "Restart"
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:240
+msgid "Checking last update available ..."
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:241
+msgid ""
+"Automatic Bajoo updates are available only for the packaged Windows version."
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:243
+msgid "Update attempt has been aborted."
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:244
+msgid "Your software is up to date."
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:245
+msgid "Searching new updates ..."
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:246
+#, python-format
+msgid "New version found: %s"
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:247
+msgid "Downloading the new version ..."
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:248
+#, fuzzy
+msgid "Retrying after an error happened ..."
+msgstr "Đã có lỗi xảy ra :("
+
+#: bajoo/gui/tab/advanced_settings_tab.py:249
+#, fuzzy, python-format
+msgid ""
+"An error happened:\n"
+"%s"
+msgstr "Đã có lỗi xảy ra: %s"
+
+#: bajoo/gui/tab/advanced_settings_tab.py:250
+msgid "New version ready to be installed ..."
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:251
+#, fuzzy
+msgid "Install in progress ..."
+msgstr "Đang kết nối..."
+
+#: bajoo/gui/tab/advanced_settings_tab.py:252
+msgid "Cleaning up old files"
+msgstr ""
+
+#: bajoo/gui/tab/advanced_settings_tab.py:253
+#, python-format
+msgid ""
+"Bajoo has been updated to version %s. It must be restarted to apply changes."
+msgstr ""
+
+#: bajoo/gui/bug_report.py:35
+#, fuzzy
+msgid "The bug description is required"
+msgstr "Vui lòng mô tả lỗi"
+
+#: bajoo/gui/bug_report.py:39
+#, fuzzy
+msgid "The email field is required"
+msgstr "Đây là thông tin bắt buộc."
+
+#: bajoo/gui/bug_report.py:43
+#, fuzzy
+msgid "The email must be valid."
+msgstr "Email này không hợp lệ."
+
+#: bajoo/gui/bug_report.py:74
+msgid ""
+"Your message has been sent to the developers. They will reply to you be "
+"email."
+msgstr ""
+
+#: bajoo/gui/bug_report.py:78
+msgid "Bug report sent!"
+msgstr ""
+
+#: bajoo/gui/bug_report.py:96
+msgid "Email:"
+msgstr ""
+
+#: bajoo/api/session.py:29
+msgid "The authentication server has returned invalid data."
+msgstr ""
+
+#: bajoo/bajoo_app.py:888
+msgid "An error happened! Consult the logs for more details"
+msgstr ""
+
+#~ msgid "No message sent!"
+#~ msgstr "Tin nhắn không được gửi!"
