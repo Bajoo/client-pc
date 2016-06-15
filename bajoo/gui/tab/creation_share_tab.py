@@ -191,7 +191,7 @@ class CreationShareView(BaseView):
             chk_encryption: N_("Encrypt this share"),
             chk_exclusion: N_('Do not synchronize on this PC'),
             btn_browse_location: N_('Location on this PC'),
-            lbl_members: N_('Members having access to this share')
+            lbl_members: N_('Members accessing this share')
         })
 
         self.register_many_i18n('SetHint', {

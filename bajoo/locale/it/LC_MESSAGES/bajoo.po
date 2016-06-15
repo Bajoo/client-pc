@@ -97,9 +97,8 @@ msgstr ""
 msgid "The synchronization of this share is stopped."
 msgstr ""
 
-# TODO translate me
 #: bajoo/bajoo_app.py:592
-msgid "The synchronization of this share is restarted."
+msgid "The synchronization of this share has restarted."
 msgstr ""
 
 #: bajoo/bajoo_app.py:611 bajoo/gui/bug_report.py:66
@@ -216,7 +215,7 @@ msgstr "C'è già un conto utilizzando questa e-mail."
 
 #: bajoo/connection_registration_process.py:236
 #, python-format
-msgid "An error happened: %s"
+msgid "An error occurred: %s"
 msgstr "E verificato un errore : %s"
 
 # TODO translate me
@@ -248,8 +247,8 @@ msgstr ""
 " %s"
 
 #: bajoo/connection_registration_process.py:393
-#, python-format
-msgid "%s doesn't exists, or is not a directory"
+#, fuzzy, python-format
+msgid "%s doesn't exist, or is not a directory"
 msgstr "%s Non esiste piu, o non è un file."
 
 #: bajoo/connection_registration_process.py:398
@@ -619,9 +618,8 @@ msgstr ""
 msgid "Connection"
 msgstr ""
 
-# TODO translate me
 #: bajoo/gui/form/connection_form.py:101
-msgid "Password forgotten?"
+msgid "Forgot password?"
 msgstr ""
 
 # TODO translate me
@@ -887,9 +885,8 @@ msgstr ""
 msgid "Your password has been successfully changed."
 msgstr ""
 
-# TODO translate me
 #: bajoo/gui/tab/account_tab.py:266
-msgid ">>> Move to a higher offer"
+msgid ">>> Move to a upper offer"
 msgstr ""
 
 # TODO translate me
@@ -917,9 +914,8 @@ msgstr ""
 msgid "Actual version: %s"
 msgstr ""
 
-# TODO translate me
 #: bajoo/gui/tab/advanced_settings_tab.py:162
-msgid "Send crash reports to Bajoo automatically"
+msgid "Automatically Send crash reports to Bajoo"
 msgstr ""
 
 # TODO translate me
@@ -1047,10 +1043,9 @@ msgstr ""
 msgid "Location on this PC"
 msgstr ""
 
-# TODO translate me
 #: bajoo/gui/tab/creation_share_tab.py:194
 #: bajoo/gui/tab/details_share_tab.py:596
-msgid "Members having access to this share"
+msgid "Members accessing this share"
 msgstr ""
 
 # TODO translate me
@@ -1156,9 +1151,8 @@ msgstr ""
 msgid "Activate status icon and the contextual menu"
 msgstr ""
 
-# TODO translate me
 #: bajoo/gui/tab/general_settings_tab.py:136
-msgid "Display a notification when finish downloading file modifications"
+msgid "Display a notification when file download is finished"
 msgstr ""
 
 # TODO translate me
@@ -1238,10 +1232,10 @@ msgstr ""
 msgid "Synchronization is not active"
 msgstr ""
 
-# TODO translate me
 #: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:53
-msgid "An error happened :("
-msgstr ""
+#, fuzzy
+msgid "An error occurred :("
+msgstr "Errore : %s"
 
 # TODO translate me
 #: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:101
@@ -1356,10 +1350,10 @@ msgstr ""
 msgid "Quota exceeded"
 msgstr ""
 
-# TODO translate me
 #: bajoo/local_container.py:57
-msgid "Wait the passphrase"
-msgstr ""
+#, fuzzy
+msgid "Waiting for the passphrase"
+msgstr "Ricordare mio password"
 
 #: bajoo/local_container.py:90
 msgid "The corresponding folder exists, but the Bajoo index file is missing."

@@ -50,7 +50,7 @@ class AbstractTaskBarIcon(object):
         SYNC_PROGRESS: N_('Shares currently syncing...'),
         SYNC_PAUSE: N_('Synchronization suspended'),
         SYNC_STOP: N_('Synchronization is not active'),
-        SYNC_ERROR: N_('An error happened :(')
+        SYNC_ERROR: N_('An error occurred :(')
     }
 
     def __init__(self):

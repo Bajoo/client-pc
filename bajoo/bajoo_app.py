@@ -589,7 +589,7 @@ class BajooApp(wx.App):
         container = event.container
         self._container_list.start_sync_container(container)
         self._container_updated(
-            container, N_('The synchronization of this share is restarted.'))
+            container, N_('The synchronization of this share has restarted.'))
 
     def _container_updated(
             self, container, success_msg=None, error_msg=None):

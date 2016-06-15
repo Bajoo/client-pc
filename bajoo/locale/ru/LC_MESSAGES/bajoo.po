@@ -35,7 +35,7 @@ msgstr ""
 #: bajoo/bajoo_app.py:355
 #, python-format
 msgid "Error occurred: %s."
-msgstr "Ошибка: %s"
+msgstr "Произошла ошибка: %s"
 
 #: bajoo/bajoo_app.py:439
 msgid ""
@@ -93,7 +93,8 @@ msgid "The synchronization of this share is stopped."
 msgstr "La synchronisation de se partage est arrêtée."
 
 #: bajoo/bajoo_app.py:592
-msgid "The synchronization of this share is restarted."
+#, fuzzy
+msgid "The synchronization of this share has restarted."
 msgstr "Синхронизация возобновлена."
 
 #: bajoo/bajoo_app.py:611 bajoo/gui/bug_report.py:66
@@ -199,7 +200,7 @@ msgstr "Данный адрес уже существует."
 
 #: bajoo/connection_registration_process.py:236
 #, python-format
-msgid "An error happened: %s"
+msgid "An error occurred: %s"
 msgstr "Произошла ошибка: %s"
 
 #: bajoo/connection_registration_process.py:347
@@ -230,8 +231,8 @@ msgstr ""
 " %s"
 
 #: bajoo/connection_registration_process.py:393
-#, python-format
-msgid "%s doesn't exists, or is not a directory"
+#, fuzzy, python-format
+msgid "%s doesn't exist, or is not a directory"
 msgstr "%s Большке не существует, досье не найдено."
 
 #: bajoo/connection_registration_process.py:398
@@ -576,7 +577,8 @@ msgid "Connection"
 msgstr "Подключение"
 
 #: bajoo/gui/form/connection_form.py:101
-msgid "Password forgotten?"
+#, fuzzy
+msgid "Forgot password?"
 msgstr "Забыли пароль?"
 
 #: bajoo/gui/form/members_share_form.py:154 bajoo/gui/form/proxy_form.py:154
@@ -811,7 +813,8 @@ msgid "Your password has been successfully changed."
 msgstr "Ваш пароль был успешно изменен."
 
 #: bajoo/gui/tab/account_tab.py:266
-msgid ">>> Move to a higher offer"
+#, fuzzy
+msgid ">>> Move to a upper offer"
 msgstr ">>> Перейдите на более высокое предложение"
 
 #: bajoo/gui/tab/account_tab.py:267
@@ -836,7 +839,8 @@ msgid "Actual version: %s"
 msgstr "Действующая версия: %s"
 
 #: bajoo/gui/tab/advanced_settings_tab.py:162
-msgid "Send crash reports to Bajoo automatically"
+#, fuzzy
+msgid "Automatically Send crash reports to Bajoo"
 msgstr "Автоматическое отправлене к Бажу об ошибке"
 
 #: bajoo/gui/tab/advanced_settings_tab.py:163
@@ -958,7 +962,8 @@ msgstr "Помещено на тот ПК"
 
 #: bajoo/gui/tab/creation_share_tab.py:194
 #: bajoo/gui/tab/details_share_tab.py:596
-msgid "Members having access to this share"
+#, fuzzy
+msgid "Members accessing this share"
 msgstr "Члены имеющие доступ к обмену"
 
 #: bajoo/gui/tab/creation_share_tab.py:198
@@ -1047,7 +1052,8 @@ msgid "Activate status icon and the contextual menu"
 msgstr "Включить значок состояния и контекстное меню"
 
 #: bajoo/gui/tab/general_settings_tab.py:136
-msgid "Display a notification when finish downloading file modifications"
+#, fuzzy
+msgid "Display a notification when file download is finished"
 msgstr "Показывать уведомление после загрузки полных измененийФайлы"
 
 #: bajoo/gui/tab/general_settings_tab.py:138
@@ -1113,7 +1119,7 @@ msgid "Synchronization is not active"
 msgstr "Синхронизация отключена"
 
 #: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:53
-msgid "An error happened :("
+msgid "An error occurred :("
 msgstr "Обнаружена ошибка :("
 
 # TODO translate me
@@ -1221,7 +1227,8 @@ msgid "Quota exceeded"
 msgstr "Дополнительный лимит исчерпан"
 
 #: bajoo/local_container.py:57
-msgid "Wait the passphrase"
+#, fuzzy
+msgid "Waiting for the passphrase"
 msgstr "В ожидании секретной фразы"
 
 #: bajoo/local_container.py:90
@@ -1301,3 +1308,4 @@ msgid ""
 msgstr ""
 "proxy подключен, но URL не найден.\n"
 "Проверьте конфигурацию."
+

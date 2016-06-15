@@ -94,7 +94,8 @@ msgid "The synchronization of this share is stopped."
 msgstr "Đã ngừng đồng bộ hóa thư mục chia sẻ này."
 
 #: bajoo/bajoo_app.py:592
-msgid "The synchronization of this share is restarted."
+#, fuzzy
+msgid "The synchronization of this share has restarted."
 msgstr "Đã tái khởi động đồng bộ hóa thư mục chia sẻ này."
 
 #: bajoo/bajoo_app.py:611 bajoo/gui/bug_report.py:66
@@ -199,7 +200,7 @@ msgstr "Đã có người dùng email này."
 
 #: bajoo/connection_registration_process.py:236
 #, python-format
-msgid "An error happened: %s"
+msgid "An error occurred: %s"
 msgstr "Đã có lỗi xảy ra: %s"
 
 #: bajoo/connection_registration_process.py:347
@@ -230,8 +231,8 @@ msgstr ""
 " %s"
 
 #: bajoo/connection_registration_process.py:393
-#, python-format
-msgid "%s doesn't exists, or is not a directory"
+#, fuzzy, python-format
+msgid "%s doesn't exist, or is not a directory"
 msgstr "%s không tồn tại, hoặc không phải thư mục."
 
 #: bajoo/connection_registration_process.py:398
@@ -577,7 +578,7 @@ msgid "Connection"
 msgstr "Kết nối"
 
 #: bajoo/gui/form/connection_form.py:101
-msgid "Password forgotten?"
+msgid "Forgot password?"
 msgstr "Quên mật khẩu?"
 
 #: bajoo/gui/form/members_share_form.py:154 bajoo/gui/form/proxy_form.py:154
@@ -812,7 +813,8 @@ msgid "Your password has been successfully changed."
 msgstr "Mật khẩu của bạn đã được thay đổi."
 
 #: bajoo/gui/tab/account_tab.py:266
-msgid ">>> Move to a higher offer"
+#, fuzzy
+msgid ">>> Move to a upper offer"
 msgstr ">>> Đổi sang loại tài khoản tốt hơn"
 
 #: bajoo/gui/tab/account_tab.py:267
@@ -837,7 +839,8 @@ msgid "Actual version: %s"
 msgstr "Phiên bản hiện tại: %s"
 
 #: bajoo/gui/tab/advanced_settings_tab.py:162
-msgid "Send crash reports to Bajoo automatically"
+#, fuzzy
+msgid "Automatically Send crash reports to Bajoo"
 msgstr "Tự động gửi báo cáo lỗi cho Bajoo"
 
 #: bajoo/gui/tab/advanced_settings_tab.py:163
@@ -959,7 +962,8 @@ msgstr "Nơi để thư mục trên máy này"
 
 #: bajoo/gui/tab/creation_share_tab.py:194
 #: bajoo/gui/tab/details_share_tab.py:596
-msgid "Members having access to this share"
+#, fuzzy
+msgid "Members accessing this share"
 msgstr "Các thành viên có quyền truy cập"
 
 #: bajoo/gui/tab/creation_share_tab.py:198
@@ -1048,7 +1052,8 @@ msgid "Activate status icon and the contextual menu"
 msgstr "Kích hoạt biểu tượng hiện trạng và thực đơn ngữ cảnh"
 
 #: bajoo/gui/tab/general_settings_tab.py:136
-msgid "Display a notification when finish downloading file modifications"
+#, fuzzy
+msgid "Display a notification when file download is finished"
 msgstr "Hiển thị một thông báo khi tải thành công những tập tin đã thay đổi"
 
 #: bajoo/gui/tab/general_settings_tab.py:138
@@ -1114,7 +1119,7 @@ msgid "Synchronization is not active"
 msgstr "Chưa bật đồng bộ hóa"
 
 #: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:53
-msgid "An error happened :("
+msgid "An error occurred :("
 msgstr "Đã có lỗi xảy ra :("
 
 #: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:101
@@ -1220,7 +1225,8 @@ msgid "Quota exceeded"
 msgstr "Quota đã hết"
 
 #: bajoo/local_container.py:57
-msgid "Wait the passphrase"
+#, fuzzy
+msgid "Waiting for the passphrase"
 msgstr "Chờ nhập chuỗi khóa mã hóa"
 
 #: bajoo/local_container.py:90

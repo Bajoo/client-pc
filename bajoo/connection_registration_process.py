@@ -233,7 +233,7 @@ class _ConnectionProcess(object):
         else:  # network error
             _logger.debug('login failed due to error: %s' % error)
             message = getattr(error, 'message',
-                              N_('An error happened: %s') % error)
+                              N_('An error occurred: %s') % error)
 
             yield self.connection(username, error_msg=message)
 
@@ -390,7 +390,7 @@ class _ConnectionProcess(object):
 
         if not os.path.isdir(root_folder):
             self._root_folder_error = N_(
-                "%s doesn't exists, or is not a directory" % root_folder)
+                "%s doesn't exist, or is not a directory" % root_folder)
             return promise.Promise.resolve(False)
 
         if not os.access(root_folder, os.R_OK | os.W_OK):

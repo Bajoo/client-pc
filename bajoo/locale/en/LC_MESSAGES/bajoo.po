@@ -87,8 +87,8 @@ msgid "The synchronization of this share is stopped."
 msgstr ""
 
 #: bajoo/bajoo_app.py:592
-msgid "The synchronization of this share is restarted."
-msgstr "The synchronization of this share has restarted."
+msgid "The synchronization of this share has restarted."
+msgstr ""
 
 #: bajoo/bajoo_app.py:611 bajoo/gui/bug_report.py:66
 #: bajoo/local_container.py:52
@@ -190,8 +190,8 @@ msgstr ""
 
 #: bajoo/connection_registration_process.py:236
 #, python-format
-msgid "An error happened: %s"
-msgstr "An error occurred: %s"
+msgid "An error occurred: %s"
+msgstr ""
 
 #: bajoo/connection_registration_process.py:347
 #, python-format
@@ -218,8 +218,8 @@ msgstr ""
 
 #: bajoo/connection_registration_process.py:393
 #, python-format
-msgid "%s doesn't exists, or is not a directory"
-msgstr "%s doesn't exist, or is not a directory"
+msgid "%s doesn't exist, or is not a directory"
+msgstr ""
 
 #: bajoo/connection_registration_process.py:398
 #, python-format
@@ -543,8 +543,8 @@ msgid "Connection"
 msgstr ""
 
 #: bajoo/gui/form/connection_form.py:101
-msgid "Password forgotten?"
-msgstr "Forgot password?"
+msgid "Forgot password?"
+msgstr ""
 
 #: bajoo/gui/form/members_share_form.py:154 bajoo/gui/form/proxy_form.py:154
 msgid "User"
@@ -775,8 +775,8 @@ msgid "Your password has been successfully changed."
 msgstr ""
 
 #: bajoo/gui/tab/account_tab.py:266
-msgid ">>> Move to a higher offer"
-msgstr ">>> Move to a upper offer"
+msgid ">>> Move to a upper offer"
+msgstr ""
 
 #: bajoo/gui/tab/account_tab.py:267
 msgid "Disconnect my account"
@@ -800,8 +800,8 @@ msgid "Actual version: %s"
 msgstr ""
 
 #: bajoo/gui/tab/advanced_settings_tab.py:162
-msgid "Send crash reports to Bajoo automatically"
-msgstr "Automatically send crash reports to Bajoo"
+msgid "Automatically Send crash reports to Bajoo"
+msgstr ""
 
 #: bajoo/gui/tab/advanced_settings_tab.py:163
 msgid "Activate debug mode"
@@ -919,8 +919,8 @@ msgstr ""
 
 #: bajoo/gui/tab/creation_share_tab.py:194
 #: bajoo/gui/tab/details_share_tab.py:596
-msgid "Members having access to this share"
-msgstr "Members accessing this share"
+msgid "Members accessing this share"
+msgstr ""
 
 #: bajoo/gui/tab/creation_share_tab.py:198
 msgid "Share name"
@@ -1008,8 +1008,8 @@ msgid "Activate status icon and the contextual menu"
 msgstr ""
 
 #: bajoo/gui/tab/general_settings_tab.py:136
-msgid "Display a notification when finish downloading file modifications"
-msgstr "Display a notification when file download is finished"
+msgid "Display a notification when file download is finished"
+msgstr ""
 
 #: bajoo/gui/tab/general_settings_tab.py:138
 msgid "Language"
@@ -1074,8 +1074,8 @@ msgid "Synchronization is not active"
 msgstr ""
 
 #: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:53
-msgid "An error happened :("
-msgstr "An error occurred :("
+msgid "An error occurred :("
+msgstr ""
 
 #: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:101
 msgid "Bajoo folder"
@@ -1178,8 +1178,8 @@ msgid "Quota exceeded"
 msgstr ""
 
 #: bajoo/local_container.py:57
-msgid "Wait the passphrase"
-msgstr "Waiting for the passphrase"
+msgid "Waiting for the passphrase"
+msgstr ""
 
 #: bajoo/local_container.py:90
 msgid "The corresponding folder exists, but the Bajoo index file is missing."

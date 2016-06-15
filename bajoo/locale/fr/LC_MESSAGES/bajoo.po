@@ -94,7 +94,7 @@ msgid "The synchronization of this share is stopped."
 msgstr "La synchronisation de se partage est stoppée."
 
 #: bajoo/bajoo_app.py:592
-msgid "The synchronization of this share is restarted."
+msgid "The synchronization of this share has restarted."
 msgstr "La synchronisation de ce partage a redémarré."
 
 #: bajoo/bajoo_app.py:611 bajoo/gui/bug_report.py:66
@@ -201,7 +201,7 @@ msgstr "Il y a déjà un compte utilisant cet email."
 
 #: bajoo/connection_registration_process.py:236
 #, python-format
-msgid "An error happened: %s"
+msgid "An error occurred: %s"
 msgstr "Une erreur s'est produite : %s"
 
 #: bajoo/connection_registration_process.py:347
@@ -233,7 +233,7 @@ msgstr ""
 
 #: bajoo/connection_registration_process.py:393
 #, python-format
-msgid "%s doesn't exists, or is not a directory"
+msgid "%s doesn't exist, or is not a directory"
 msgstr "%s n'existe plus, ou n'est pas un dossier."
 
 #: bajoo/connection_registration_process.py:398
@@ -464,7 +464,6 @@ msgid "The email must be valid."
 msgstr "Cet email doit être valide."
 
 #: bajoo/gui/bug_report.py:74
-#, fuzzy
 msgid ""
 "Your message has been sent to the developers. They will reply to you by "
 "email."
@@ -577,7 +576,7 @@ msgid "Connection"
 msgstr "Connexion"
 
 #: bajoo/gui/form/connection_form.py:101
-msgid "Password forgotten?"
+msgid "Forgot password?"
 msgstr "Mot de passe oublié ?"
 
 #: bajoo/gui/form/members_share_form.py:154 bajoo/gui/form/proxy_form.py:154
@@ -815,7 +814,7 @@ msgid "Your password has been successfully changed."
 msgstr "Votre mot de passe a été correctement changé."
 
 #: bajoo/gui/tab/account_tab.py:266
-msgid ">>> Move to a higher offer"
+msgid ">>> Move to a upper offer"
 msgstr ">>> Passer sur une offre supérieure"
 
 #: bajoo/gui/tab/account_tab.py:267
@@ -840,7 +839,7 @@ msgid "Actual version: %s"
 msgstr "Version actuelle : %s"
 
 #: bajoo/gui/tab/advanced_settings_tab.py:162
-msgid "Send crash reports to Bajoo automatically"
+msgid "Automatically Send crash reports to Bajoo"
 msgstr "Envoyer automatiquement les rapports de bug à Bajoo"
 
 #: bajoo/gui/tab/advanced_settings_tab.py:163
@@ -965,7 +964,7 @@ msgstr "Emplacement sur ce PC"
 
 #: bajoo/gui/tab/creation_share_tab.py:194
 #: bajoo/gui/tab/details_share_tab.py:596
-msgid "Members having access to this share"
+msgid "Members accessing this share"
 msgstr "Membres ayant accès à ce partage"
 
 #: bajoo/gui/tab/creation_share_tab.py:198
@@ -1055,7 +1054,7 @@ msgid "Activate status icon and the contextual menu"
 msgstr "Activer l'icône de statut et le menu contextuel"
 
 #: bajoo/gui/tab/general_settings_tab.py:136
-msgid "Display a notification when finish downloading file modifications"
+msgid "Display a notification when file download is finished"
 msgstr "Afficher une notification après le téléchargement de fichiers"
 
 #: bajoo/gui/tab/general_settings_tab.py:138
@@ -1121,8 +1120,8 @@ msgid "Synchronization is not active"
 msgstr "Synchronization désactivée"
 
 #: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:53
-msgid "An error happened :("
-msgstr "Une erreur est survenue :("
+msgid "An error occurred :("
+msgstr "Une erreur est survenue : %s"
 
 #: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:101
 msgid "Bajoo folder"
@@ -1227,7 +1226,7 @@ msgid "Quota exceeded"
 msgstr "Limite de quota atteinte"
 
 #: bajoo/local_container.py:57
-msgid "Wait the passphrase"
+msgid "Waiting for the passphrase"
 msgstr "En attente de la phrase secrète"
 
 #: bajoo/local_container.py:90
