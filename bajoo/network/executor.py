@@ -13,7 +13,6 @@ from ..promise import Deferred
 _logger = logging.getLogger(__name__)
 
 _MAX_WORKERS = 5
-_executor = None
 
 
 class NetworkSharedContext(SharedContext):
@@ -26,48 +25,19 @@ class NetworkSharedContext(SharedContext):
         counter (int): value incremented for each task added. It's used to give
             priority to the oldest tasks (at equal priority value).
     """
-    def __init__(self):
+
+    def __init__(self, execute_request):
+        """
+        Attributes:
+            execute_request (callable): function which will execute the
+                request. See HealthChecker doc.
+
+        """
         super(NetworkSharedContext, self).__init__()
         self.requests = []
         self.counter = 0
-        self.health_checker = HealthChecker(add_task)
+        self.health_checker = HealthChecker(execute_request)
         self.status = StatusTable(self.health_checker)
-
-
-def start():
-    global _executor
-
-    if not _executor:
-        _executor = GenericExecutor('network', _MAX_WORKERS, _run_worker,
-                                    NetworkSharedContext())
-    _executor.start()
-
-
-def stop():
-    global _executor
-    if _executor:
-        _executor.stop()
-    _executor = None
-
-
-def add_task(request):
-    """Add a request to send.
-
-    Args:
-        request (Request)
-    Returns:
-        Promise
-    """
-    _logger.log(5, "Add request %s", request)
-    df = Deferred()
-    with _executor.context:
-        request.increment_id = _executor.context.counter
-        task = (request, df)
-        heapq.heappush(_executor.context.requests, task)
-        _executor.context.counter += 1
-        _executor.context.condition.notify()
-
-    return df.promise
 
 
 def _run_worker(context):
@@ -119,3 +89,30 @@ def _run_worker(context):
                 context.status.update(request)
             deferred.resolve(result)
         _logger.log(5, "request %s completed", request)
+
+
+class Executor(GenericExecutor):
+
+    def __init__(self):
+        context = NetworkSharedContext(self.add_task)
+        super(Executor, self).__init__('network', _MAX_WORKERS,
+                                       _run_worker, context)
+
+    def add_task(self, request):
+        """Add a request to send.
+
+        Args:
+            request (Request)
+        Returns:
+            Promise
+        """
+        _logger.log(5, "Add request %s", request)
+        df = Deferred()
+        with self.context:
+            request.increment_id = self.context.counter
+            task = (request, df)
+            heapq.heappush(self.context.requests, task)
+            self.context.counter += 1
+            self.context.condition.notify()
+
+        return df.promise

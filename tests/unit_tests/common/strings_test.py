@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
+import locale
 import warnings
+import pytest
 from bajoo.common import strings
 
 
@@ -84,3 +86,39 @@ class TestStrings(object):
             assert len(w) == 1
             strings.ensure_bytes(b'bytes')
             assert len(w) == 1
+
+    def test_err2unicode_on_ascii_error(self):
+        assert strings.err2unicode(Exception('TEST')) == 'TEST'
+
+    @pytest.mark.skipif(str is not bytes, reason='In Python3, bytes msgs are '
+                                                 'escaped during the cast.')
+    def test_err2unicode_on_utf8_error(self):
+        msg = u'Permission refusée'
+        result = strings.err2unicode(Exception(msg.encode('utf-8')))
+        assert not isinstance(result, bytes)
+        assert result == msg
+
+    @pytest.mark.skipif(str is not bytes, reason='In Python3, bytes msgs are '
+                                                 'escaped during the cast.')
+    def test_err2unicode_on_cp1252_error(self, monkeypatch):
+        monkeypatch.setattr(locale, 'getpreferredencoding',
+                            lambda _=False: 'cp1252')
+
+        msg = u'Permission refusée'
+        result = strings.err2unicode(Exception(msg.encode('cp1252')))
+        assert not isinstance(result, bytes)
+        assert result == msg
+
+    def test_err2unicode_with_unknow_bytes(self):
+        msg = ''.join(chr(i) for i in range(0, 255))
+
+        result = strings.err2unicode(Exception(msg))
+        assert not isinstance(result, bytes)
+        assert result.encode('utf-8')  # should not raise exception.
+
+    def test_err2unicode_with_bytes(self):
+        res = strings.err2unicode(u'é'.encode('utf-8'))
+        assert res == u'é'
+
+    def test_err2unicode_with_unicode(self):
+        assert strings.err2unicode(u'é') == u'é'

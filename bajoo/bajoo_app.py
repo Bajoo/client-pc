@@ -18,7 +18,6 @@ except ImportError:
     from io import StringIO
 
 import wx
-from wx.lib.softwareupdate import SoftwareUpdate
 
 from . import __version__
 from . import promise
@@ -44,20 +43,27 @@ from .gui.passphrase_window import PassphraseWindow
 from .gui.proxy_window import EVT_PROXY_FORM
 from .gui.tab import SettingsTab
 from .gui.tab.account_tab import AccountTab
-from .gui.tab.advanced_settings_tab import AdvancedSettingsTab  # REMOVE
+from .gui.tab.advanced_settings_tab import AdvancedSettingsTab
 from .gui.tab.creation_share_tab import CreationShareTab
 from .gui.tab.details_share_tab import DetailsShareTab
 from .gui.tab.list_shares_tab import ListSharesTab
-from .gui.task_bar_icon import TaskBarIcon
+from .gui.task_bar_icon.abstract_task_bar_icon import AbstractTaskBarIcon
+from .gui.task_bar_icon.abstract_task_bar_icon_wx_interface import \
+    AbstractTaskBarIconWxInterface
+from .gui.task_bar_icon.task_bar_icon import TaskBarIcon
+from .gui.task_bar_icon.unity_task_bar_icon_wx_interface import \
+    UnityTaskBarIconWxInterface
 from .local_container import LocalContainer
+from .network.errors import NetworkError
 from .passphrase_manager import PassphraseManager
 from .promise import Promise
+from .software_updater import SoftwareUpdater
 
 
 _logger = logging.getLogger(__name__)
 
 
-class BajooApp(wx.App, SoftwareUpdate):
+class BajooApp(wx.App):
     """Main class who start and manages the user interface.
 
     This is the first class created, just after the loading of configuration
@@ -88,6 +94,7 @@ class BajooApp(wx.App, SoftwareUpdate):
 
     def __init__(self):
         self._checker = None
+        self._updater = SoftwareUpdater(self, "https://www.bajoo.fr/downloads/")
         self._home_window = None
         self._main_window = None
         self._about_window = None
@@ -100,6 +107,7 @@ class BajooApp(wx.App, SoftwareUpdate):
         self._container_sync_pool = ContainerSyncPool(
             self._on_global_status_change, self._on_sync_error)
         self._passphrase_manager = None
+        self._exit_flag = False  # When True, the app is exiting.
 
         self.user_profile = None
 
@@ -113,11 +121,8 @@ class BajooApp(wx.App, SoftwareUpdate):
 
         self.SetAppName("Bajoo")
 
-        base_url = "https://www.bajoo.fr/downloads"
-        self.InitUpdates(base_url, base_url + "/" + 'ChangeLog.txt')
-
         if config.get('auto_update'):
-            self.AutoCheckForUpdate(0)
+            self._updater.start()
 
         # Note: the loop event only works if at least one wx.Window exists. As
         # wx.TaskBarIcon is not a wx.Window, we need to keep this unused frame.
@@ -153,7 +158,7 @@ class BajooApp(wx.App, SoftwareUpdate):
             _logger.info('Prevents the user to start a second Bajoo instance.')
 
             wx.MessageBox(_("Another instance of Bajoo is actually running.\n"
-                          "You can't open Bajoo twice."),
+                            "You can't open Bajoo twice."),
                           caption=_("Bajoo already started"))
             return False
         return True
@@ -165,7 +170,7 @@ class BajooApp(wx.App, SoftwareUpdate):
         config.set('proxy_port', event.server_port)
         if event.use_auth:
             config.set('proxy_user', event.username)
-            config.set('proxy_password', event.proxy_password)
+            config.set('proxy_password', event.password)
         else:
             config.set('proxy_user', None)
             config.set('proxy_password', None)
@@ -210,8 +215,9 @@ class BajooApp(wx.App, SoftwareUpdate):
         window = cls()
 
         # clean variable when destroyed.
-        def clean(_evt):
+        def clean(evt):
             setattr(self, attribute, None)
+            evt.Skip()
 
         self.Bind(wx.EVT_WINDOW_DESTROY, clean, source=window)
 
@@ -231,13 +237,27 @@ class BajooApp(wx.App, SoftwareUpdate):
         if not self._ensures_single_instance_running():
             return False
 
-        self._task_bar_icon = TaskBarIcon()
+        unity_desktop = False
+        if sys.platform not in ["win32", "cygwin", "darwin"]:
+            desktop_session = os.environ.get("DESKTOP_SESSION")
+
+            if (desktop_session is not None and
+               desktop_session.startswith("ubuntu")):
+                unity_desktop = True
+
+        if unity_desktop:
+            self._task_bar_icon = UnityTaskBarIconWxInterface(self)
+            self._task_bar_icon.notify_lang_change()
+        else:
+            self._task_bar_icon = TaskBarIcon()
+
         self._notifier = MessageNotifier(self._task_bar_icon)
 
-        self.Bind(TaskBarIcon.EVT_OPEN_WINDOW, self._show_window)
-        self.Bind(TaskBarIcon.EVT_EXIT, self._exit)
+        self.Bind(AbstractTaskBarIconWxInterface.EVT_OPEN_WINDOW,
+                  self._show_window)
+        self.Bind(AbstractTaskBarIconWxInterface.EVT_EXIT, self._exit)
         self.Bind(LanguageBox.EVT_LANG, self._on_lang_changed)
-        self.Bind(TaskBarIcon.EVT_CONTAINER_STATUS_REQUEST,
+        self.Bind(AbstractTaskBarIconWxInterface.EVT_CONTAINER_STATUS_REQUEST,
                   self._container_status_request)
 
         self.Bind(CreationShareTab.EVT_CREATE_SHARE_REQUEST,
@@ -247,8 +267,10 @@ class BajooApp(wx.App, SoftwareUpdate):
         self.Bind(ListSharesTab.EVT_CONTAINER_DETAIL_REQUEST,
                   self._on_request_container_details)
         self.Bind(SettingsTab.EVT_CONFIG_REQUEST, self._on_request_config)
-        self.Bind(AdvancedSettingsTab.EVT_CHECK_UPDATES_REQUEST,
-                  self._on_request_check_updates)
+        self.Bind(AdvancedSettingsTab.EVT_GET_UPDATER_REQUEST,
+                  self._on_request_get_updater)
+        self.Bind(AdvancedSettingsTab.EVT_RESTART_REQUEST,
+                  self._restart_for_update)
         self.Bind(MembersShareForm.EVT_SUBMIT,
                   self._on_add_share_member)
         self.Bind(MembersShareForm.EVT_REMOVE_MEMBER,
@@ -276,21 +298,21 @@ class BajooApp(wx.App, SoftwareUpdate):
         """Catch event from tray icon, asking to show a window."""
         window = None
 
-        if event.target == TaskBarIcon.OPEN_HOME:
+        if event.target == AbstractTaskBarIcon.OPEN_HOME:
             self._show_home_window()
-        elif event.target == TaskBarIcon.OPEN_ABOUT:
+        elif event.target == AbstractTaskBarIcon.OPEN_ABOUT:
             window = self.get_window('_about_window', AboutBajooWindow)
-        elif event.target == TaskBarIcon.OPEN_SUSPEND:
+        elif event.target == AbstractTaskBarIcon.OPEN_SUSPEND:
             pass  # TODO: open window
-        elif event.target == TaskBarIcon.OPEN_INVITATION:
+        elif event.target == AbstractTaskBarIcon.OPEN_INVITATION:
             pass  # TODO: open window
-        elif event.target == TaskBarIcon.OPEN_SETTINGS:
+        elif event.target == AbstractTaskBarIcon.OPEN_SETTINGS:
             window = self.get_window('_main_window', MainWindow)
             window.show_settings_tab()
-        elif event.target == TaskBarIcon.OPEN_SHARES:
+        elif event.target == AbstractTaskBarIcon.OPEN_SHARES:
             window = self.get_window('_main_window', MainWindow)
             window.show_list_shares_tab()
-        elif event.target == TaskBarIcon.OPEN_DEV_CONTACT:
+        elif event.target == AbstractTaskBarIcon.OPEN_DEV_CONTACT:
             window = self.get_window('_contact_dev_window', BugReportWindow)
         else:
             _logger.error('Unexpected "Open Window" event: %s' % event)
@@ -343,20 +365,22 @@ class BajooApp(wx.App, SoftwareUpdate):
             return
 
         mapping = {
-            LocalContainer.STATUS_ERROR: TaskBarIcon.SYNC_ERROR,
-            LocalContainer.STATUS_PAUSED: TaskBarIcon.SYNC_PAUSE,
-            LocalContainer.STATUS_QUOTA_EXCEEDED: TaskBarIcon.SYNC_ERROR,
-            LocalContainer.STATUS_WAIT_PASSPHRASE: TaskBarIcon.SYNC_ERROR,
-            LocalContainer.STATUS_STOPPED: TaskBarIcon.SYNC_STOP,
-            LocalContainer.STATUS_UNKNOWN: TaskBarIcon.SYNC_PROGRESS
+            LocalContainer.STATUS_ERROR: AbstractTaskBarIcon.SYNC_ERROR,
+            LocalContainer.STATUS_PAUSED: AbstractTaskBarIcon.SYNC_PAUSE,
+            LocalContainer.STATUS_QUOTA_EXCEEDED:
+            AbstractTaskBarIcon.SYNC_ERROR,
+            LocalContainer.STATUS_WAIT_PASSPHRASE:
+            AbstractTaskBarIcon.SYNC_ERROR,
+            LocalContainer.STATUS_STOPPED: AbstractTaskBarIcon.SYNC_STOP,
+            LocalContainer.STATUS_UNKNOWN: AbstractTaskBarIcon.SYNC_PROGRESS
         }
         containers_status = []
         for container in self._container_list.get_list():
             if container.status == LocalContainer.STATUS_STARTED:
                 if container.is_up_to_date():
-                    status = TaskBarIcon.SYNC_DONE
+                    status = AbstractTaskBarIcon.SYNC_DONE
                 else:
-                    status = TaskBarIcon.SYNC_PROGRESS
+                    status = AbstractTaskBarIcon.SYNC_PROGRESS
             else:
                 status = mapping[container.status]
             row = (container.model.name, container.model.path, status)
@@ -386,9 +410,8 @@ class BajooApp(wx.App, SoftwareUpdate):
         if self._main_window:
             self._main_window.load_config(config)
 
-    def _on_request_check_updates(self, _event):
-        _logger.debug("Check for updates...")
-        self.CheckForUpdate()
+    def _on_request_get_updater(self, event):
+        event.EventObject.set_updater(self._updater)
 
     @promise.reduce_coroutine(safeguard=True)
     def _on_add_share_member(self, event):
@@ -565,7 +588,7 @@ class BajooApp(wx.App, SoftwareUpdate):
         container = event.container
         self._container_list.start_sync_container(container)
         self._container_updated(
-            container, N_('The synchronization of this share is restarted.'))
+            container, N_('The synchronization of this share has restarted.'))
 
     def _container_updated(
             self, container, success_msg=None, error_msg=None):
@@ -676,8 +699,11 @@ class BajooApp(wx.App, SoftwareUpdate):
             if self._main_window:
                 self._main_window.on_password_changed()
 
-    def _exit(self, _event):
+    def _exit(self, _event=None):
         """Close all resources and quit the app."""
+        if self._exit_flag:
+            return
+        self._exit_flag = True
         _logger.debug('Exiting ...')
 
         if self._home_window:
@@ -748,7 +774,7 @@ class BajooApp(wx.App, SoftwareUpdate):
             self._session, self.user_profile, self._notifier.send_message,
             self._container_sync_pool.add,
             self._container_sync_pool.remove)
-        self._task_bar_icon.set_state(TaskBarIcon.SYNC_PROGRESS)
+        self._task_bar_icon.set_state(AbstractTaskBarIcon.SYNC_PROGRESS)
 
     @ensure_gui_thread
     def _on_global_status_change(self, status):
@@ -760,9 +786,11 @@ class BajooApp(wx.App, SoftwareUpdate):
             return  # We are in a disconnection phase.
 
         mapping = {
-            ContainerSyncPool.STATUS_PAUSE: TaskBarIcon.SYNC_PAUSE,
-            ContainerSyncPool.STATUS_SYNCING: TaskBarIcon.SYNC_PROGRESS,
-            ContainerSyncPool.STATUS_UP_TO_DATE: TaskBarIcon.SYNC_DONE
+            ContainerSyncPool.STATUS_PAUSE: AbstractTaskBarIcon.SYNC_PAUSE,
+            ContainerSyncPool.STATUS_SYNCING:
+            AbstractTaskBarIcon.SYNC_PROGRESS,
+            ContainerSyncPool.STATUS_UP_TO_DATE:
+            AbstractTaskBarIcon.SYNC_DONE
         }
         if self._task_bar_icon:
             self._task_bar_icon.set_state(mapping[status])
@@ -787,7 +815,7 @@ class BajooApp(wx.App, SoftwareUpdate):
             self._main_window = None
 
         self._user = None
-        self._task_bar_icon.set_state(TaskBarIcon.NOT_CONNECTED)
+        self._task_bar_icon.set_state(AbstractTaskBarIcon.NOT_CONNECTED)
         if self._passphrase_manager:
             self._passphrase_manager.remove_passphrase()
 
@@ -797,7 +825,10 @@ class BajooApp(wx.App, SoftwareUpdate):
         self._container_list.stop()
         self._container_list = None
 
-        yield self._session.revoke()
+        try:
+            yield self._session.revoke()
+        except NetworkError:
+            _logger.warn('Token revocation failed', exc_info=True)
         self._session = None
 
         _logger.debug('Now restart the connection process...')
@@ -806,7 +837,7 @@ class BajooApp(wx.App, SoftwareUpdate):
 
     @promise.reduce_coroutine(safeguard=True)
     def send_bug_report(self, _evt):
-        _logger.debug("bug repport creation")
+        _logger.debug("bug report creation")
         tmpdir = tempfile.mkdtemp()
 
         # identify where are last log files
@@ -831,11 +862,12 @@ class BajooApp(wx.App, SoftwareUpdate):
                 except (IOError, OSError):
                     pass
 
-                username = self._generate_report_file(zf, _evt.report)
+                username = self._generate_report_file(zf, _evt.report,
+                                                      _evt.email)
 
             server_path = "/logs/%s/bugreport%s.zip" % \
-                (username,
-                 datetime.now().strftime("%Y%m%d-%H%M%S"))
+                          (username,
+                           datetime.now().strftime("%Y%m%d-%H%M%S"))
 
             if self._session:
                 log_session = self._session
@@ -845,11 +877,24 @@ class BajooApp(wx.App, SoftwareUpdate):
             with open(zip_path, 'rb') as file_content:
                 yield log_session.upload_storage_file(
                     'PUT', server_path, file_content)
-
+        except Exception as e:
+            if self._contact_dev_window:
+                try:
+                    message = str(e)
+                except:
+                    pass
+                if not message:
+                    message = _('An error happened! Consult the logs for more'
+                                ' details')
+                self._contact_dev_window.set_error_message(message)
+            raise e
+        else:
+            if self._contact_dev_window:
+                self._contact_dev_window.display_confirmation()
         finally:
             shutil.rmtree(tmpdir)
 
-    def _generate_report_file(self, zip_object, message):
+    def _generate_report_file(self, zip_object, message, reply_email):
         configfile = StringIO()
         configfile.write("## Bajoo bug report ##\n\n")
         configfile.write("Creation date: %s\n" % str(datetime.now()))
@@ -863,6 +908,7 @@ class BajooApp(wx.App, SoftwareUpdate):
             "System default encoding: %s\n" % sys.getdefaultencoding())
         configfile.write(
             "Filesystem encoding: %s\n" % sys.getfilesystemencoding())
+        configfile.write("Reply email: %s\n" % reply_email)
 
         if self.user_profile is None:
             username = "Unknown_user"
@@ -880,7 +926,47 @@ class BajooApp(wx.App, SoftwareUpdate):
         configfile.write("Default locales: %s\n" % locales)
         configfile.write("Message: \n\n%s" % message)
 
-        zip_object.writestr("MESSAGE", configfile.getvalue())
+        zip_object.writestr("MESSAGE", configfile.getvalue().encode('utf-8'))
         configfile.close()
 
         return username
+
+    def _restart_if_idle(self, evt):
+        evt.Skip()
+        if not evt.GetEventObject().IsTopLevel():
+            return
+
+        window_being_destroyed = None
+        if evt.GetEventType() == wx.EVT_WINDOW_DESTROY.typeId:
+            window_being_destroyed = evt.GetEventObject()
+        self.restart_when_idle(_already_bound=True,
+                               _window_being_destroyed=window_being_destroyed)
+
+    @ensure_gui_thread
+    def restart_when_idle(self, _already_bound=False,
+                          _window_being_destroyed=None):
+        # Under Windows, the window being destroyed during EVT_WINDOW_DESTROY
+        # is still alive and visible. "_window_being_destroyed" contains this
+        # window, so we can ignore it.
+        if not _already_bound:
+            _logger.info('Will restart Bajoo when all windows will be closed.')
+        all_windows = (self._home_window, self._main_window,
+                       self._about_window, self._contact_dev_window)
+
+        if any(w and w is not _window_being_destroyed and w.IsShown()
+               for w in all_windows):
+            if not _already_bound:
+                self.Bind(wx.EVT_SHOW, self._restart_if_idle)
+                self.Bind(wx.EVT_WINDOW_DESTROY, self._restart_if_idle)
+        else:
+            self.Unbind(wx.EVT_SHOW, handler=self._restart_if_idle)
+            self.Unbind(wx.EVT_WINDOW_DESTROY, handler=self._restart_if_idle)
+            return self._restart_for_update()
+
+    @ensure_gui_thread
+    def _restart_for_update(self, _evt=None):
+        if self._exit_flag:
+            return
+        _logger.info('Restart Bajoo now.')
+        self._updater.register_restart_on_exit()
+        self._exit(None)

@@ -60,7 +60,7 @@ class ContainerSyncPool(object):
             local_container (LocalContainer)
         """
         container = local_container.container
-        _logger.debug('Add container %s to sync list' % container)
+        _logger.debug('Add container %s to sync list', container)
 
         last_remote_index = local_container.get_remote_index()
 
@@ -120,7 +120,7 @@ class ContainerSyncPool(object):
 
                 del self._local_containers[container_id]
 
-                _logger.debug('Remove container %s from sync list' % lc)
+                _logger.debug('Remove container %s from sync list', lc)
 
                 return lc
 
@@ -234,49 +234,51 @@ class ContainerSyncPool(object):
                     self._on_state_change(self._global_status)
 
     def _added_remote_file(self, container_id, files):
-        _logger.info('Added (remote): %s' % files)
+        _logger.info('Added (remote): %s files', len(files))
         for f in files:
             if is_path_allowed(f['name']):
                 self._create_task(filesync.added_remote_files, container_id,
                                   f['name'])
 
     def _removed_remote_files(self, container_id, files):
-        _logger.info('Removed (remote): %s' % files)
+        _logger.info('Removed (remote): %s files', len(files))
         for f in files:
             if is_path_allowed(f['name']):
                 self._create_task(filesync.removed_remote_files, container_id,
                                   f['name'])
 
     def _modified_remote_files(self, container_id, files):
-        _logger.info('Modified (remote): %s' % files)
+        _logger.info('Modified (remote): %s files ', len(files))
         for f in files:
             if is_path_allowed(f['name']):
                 self._create_task(filesync.changed_remote_files, container_id,
                                   f['name'])
 
     def _added_local_file(self, container_id, file_path):
-        _logger.info('Added (local): %s for %s' % (file_path, container_id))
+        _logger.info('Added (local): %s files for %s', file_path, container_id)
         local_container, u, w = self._local_containers[container_id]
         filename = os.path.relpath(file_path, local_container.model.path)
 
         self._create_task(filesync.added_local_files, container_id, filename)
 
     def _removed_local_files(self, container_id, file_path):
-        _logger.info('Removed (local): %s for %s' % (file_path, container_id))
+        _logger.info('Removed (local): %s files for %s', file_path,
+                     container_id)
         local_container, u, w = self._local_containers[container_id]
         filename = os.path.relpath(file_path, local_container.model.path)
 
         self._create_task(filesync.removed_local_files, container_id, filename)
 
     def _modified_local_files(self, container_id, file_path):
-        _logger.info('Modified (local): %s for %s' % (file_path, container_id))
+        _logger.info('Modified (local): %s files for %s', file_path,
+                     container_id)
         local_container, u, w = self._local_containers[container_id]
         filename = os.path.relpath(file_path, local_container.model.path)
 
         self._create_task(filesync.changed_local_files, container_id, filename)
 
     def _moved_local_files(self, container_id, src_path, dest_path):
-        _logger.info('Moved (local): %s -> %s' % (src_path, dest_path))
+        _logger.info('Moved (local): %s -> %s', src_path, dest_path)
         local_container, u, w = self._local_containers[container_id]
         src_filename = os.path.relpath(src_path, local_container.model.path)
         dest_filename = os.path.relpath(dest_path, local_container.model.path)
@@ -359,7 +361,7 @@ class ContainerSyncPool(object):
                             [local_container]) \
                 .start()
 
-    def _on_task_success(self, _arg=None):
+    def _on_task_success(self, errors):
         """This method can be called in three different cases:
         A) the task and its subtasks are successful
         B) the task is successful but a subtask failed
@@ -374,34 +376,33 @@ class ContainerSyncPool(object):
         failing tasks
 
         Args:
-            _arg(list(_Task)): None or the list of failing taks
-
+            errors (list(_Task)): the list of failing taks. Empty list if no
+                error occurred.
         """
 
         # TODO: If the task factory returns a list of failed tasks, the tasks
         # should be retried and the concerned files should be excluded of
         # the sync for a period of 24h if they keep failing.
 
-        if _arg is not None:
-            upload_limit_reached = False
-            passphrase_not_set = False
+        upload_limit_reached = False
+        passphrase_not_set = False
 
-            for task in _arg:
-                if isinstance(task.error, HTTPEntityTooLargeError):
-                    upload_limit_reached = True
+        for task in errors:
+            if isinstance(task.error, HTTPEntityTooLargeError):
+                upload_limit_reached = True
 
-                if isinstance(task.error, PassphraseAbortError):
-                    passphrase_not_set = True
+            if isinstance(task.error, PassphraseAbortError):
+                passphrase_not_set = True
 
-                if hasattr(task.error, 'container_id'):
-                    self._manage_container_error(task.error)
+            if hasattr(task.error, 'container_id'):
+                self._manage_container_error(task.error)
 
-            if upload_limit_reached:
-                local_container = task.local_container
-                self.delay_upload(local_container)
+        if upload_limit_reached:
+            local_container = task.local_container
+            self.delay_upload(local_container)
 
-            if passphrase_not_set:
-                self._pause_if_need_the_passphrase()
+        if passphrase_not_set:
+            self._pause_if_need_the_passphrase()
 
         self._decrement()
 
@@ -431,5 +432,6 @@ class ContainerSyncPool(object):
         # what is it supposed to do ?
 
         local_container = self.remove(error.container_id)
-        local_container.status = local_container.STATUS_ERROR
-        local_container.error_msg = str(error)
+        if local_container is not None:
+            local_container.status = local_container.STATUS_ERROR
+            local_container.error_msg = str(error)

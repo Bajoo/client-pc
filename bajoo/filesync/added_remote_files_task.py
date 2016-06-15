@@ -103,8 +103,6 @@ class AddedRemoteFilesTask(_Task, PushTaskMixin):
         target.set_hash(remote_uncyphered_md5, metadata['hash'])
         self._release_index()
         result = yield add_task(task)
-
-        if result is not None:
-            self._task_errors = (result,)
+        self._task_errors.extend(result)
 
         return

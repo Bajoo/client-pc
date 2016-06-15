@@ -3,80 +3,12 @@
 import logging
 import os.path
 import sys
-from threading import Timer, Lock
 
 from .container import Container
+from ..common.periodic_task import PeriodicTask
 from ..filesync.filepath import is_hidden_part_in_path
 
 _logger = logging.getLogger(__name__)
-
-
-class PeriodicTask(object):
-
-    def __init__(self, name, delay, task, *args):
-        self._delay = delay
-        self._name = name
-        self._task = task
-        self._args = args
-        self._timer = None
-        self._canceled = False
-        self._lock = Lock()
-        self._apply_now_callback = None
-
-    def _exec_task(self, *args, **kwargs):
-        callback = None
-        with self._lock:
-            try:
-                self._args = self._task(*args, **kwargs)
-            except:
-                _logger.exception('Periodic task %s has raised exception' %
-                                  self._task)
-            self._timer = Timer(self._delay, self._exec_task, args=self._args)
-            self._timer.name = self._name
-            self._timer.daemon = True
-            if not self._canceled:
-                self._timer.start()
-            callback = self._apply_now_callback
-            self._apply_now_callback = None
-        if callback:
-            callback()
-
-    def start(self):
-        _logger.debug('Start periodic task %s', self._task)
-        self._timer = Timer(0, self._exec_task, args=self._args)
-        self._timer.name = self._name
-        self._timer.daemon = True
-        self._timer.start()
-
-    def stop(self):
-        """Stop the task.
-
-        Note that if the function is running at the moment this method is
-        called, the current iteration cannot be stopped.
-        """
-        _logger.debug('Stop periodic task %s', self._task)
-        self._canceled = True
-        self._timer.cancel()
-
-    def apply_now(self, callback=None):
-        """Apply the task as soon as possible.
-
-        Note that if the task is currently running, it will wait the end, the
-        another iteration will be executed immediately after that.
-
-        Args:
-            callback (Callable, optional): if set, called when we're sure the
-                task as been done.
-        """
-        self._timer.cancel()
-        with self._lock:
-            self._timer.cancel()  # In case the task has replaced the _timer.
-
-            self._timer = Timer(0, self._exec_task, args=self._args)
-            self._timer.name = self._name
-            self._timer.daemon = True
-            self._apply_now_callback = callback
-            self._timer.start()
 
 
 def container_list_updater(session, on_added_containers, on_removed_containers,
@@ -90,7 +22,7 @@ def container_list_updater(session, on_added_containers, on_removed_containers,
 
     Args:
         session
-        on_added_containers (callable): called with the list of added
+        on_added_containers (Callable): called with the list of added
             containers in parameters, each time a new container is detected.
         on_removed_containers (callable): called with the list of container's
             id who've been removed in parameters, each time a container is
@@ -98,16 +30,20 @@ def container_list_updater(session, on_added_containers, on_removed_containers,
         on_unchanged_containers (callable, optional): If set, it will be called
             on the first iteration, with the containers who hasn't been
             changed.
-        last_known_list (list of str, optional): list of container's ids
+        last_known_list (List[str], optional): list of container's ids
             already known. If not set, all containers will be considered as
             'new'.
-    Returns;
+    Returns:
         PeriodicTask: a task who update the list (by calling the callbacks) at
             a regular interval. It must be started using `start()`, and
             stopped with `stop()`
     """
 
-    def update_list(last_known_list, on_unchanged_containers=None):
+    def update_list(pt, last_known_list):
+        first_call = not pt.context
+        if not first_call:
+            last_known_list = pt.context['id_list']
+
         f = Container.list(session)
         container_list = f.result()
 
@@ -116,7 +52,7 @@ def container_list_updater(session, on_added_containers, on_removed_containers,
         removed_id_list = [id for id in last_known_list
                            if id not in id_list]
 
-        if on_unchanged_containers:
+        if first_call and on_unchanged_containers:
             unchanged_list = [c for c in container_list
                               if c.id in last_known_list]
             if unchanged_list:
@@ -125,10 +61,10 @@ def container_list_updater(session, on_added_containers, on_removed_containers,
             on_added_containers(added_list)
         if removed_id_list:
             on_removed_containers(removed_id_list)
-        return [id_list]
+        pt.context['id_list'] = id_list
 
     return PeriodicTask('Container list updater', check_period, update_list,
-                        last_known_list or [], on_unchanged_containers)
+                        last_known_list or [])
 
 
 def files_list_updater(container, container_path, on_new_files,
@@ -148,13 +84,17 @@ def files_list_updater(container, container_path, on_new_files,
         on_initial_files (callable, optional):
         last_known_list (dict(str, str), optional): known file. the key is the
             file's name and the value is the md5 sum.
-    Returns;
+    Returns:
         PeriodicTask: a task who update the list (by calling the callbacks) at
             a regular interval. It must be started using `start()`, and
             stopped with `stop()`
     """
 
-    def update_list(last_known_list, on_initial_files=None):
+    def update_list(pt, last_known_list):
+        first_call = not pt.context
+        if not first_call:
+            last_known_list = pt.context['known_list']
+
         new_files = []
         changed_files = []
         initial_files = []
@@ -179,7 +119,7 @@ def files_list_updater(container, container_path, on_new_files,
             if f['name'] in last_known_list:
                 if f['hash'] != last_known_list[f['name']]:
                     changed_files.append(f)
-                elif on_initial_files:
+                elif first_call and on_initial_files:
                     initial_files.append(f)
             else:
                 new_files.append(f)
@@ -193,15 +133,15 @@ def files_list_updater(container, container_path, on_new_files,
             on_new_files(new_files)
         if changed_files:
             on_changed_files(changed_files)
-        if initial_files:
+        if first_call and initial_files:
             on_initial_files(initial_files)
         if deleted_files:
             on_deleted_files(deleted_files)
 
-        return [new_known_list]
+        pt.context['known_list'] = new_known_list
 
     return PeriodicTask('File list updater %s' % container.id, check_period,
-                        update_list, last_known_list or [], on_initial_files)
+                        update_list, last_known_list or [])
 
 
 def main():

@@ -21,97 +21,70 @@ When we are not connected, requests are done periodically, to check if the
 status has changed. As soon as the Bajoo servers responds a 200 OK, the status
 is updated.
 
+
+Examples:
+
+    Use of json_request:
+
+    >>> with Service() as service:
+    ...     promise = service.json_request(
+    ...         'GET', 'https://api.bajoo.fr/healthcheck')
+    ...     # Raises an exception if the request takes more than 10 seconds.
+    ...     result_dict = promise.result(10)
+    ...     print(result_dict['content'])
+    {u'status': u'ok'}
+
+    Use of download:
+
+    >>> import tempfile
+    >>> with Service() as service:
+    ...     promise = service.download(
+    ...         'GET', 'https://www.bajoo.fr/favicon.ico')
+    ...     result = promise.result(10)
+    ...     with tempfile.TemporaryFile('wb') as target_file:
+    ...         buffer = result['content'].read(10240)
+    ...         while buffer:
+    ...             target_file.write(buffer)
+    ...             buffer = result['content'].read(10240)
 """
 
-import atexit
 from . import errors  # noqa
-from . import executor
-from .executor import start, stop  # noqa
-from .proxy import prepare_proxy
-from .request import Request
+from .service import Service
 
 
-# Start network worker at start.
-executor.start()
-atexit.register(executor.stop)
+class Context(object):
+    def __init__(self):
+        self._service = None
+
+    def start(self):
+        global json_request, download, upload
+
+        self._service = Service()
+        self._service.start()
+
+        # Copy methods from the service instance.
+        json_request = self._service.json_request
+        download = self._service.download
+        upload = self._service.upload
+
+    def stop(self):
+        global json_request, download, upload
+
+        if self._service:
+            self._service.stop()
+
+        json_request = None
+        download = None
+        upload = None
+
+    def __enter__(self):
+        self.start()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop()
 
 
-def json_request(verb, url, priority=10, **params):
-    """
-    Send a request and get the json from its response.
-
-    Args:
-        verb: (str)
-        url: (str)
-        priority (int, optional): requests with lower priority are executed
-            first. Default to 10 (high priority)
-        params: additional parameters
-    Returns: Future<dict>
-        A Future object containing the json object from the response
-    """
-    params = dict(params)
-    request = Request(Request.JSON, verb, url, params, priority=priority)
-    return executor.add_task(request)
-
-
-def download(verb, url, priority=100, **params):
-    """
-    Download a file and save it as a temporary file.
-
-    Args:
-        verb: (str)
-        url: (str)
-        priority (int, optional): requests with lower priority are executed
-            first. Default to 100 (normal priority)
-        params: additional parameters
-    Returns: Future<File>
-        A Future object contains the temporary file object
-    """
-    params = dict(params)
-    request = Request(Request.DOWNLOAD, verb, url, params, priority=priority)
-    return executor.add_task(request)
-
-
-def upload(verb, url, source, priority=100, **params):
-    """
-    Upload a file to an address.
-
-    Note: if a file-like object is passed as source, it will be automatically
-    closed after the upload.
-
-    Args:
-        verb: (str)
-        url: (str)
-        source (str/File): Path of the file to upload (if type is str), or
-            file-like object to upload.
-        priority (int, optional): requests with lower priority are executed
-            first. Default to 100 (normal priority)
-        params: additional parameters
-    """
-    params = dict(params)
-    request = Request(Request.UPLOAD, verb, url, params, source, priority)
-    return executor.add_task(request)
-
-
-if __name__ == "__main__":
-    import os
-    import io
-    import logging
-
-    logging.basicConfig(level=logging.DEBUG)
-    print('get proxy: %s' % prepare_proxy())
-
-    # Test JSON_request
-    json_future = json_request('GET', 'http://ip.jsontest.com/')
-    print("JSON response content: %s" % json_future.result())
-
-    # Test download
-    # Remove file before downloading
-    sample_file_name = "sample.pdf"
-    if os.path.exists(sample_file_name):
-        os.remove(sample_file_name)
-
-    future_download = download('GET', 'http://www.pdf995.com/samples/pdf.pdf')
-    with io.open(sample_file_name, "wb") as sample_file, \
-            future_download.result()['content'] as tmp_file:
-        sample_file.write(tmp_file.read())
+# The context must be used to set theses methods.
+json_request = None
+download = None
+upload = None

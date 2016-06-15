@@ -3,9 +3,9 @@
 import logging
 import threading
 
+from .. import network
 from .. import promise
 from ..common.i18n import N_
-from ..network import json_request, download, upload
 from ..network.errors import NetworkError
 from ..network.errors import HTTPUnauthorizedError
 from ..promise import Deferred, Promise
@@ -112,8 +112,9 @@ class OAuth2Session(object):
             'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
         }
 
-        response = yield json_request('POST', TOKEN_URL, auth=auth,
-                                      headers=headers, data=request_data)
+        response = yield network.json_request('POST', TOKEN_URL, auth=auth,
+                                              headers=headers,
+                                              data=request_data)
         content = response['content']
 
         try:
@@ -148,8 +149,8 @@ class OAuth2Session(object):
 
         self.refresh_token = None
         self.access_token = None
-        yield json_request('POST', REVOKE_TOKEN_URL,
-                           auth=auth, headers=headers, data=data)
+        yield network.json_request('POST', REVOKE_TOKEN_URL,
+                                   auth=auth, headers=headers, data=data)
         yield None
 
     def _notify_token_changed(self):
@@ -321,7 +322,7 @@ class Session(OAuth2Session):
         Returns (Future<dict>): the future returned by json_request
         """
         return self._send_bajoo_request(IDENTITY_API_URL, verb, url_path,
-                                        json_request, **params)
+                                        network.json_request, **params)
 
     def send_storage_request(self, verb, url_path, **params):
         """
@@ -335,7 +336,7 @@ class Session(OAuth2Session):
         Returns (Future<dict>): the future returned by json_request
         """
         return self._send_bajoo_request(STORAGE_API_URL, verb, url_path,
-                                        json_request, **params)
+                                        network.json_request, **params)
 
     def download_storage_file(self, verb, url_path, **params):
         """
@@ -351,7 +352,7 @@ class Session(OAuth2Session):
         """
 
         return self._send_bajoo_request(STORAGE_API_URL, verb, url_path,
-                                        download, **params)
+                                        network.download, **params)
 
     def upload_storage_file(self, verb, url_path, source, **params):
         """Upload a file into the storage
@@ -368,7 +369,7 @@ class Session(OAuth2Session):
         """
         params['source'] = source
         return self._send_bajoo_request(STORAGE_API_URL, verb, url_path,
-                                        upload, **params)
+                                        network.upload, **params)
 
 
 if __name__ == '__main__':

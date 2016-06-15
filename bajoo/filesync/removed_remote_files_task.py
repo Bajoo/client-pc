@@ -39,9 +39,7 @@ class RemovedRemoteFilesTask(_Task, PushTaskMixin):
             task = self._create_push_task(target.rel_path)
             self._release_index()  # do not update the index
             result = yield add_task(task)
-
-            if result is not None:
-                self._task_errors = (result,)
+            self._task_errors.extend(result)
 
             return
 
@@ -56,9 +54,7 @@ class RemovedRemoteFilesTask(_Task, PushTaskMixin):
             task = self._create_push_task(target.rel_path)
             self._release_index()  # do not update the index
             result = yield add_task(task)
-
-            if result is not None:
-                self._task_errors = (result,)
+            self._task_errors.extend(result)
 
             return
 

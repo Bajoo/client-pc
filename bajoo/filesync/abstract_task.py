@@ -10,7 +10,7 @@ import sys
 import time
 
 from ..common.i18n import _
-from ..common.strings import ensure_unicode
+from ..common.strings import ensure_unicode, err2unicode
 from ..network.errors import HTTPEntityTooLargeError
 from ..encryption.errors import PassphraseAbortError
 from .exception import RedundantTaskInterruption
@@ -69,8 +69,9 @@ class _Task(object):
                 t = ensure_unicode(t)
                 self.target_list.append(t)
 
-        # If set, list of tasks who've failed.
-        self._task_errors = None
+        # list of tasks who've failed.
+        # If there is no error, it's an empty list.
+        self._task_errors = []
         self.error = None
 
     def __repr__(self):
@@ -99,6 +100,9 @@ class _Task(object):
 
         The task will be added to the ref task index during the initialization
         phase.
+        Returns:
+            Promise<list>: List of task in error. If there is no error, returns
+                an empty list.
         """
 
         _logger.debug('Prepare task %s' % self)
@@ -174,8 +178,6 @@ class _Task(object):
 
         _logger.exception('Exception on %s task:' % self.get_type())
 
-        if not self._task_errors:
-            self._task_errors = []
         self._task_errors.append(self)
 
         self.error = error
@@ -186,15 +188,16 @@ class _Task(object):
                 self.display_error_cb(
                     _('Error during the sync of the "%(name)s" container:'
                       '\n%(error)s')
-                    % {'name': self.container.name, 'error': error})
+                    % {'name': self.container.name,
+                       'error': err2unicode(error)})
                 raise self.container.error
             else:
-                target_string = ', '.join(str(x) for x in self.target_list)
+                target_string = ', '.join(self.target_list)
                 self.display_error_cb(
                     _('Error during sync of the file(s) "%(filename)s" '
                       'in the "%(name)s" container:\n%(error)s')
                     % {'filename': target_string, 'name': self.container.name,
-                       'error': error})
+                       'error': err2unicode(error)})
 
     @abc.abstractmethod
     def _apply_task(self):
@@ -219,7 +222,7 @@ class _Task(object):
         return d.hexdigest()
 
     def _write_downloaded_file(self, file_content, target):
-        """Write the downloaded file on the disk.
+        """Write the downloaded file on the disk and close it.
 
         Returns:
             str: the local md5 hash

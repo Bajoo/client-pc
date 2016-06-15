@@ -46,6 +46,12 @@ class NetworkError(Exception):
         else:
             return _(self._message)
 
+    def __repr__(self):
+        return '%s("%s")' % (self.__class__.__name__, self.message)
+
+    def __str__(self):
+        return self.message
+
 
 class ConnectionError(NetworkError):
     def __init__(self, error):

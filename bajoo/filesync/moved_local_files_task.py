@@ -195,11 +195,8 @@ class MovedLocalFilesTask(_Task, PushTaskMixin, RemovedTaskMixin):
         if state.task_list is not None and len(state.task_list) > 0:
             self._release_index()
             results = yield Promise.all(state.task_list)
-            failed_tasks = itertools.chain(*filter(None, results))
-            failed_tasks = list(failed_tasks)
-
-            if failed_tasks:
-                self._task_errors = failed_tasks
+            failed_tasks = itertools.chain(*results)
+            self._task_errors.extend(failed_tasks)
 
         return
 
