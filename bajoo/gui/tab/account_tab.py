@@ -263,7 +263,7 @@ class AccountView(BaseView):
             lbl_account_type_desc: N_('Account type:'),
             lbl_message: N_('Your password '
                             'has been successfully changed.'),
-            btn_change_offer: N_(">>> Move to a higher offer"),
+            btn_change_offer: N_(">>> Move to a upper offer"),
             btn_disconnect: N_("Disconnect my account"),
             btn_open_bajoo_folder: N_("Open my Bajoo folder"),
             btn_reinit_passphrase: N_("Reinitialize my passphrase"),

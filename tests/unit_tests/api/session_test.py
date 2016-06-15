@@ -3,7 +3,7 @@
 import collections
 import pytest
 
-import bajoo.api.session
+from bajoo import network
 from bajoo.api.session import Session, IDENTITY_API_URL, STORAGE_API_URL
 from bajoo.api.user import User
 from bajoo.network.errors import HTTPUnauthorizedError
@@ -35,11 +35,11 @@ class MockSessionFunctions(object):
     def __init__(self, monkeypatch):
         self.history = []
         self._expected_requests = collections.defaultdict(list)
-        monkeypatch.setattr(bajoo.api.session, 'json_request',
+        monkeypatch.setattr(network, 'json_request',
                             self._execute_identity_request)
-        monkeypatch.setattr(bajoo.api.session, 'download',
+        monkeypatch.setattr(network, 'download',
                             self._execute_storage_request)
-        monkeypatch.setattr(bajoo.api.session, 'upload',
+        monkeypatch.setattr(network, 'upload',
                             self._execute_storage_request)
 
     @staticmethod
@@ -125,7 +125,7 @@ class TestSession(object):
             }
             return self._auth_response()
 
-        monkeypatch.setattr(bajoo.api.session, 'json_request', json_request)
+        monkeypatch.setattr(network, 'json_request', json_request)
 
         promise = Session.from_user_credentials('foo', 'bar')
         session = promise.result(0.01)
@@ -142,7 +142,7 @@ class TestSession(object):
             assert data == {'grant_type': 'client_credentials'}
             return self._auth_response()
 
-        monkeypatch.setattr(bajoo.api.session, 'json_request', json_request)
+        monkeypatch.setattr(network, 'json_request', json_request)
 
         promise = Session.from_client_credentials()
         session = promise.result(0.01)
@@ -162,7 +162,7 @@ class TestSession(object):
             }
             return self._auth_response()
 
-        monkeypatch.setattr(bajoo.api.session, 'json_request', json_request)
+        monkeypatch.setattr(network, 'json_request', json_request)
 
         promise = Session.from_refresh_token('OLD TOKEN')
         session = promise.result(0.01)
@@ -178,7 +178,7 @@ class TestSession(object):
                 'content': None
             })
 
-        monkeypatch.setattr(bajoo.api.session, 'json_request', json_request)
+        monkeypatch.setattr(network, 'json_request', json_request)
 
         session = Session()
         session.refresh_token = 'TOKEN'

@@ -7,8 +7,8 @@ import datetime
 import sys
 
 from bajoo.common.path import get_log_dir
-from bajoo.common.log import _on_exit, _get_file_handler, ColoredFormatter, \
-    init, OutLogger, _excepthook, set_debug_mode
+from bajoo.common.log import _get_file_handler, ColoredFormatter, Context, \
+    OutLogger, _excepthook, set_debug_mode
 
 """### TEST CASES ###
     XXX at exit routine, check if correctly registered.
@@ -31,22 +31,6 @@ from bajoo.common.log import _on_exit, _get_file_handler, ColoredFormatter, \
 """
 
 colorFormater = ColoredFormatter()
-
-
-class TestLogAtexit(object):
-
-    def setup_method(self, method):
-        logger = logging.getLogger()
-        for h in list(logger.handlers):
-            logger.removeHandler(h)
-
-    def test_checkRegistering(self, capsys):
-        logging.basicConfig(stream=sys.stdout)
-        logging.getLogger().setLevel(logging.INFO)
-        _on_exit()
-
-        out, err = capsys.readouterr()
-        assert "Application exiting ..." in out
 
 
 class TestLogFormating(object):
@@ -160,17 +144,17 @@ class TestLogInit(object):
         assert len(logger.handlers) == 0
         assert sys.excepthook is not _excepthook
 
-        init()
+        with Context():
+            assert logging.getLevelName(logging.WARNING + 1) == "STDOUT"
+            assert logging.getLevelName(logging.WARNING + 2) == "STDERR"
+            assert isinstance(sys.stdout, OutLogger)
+            assert isinstance(sys.stderr, OutLogger)
 
-        assert logging.getLevelName(logging.WARNING + 1) == "STDOUT"
-        assert logging.getLevelName(logging.WARNING + 2) == "STDERR"
-        assert isinstance(sys.stdout, OutLogger)
-        assert isinstance(sys.stderr, OutLogger)
-
-        assert len(logger.handlers) == 1
-        assert logging.getLogger().getEffectiveLevel() == logging.INFO
-        assert logging.getLogger("bajoo").getEffectiveLevel() == logging.DEBUG
-        assert sys.excepthook is _excepthook
+            assert len(logger.handlers) == 1
+            assert logging.getLogger().getEffectiveLevel() == logging.INFO
+            bajoo_logger = logging.getLogger("bajoo")
+            assert bajoo_logger.getEffectiveLevel() == logging.DEBUG
+            assert sys.excepthook is _excepthook
 
     def test_initWithoutFrozen(self):
         setattr(sys, "frozen", False)
@@ -179,12 +163,12 @@ class TestLogInit(object):
         assert len(logger.handlers) == 0
         assert sys.excepthook is sys.__excepthook__
 
-        init()
-
-        assert len(logger.handlers) == 2
-        assert logging.getLogger().getEffectiveLevel() == logging.INFO
-        assert logging.getLogger("bajoo").getEffectiveLevel() == logging.DEBUG
-        assert sys.excepthook is _excepthook
+        with Context():
+            assert len(logger.handlers) == 2
+            assert logging.getLogger().getEffectiveLevel() == logging.INFO
+            bajoo_logger = logging.getLogger("bajoo")
+            assert bajoo_logger.getEffectiveLevel() == logging.DEBUG
+            assert sys.excepthook is _excepthook
 
     def test_setDebugTrue(self):
         set_debug_mode(True)

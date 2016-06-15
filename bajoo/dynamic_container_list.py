@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from functools import partial
 import logging
 import os
 from threading import Lock as Lock
@@ -10,7 +9,6 @@ from .common.i18n import _
 from .api.sync import container_list_updater
 from .local_container import LocalContainer
 from .container_model import ContainerModel
-from .promise import Deferred
 
 
 _logger = logging.getLogger(__name__)
@@ -106,6 +104,7 @@ class DynamicContainerList(object):
             container (Container):
             model (ContainerModel):
         """
+        _logger.debug('Add container: %s', model.name)
         with self._list_lock:
             self.user_profile.set_container(model.id, model)
             self._append_local_container(model, container, is_new=True)
@@ -277,10 +276,7 @@ class DynamicContainerList(object):
         Returns:
             Promise<None>: resolved when the refresh is done.
         """
-        df = Deferred()
-        self._updater.apply_now(partial(df.resolve, None))
-
-        return df.promise
+        return self._updater.apply_now()
 
     def get_list(self):
         """Returns the list of containers.

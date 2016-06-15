@@ -5,23 +5,7 @@ import sys
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 from .filesync.filepath import is_path_allowed, is_hidden_part_in_path
-
-_custom_unicode_type = type(u'unicode')
-
-
-def ensure_unicode(string):
-    if type(string) is _custom_unicode_type:
-        return string
-
-    file_system_encoding = sys.getfilesystemencoding()
-
-    if file_system_encoding is not None:
-        return string.decode(file_system_encoding)
-
-    try:
-        return string.decode('UTF-8')
-    except (LookupError, UnicodeDecodeError,):
-        return string.decode()
+from .common.strings import ensure_unicode
 
 
 class FileWatcher(FileSystemEventHandler):
@@ -50,6 +34,9 @@ class FileWatcher(FileSystemEventHandler):
         self._on_moved_files = on_moved_files
         self._on_deleted_files = on_deleted_files
 
+    def _ensure_unicode(self, msg):
+        return ensure_unicode(msg, sys.getfilesystemencoding() or 'utf-8')
+
     def start(self):
         self._observer.start()
 
@@ -57,17 +44,17 @@ class FileWatcher(FileSystemEventHandler):
         self._observer.stop()
 
     def on_moved(self, event):
-        src_path = ensure_unicode(event.src_path)
+        src_path = self._ensure_unicode(event.src_path)
         if event.is_directory or not is_path_allowed(src_path):
             return
 
-        dest_path = ensure_unicode(event.dest_path)
+        dest_path = self._ensure_unicode(event.dest_path)
         if is_hidden_part_in_path(self._container.path, dest_path):
             return
         self._on_moved_files(src_path, dest_path)
 
     def on_created(self, event):
-        src_path = ensure_unicode(event.src_path)
+        src_path = self._ensure_unicode(event.src_path)
         if event.is_directory or not is_path_allowed(src_path):
             return
         if is_hidden_part_in_path(self._container.path, src_path):
@@ -75,7 +62,7 @@ class FileWatcher(FileSystemEventHandler):
         self._on_new_files(src_path)
 
     def on_deleted(self, event):
-        src_path = ensure_unicode(event.src_path)
+        src_path = self._ensure_unicode(event.src_path)
         if event.is_directory or not is_path_allowed(src_path):
             return
         if is_hidden_part_in_path(self._container.path, src_path):
@@ -83,7 +70,7 @@ class FileWatcher(FileSystemEventHandler):
         self._on_deleted_files(src_path)
 
     def on_modified(self, event):
-        src_path = ensure_unicode(event.src_path)
+        src_path = self._ensure_unicode(event.src_path)
         if event.is_directory or not is_path_allowed(src_path):
             return
         if is_hidden_part_in_path(self._container.path, src_path):

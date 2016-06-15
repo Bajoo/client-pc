@@ -90,6 +90,7 @@ class GenericExecutor(object):
         """Start all the workers."""
         self.context.stop_order = False
 
+        _logger.debug('Start service "%s"', self._worker_name)
         self._executor = ThreadPoolExecutor(max_workers=self._max_workers)
         for i in range(self._max_workers):
             self._last_worker_id += 1
@@ -103,6 +104,7 @@ class GenericExecutor(object):
 
         Returns only when all the worker threads are joined.
         """
+        _logger.debug('Stop service "%s"', self._worker_name)
         with self.context:
             self.context.stop_order = True
             self.context.condition.notify_all()
@@ -139,8 +141,8 @@ class GenericExecutor(object):
         error = future.exception()
 
         if error:
-            _logger.critical("Worker %s #%s has crashed: %s" % (
-                self._worker_name, worker_id, error))
+            _logger.critical("Worker %s #%s has crashed: %s",
+                             self._worker_name, worker_id, error)
             with self.context:
                 if not self.context.stop_order:
                     self._last_worker_id += 1

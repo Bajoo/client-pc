@@ -78,7 +78,5 @@ class SyncTask(_Task, PushTaskMixin, RemovedTaskMixin):
 
         if subtasks:
             results = yield Promise.all(subtasks)
-            failed_tasks = itertools.chain(*filter(None, results))
-            failed_tasks = list(failed_tasks)
-            if failed_tasks:
-                self._task_errors = failed_tasks
+            failed_tasks = itertools.chain(*results)
+            self._task_errors.extend(failed_tasks)

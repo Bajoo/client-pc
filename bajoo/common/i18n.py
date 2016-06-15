@@ -75,6 +75,21 @@ def set_lang(lang):
     #                     exc_info=True)
 
 
+def get_lang():
+    """retrieve the current language if available, return None otherwise"""
+    global _translation
+
+    if _translation is None:
+        return
+
+    info = _translation.info()
+
+    if 'language' in info:
+        return info['language']
+
+    return None
+
+
 def _(msg):
     """Translate the specified text, and return the result."""
     global _translation

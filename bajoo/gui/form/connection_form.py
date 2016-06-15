@@ -98,7 +98,7 @@ class ConnectionFormView(BaseView):
             self.window, URL=forgotten_password_url)
         self.register_i18n(forgotten_password_link,
                            forgotten_password_link.SetLabel,
-                           N_('Password forgotten?'))
+                           N_('Forgot password?'))
         forgotten_password_link.DoPopup(False)
 
         # See bug http://trac.wxwidgets.org/ticket/17145

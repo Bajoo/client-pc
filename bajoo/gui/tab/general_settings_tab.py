@@ -133,8 +133,8 @@ class GeneralSettingsView(BaseView):
             chk_launch_at_startup: N_("Launch Bajoo at system startup"),
             chk_contextual_icon: N_("Activate status icon "
                                     "and the contextual menu"),
-            chk_notifications: N_("Display a notification when finish "
-                                  "downloading file modifications"),
+            chk_notifications: N_("Display a notification when file download "
+                                  "is finished"),
             language_box: N_("Language")
         })
 

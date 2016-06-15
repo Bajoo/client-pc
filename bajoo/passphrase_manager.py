@@ -55,6 +55,8 @@ class PassphraseManager(object):
             text: the passphrase. None if the user has refused to provide the
                 passphrase
         """
+        _logger.log(5, 'Get passphrase (retry=%s, rejected=%s)',
+                    is_retry, self._rejected)
         with self._lock:
             if self._rejected:
                 return None
@@ -67,6 +69,7 @@ class PassphraseManager(object):
                     return self._passphrase
 
             if self._user_input_callback:
+                _logger.debug('Ask passphrase to the user.')
                 passphrase, remember_it = self._user_input_callback(is_retry)
                 self._passphrase = passphrase
                 self._rejected = passphrase is None
@@ -87,6 +90,10 @@ class PassphraseManager(object):
             remember_on_disk (boolean): If True the passphrase will be saved
                 on disk, and retrieved at next use of bajoo.
         """
+        if passphrase:
+            _logger.debug('Set passphrase.')
+        else:
+            _logger.debug('Forget passphrase.')
         self._passphrase = passphrase
         self._rejected = False
         if remember_on_disk:
@@ -97,6 +104,7 @@ class PassphraseManager(object):
 
         It also reinitialize the "rejected" status.
         """
+        _logger.debug('Remove & Forget passphrase.')
         self._passphrase = None
         self._rejected = False
         self._user_profile.passphrase = None

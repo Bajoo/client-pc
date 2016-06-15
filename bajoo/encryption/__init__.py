@@ -57,7 +57,8 @@ def _get_tmp_dir():
     if _tmp_dir:
         return _tmp_dir
     try:
-        return tempfile.mkdtemp(dir=get_cache_dir())
+        _tmp_dir = tempfile.mkdtemp(dir=get_cache_dir())
+        return _tmp_dir
     except:
         _logger.warning('Error when creating tmp dir for encryption files',
                         exc_info=True)
@@ -96,8 +97,14 @@ def _patch_remove_path(method, path, *args, **kwargs):
     ret = method(*args, **kwargs)
     try:
         os.remove(path)
-    except (IOError, OSError):
-        _logger.warning('Unable to delete tmp file: %s' % path, exc_info=True)
+    except (IOError, OSError) as e:
+        if getattr(e, 'errno', None) == 2:
+            # the file doesn't exists. It's happens when the file is "closed"
+            # twice or more.
+            pass
+        else:
+            _logger.warning('Unable to delete tmp file: %s' % path,
+                            exc_info=True)
     return ret
 
 
