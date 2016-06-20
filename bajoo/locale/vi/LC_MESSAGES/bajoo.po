@@ -840,7 +840,7 @@ msgstr "Phiên bản hiện tại: %s"
 
 #: bajoo/gui/tab/advanced_settings_tab.py:162
 #, fuzzy
-msgid "Automatically Send crash reports to Bajoo"
+msgid "Automatically send crash reports to Bajoo"
 msgstr "Tự động gửi báo cáo lỗi cho Bajoo"
 
 #: bajoo/gui/tab/advanced_settings_tab.py:163
@@ -1226,7 +1226,7 @@ msgstr "Quota đã hết"
 
 #: bajoo/local_container.py:57
 #, fuzzy
-msgid "Waiting for the passphrase"
+msgid "Passphrase needed"
 msgstr "Chờ nhập chuỗi khóa mã hóa"
 
 #: bajoo/local_container.py:90

@@ -839,7 +839,7 @@ msgid "Actual version: %s"
 msgstr "Version actuelle : %s"
 
 #: bajoo/gui/tab/advanced_settings_tab.py:162
-msgid "Automatically Send crash reports to Bajoo"
+msgid "Automatically send crash reports to Bajoo"
 msgstr "Envoyer automatiquement les rapports de bug à Bajoo"
 
 #: bajoo/gui/tab/advanced_settings_tab.py:163
@@ -900,7 +900,7 @@ msgstr "Téléchargement de la nouvelle version ..."
 
 #: bajoo/gui/tab/advanced_settings_tab.py:248
 msgid "Retrying after an error happened ..."
-msgstr "Nouvel essai après qu'Une erreur soit survenue ..."
+msgstr "Nouvel essai après qu'une erreur soit survenue ..."
 
 #: bajoo/gui/tab/advanced_settings_tab.py:249
 #, python-format
@@ -1226,8 +1226,8 @@ msgid "Quota exceeded"
 msgstr "Limite de quota atteinte"
 
 #: bajoo/local_container.py:57
-msgid "Waiting for the passphrase"
-msgstr "En attente de la phrase secrète"
+msgid "Passphrase needed"
+msgstr "La phrase secrète est requise"
 
 #: bajoo/local_container.py:90
 msgid "The corresponding folder exists, but the Bajoo index file is missing."

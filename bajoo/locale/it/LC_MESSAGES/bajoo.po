@@ -915,7 +915,7 @@ msgid "Actual version: %s"
 msgstr ""
 
 #: bajoo/gui/tab/advanced_settings_tab.py:162
-msgid "Automatically Send crash reports to Bajoo"
+msgid "Automatically send crash reports to Bajoo"
 msgstr ""
 
 # TODO translate me
@@ -1352,7 +1352,7 @@ msgstr ""
 
 #: bajoo/local_container.py:57
 #, fuzzy
-msgid "Waiting for the passphrase"
+msgid "Passphrase needed"
 msgstr "Ricordare mio password"
 
 #: bajoo/local_container.py:90

@@ -159,7 +159,7 @@ class AdvancedSettingsView(BaseView):
 
         self.register_many_i18n('SetLabelText', {
             lbl_current_version: (N_('Actual version: %s'), __version__),
-            chk_send_report: N_('Automatically Send crash reports to Bajoo'),
+            chk_send_report: N_('Automatically send crash reports to Bajoo'),
             chk_debug_mode: N_('Activate debug mode'),
             chk_auto_update: N_('Apply the updates automatically'),
             chk_exclude_hidden_files: N_("Don't synchronize hidden files"),

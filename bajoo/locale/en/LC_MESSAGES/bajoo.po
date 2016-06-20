@@ -800,7 +800,7 @@ msgid "Actual version: %s"
 msgstr ""
 
 #: bajoo/gui/tab/advanced_settings_tab.py:162
-msgid "Automatically Send crash reports to Bajoo"
+msgid "Automatically send crash reports to Bajoo"
 msgstr ""
 
 #: bajoo/gui/tab/advanced_settings_tab.py:163
@@ -1178,7 +1178,7 @@ msgid "Quota exceeded"
 msgstr ""
 
 #: bajoo/local_container.py:57
-msgid "Waiting for the passphrase"
+msgid "Passphrase needed"
 msgstr ""
 
 #: bajoo/local_container.py:90

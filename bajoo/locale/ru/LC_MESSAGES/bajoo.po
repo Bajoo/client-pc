@@ -152,7 +152,7 @@ msgstr "octet"
 #: bajoo/common/util.py:10
 #, fuzzy
 msgid "GB"
-msgstr "octet"
+msgstr "GO"
 
 #: bajoo/common/util.py:10
 msgid "KB"
@@ -840,7 +840,7 @@ msgstr "Действующая версия: %s"
 
 #: bajoo/gui/tab/advanced_settings_tab.py:162
 #, fuzzy
-msgid "Automatically Send crash reports to Bajoo"
+msgid "Automatically send crash reports to Bajoo"
 msgstr "Автоматическое отправлене к Бажу об ошибке"
 
 #: bajoo/gui/tab/advanced_settings_tab.py:163
@@ -1228,7 +1228,7 @@ msgstr "Дополнительный лимит исчерпан"
 
 #: bajoo/local_container.py:57
 #, fuzzy
-msgid "Waiting for the passphrase"
+msgid "Passphrase needed"
 msgstr "В ожидании секретной фразы"
 
 #: bajoo/local_container.py:90
