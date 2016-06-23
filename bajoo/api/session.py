@@ -14,8 +14,8 @@ from .user import User
 
 _logger = logging.getLogger(__name__)
 
-IDENTITY_API_URL = 'https://192.168.2.100'
-STORAGE_API_URL = 'https://192.168.2.100:8080/v1'
+IDENTITY_API_URL = 'https://api.dev.bajoo.fr'
+STORAGE_API_URL = 'https://storage.dev.bajoo.fr/v1'
 
 CLIENT_ID = 'e2676e5d1fff42f7b32308e5eca3c36a'
 CLIENT_SECRET = '<client-secret>'
