@@ -307,6 +307,7 @@ class Context(object):
         """Open the log file and prepare the logging module."""
 
         logging.captureWarnings(True)
+        logging.addLevelName(5, 'HIDEBUG')
 
         root_logger = logging.getLogger()
 
@@ -358,20 +359,40 @@ class Context(object):
 
 
 def set_logs_level(levels):
-    """Configure a fine-grained log levels for the differents modules.
+    """Configure a fine-grained log levels for the different modules.
 
     Args:
         levels (dict): A list of tuple associating a module name and a log
-            level.
+            level. A log level can be a number or a str representing one of the
+            logging levels (DEBUG, WARNING, ...). The level name will be
+            converted to uppercase.
+            Invalids values will be ignored.
+
+    Example:
+
+        >>> # Accept DEBUG logs only for gui and its submodules
+        >>> set_logs_level({'bajoo':'info', 'bajoo.gui': 'debug'})
+
+        >>> # Accept DEBUG log in general, but only ERROR logs (and above) for
+        >>> # the gui.
+        >>> set_logs_level({'bajoo': 10, 'bajoo.gui': 40})
     """
     for (module, level) in levels.items():
-        logging.getLogger(module).setLevel(level)
+        try:
+            if isinstance(level, str):
+                level = level.upper()
+            logging.getLogger(module).setLevel(level)
+        except ValueError:
+            logger = logging.getLogger(__name__)
+            logger.warning('Invalid log level "%s" for logger "%s". '
+                           'Will be ignored.',
+                           level, module)
 
 
 def set_debug_mode(debug):
     """Set, or unset the debug log level.
 
-    Note: modules others than bajoo.* usually gives too much informations
+    Note: modules others than bajoo.* usually gives too much information
     generally useless. They are not set to DEBUG, even in DEBUG mode.
     If needed, the level log of non-bajoo modules can be set by
     ``set_logs_level()``.
