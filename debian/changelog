@@ -1,0 +1,60 @@
+bajoo (0.3.18-1) unstable; urgency=low
+
+  * Better management of log files.
+  * Fix a bug resulting in the deletion of temporary folders.
+  * Next updates will now be done in the background.
+  * Fix a bug during when sending bug reports.
+  * Fix a bug preventing proxy parameters to be applied.
+  * Better handling and displaying of errors.
+  * Support for the Linux version (almost ready)
+  * Dozens of small fixes and code improvements.rs.
+  
+ -- Bajoo <support@bajoo.fr>  Wed, 15 Jun 2016 16:24:05 +0200
+
+bajoo (0.3.17-1) unstable; urgency=low
+
+  * Fix a bug preventing the sync of large folders.
+  
+ -- Bajoo <support@bajoo.fr>  Thu, 14 Apr 2016 11:03:34 +0200
+
+bajoo (0.3.16-1) unstable; urgency=low
+
+  * Fix a bug at registration
+  
+ -- Bajoo <support@bajoo.fr>  Mon, 11 Apr 2016 17:35:19 +0200
+
+bajoo (0.3.15-1) unstable; urgency=low
+
+  * Hotfix for a critical error causing a freeze of the Bajoo application.
+  
+ -- Bajoo <support@bajoo.fr>  Fri, 8 Apr 2016 13:55:22 +0200
+
+bajoo (0.3.14-1) unstable; urgency=low
+
+  * Enable daily rotation of log files.
+  * Fix a serious bug about authentication provoking sync errors once an hour.
+  * Huge improvement of the synchronisation mechanisms, resulting in a decrease
+    of resource consumption (less CPU, and less network requests).
+
+ -- Bajoo <support@bajoo.fr>  Thu, 7 Apr 2016 15:07:21 +0200
+
+bajoo (0.3.13-1) unstable; urgency=low
+
+  * Various improvments of graphical messages.
+  * Fix a bug about undetected user lang.
+  
+ -- Bajoo <support@bajoo.fr>  Thu, 17 Mar 2016 14:20:29 +0100
+
+bajoo (0.3.12-1) unstable; urgency=low
+
+  * Fix bug which freezes the application after a while.
+  
+ -- Bajoo <support@bajoo.fr>  Wed, 24 Feb 2016 10:22:21 +0100
+
+bajoo (0.3.11-1) unstable; urgency=low
+
+  * Fix the 'Too many open file' critical bug.
+  * Add an option to remember the passphrase at account creation.
+  * Fix blocking bug at share creation, introduced in previous version.
+  
+ -- Bajoo <support@bajoo.fr>  Fri, 19 Feb 2016 18:19:27 +0100

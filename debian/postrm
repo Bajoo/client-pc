@@ -1,0 +1,16 @@
+#!/bin/sh
+set -e
+
+purge_bajoo (){
+    rm -rf "$1/.local/share/Bajoo"
+    rm -rf "$1/.config/Bajoo"
+    rm -rf "$1/.cache/Bajoo"
+}
+
+if [ "$1" = purge ]; then
+    for dir in $(ls /home/); do
+        purge_bajoo "/home/$dir"
+    done
+
+    purge_bajoo "/root"
+fi
