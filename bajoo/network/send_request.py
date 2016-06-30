@@ -4,39 +4,18 @@ import io
 import logging
 import tempfile
 
-from requests import Session
-from requests import __version__ as requests_version
-from requests.adapters import HTTPAdapter
-
-from .. import __version__ as bajoo_version
 from . import errors
 
 _logger = logging.getLogger(__name__)
 
-# Maximum number of automatic retry in case of connexion error
-# HTTP errors (4XX and 5XX) are not retried.
-MAX_RETRY = 3
-
-
-def _prepare_session():
-    """Prepare a session to send an HTTPS request, with auto retry.
-
-    Returns:
-        requests.Session: new HTTP session
-    """
-    session = Session()
-    adapter = HTTPAdapter(max_retries=MAX_RETRY)
-    session.mount('http://', adapter)
-    session.mount('https://', adapter)
-    return session
-
 
 @errors.handler
-def json_request(request, proxy_settings=None):
+def json_request(request, session, proxy_settings=None):
     """Performs a json HTTP requests, then returns the result.
 
     Args:
         request (Request):
+        session (requests.Session)
         proxy_settings (dict, optional): proxy settings to pass to the requests
             library.
     Returns:
@@ -46,18 +25,12 @@ def json_request(request, proxy_settings=None):
           - 'content': JSON response.
     """
     params = request.params
-    session = _prepare_session()
-    params.setdefault('timeout', 4)
     params.setdefault('proxies', proxy_settings)
-    params.setdefault('headers', {})
-    params['headers']['User-Agent'] = 'Bajoo-client/%s python-requests/%s' % (
-        bajoo_version, requests_version)
     response = session.request(method=request.verb, url=request.url, **params)
 
     _logger.log(5, 'request %s -> %s', request, response.status_code)
 
     response.raise_for_status()
-    session.close()
 
     content = None
     if response.content:
@@ -71,11 +44,12 @@ def json_request(request, proxy_settings=None):
 
 
 @errors.handler
-def download(request, proxy_settings=None):
+def download(request, session, proxy_settings=None):
     """Performs a download HTTP requests, then returns the result.
 
     Args:
         request (Request):
+        session (requests.Session)
         proxy_settings (dict, optional): proxy settings to pass to the requests
             library.
     Returns:
@@ -86,12 +60,7 @@ def download(request, proxy_settings=None):
             file.
     """
     params = request.params
-    session = _prepare_session()
-    params.setdefault('timeout', 4)
     params.setdefault('proxies', proxy_settings)
-    params.setdefault('headers', {})
-    params['headers']['User-Agent'] = 'Bajoo-client/%s python-requests/%s' % (
-        bajoo_version, requests_version)
     response = session.request(method=request.verb, url=request.url,
                                stream=True, **params)
 
@@ -114,8 +83,6 @@ def download(request, proxy_settings=None):
     _logger.log(5, "Downloaded %s bytes from %s",
                 downloaded_bytes, request.url)
 
-    session.close()
-
     # Move the pointer of the file stream to zero
     # and not close it, for it can be read outside.
     temp_file.seek(0)
@@ -128,11 +95,12 @@ def download(request, proxy_settings=None):
 
 
 @errors.handler
-def upload(request, proxy_settings=None):
+def upload(request, session, proxy_settings=None):
     """Performs an upload HTTP requests, then returns the result.
 
     Args:
         request (Request):
+        session (requests.Session)
         proxy_settings (dict, optional): proxy settings to pass to the requests
             library.
     Returns:
@@ -142,12 +110,7 @@ def upload(request, proxy_settings=None):
           - 'content': set to None.
     """
     params = request.params
-    session = _prepare_session()
-    params.setdefault('timeout', 4)
     params.setdefault('proxies', proxy_settings)
-    params.setdefault('headers', {})
-    params['headers']['User-Agent'] = 'Bajoo-client/%s python-requests/%s' % (
-        bajoo_version, requests_version)
     file = request.source
 
     try:
