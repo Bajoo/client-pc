@@ -24,6 +24,7 @@ class NetworkSharedContext(SharedContext):
             params).
         counter (int): value incremented for each task added. It's used to give
             priority to the oldest tasks (at equal priority value).
+        proxy_settings (dict): proxy settings
     """
 
     def __init__(self, execute_request):
@@ -38,6 +39,7 @@ class NetworkSharedContext(SharedContext):
         self.counter = 0
         self.health_checker = HealthChecker(execute_request)
         self.status = StatusTable(self.health_checker)
+        self.proxy_settings = None
 
 
 def _run_worker(context):
@@ -79,7 +81,7 @@ def _run_worker(context):
 
         _logger.log(5, "Start request %s", request)
         try:
-            result = action_fn(request)
+            result = action_fn(request, context.proxy_settings)
         except Exception as error:
             with context:
                 context.status.update(request, error)

@@ -10,7 +10,6 @@ from requests.adapters import HTTPAdapter
 
 from .. import __version__ as bajoo_version
 from . import errors
-from .proxy import prepare_proxy
 
 _logger = logging.getLogger(__name__)
 
@@ -33,11 +32,13 @@ def _prepare_session():
 
 
 @errors.handler
-def json_request(request):
+def json_request(request, proxy_settings=None):
     """Performs a json HTTP requests, then returns the result.
 
     Args:
         request (Request):
+        proxy_settings (dict, optional): proxy settings to pass to the requests
+            library.
     Returns:
         dict: contains 3 keys:
           - 'code': the HTTP response code
@@ -47,7 +48,7 @@ def json_request(request):
     params = request.params
     session = _prepare_session()
     params.setdefault('timeout', 4)
-    params.setdefault('proxies', prepare_proxy())
+    params.setdefault('proxies', proxy_settings)
     params.setdefault('headers', {})
     params['headers']['User-Agent'] = 'Bajoo-client/%s python-requests/%s' % (
         bajoo_version, requests_version)
@@ -70,11 +71,13 @@ def json_request(request):
 
 
 @errors.handler
-def download(request):
+def download(request, proxy_settings=None):
     """Performs a download HTTP requests, then returns the result.
 
     Args:
         request (Request):
+        proxy_settings (dict, optional): proxy settings to pass to the requests
+            library.
     Returns:
         dict: contains 3 keys:
           - 'code': the HTTP response code
@@ -85,7 +88,7 @@ def download(request):
     params = request.params
     session = _prepare_session()
     params.setdefault('timeout', 4)
-    params.setdefault('proxies', prepare_proxy())
+    params.setdefault('proxies', proxy_settings)
     params.setdefault('headers', {})
     params['headers']['User-Agent'] = 'Bajoo-client/%s python-requests/%s' % (
         bajoo_version, requests_version)
@@ -125,11 +128,13 @@ def download(request):
 
 
 @errors.handler
-def upload(request):
+def upload(request, proxy_settings=None):
     """Performs an upload HTTP requests, then returns the result.
 
     Args:
         request (Request):
+        proxy_settings (dict, optional): proxy settings to pass to the requests
+            library.
     Returns:
         dict: contains 3 keys:
           - 'code': the HTTP response code
@@ -139,7 +144,7 @@ def upload(request):
     params = request.params
     session = _prepare_session()
     params.setdefault('timeout', 4)
-    params.setdefault('proxies', prepare_proxy())
+    params.setdefault('proxies', proxy_settings)
     params.setdefault('headers', {})
     params['headers']['User-Agent'] = 'Bajoo-client/%s python-requests/%s' % (
         bajoo_version, requests_version)

@@ -54,6 +54,7 @@ from .gui.task_bar_icon.task_bar_icon import TaskBarIcon
 from .gui.task_bar_icon.unity_task_bar_icon_wx_interface import \
     UnityTaskBarIconWxInterface
 from .local_container import LocalContainer
+from .network import set_proxy
 from .network.errors import NetworkError
 from .passphrase_manager import PassphraseManager
 from .promise import Promise
@@ -175,6 +176,15 @@ class BajooApp(wx.App):
         else:
             config.set('proxy_user', None)
             config.set('proxy_password', None)
+
+        settings = {
+            'type': event.proxy_type,
+            'url': event.proxy_url,
+            'port': event.proxy_port,
+            'user': event.username if event.use_auth else None,
+            'password': event.password if event.use_auth else None
+        }
+        set_proxy(event.proxy_mode, settings)
 
     @ensure_gui_thread
     def create_home_window(self):
