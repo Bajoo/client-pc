@@ -114,7 +114,7 @@ def _iter_generator(context, deferred, gen, value):
 def _iter_generator_error(context, deferred, gen, reason):
     """Execute the next step of a task generator, due to a rejected Promise."""
     try:
-        result = gen.throw(reason)
+        result = gen.throw(*reason)
     except StopIteration:
         with context:
             context.nb_ongoing_tasks -= 1
@@ -140,14 +140,14 @@ def _call_next_or_set_result(context, deferred, gen, value):
             context.ongoing_task_queue.append(task)
             context.condition.notify()
 
-    def register_iteration_error(reason):
+    def register_iteration_error(*reason):
         with context:
             task = (deferred, gen, reason, True)
             context.ongoing_task_queue.append(task)
             context.condition.notify()
 
     if is_thenable(value):
-        value.then(register_iteration, register_iteration_error)
+        value.then(register_iteration, register_iteration_error, exc_info=True)
     else:
         with context:
             context.nb_ongoing_tasks -= 1

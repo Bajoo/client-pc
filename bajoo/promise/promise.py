@@ -59,7 +59,7 @@ class Promise(object):
         self._condition = Condition()
         self._name = _name or getattr(executor, '__name__', '???')
         self._previous = _previous
-        self._exc_info = None
+        self.exc_info = None
 
         self._callbacks = []
         self._errbacks = []
@@ -85,7 +85,7 @@ class Promise(object):
 
         def on_rejected(error, value=None, tb=None):
             if value and tb:
-                self._exc_info = (error, value, tb)
+                self.exc_info = (error, value, tb)
                 error = value
 
             with self._condition:
@@ -138,8 +138,8 @@ class Promise(object):
             if self._state == self.PENDING:
                 raise TimeoutError()
             elif self._state == self.REJECTED:
-                if sys.version_info[0] == 2 and self._exc_info:
-                    reraise(*self._exc_info)  # noqa
+                if sys.version_info[0] == 2 and self.exc_info:
+                    reraise(*self.exc_info)  # noqa
                 raise self._error
             else:
                 return self._result
@@ -167,7 +167,7 @@ class Promise(object):
             else:
                 return self._error
 
-    def then(self, on_fulfilled=None, on_rejected=None):
+    def then(self, on_fulfilled=None, on_rejected=None, exc_info=False):
         """Create a new promise from callbacks called when this one is settled.
 
         If the promise is fulfilled, the `on_fulfilled` callback will be
@@ -189,6 +189,13 @@ class Promise(object):
                 result of the original promise as argument.
             on_rejected (callable, optional): This callback will receive the
                 exception raised by the original promise as argument.
+            exc_info (bool, optional): If True, and if the promise is rejected
+                with full information, on_rejected will receive 3
+                arguments (type, value, traceback) describing the error,
+                instead of only the error.
+                Warning: If it's True, on_rejected can receive either one or
+                    three arguments, and should support both.
+                Default to False.
         Returns:
             Promise<*>: new promise depending of self.
         """
@@ -211,18 +218,21 @@ class Promise(object):
 
             def errback(error):
                 if on_rejected is None:
-                    if self._exc_info:
-                        return rejected(*self._exc_info)
+                    if self.exc_info:
+                        return rejected(*self.exc_info)
                     else:
                         return rejected(error)
                 else:
                     try:
-                        result = on_rejected(error)
+                        if exc_info and self.exc_info:
+                            result = on_rejected(*self.exc_info)
+                        else:
+                            result = on_rejected(error)
                     except:
                         return rejected(*sys.exc_info())
 
                 if is_thenable(result):
-                    result.then(fulfilled, rejected)
+                    result.then(fulfilled, rejected, exc_info=True)
                 else:
                     fulfilled(result)
 
@@ -238,7 +248,7 @@ class Promise(object):
                                  getattr(on_rejected, '__name__', '???'))
         return Promise(deferred_chained_promise, _name=name, _previous=self)
 
-    def catch(self, on_rejected):
+    def catch(self, on_rejected, exc_info=False):
         """Create a new promise with a callback called when an error occurs.
 
         Alias of `self.then(None, on_rejected)`
@@ -246,12 +256,19 @@ class Promise(object):
         Args:
             on_rejected (callable): Must take an argument instance of Exception
                 (or one of its subclass). Will be called if `self` is rejected.
+            exc_info (bool, optional): If True, and if the promise is rejected
+                with full information, on_rejected will receive 3
+                arguments (type, value, traceback) describing the error,
+                instead of only the error.
+                Warning: If it's True, on_rejected can receive either one or
+                    three arguments, and should support both.
+                Default to False.
         returns:
             Promise<*>: new Promise chained to `self`. If `self` is fulfilled,
                 the promised value will be the same as `self`. Otherwise, the
                 value returned by the `on_rejected()` callback.
         """
-        return self.then(None, on_rejected)
+        return self.then(None, on_rejected, exc_info=exc_info)
 
     def safeguard(self):
         """Catch all errors and log them with the most details possible.
@@ -264,8 +281,8 @@ class Promise(object):
         and log them as ERROR with the maximum of details possible.
         """
         def guard(error):
-            if self._exc_info:
-                _logger.error('[SAFEGUARD] %s' % self, exc_info=self._exc_info)
+            if self.exc_info:
+                _logger.error('[SAFEGUARD] %s' % self, exc_info=self.exc_info)
             else:
                 try:
                     raise error

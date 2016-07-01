@@ -40,7 +40,7 @@ def reduce_coroutine(safeguard=False):
 
             def _call_next_or_set_result(value):
                 if is_thenable(value):
-                    value.then(iter_next, iter_error)
+                    value.then(iter_next, iter_error, exc_info=True)
                 else:
                     gen.close()
                     return df.resolve(value)
@@ -54,11 +54,11 @@ def reduce_coroutine(safeguard=False):
                     return df.reject(*sys.exc_info())
                 _call_next_or_set_result(next_value)
 
-            def iter_error(raised_error):
+            def iter_error(*raised_error):
                 try:
-                    next_value = gen.throw(raised_error)
+                    next_value = gen.throw(*raised_error)
                 except StopIteration:
-                    return df.reject(raised_error)
+                    return df.reject(*raised_error)
                 except:
                     return df.reject(*sys.exc_info())
                 _call_next_or_set_result(next_value)
