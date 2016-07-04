@@ -157,6 +157,12 @@ class TaskBarIcon(wx.TaskBarIcon,
         self._inner_create_menu(items_list, menu)
         return menu
 
+    def set_state(self, state):
+        AbstractTaskBarIcon.set_state(self, state)
+
+        if self._is_connected:
+            self.trigger_refresh_container_list()
+
     def set_icon(self, icon, tooltip=None):
         self.SetIcon(icon, tooltip=_(tooltip))
 
