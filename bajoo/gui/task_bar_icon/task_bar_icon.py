@@ -22,6 +22,9 @@ def _create_event_mapping(mapping_open_evt):
         FROM_WX_TO_EVT[wx_id] = event_id
         FROM_EVT_TO_WX[event_id] = wx_id
 
+    # special case, open home on wx_event -1
+    FROM_WX_TO_EVT[-1] = AbstractTaskBarIcon.OPEN_HOME
+
     return FROM_WX_TO_EVT, FROM_EVT_TO_WX
 
 
@@ -59,8 +62,7 @@ class TaskBarIcon(wx.TaskBarIcon,
         (ID_DEV_CONTACT, AbstractTaskBarIcon.OPEN_DEV_CONTACT,),
         (ID_HELP, AbstractTaskBarIcon.OPEN_HELP,),
         (ID_CLIENT_SPACE, AbstractTaskBarIcon.OPEN_CLIENT_SPACE,),
-        (ID_EXIT, AbstractTaskBarIcon.TASK_BAR_EXIT,),
-        (-1, AbstractTaskBarIcon.OPEN_HOME,)  # left click on tray icon
+        (ID_EXIT, AbstractTaskBarIcon.TASK_BAR_EXIT,)
     ]
 
     FROM_WX_TO_EVT, FROM_EVT_TO_WX = _create_event_mapping(mapping_open_evt)
