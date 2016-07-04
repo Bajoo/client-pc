@@ -6,6 +6,13 @@ import logging
 import os
 import sys
 
+# an explanation about the use of wxversion is available in the setup.py file.
+try:
+    import wxversion
+    wxversion.select(['3.0', '2.9', '2.8'])
+except ImportError:
+    pass
+
 from .bajoo_app import BajooApp
 from .common import log
 from .common import config

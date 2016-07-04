@@ -75,7 +75,19 @@ class Install(InstallCommand):
         # At this time, the Phoenix version is not stable yet, and only daily
         # snapshots are available.
 
+        # About wxVersion:
+        # Some systems allowed several version of wxPython to be installed
+        # wxVersion allows to pick a version.
+        # If wxVersion is not available, either wxPython is not installed,
+        # either the system only allows only one version of wxPython.
+
         if sys.version_info[0] is 2:
+            try:
+                import wxversion
+                wxversion.select(['3.0', '2.9', '2.8'])
+            except (ImportError, wxversion.VersionError,):
+                pass
+
             try:
                 import wx  # noqa
             except ImportError:
