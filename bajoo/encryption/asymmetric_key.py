@@ -55,6 +55,13 @@ class AsymmetricKey(object):
             content = key_file.read()
             import_result = context.import_keys(content)
 
+            # TODO this code is for compatibility backward, to remove
+            # as soon as every key encoded in a such way will be removed
+            # from the server
+            if import_result.count == 0:
+                content = content.decode('utf-8')
+                import_result = context.import_keys(content, 'latin-1')
+
             if not import_result.count:
                 # >>> print(import_result.results)
                 # [{'text': 'No valid data found', 'problem': '0',
