@@ -2,8 +2,8 @@
 
 import io
 import logging
-import tempfile
 
+from ..data import ChunkData
 from . import errors
 
 _logger = logging.getLogger(__name__)
@@ -68,29 +68,18 @@ def download(request, session, proxy_settings=None):
 
     response.raise_for_status()
 
-    # Read response content and write to temporary file
-    temp_file = tempfile.SpooledTemporaryFile(
-        max_size=524288, suffix=".tmp")
-
-    downloaded_bytes = 0
-    chunk_size = 1024
-
-    for chunk in response.iter_content(chunk_size):
-        if chunk:
-            temp_file.write(chunk)
-            downloaded_bytes += len(chunk)
+    with response.raw:
+        data = ChunkData(response.raw,
+                         hint_size=response.headers.get('content-length'),
+                         hint_md5=response.headers.get('etag'))
 
     _logger.log(5, "Downloaded %s bytes from %s",
-                downloaded_bytes, request.url)
-
-    # Move the pointer of the file stream to zero
-    # and not close it, for it can be read outside.
-    temp_file.seek(0)
+                data.total_size, request.url)
 
     return {
         'code': response.status_code,
         'headers': response.headers,
-        'content': temp_file
+        'content': data.file
     }
 
 

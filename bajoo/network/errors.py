@@ -10,6 +10,7 @@ They are also more verbose when displayed using 'repr()`.
 
 import requests.exceptions
 
+from .. import data
 from ..common.i18n import N_, _
 
 
@@ -202,6 +203,13 @@ _code2error = {
 }
 
 
+class InterruptedDownloadError(NetworkError):
+    def __init__(self, error):
+        NetworkError.__init__(self, error,
+                              N_("The download has been interrupted, either by"
+                                 "the server, or by a connexion failure."))
+
+
 def handler(func):
     """Decorator who handles errors of the requests.
 
@@ -223,5 +231,7 @@ def handler(func):
             raise err_class(error)
         except requests.exceptions.RequestException as error:
             raise NetworkError(error)
+        except data.BadSizeException as error:
+            raise InterruptedDownloadError(error)
 
     return wrapper

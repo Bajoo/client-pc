@@ -7,7 +7,8 @@ import pytest
 import requests
 
 from bajoo.network import send_request
-from bajoo.network.errors import ConnectionError, HTTPError, NetworkError
+from bajoo.network.errors import ConnectionError, HTTPError, \
+    InterruptedDownloadError, NetworkError
 from bajoo.network.request import Request
 
 
@@ -54,7 +55,6 @@ class TestSendRequest(object):
             buffer += dl_file.read()
         assert buffer == binary_file
 
-    @pytest.mark.xfail(reason='Content-length check is not implemented')
     def test_download_interrupted(self, http_server):
         binary_file = bytearray(random.getrandbits(8) for _ in range(4096))
 
@@ -68,7 +68,7 @@ class TestSendRequest(object):
 
         req = Request(Request.DOWNLOAD, 'GET', http_server.base_uri, {})
 
-        with pytest.raises(Exception):  # Exception: incomplete download ...
+        with pytest.raises(InterruptedDownloadError):
             with http_server:
                 send_request.download(req, self.session)
 
