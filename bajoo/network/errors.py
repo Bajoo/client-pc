@@ -210,6 +210,12 @@ class InterruptedDownloadError(NetworkError):
                                  "the server, or by a connexion failure."))
 
 
+class CorruptedDownloadError(NetworkError):
+    def __init__(self, error):
+        NetworkError.__init__(self, error,
+                              N_("The downloaded content is not valid."))
+
+
 def handler(func):
     """Decorator who handles errors of the requests.
 
@@ -233,5 +239,7 @@ def handler(func):
             raise NetworkError(error)
         except data.BadSizeException as error:
             raise InterruptedDownloadError(error)
+        except data.BadMd5SumException as error:
+            raise CorruptedDownloadError(error)
 
     return wrapper
