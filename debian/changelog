@@ -1,3 +1,12 @@
+bajoo (0.3.19-1) unstable; urgency=low
+
+  * Better network performance.
+  * Fixes a regression in menus displayed by the tray icon.
+  * Improves translations.
+  * Add support for Linux.
+  
+ -- Bajoo <support@bajoo.fr>  Wed, 6 Jul 2016 16:27:05 +0200
+
 bajoo (0.3.18-1) unstable; urgency=low
 
   * Better management of log files.
