@@ -4,13 +4,23 @@ import io
 import random
 
 import pytest
+import requests
 
 from bajoo.network import send_request
-from bajoo.network.errors import ConnectionError, HTTPError, NetworkError
+from bajoo.network.errors import ConnectionError, HTTPError, \
+    InterruptedDownloadError, NetworkError
 from bajoo.network.request import Request
 
 
 class TestSendRequest(object):
+
+    session = None
+
+    def setup(self):
+        self.session = requests.Session()
+
+    def teardown(self):
+        self.session.close()
 
     def test_json_request(self, http_server):
 
@@ -18,7 +28,7 @@ class TestSendRequest(object):
         req = Request(Request.JSON, 'GET', url, {})
 
         with http_server:
-            result = send_request.json_request(req)
+            result = send_request.json_request(req, self.session)
 
         assert result.get('code') is 200
         assert 'foo' in result.get('content')
@@ -36,7 +46,7 @@ class TestSendRequest(object):
 
         req = Request(Request.DOWNLOAD, 'GET', http_server.base_uri, {})
         with http_server:
-            result = send_request.download(req)
+            result = send_request.download(req, self.session)
 
         assert result.get('code') is 200
 
@@ -45,7 +55,6 @@ class TestSendRequest(object):
             buffer += dl_file.read()
         assert buffer == binary_file
 
-    @pytest.mark.xfail(reason='Content-length check is not implemented')
     def test_download_interrupted(self, http_server):
         binary_file = bytearray(random.getrandbits(8) for _ in range(4096))
 
@@ -59,9 +68,9 @@ class TestSendRequest(object):
 
         req = Request(Request.DOWNLOAD, 'GET', http_server.base_uri, {})
 
-        with pytest.raises(Exception):  # Exception: incomplete download ...
+        with pytest.raises(InterruptedDownloadError):
             with http_server:
-                send_request.download(req)
+                send_request.download(req, self.session)
 
     def test_upload(self, http_server):
         binary_file = bytearray(random.getrandbits(8) for _ in range(4096))
@@ -77,7 +86,7 @@ class TestSendRequest(object):
 
         http_server.handler.do_PUT = handler
         with http_server:
-            result = send_request.upload(req)
+            result = send_request.upload(req, self.session)
         assert result.get('code') is 204
 
     def test_request_with_http_error(self, http_server):
@@ -87,14 +96,14 @@ class TestSendRequest(object):
 
         with pytest.raises(HTTPError) as exc_info:
             with http_server:
-                send_request.json_request(req)
+                send_request.json_request(req, self.session)
         assert exc_info.value.code == 404
         assert exc_info.value.response == {'a': "b"}
 
     def test_no_connection_error(self, http_server):
         req = Request(Request.JSON, 'GET', 'http://not-exist.example.com', {})
         with pytest.raises(ConnectionError):
-            send_request.json_request(req)
+            send_request.json_request(req, self.session)
 
     def test_request_timeout_error(self, http_server):
         def handler(self):
@@ -108,4 +117,4 @@ class TestSendRequest(object):
                       {'timeout': 0.05})
         with http_server:
             with pytest.raises(NetworkError):
-                send_request.json_request(req)
+                send_request.json_request(req, self.session)

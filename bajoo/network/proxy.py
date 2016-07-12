@@ -2,13 +2,13 @@
 
 import logging
 import re
+import requests
 import socket
 import socks
 try:
     from urllib.parse import urlparse
 except ImportError:
     from urlparse import urlparse
-from ..common import config
 from ..common.i18n import N_
 from .errors import ProxyError
 
@@ -25,38 +25,55 @@ PROXY_MODE_MANUAL = 'manual_settings'
 PROXY_MODE_NO = 'no_proxy'
 
 
-def prepare_proxy():
+def _request_socks_proxy_support():
+    """Check if Request has support for socks proxy.
+
+    Returns:
+        bool: True if it has; False otherwise.
+    """
+    # Requests have socks support since version 3.10.0 only
+    req_version = tuple((int(x) if x.isdigit() else 9999)
+                        for x in requests.__version__.split('.'))
+    return req_version > (3, 10, 0)
+
+
+def prepare_proxy(proxy_mode, settings=None):
     """Apply the proxy configuration before a requests.
 
-    It uses the following config settings:
-    - proxy_type (expected to be 'system_settings', 'manual_settings',
-        or 'no_proxy'
-    - proxy_url
-    - proxy_port
-    - proxy_user
-    - proxy_password
+    Args:
+        proxy_mode (str): Indicate from where the proxy settings are obtained.
+            Must be one of 'system_settings', 'manual_settings', or 'no_proxy'.
+        settings (dict): in 'manual_settings' mode, effective proxy settings.
+            It uses the following config settings  (all are required):
+            - type
+            - url
+            - port
+            - user
+            - password
 
-    returns:
+    Returns:
         dict: proxy config to pass to the requests library.
     """
-    proxy_mode = config.get('proxy_mode')
 
     # mode no proxy: ignores system settings.
     if proxy_mode == PROXY_MODE_NO:
+        _logger.info('Use no proxy')
         _disable_socks_proxy()
         return {}
 
     # mode manual proxy
     if proxy_mode == PROXY_MODE_MANUAL:
+        settings = settings or {}
 
         # proxy_type should be 'HTTP', 'SOCKS4' or 'SOCKS5'.
-        proxy_type = config.get('proxy_type').lower()
-        proxy_url = config.get('proxy_url')
-        proxy_port = config.get('proxy_port')
-        proxy_user = config.get('proxy_user')
-        proxy_password = config.get('proxy_password')
+        proxy_type = settings.get('type').lower()
+        proxy_url = settings.get('url')
+        proxy_port = settings.get('port')
+        proxy_user = settings.get('user')
+        proxy_password = settings.get('password')
 
-        if proxy_type in ('socks4', 'socks5'):
+        if (proxy_type in ('socks4', 'socks5') and
+                not _request_socks_proxy_support()):
             _enable_socks_proxy(proxy_type, proxy_url, proxy_port,
                                 proxy_user, proxy_password)
             return {}
@@ -90,7 +107,7 @@ def prepare_proxy():
         return {'https': proxy_string}
 
     if proxy_mode != PROXY_MODE_SYSTEM:
-        _logger.warning('Unknwon proxy mode "%s"; Use system settings.'
+        _logger.warning('Unknown proxy mode "%s"; Use system settings.'
                         % proxy_mode)
 
     # mode system settings (default)

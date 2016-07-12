@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Name=Bajoo
+GenericName=Bajoo
+X-GNOME-FullName=Bajoo
+Comment=Official client for the cloud storage service Bajoo.
+Type=Application
+Exec=bajoo
+Icon=bajoo
+Terminal=false
+Categories=FileTransfer;Network;
+Keywords=Bajoo;File;Share;Cloud

@@ -108,7 +108,6 @@ class TestNetwork(object):
         result_file = result.get('content')
         assert result_file.read() == file_content
 
-    @pytest.mark.xfail()
     def test_interrupted_requests(self, http_server):
         """Make a download request to a server who send truncated content.
 
@@ -127,8 +126,7 @@ class TestNetwork(object):
         http_server.handler.do_GET = handler
         f = bajoo.network.download('GET', http_server.base_uri)
         http_server.handle_request()
-        # TODO: use a more specific error
-        with pytest.raises(bajoo.network.errors.NetworkError):
+        with pytest.raises(bajoo.network.errors.InterruptedDownloadError):
             f.result(1)
 
     def test_upload_empty_file(self, http_server):
