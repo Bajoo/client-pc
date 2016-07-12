@@ -84,8 +84,11 @@ class Install(InstallCommand):
         if sys.version_info[0] is 2:
             try:
                 import wxversion
-                wxversion.select(['3.0', '2.9', '2.8'])
-            except (ImportError, wxversion.VersionError,):
+                try:
+                    wxversion.select(['3.0', '2.9', '2.8'])
+                except wxversion.VersionError:
+                    pass
+            except ImportError:
                 pass
 
             try:
