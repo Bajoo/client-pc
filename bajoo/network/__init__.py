@@ -57,7 +57,7 @@ class Context(object):
         self._service = None
 
     def start(self):
-        global json_request, download, upload
+        global json_request, download, upload, set_proxy
 
         self._service = Service()
         self._service.start()
@@ -66,9 +66,10 @@ class Context(object):
         json_request = self._service.json_request
         download = self._service.download
         upload = self._service.upload
+        set_proxy = self._service.set_proxy
 
     def stop(self):
-        global json_request, download, upload
+        global json_request, download, upload, set_proxy
 
         if self._service:
             self._service.stop()
@@ -76,6 +77,7 @@ class Context(object):
         json_request = None
         download = None
         upload = None
+        set_proxy = None
 
     def __enter__(self):
         self.start()
@@ -88,3 +90,4 @@ class Context(object):
 json_request = None
 download = None
 upload = None
+set_proxy = None

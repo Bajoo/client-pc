@@ -5,6 +5,7 @@ import errno
 import logging
 import os
 import pkg_resources
+import re
 import sys
 import appdirs
 
@@ -12,6 +13,11 @@ _logger = logging.getLogger(__name__)
 
 
 _appdirs = appdirs.AppDirs(appname='Bajoo', appauthor=False, roaming=True)
+
+USR_DIR = None
+m = re.match('^/usr(/.*)?/lib/', os.path.realpath(__file__))
+if m:
+    USR_DIR = m.group(0)[:-5]
 
 
 def _ensure_dir_exists(dir_path):
@@ -65,8 +71,15 @@ def resource_filename(resource):
     if getattr(sys, 'frozen', False) and getattr(sys, 'executable', False):
         dir_executable = os.path.dirname(sys.executable)
         result_path = os.path.join(dir_executable, 'bajoo', resource)
+    elif USR_DIR is not None:
+        if resource.startswith('locale'):
+            path_parts = (USR_DIR, 'share', resource,)
+        else:
+            path_parts = (USR_DIR, 'share', 'bajoo', resource,)
+        result_path = os.path.join(*path_parts)
     else:
         result_path = pkg_resources.resource_filename('bajoo', resource)
+
     if sys.version_info[0] is 2 and isinstance(result_path, str):
         # pkg_resources.resource_filename don't always returns unicode values.
         # With Python 2.7 on Windows 10 (french settings), we have a

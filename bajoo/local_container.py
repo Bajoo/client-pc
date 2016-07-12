@@ -54,7 +54,7 @@ class LocalContainer(object):
         STATUS_PAUSED: N_('Paused'),
         STATUS_STARTED: N_('Started'),
         STATUS_QUOTA_EXCEEDED: N_('Quota exceeded'),
-        STATUS_WAIT_PASSPHRASE: N_('Waiting for the passphrase')
+        STATUS_WAIT_PASSPHRASE: N_('Passphrase needed')
     }
 
     def __init__(self, model, container):

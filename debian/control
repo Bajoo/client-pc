@@ -1,0 +1,39 @@
+Source: bajoo
+Maintainer: Bajoo <support@bajoo.fr>
+Section: python
+Priority: optional
+Build-Depends: python-setuptools (>= 0.6b3), python-all (>= 2.6.6-3), debhelper (>= 7.4.3)
+Standards-Version: 3.9.1
+Homepage: https://www.bajoo.fr
+
+
+Package: python-bajoo
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}, python-wxgtk3.0 ${dist:Depends}
+Description: Bajoo storage client
+ This package provides ${python:Provides} and works with
+ Python ${python:Versions}.
+ .
+ Bajoo client
+ ============
+ .
+ Official client for the cloud storage service Bajoo.
+ .
+ Bajoo is a service which lets you store your files in the cloud, and share them
+ into multiples devices and multiples users.
+ All files are encrypted client-side (before being sent to the bajoo servers)
+ with your secret phrase you're the only one to know.
+ .
+ This client is a graphic program aimed to interact with the bajoo service. It
+ can synchronize local folders with files stored in the Bajoo cloud.
+ .
+ For more details, see https://www.bajoo.fr
+ .
+ License and copyright
+ ---------------------
+ .
+ Copyright © 2015 Bajoo
+ .
+
+
+

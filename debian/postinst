@@ -1,0 +1,15 @@
+#!/bin/sh
+set -e
+
+if [ "$1" = configure ]; then
+    for bajoo_pid in $(pidof -x bajoo); do
+        username=`ps --pid $bajoo_pid --no-headers -o uname` || continue
+        
+        if [ -z $username ]; then
+            continue
+        fi
+        
+        kill -3 $bajoo_pid
+        su $username bajoo
+    done
+fi

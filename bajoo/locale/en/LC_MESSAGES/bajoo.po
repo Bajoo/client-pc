@@ -5,7 +5,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Bajoo 0.3.18\n"
+"Project-Id-Version: Bajoo 0.3.19\n"
 "Report-Msgid-Bugs-To: Bajoo <support-en@bajoo.fr>\n"
 "POT-Creation-Date: 2015-10-20 12:12+0200\n"
 "PO-Revision-Date: 2016-06-15 11:57+0200\n"
@@ -800,7 +800,7 @@ msgid "Actual version: %s"
 msgstr ""
 
 #: bajoo/gui/tab/advanced_settings_tab.py:162
-msgid "Automatically Send crash reports to Bajoo"
+msgid "Automatically send crash reports to Bajoo"
 msgstr ""
 
 #: bajoo/gui/tab/advanced_settings_tab.py:163
@@ -1178,7 +1178,7 @@ msgid "Quota exceeded"
 msgstr ""
 
 #: bajoo/local_container.py:57
-msgid "Waiting for the passphrase"
+msgid "Passphrase needed"
 msgstr ""
 
 #: bajoo/local_container.py:90

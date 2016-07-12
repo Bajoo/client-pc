@@ -99,6 +99,12 @@ def get(key, unicode=False):
             for pair in filter(None, dict_str.split(';')):
                 try:
                     (k, v) = pair.split('=')
+
+                    try:
+                        v = int(v)
+                    except ValueError:
+                        pass  # v is not a number.
+
                     result[k] = v
                 except ValueError:
                     _logger.warning('Unable to parse pair key=value: "%s"'

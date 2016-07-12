@@ -3,6 +3,11 @@
 import heapq
 import logging
 import sys
+
+import requests
+from requests import __version__ as requests_version
+
+from .. import __version__ as bajoo_version
 from ..generic_executor import GenericExecutor, SharedContext
 from .health_checker import HealthChecker
 from .request import Request
@@ -12,7 +17,11 @@ from ..promise import Deferred
 
 _logger = logging.getLogger(__name__)
 
-_MAX_WORKERS = 5
+_MAX_WORKERS = 10
+
+# Maximum number of automatic retry in case of connexion error
+# HTTP errors (4XX and 5XX) are not retried.
+MAX_RETRY = 3
 
 
 class NetworkSharedContext(SharedContext):
@@ -24,6 +33,7 @@ class NetworkSharedContext(SharedContext):
             params).
         counter (int): value incremented for each task added. It's used to give
             priority to the oldest tasks (at equal priority value).
+        proxy_settings (dict): proxy settings
     """
 
     def __init__(self, execute_request):
@@ -38,6 +48,25 @@ class NetworkSharedContext(SharedContext):
         self.counter = 0
         self.health_checker = HealthChecker(execute_request)
         self.status = StatusTable(self.health_checker)
+        self.proxy_settings = None
+        self.session = self._prepare_session()
+
+    def _prepare_session(self):
+        """Prepare a session to send an HTTP(S) request, with auto retry.
+
+        Returns:
+            requests.Session: new HTTP(s) session
+        """
+        session = requests.Session()
+        adapter = requests.adapters.HTTPAdapter(max_retries=MAX_RETRY)
+        session.mount('http://', adapter)
+        session.mount('https://', adapter)
+        session.headers.update({
+            'timeout': 4,
+            'User-Agent': 'Bajoo-client/%s python-requests/%s' % (
+                bajoo_version, requests_version)
+        })
+        return session
 
 
 def _run_worker(context):
@@ -79,7 +108,8 @@ def _run_worker(context):
 
         _logger.log(5, "Start request %s", request)
         try:
-            result = action_fn(request)
+            result = action_fn(request, context.session,
+                               context.proxy_settings)
         except Exception as error:
             with context:
                 context.status.update(request, error)
