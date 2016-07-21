@@ -59,8 +59,8 @@ class AsymmetricKey(object):
             # as soon as every key encoded in a such way will be removed
             # from the server
             if import_result.count == 0:
-                content = content.decode('utf-8')
-                import_result = context.import_keys(content, 'latin-1')
+                content = content.decode('utf-8').encode('latin-1')
+                import_result = context.import_keys(content)
 
             if not import_result.count:
                 # >>> print(import_result.results)
