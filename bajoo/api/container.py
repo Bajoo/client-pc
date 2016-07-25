@@ -312,7 +312,7 @@ class Container(object):
         Returns:
             Promise<dict>: metadata.
         """
-        result = yield self._session.download_storage_file(
+        result = yield self._session.send_storage_request(
             'HEAD', '/storages/%s/%s' % (self.id, path,))
 
         md5_hash = result.get('headers', {}).get('etag')
