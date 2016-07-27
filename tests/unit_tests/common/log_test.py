@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import os
 import shutil
 import datetime
 import sys
@@ -36,11 +37,10 @@ colorFormater = ColoredFormatter()
 class TestLogFormating(object):
 
     def test_getFileHandler(self):
-        # TODO should backup existing log file then restore them
         shutil.rmtree(get_log_dir())
-        filePath = _get_file_handler()
-        assert filePath.baseFilename.endswith('bajoo.log')
-        # TODO should delete created files
+        file_path = _get_file_handler('test.log')
+        assert file_path.baseFilename.endswith('test.log')
+        os.remove(file_path.baseFilename)
 
     def test_colorize_DEBUG(self):
         assert colorFormater._colorize("plop", "DEBUG") == \
