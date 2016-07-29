@@ -16,8 +16,6 @@ from ...common.i18n import set_lang, _
 from .abstract_task_bar_icon import AbstractTaskBarIcon
 from .unity_data_exchange import UnityDataExchange  # noqa
 
-gobject.threads_init()
-
 APPINDICATOR_ID = 'bajoo'
 
 
@@ -41,7 +39,7 @@ class UnityTaskBarIcon(AbstractTaskBarIcon):
         thread.start()
 
     def _read_process_stdin(self):
-        while(self.read_stdin):
+        while self.read_stdin:
             try:
                 line = sys.stdin.readline()
             except ValueError:
@@ -183,6 +181,7 @@ class UnityTaskBarIcon(AbstractTaskBarIcon):
 
 
 def main():
+    gobject.threads_init()
     UnityTaskBarIcon()
     gtk.main()
 
