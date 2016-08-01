@@ -144,7 +144,7 @@ class UnityTaskBarIcon(AbstractTaskBarIcon):
             else:
                 menu_item.connect('activate', m.event_handler)
 
-            if m.children is not None:
+            if m.children:
                 sub_gtk_menu = self._inner_build_menu(m.children)
                 menu_item.set_submenu(sub_gtk_menu)
 
