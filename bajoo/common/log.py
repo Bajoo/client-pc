@@ -326,6 +326,9 @@ class Context(object):
         string_format = '%(asctime)s %(levelname)-7s %(name)s - %(message)s'
         formatter = UnicodeFormatter(fmt=string_format, datefmt=date_format)
 
+        self._stderr = sys.stderr
+        self._stdout = sys.stdout
+
         if getattr(sys, 'frozen', False):
             # In frozen mode, this is a GUI app, and there is no stdout.
 
@@ -335,8 +338,6 @@ class Context(object):
             logging.addLevelName(STDOUT_LEVEL, 'STDOUT')
             logging.addLevelName(STDERR_LEVEL, 'STDERR')
 
-            self._stderr = sys.stderr
-            self._stdout = sys.stdout
             sys.stdout = OutLogger(STDOUT_LEVEL)
             sys.stderr = OutLogger(STDERR_LEVEL)
         else:
