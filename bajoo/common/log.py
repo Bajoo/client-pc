@@ -421,6 +421,16 @@ def set_debug_mode(debug):
         logging.getLogger('bajoo').setLevel(logging.INFO)
 
 
+def reset():
+    """Reset the root logger (remove handlers and filters)."""
+    logger = logging.getLogger()
+
+    for h in logger.handlers[:]:
+        logger.removeHandler(h)
+    for f in logger.filters[:]:
+        logger.removeFilter(f)
+
+
 def main():
     with Context():
         logger = logging.getLogger(__name__)
