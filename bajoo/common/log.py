@@ -416,6 +416,9 @@ def set_debug_mode(debug):
     if debug:
         logging.getLogger().setLevel(logging.INFO)
         logging.getLogger('bajoo').setLevel(logging.DEBUG)
+
+        # gnupg.py is too verbose for our use, even for a debug mode.
+        logging.getLogger('bajoo.gnupg').setLevel(logging.INFO)
     else:
         logging.getLogger().setLevel(logging.WARNING)
         logging.getLogger('bajoo').setLevel(logging.INFO)
