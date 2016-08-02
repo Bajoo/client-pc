@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import io
 import logging
-import os
 import tempfile
 # from gnupg import GPG
 
@@ -27,9 +25,7 @@ class AsymmetricKey(object):
         """Load the AsymmetricKey
 
         Args:
-            key_file (str|FileStream): if it's a str, path of the file
-                containing the key. If it's a File-like object, content of the
-                key.
+            key_file (FileStream): File-like object containing a key.
             main_context (boolean): If True, the global GPG context is used.
                 Otherwise, a temporary, dedicated context is created.
         """
@@ -45,12 +41,6 @@ class AsymmetricKey(object):
         # context = GPG(verbose=False, gnupghome='./tmp_keyring',
         #               keyring=tmp_file)
 
-        try:
-            if isinstance(key_file, basestring):
-                key_file = io.open(key_file, 'rb')
-        except NameError:
-            if isinstance(key_file, str):
-                key_file = io.open(key_file, 'rb')
         with key_file:
             content = key_file.read()
             import_result = context.import_keys(content)
@@ -84,11 +74,3 @@ class AsymmetricKey(object):
         key_file.write(content)
         key_file.seek(0)
         return key_file
-
-    def __close__(self):
-        """Delete the temporary keyring.
-
-        All instances of AsymmetricKey MUST be closed after use.
-        """
-        if self._tmp_file:
-            os.remove(self._tmp_file)

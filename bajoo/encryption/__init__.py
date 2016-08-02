@@ -328,29 +328,3 @@ def import_key(key):
         key_buffer += key_content.read()
 
     _gpg.import_keys(key_buffer)
-
-
-def get_key(key_id):
-    """Find a key by id, from the global Bajoo keyring.
-
-    Args:
-        key_id (str): ID of the key. It can be the short ID, or the
-            fingerprint (better).
-    Returns:
-        AsymmetricKey: the searched key. None the key is not found.
-    """
-    raise NotImplemented()
-
-
-def get_key_by_email(email):
-    """Find a key by email, from the global Bajoo keyring.
-
-    If many keys has been associated to this email, only the first will be
-    returned.
-
-    Args:
-        email (str): email associated to the key.
-    Returns:
-        AsymmetricKey: the searched key. None the key is not found.
-    """
-    raise NotImplemented()
