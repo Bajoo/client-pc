@@ -37,17 +37,6 @@ class AsymmetricKey(object):
             content = key_file.read()
             import_result = context.import_keys(content)
 
-            # TODO this code is for compatibility backward, to remove
-            # as soon as every key encoded in a such way will be removed
-            # from the server
-            if import_result.count == 0:
-                try:
-                    content = content.decode('utf-8').encode('latin-1')
-                except UnicodeError:
-                    pass  # That's not a old-format key.
-                else:
-                    import_result = context.import_keys(content)
-
             # GPG messages and behavior are rather cryptic. By example, there
             # is a case when result.count == 0, but result.imported == 1
             # "import_result.results" contains one line per error or success.
