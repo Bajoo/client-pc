@@ -2,8 +2,7 @@
 
 import logging
 import tempfile
-# from gnupg import GPG
-
+from .errors import EncryptionError
 
 _logger = logging.getLogger(__name__)
 
@@ -31,15 +30,8 @@ class AsymmetricKey(object):
         """
         from . import _get_gpg_context
 
-        # TODO: folder GPG key should not be added in the keyring.
-        # if main_context:
+        # TODO: It should use a temporary GPG context if main_context is False.
         context = _get_gpg_context()
-        # else:
-        #    # TODO: find a better way to create this temporary file.
-        #    with tempfile.NamedTemporaryFile(delete=False) as tf:
-        #        tmp_file = tf.name
-        # context = GPG(verbose=False, gnupghome='./tmp_keyring',
-        #               keyring=tmp_file)
 
         with key_file:
             content = key_file.read()
@@ -49,14 +41,28 @@ class AsymmetricKey(object):
             # as soon as every key encoded in a such way will be removed
             # from the server
             if import_result.count == 0:
-                content = content.decode('utf-8').encode('latin-1')
-                import_result = context.import_keys(content)
+                try:
+                    content = content.decode('utf-8').encode('latin-1')
+                except UnicodeError:
+                    pass  # That's not a old-format key.
+                else:
+                    import_result = context.import_keys(content)
+
+            # GPG messages and behavior are rather cryptic. By example, there
+            # is a case when result.count == 0, but result.imported == 1
+            # "import_result.results" contains one line per error or success.
+            for result in import_result.results:
+                problem = result.get('problem', None)
+                if problem:
+                    _logger.warning(
+                        'Problem during import of GPG key: %s: %s',
+                        result.problem_reason.get(problem, problem),
+                        problem.get('text'))
 
             if not import_result.count:
-                # >>> print(import_result.results)
-                # [{'text': 'No valid data found', 'problem': '0',
-                #  'fingerprint': None}]
-                pass  # TODO: raise exception
+                raise EncryptionError(
+                    'key import Failed: %s' % import_result.summary(),
+                    import_result.results)
             if import_result.count > 1:
                 _logger.warning('GPG key file contains more than one key: %s',
                                 import_result.fingerprints)
