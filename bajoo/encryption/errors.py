@@ -23,6 +23,11 @@ class DecryptError(EncryptionError):
     pass
 
 
+class PassphraseError(EncryptionError):
+    """Invalid or missing passphrase"""
+    pass
+
+
 class PassphraseAbortError(EncryptionError):
     """Exception raised when the user refuse to give his passphrase."""
 

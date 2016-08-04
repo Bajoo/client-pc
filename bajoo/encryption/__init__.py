@@ -7,75 +7,55 @@ It supports two main features:
 - The encryption and decryption of arbitrary files.
 - The creation and use of asymmetric GPG keys.
 
-The initialisation of GPG, must be done by setting the gpg home dir
-(see `set_gpg_home_dir()`).
+The initialisation of GPG, must be done in two steps:
+ - Using the Context() to initialize th encryption service.
+ - setting the gpg home dir (see `set_gpg_home_dir()`).
 A global keyring is instantiated (and kept between executions), for storing
 keys regularly used.
-It's also possible to use a GPG key which is not in the global keyring,
-without importing it.
 
-All the heavy operations are executed asynchronously, and use ``Future`` to
-communicate the result.
-
-Note: there is currently one thread per simultaneous call to GPG, and one
-process for each GPG call. The gnupg library block the caller thread until the
-end of the GPG process.
-Ideally, one thread to manage all GPG process would be sufficient.
+All the heavy operations are executed asynchronously in another process, and
+uses ``Promise`` instances to communicate the result.
 """
 
-import atexit
 import errno
 from functools import partial
 import io
 import logging
-from multiprocessing import cpu_count
 import os.path
-import tempfile
 from ..gnupg import GPG
 
-from ..common.path import get_cache_dir
-from ..promise import ThreadPoolExecutor, reduce_coroutine
+from ..promise import reduce_coroutine
 from .asymmetric_key import AsymmetricKey
-from .errors import EncryptionError, KeyGenError, EncryptError, DecryptError
+from .errors import EncryptionError, KeyGenError, PassphraseError
 from .errors import PassphraseAbortError
+from .task_executor import TaskExecutor
+from .process_transmission import wrap_file
+from . import gpg_operations
 
 _logger = logging.getLogger(__name__)
 
-
-_thread_pool = ThreadPoolExecutor(max_workers=cpu_count())
+_executor = None
 
 # main GPG() instance
 _gpg = None
 _gpg_home_dir = None
 
-_tmp_dir = None
 
+class Context(object):
+    """Must be called before any GPG task."""
 
-def _get_tmp_dir():
-    global _tmp_dir
+    def __enter__(self):
+        global _executor
 
-    if _tmp_dir:
-        return _tmp_dir
-    try:
-        _tmp_dir = tempfile.mkdtemp(dir=get_cache_dir())
-        return _tmp_dir
-    except:
-        _logger.warning('Error when creating tmp dir for encryption files',
-                        exc_info=True)
-        raise
+        _executor = TaskExecutor()
+        _executor.start()
 
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        global _executor
 
-@atexit.register
-def _clean_tmp():
-    global _tmp_dir
-
-    if not _tmp_dir:
-        return
-    try:
-        os.removedirs(_tmp_dir)
-        _tmp_dir = None
-    except:
-        pass
+        if _executor:
+            _executor.stop()
+        _executor = None
 
 
 def _get_gpg_context():
@@ -139,6 +119,7 @@ def set_gpg_home_dir(gpg_home_dir):
     _get_gpg_context()
 
 
+@reduce_coroutine()
 def create_key(email, passphrase, container=False):
     """Generate a new GPG key.
 
@@ -161,16 +142,13 @@ def create_key(email, passphrase, container=False):
     else:
         args['name_comment'] = 'Bajoo user key'
 
-    input_data = gpg.gen_key_input(**args)
-    f = _thread_pool.submit(gpg.gen_key, input_data)
+    data = yield _executor.execute_task(gpg_operations.gen_key, gpg, **args)
 
-    def on_key_generated(data):
-        _logger.info('New GPG key created: %s', data.fingerprint)
-        if not data:
-            raise KeyGenError('Key generation failed: %s' % data)
-        return AsymmetricKey(gpg, data.fingerprint)
+    if not data:
+        raise KeyGenError('Key generation failed: %s' % data)
 
-    return f.then(on_key_generated)
+    _logger.info('New GPG key created: %s', data.fingerprint)
+    yield AsymmetricKey(gpg, data.fingerprint)
 
 
 @reduce_coroutine()
@@ -211,18 +189,11 @@ def encrypt(source, recipients):
             for key in recipients:
                 import_key(key)
 
-        tmp_dir = _get_tmp_dir()
-        with tempfile.NamedTemporaryFile(delete=False, dir=tmp_dir) as tf:
-            dst_path = tf.name
+        dst_path = yield _executor.execute_task(gpg_operations.encrypt,
+                                                context,
+                                                wrap_file(source),
+                                                recipients)
 
-        list_fingerprint = [key.fingerprint for key in recipients]
-        result = yield _thread_pool.submit(context.encrypt_file, source,
-                                           list_fingerprint,
-                                           output=dst_path,
-                                           armor=False, always_trust=True)
-
-        if not result:
-            raise EncryptError('Encryption failed', result)
         result_file = io.open(dst_path, mode='rb')
         _patch_autodelete_file(result_file, dst_path)
         yield result_file
@@ -274,9 +245,6 @@ def decrypt(source, key=None, passphrase_callback=None, _retry=0):
             source = io.open(source, 'rb')
 
     with source:
-        tmp_dir = _get_tmp_dir()
-        with tempfile.NamedTemporaryFile(delete=False, dir=tmp_dir) as tf:
-            dst_path = tf.name
         passphrase = None
         if _retry > 0 and passphrase_callback:
             # The call to GPG without callback has failed; We retry with a
@@ -286,28 +254,19 @@ def decrypt(source, key=None, passphrase_callback=None, _retry=0):
                 # The user has refused to give his passphrase.
                 raise PassphraseAbortError()
 
-        result = yield _thread_pool.submit(context.decrypt_file, source,
-                                           output=dst_path,
-                                           passphrase=passphrase)
-
-        if not result:
-            # pkdecrypt codes are defined in libgpg-error (in err-codes.h)
-            if '[GNUPG:] ERROR pkdecrypt_failed 11' in result.stderr \
-                    or '[GNUPG:] MISSING_PASSPHRASE' in result.stderr:
-                if passphrase_callback and _retry <= 4:
-                    source.seek(0)
-                    yield decrypt(source, key,
-                                  passphrase_callback=passphrase_callback,
-                                  _retry=_retry+1)
-                    return
-                elif '[GNUPG:] MISSING_PASSPHRASE' in result.stderr:
-                    raise DecryptError('Decryption failed: '
-                                       'missing passphrase')
-                else:
-                    raise DecryptError('Decryption failed: probably a bad'
-                                       'passphrase')
-            raise DecryptError('Decryption failed: %s' % result.status)
-
+        try:
+            dst_path = yield _executor.execute_task(gpg_operations.decrypt,
+                                                    context,
+                                                    wrap_file(source),
+                                                    passphrase=passphrase)
+        except PassphraseError:
+            if passphrase_callback and _retry <= 4:
+                source.seek(0)
+                yield decrypt(source, key,
+                              passphrase_callback=passphrase_callback,
+                              _retry=_retry+1)
+                return
+            raise
         result_file = io.open(dst_path, mode='rb')
         _patch_autodelete_file(result_file, dst_path)
         yield result_file
