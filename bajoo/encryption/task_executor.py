@@ -75,8 +75,6 @@ class TaskExecutor(object):
 
     def start(self):
         """Create the new process, the lobby thread, and start them."""
-        multiprocessing.freeze_support()
-
         # Pipe: Encryption process --> Main process
         parent_input, child_output = multiprocessing.Pipe(duplex=False)
 

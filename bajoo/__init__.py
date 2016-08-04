@@ -3,6 +3,7 @@
 from .__version__ import __version__  # noqa
 
 import logging
+import multiprocessing
 import os
 import sys
 
@@ -27,6 +28,8 @@ from . import network
 
 def main():
     """Entry point of the Bajoo client."""
+
+    multiprocessing.freeze_support()
 
     # Start log and load config
     with log.Context():
