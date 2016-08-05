@@ -14,7 +14,9 @@ class MenuEntry(object):
         self.menu_id = menu_id
         self.title = title
         self.help_string = help_string
-        self.children = None
+        # By default, a MenuEntry is a "leaf" entry. Add a child makes it a
+        # SubMenu.
+        self.children = []
         self.icon = None
         self.event_handler = None
 
@@ -178,21 +180,15 @@ class AbstractTaskBarIcon(object):
            len(status_list) == 0):
             return
 
-        if self._container_menu.children is not None:
-            del self._container_menu.children[:]
-        else:
-            self._container_menu.children = []
+        self._container_menu.children = []
 
         shares_menu = MenuEntry(-1, _('Shares folder'))
-        shares_menu.children = []
 
-        my_bajoo_count = 0
         for name, fpath, status in status_list:
             # TODO: Find a way to distinguish 'MyBajoo' folder and a
             # TODO: shared folder named 'MyBajoo'
             if name == 'MyBajoo':
                 parent_menu = self._container_menu
-                my_bajoo_count += 1
             else:
                 parent_menu = shares_menu
 
@@ -209,8 +205,7 @@ class AbstractTaskBarIcon(object):
 
             menu.event_handler = open_container
 
-        # if not status_list or len(status_list) == my_bajoo_count:
-        if len(shares_menu.children) == 0:
+        if not shares_menu.children:
             menu = MenuEntry(-1, _("Looks like you don't\nhave any share"))
             menu.enabled = False
             shares_menu.children.append(menu)

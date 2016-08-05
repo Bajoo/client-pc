@@ -3,6 +3,7 @@
 from .__version__ import __version__  # noqa
 
 import logging
+import multiprocessing
 import os
 import sys
 
@@ -21,11 +22,14 @@ from .common import log
 from .common import config
 from .common.i18n import set_lang
 from .common.strings import to_unicode
+from . import encryption
 from . import network
 
 
 def main():
     """Entry point of the Bajoo client."""
+
+    multiprocessing.freeze_support()
 
     # Start log and load config
     with log.Context():
@@ -44,8 +48,9 @@ def main():
             if lang is not None:
                 set_lang(lang)
 
-            app = BajooApp()
-            app.run()
+            with encryption.Context():
+                app = BajooApp()
+                app.run()
 
 
 if __name__ == "__main__":

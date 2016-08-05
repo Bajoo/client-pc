@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import io
+import hashlib
 import tempfile
 
 
@@ -22,6 +23,23 @@ class BadSizeException(Exception):
     __repr__ = __str__
 
 
+class BadMd5SumException(Exception):
+    """Raised when input file-object control sum don't match the expected sum.
+
+    If it happens, the file must be considered as corrupted.
+    """
+    def __init__(self, received, expected):
+        Exception.__init__(self)
+        self.received = received
+        self.expected = expected
+
+    def __str__(self):
+        return '%s(received=%s, expected=%s)' % (self.__class__.__name__,
+                                                 self.received, self.expected)
+
+    __repr__ = __str__
+
+
 class ChunkData(object):
     """Abstract piece of data.
 
@@ -30,8 +48,12 @@ class ChunkData(object):
 
     Attributes:
         file (File Object): File-like object, containing the data.
-        total_size (int): if set, total data size.
+        total_size (int): if set, total data size, including the content not
+            yet loaded.
         partial_size (int): size size of the data actually stored.
+        md5_sum (str): if set, md5 sum of the full data, including content not
+            yet loaded.
+        partial_md5_sum (str): md5 sum of the data actually stored.
     """
 
     CHUNK_SIZE = 16 * 1024
@@ -50,10 +72,14 @@ class ChunkData(object):
         Except:
             BadSizeException: raised if hint_size is set, and the total size
                 read from the source don't match the hint.
+            BadMd5SumException: raised if hint_md5 is set, but don't match with
+                the real md5.
         """
 
         self.total_size = int(hint_size) if hint_size else None
+        self.md5_sum = hint_md5
         self.partial_size = 0
+        self._partial_md5_hash = None  # instance of hashlib.HASH
         self.file = None
 
         if hint_size:
@@ -73,12 +99,21 @@ class ChunkData(object):
             raise BadSizeException(received=self.partial_size,
                                    expected=self.total_size)
 
-        # TODO: check md5
+        if self.md5_sum and self.partial_md5_sum != self.md5_sum:
+            assert self.partial_md5_sum == self.md5_sum
+            raise BadMd5SumException(received=self.md5_sum,
+                                     expected=self.md5_sum)
 
         self.file.seek(0)
 
+    @property
+    def partial_md5_sum(self):
+        return self._partial_md5_hash.hexdigest()
+
     def _copy_from(self, file_obj):
         """Read file_obj and copy it into self.file"""
+
+        self._partial_md5_hash = hashlib.md5()
 
         while True:
             chunk = file_obj.read(self.CHUNK_SIZE)
@@ -86,4 +121,5 @@ class ChunkData(object):
                 break
 
             self.file.write(chunk)
+            self._partial_md5_hash.update(chunk)
             self.partial_size += len(chunk)

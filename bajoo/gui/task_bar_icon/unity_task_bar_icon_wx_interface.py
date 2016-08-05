@@ -36,7 +36,7 @@ class UnityTaskBarIconWxInterface(AbstractTaskBarIconWxInterface):
         thread.start()
 
     def _read_process_stdout(self):
-        while(self._refresh_running):
+        while self._refresh_running:
             try:
                 line = self.process.stdout.readline()
             except ValueError:
