@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
+import io
 import logging
+import shutil
 from threading import Lock
 
 from ..promise import Promise, reduce_coroutine
@@ -104,10 +106,48 @@ class Container(object):
                 enc_key_content,
                 passphrase_callback=Container.passphrase_callback)
 
-            key = encryption.AsymmetricKey.load(key_content)
+            # key = encryption.AsymmetricKey.load(key_content)
+            key = yield self._compat_load_key(key_content)
             self._encryption_key = key
             yield key
             return
+
+    @reduce_coroutine()
+    def _compat_load_key(self, key_file):
+        # TODO this code is for compatibility backward, to remove
+        # as soon as every key encoded in a such way will be
+        # removed from the server
+
+        with key_file:
+            key_content = io.BytesIO()
+            key_file.seek(0)
+            shutil.copyfileobj(key_file, key_content)
+            key_content.seek(0)
+
+            try:
+                yield encryption.AsymmetricKey.load(key_content)
+                return
+            except encryption.errors.EncryptionError as err:
+                # Retry in "compatibility" mode.
+
+                key_file.seek(0)
+                key_content = io.BytesIO()
+                shutil.copyfileobj(key_file, key_content)
+
+                raw_bytes = key_content.getvalue()
+                raw_bytes = raw_bytes.decode('utf-8').encode('latin-1')
+                key_content = io.BytesIO(raw_bytes)
+                try:
+                    key = encryption.AsymmetricKey.load(key_content)
+                    _logger.info('Update deprecated key for container #%s ...',
+                                 self.id)
+                    yield self._encrypt_and_upload_key(key)
+                    yield key
+                    return
+                except:
+                    # That's wasn't a compatibility issue; first error was
+                    # legit.
+                    raise err
 
     @reduce_coroutine()
     def _encrypt_and_upload_key(self, key, use_local_members=False):
@@ -312,7 +352,7 @@ class Container(object):
         Returns:
             Promise<dict>: metadata.
         """
-        result = yield self._session.download_storage_file(
+        result = yield self._session.send_storage_request(
             'HEAD', '/storages/%s/%s' % (self.id, path,))
 
         md5_hash = result.get('headers', {}).get('etag')

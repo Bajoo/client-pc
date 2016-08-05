@@ -43,13 +43,14 @@ def _support_color_output():
 class RotatingLogHandler(logging.FileHandler):
     """Log handler who use a file rotated every day.
 
-    'bajoo.log' is always the most recent logfile. When the program is started,
-    The last log file (if it exists) is renamed to 'bajoo-$date.log', with
-    $date the day of the last modification of the file (format %Y.%m.%d).
+    '$filename' (passed in __init__) is always the most recent logfile. When
+    the program is started, the last log file (if it exists) is renamed to
+    '$filename-$date.log', with $date the day of the last modification of the
+    file (format %Y.%m.%d).
 
     If Bajoo is started several times the same day, log files are renamed with
-    an increment. 'bajoo.log' is the most recent, then 'bajoo.$today.log',
-    followed by 'bajoo.$today.1.log`, 'bajoo.$today.2.log`, and so on.
+    an increment. '$filename' is the most recent, then '$filename.$today.log',
+    followed by '$filename.$today.1.log`, $filename.$today.2.log`, and so on.
 
     Note that the file rotation is done at midnight and does not require a
     restart.
@@ -107,8 +108,9 @@ class RotatingLogHandler(logging.FileHandler):
     def rollover(self, src, filename, str_date, extension, inc=0):
         """Recursive renaming function.
 
-        'bajoo.log' is renamed into 'bajoo.$date.log'
-        'bajoo.$date.log' is renamed into 'bajoo.$date.1.log', and so on.
+        '$filename' is renamed into '$filename.$date.log'
+        '$filename.$date.log' is renamed into '$filename.$date.1.log', and so
+        on.
         """
         if inc is 0:
             dest = '%s.%s%s' % (filename, str_date, extension)
@@ -194,21 +196,24 @@ class RotatingLogHandler(logging.FileHandler):
         self.rollover_at = self.compute_next_rollover()
 
 
-def _get_file_handler():
+def _get_file_handler(filename):
     """Open a new file for using as a log output.
 
     The handler will automatically rotate the log files, each days, and
     removes files older than 14 days.
+    If filename is 'bajoo.log':
     'bajoo.log' is always the current log file (the last one).
     Logs older than a day are renamed with the format 'bajoo.log.YYYY-MM-DD'.
 
+    Args:
+        filename (str): name of the log file. Ex: 'bajoo.log'
     Returns:
         FileHandler: a valid fileHandler using the log file, or None if the
             file creation has failed.
     """
 
     try:
-        log_path = os.path.join(bajoo_path.get_log_dir(), 'bajoo.log')
+        log_path = os.path.join(bajoo_path.get_log_dir(), filename)
         handler = RotatingLogHandler(log_path)
         return handler
     except:
@@ -299,9 +304,15 @@ def _excepthook(exctype, value, traceback):
 class Context(object):
     """Context class used to open and close log handlers."""
 
-    def __init__(self):
+    def __init__(self, filename='bajoo.log'):
+        """Prepare a new log context.
+
+        Args:
+            filename (str): name fo the log file. default to 'bajoo.log'
+        """
         self._stderr = None
         self._stdout = None
+        self._filename = filename
 
     def __enter__(self):
         """Open the log file and prepare the logging module."""
@@ -315,6 +326,9 @@ class Context(object):
         string_format = '%(asctime)s %(levelname)-7s %(name)s - %(message)s'
         formatter = UnicodeFormatter(fmt=string_format, datefmt=date_format)
 
+        self._stderr = sys.stderr
+        self._stdout = sys.stdout
+
         if getattr(sys, 'frozen', False):
             # In frozen mode, this is a GUI app, and there is no stdout.
 
@@ -324,8 +338,6 @@ class Context(object):
             logging.addLevelName(STDOUT_LEVEL, 'STDOUT')
             logging.addLevelName(STDERR_LEVEL, 'STDERR')
 
-            self._stderr = sys.stderr
-            self._stdout = sys.stdout
             sys.stdout = OutLogger(STDOUT_LEVEL)
             sys.stderr = OutLogger(STDERR_LEVEL)
         else:
@@ -339,7 +351,7 @@ class Context(object):
                 stdout_handler.setFormatter(formatter)
             root_logger.addHandler(stdout_handler)
 
-        file_handler = _get_file_handler()
+        file_handler = _get_file_handler(self._filename)
         if file_handler:
             file_handler.setFormatter(formatter)
             root_logger.addHandler(file_handler)
@@ -404,9 +416,22 @@ def set_debug_mode(debug):
     if debug:
         logging.getLogger().setLevel(logging.INFO)
         logging.getLogger('bajoo').setLevel(logging.DEBUG)
+
+        # gnupg.py is too verbose for our use, even for a debug mode.
+        logging.getLogger('bajoo.gnupg').setLevel(logging.INFO)
     else:
         logging.getLogger().setLevel(logging.WARNING)
         logging.getLogger('bajoo').setLevel(logging.INFO)
+
+
+def reset():
+    """Reset the root logger (remove handlers and filters)."""
+    logger = logging.getLogger()
+
+    for h in logger.handlers[:]:
+        logger.removeHandler(h)
+    for f in logger.filters[:]:
+        logger.removeFilter(f)
 
 
 def main():

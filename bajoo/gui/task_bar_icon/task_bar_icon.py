@@ -118,7 +118,7 @@ class TaskBarIcon(wx.TaskBarIcon,
         else:
             event.Skip()
 
-    def _inner_create_menu(self, items_list, menu_instance, parent=None):
+    def _inner_create_menu(self, items_list, menu_instance):
         for m in items_list:
             if m is None:
                 menu_instance.AppendSeparator()
@@ -129,24 +129,23 @@ class TaskBarIcon(wx.TaskBarIcon,
             else:
                 wx_id = m.menu_id  # no op id
 
-            if m.children is not None and len(m.children) > 0:
+            if m.children:
                 menu = wx.Menu()
                 menu_instance.AppendMenu(-1, _(m.title), menu)
                 self._inner_create_menu(m.children, menu)
             else:
                 menu_item = wx.MenuItem(menu_instance, wx_id, _(m.title))
+                if m.icon:
+                    bitmap = wx.BitmapFromImage(m.icon)
+                    menu_item.SetBitmap(bitmap)
+
                 menu_instance.AppendItem(menu_item)
 
                 if m.event_handler is not None:
                     self.Bind(wx.EVT_MENU, m.event_handler, menu_item)
 
-                # FIXME seems to be broken for share icons
-                if m.icon is not None:
-                    bitmap = wx.BitmapFromImage(m.icon)
-                    menu_item.SetBitmap(bitmap)
-
-            if not m.enabled:
-                menu_item.Enable(False)
+                if not m.enabled:
+                    menu_item.Enable(False)
 
     def CreatePopupMenu(self):
         if self._is_connected:

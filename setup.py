@@ -132,7 +132,6 @@ setup_kwargs = {
         'futures>=2.2.0',
         'watchdog>=0.8.3',
         'pysocks>=1.5.6',
-        'psutil>=3.4.2',
         'pyasn1>=0.1.9',
         'ndg-httpsclient>=0.4.0'
     ],
@@ -158,11 +157,8 @@ setup_kwargs = {
                     # Note that users will have to install
                     # VCRedist 2008 by themselves.
                     'msvcp90.dll',
-                    # system lib required by psutil or gnupg
-                    'iphlpapi.dll',
-                    'wtsapi32.dll',
-                    'psapi.dll',
-                    'crypt32.dll'
+                    'mpr.dll'  # system lib
+                    'crypt32.dll'  # system lib required by gnupg
                 },
                 'skip_archive': True
             }

@@ -200,11 +200,6 @@ class AboutBajooView(BaseView):
             URL='https://pypi.python.org/pypi/PySocks')
         lbl_pysocks.SetBackgroundColour(bg_color)
 
-        lbl_psutil = HyperLinkCtrl(
-            about_panel, label='psutil',
-            URL='https://pypi.python.org/pypi/psutil')
-        lbl_psutil.SetBackgroundColour(bg_color)
-
         lbl_notify2 = HyperLinkCtrl(
             about_panel, label='notify2',
             URL='https://pypi.python.org/pypi/notify2')
@@ -237,7 +232,6 @@ class AboutBajooView(BaseView):
                                (lbl_python_gnupg, 0, wx.LEFT, 6),
                                (lbl_watchdog, 0, wx.LEFT, 6),
                                (lbl_pysocks, 0, wx.LEFT, 6),
-                               (lbl_psutil, 0, wx.LEFT, 6),
                                (lbl_notify2, 0, wx.LEFT, 6),
                                (lbl_pypiwin32, 0, wx.LEFT, 6)])
 

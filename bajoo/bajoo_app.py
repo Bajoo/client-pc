@@ -47,12 +47,10 @@ from .gui.tab.advanced_settings_tab import AdvancedSettingsTab
 from .gui.tab.creation_share_tab import CreationShareTab
 from .gui.tab.details_share_tab import DetailsShareTab
 from .gui.tab.list_shares_tab import ListSharesTab
+from .gui.task_bar_icon import make_task_bar_icon
 from .gui.task_bar_icon.abstract_task_bar_icon import AbstractTaskBarIcon
 from .gui.task_bar_icon.abstract_task_bar_icon_wx_interface import \
     AbstractTaskBarIconWxInterface
-from .gui.task_bar_icon.task_bar_icon import TaskBarIcon
-from .gui.task_bar_icon.unity_task_bar_icon_wx_interface import \
-    UnityTaskBarIconWxInterface
 from .local_container import LocalContainer
 from .network import set_proxy
 from .network.errors import NetworkError
@@ -247,19 +245,7 @@ class BajooApp(wx.App):
         if not self._ensures_single_instance_running():
             return False
 
-        unity_desktop = False
-        if sys.platform not in ["win32", "cygwin", "darwin"]:
-            desktop_session = os.environ.get("DESKTOP_SESSION")
-
-            if (desktop_session is not None and
-               desktop_session.startswith("ubuntu")):
-                unity_desktop = True
-
-        if unity_desktop:
-            self._task_bar_icon = UnityTaskBarIconWxInterface(self)
-            self._task_bar_icon.notify_lang_change()
-        else:
-            self._task_bar_icon = TaskBarIcon()
+        self._task_bar_icon = make_task_bar_icon(self)
 
         self._notifier = MessageNotifier(self._task_bar_icon)
 
