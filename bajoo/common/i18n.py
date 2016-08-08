@@ -109,11 +109,6 @@ def _(msg):
         return msg
 
 available_langs = {
-    None: {
-        'code': None,
-        'name': _('Auto'),
-        'flag': ''
-    },
     'en': {
         'code': 'en',
         'name': u'English',
