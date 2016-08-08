@@ -1,3 +1,17 @@
+bajoo (0.3.20-1) unstable; urgency=low
+
+  * Update old badly-encoded container keys.
+  * add log message when a GPG import fails.
+  * improves task bar icon management.
+  * Fix a bug preventing status icons of shares to display in TaskBarIcon.
+  * Move encryption operations in a separated Process.
+  * Set INFO log level for gpg.
+  * Add function to reset logger.
+  * Fix stdout/stderr restoration when exiting the log context.
+  * Remove unused code.
+  
+ -- Bajoo <support@bajoo.fr>  Thu, 4 Aug 2016 18:37:33 +0200
+
 bajoo (0.3.19-1) unstable; urgency=low
 
   * Better network performance.
