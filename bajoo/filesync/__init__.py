@@ -41,10 +41,7 @@ from .moved_local_files_task import MovedLocalFilesTask
 from .removed_remote_files_task import RemovedRemoteFilesTask
 from .removed_local_files_task import RemovedLocalFilesTask
 from .sync_task import SyncTask
-from .task_consumer import add_task, stop
-
-import atexit
-atexit.register(stop)
+from .task_consumer import add_task
 
 
 def added_remote_files(container, local_container, filename, display_error_cb):

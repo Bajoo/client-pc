@@ -20,6 +20,7 @@ except ImportError:
 import wx
 
 from . import __version__
+from . import encryption
 from . import promise
 from .api import Container, Session, TeamShare
 from .common import autorun, config
@@ -722,6 +723,9 @@ class BajooApp(wx.App):
 
         self._container_sync_pool.stop()
 
+        # Encryption must be stopped before filesync. Otherwise, filesync will
+        # wait the end of all encryption tasks before returning.
+        encryption.stop()
         task_consumer.stop()
 
         self._dummy_frame.Destroy()

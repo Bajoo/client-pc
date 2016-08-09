@@ -32,8 +32,8 @@ class Service(object):
 
         self._executor.start()
 
-    def stop(self):
-        self._executor.stop()
+    def stop(self, wait=True):
+        self._executor.stop(wait)
         self._executor = None
 
     def _add_task(self, request):
