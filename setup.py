@@ -136,7 +136,6 @@ setup_kwargs = {
         'ndg-httpsclient>=0.4.0'
     ],
     'tests_require': ['tox'],
-    'dependency_links': ['http://wxpython.org/Phoenix/snapshot-builds/'],
     'entry_points': {
         "console_scripts": [
             "bajoo=bajoo:main"
@@ -210,6 +209,13 @@ if setup_kwargs['include_package_data']:
                   'assets/images/*.png', 'assets/images/*/*.png']
     }
 
+if sys.version_info[0] is 3:  # Python3 only
+    setup_kwargs['install_requires'] += [
+        'wxpython-phoenix>=3.dev'
+    ]
+    setup_kwargs.setdefault('dependency_links', [])
+    setup_kwargs['dependency_links'].append(
+        'http://wxpython.org/Phoenix/snapshot-builds/')
 
 try:
     from esky import bdist_esky
