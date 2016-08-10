@@ -58,6 +58,14 @@ class Context(object):
         _executor = None
 
 
+def stop():
+    global _executor
+
+    if _executor:
+        _executor.stop()
+    _executor = None
+
+
 def _get_gpg_context():
     """Initialize the GPG main keyring."""
     global _gpg

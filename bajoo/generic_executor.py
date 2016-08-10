@@ -99,7 +99,7 @@ class GenericExecutor(object):
                                              self._last_worker_id)
             f.add_done_callback(done_handler)
 
-    def stop(self):
+    def stop(self, wait=True):
         """Stop all the workers.
 
         Returns only when all the worker threads are joined.
@@ -109,7 +109,7 @@ class GenericExecutor(object):
             self.context.stop_order = True
             self.context.condition.notify_all()
         if self._executor:
-            self._executor.shutdown()
+            self._executor.shutdown(wait)
 
     def __enter__(self):
         self.start()
