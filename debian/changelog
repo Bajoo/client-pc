@@ -1,3 +1,11 @@
+bajoo (0.3.21-1) unstable; urgency=low
+
+  * Improves Bajoo stop delay.
+  * Exclude tox directory for testenv flake8.
+  * Add missing url encoding.
+  
+ -- Bajoo <support@bajoo.fr>  Wed, 10 Aug 2016 10:41:33 +0200
+
 bajoo (0.3.20-1) unstable; urgency=low
 
   * Update old badly-encoded container keys.
