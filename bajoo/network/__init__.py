@@ -72,7 +72,7 @@ class Context(object):
         global json_request, download, upload, set_proxy
 
         if self._service:
-            self._service.stop()
+            self._service.stop(False)
 
         json_request = None
         download = None
