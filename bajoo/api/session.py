@@ -2,10 +2,15 @@
 
 import logging
 import threading
+try:
+    from urllib.parse import quote
+except ImportError:
+    from urllib import quote
 
 from .. import network
 from .. import promise
 from ..common.i18n import N_
+from ..common.strings import to_str
 from ..network.errors import NetworkError
 from ..network.errors import HTTPUnauthorizedError
 from ..promise import Deferred, Promise
@@ -206,7 +211,7 @@ class Session(OAuth2Session):
         if not headers:
             headers = {}
         headers['Authorization'] = 'Bearer %s' % access_token
-        url = api_url + url_path
+        url = api_url + quote(to_str(url_path))
 
         try:
             yield network_fun(verb, url, headers=headers, **params)
