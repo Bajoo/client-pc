@@ -742,9 +742,9 @@ class BajooApp(wx.App):
             _logger.critical('Uncaught exception on Run process',
                              exc_info=True)
 
-        future = connect_or_register(self.create_home_window)
-        future.then(self._on_connection)
-        future.then(None, _on_unhandled_exception)
+        p = connect_or_register(self.create_home_window)
+        p = p.then(self._on_connection)
+        p.then(None, _on_unhandled_exception)
 
         _logger.debug('Start main loop')
         self.MainLoop()
