@@ -81,7 +81,7 @@ class Install(InstallCommand):
         # If wxVersion is not available, either wxPython is not installed,
         # either the system only allows only one version of wxPython.
 
-        if sys.version_info[0] is 2:
+        if not self.force and sys.version_info[0] is 2:
             try:
                 import wxversion
                 try:

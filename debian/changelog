@@ -1,4 +1,4 @@
-bajoo (0.3.21-1) unstable; urgency=low
+bajoo (0.3.21-3) xenial; urgency=low
 
   * Improves Bajoo stop delay.
   * Exclude tox directory for testenv flake8.
