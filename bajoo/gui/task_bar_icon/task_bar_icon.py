@@ -5,8 +5,9 @@ from os.path import abspath
 
 import wx
 
-from bajoo.common.i18n import _
-from bajoo.common.util import open_folder
+from ...app_status import AppStatus
+from ...common.i18n import _
+from ...common.util import open_folder
 from ..translator import Translator
 from .abstract_task_bar_icon import AbstractTaskBarIcon
 from .abstract_task_bar_icon_wx_interface import AbstractTaskBarIconWxInterface
@@ -87,7 +88,7 @@ class TaskBarIcon(wx.TaskBarIcon,
 
         self._container_icons = new_container_icons
 
-        self.set_state(self.NOT_CONNECTED)
+        self.set_state(AppStatus.NOT_CONNECTED)
 
         self.register_i18n(
             self,

@@ -23,6 +23,7 @@ from . import __version__
 from . import encryption
 from . import promise
 from .api import Container, Session, TeamShare
+from .app_status import AppStatus
 from .common import autorun, config
 from .common import path as bajoo_path
 from .common.i18n import N_, _, set_lang
@@ -105,8 +106,9 @@ class BajooApp(wx.App):
         self._session = None
         self._user = None
         self._container_list = None
+        self.app_status = AppStatus(AppStatus.NOT_CONNECTED)
         self._container_sync_pool = ContainerSyncPool(
-            self._on_global_status_change, self._on_sync_error)
+            self.app_status, self._on_sync_error)
         self._passphrase_manager = None
         self._exit_flag = False  # When True, the app is exiting.
 
@@ -130,6 +132,7 @@ class BajooApp(wx.App):
         self._dummy_frame = wx.Frame(None)
 
         self.Bind(EVT_PROXY_FORM, self._on_proxy_config_changes)
+        self.app_status.changed.connect(self._on_app_status_changes)
 
         # Apply autorun on app startup to match with the config value
         autorun.set_autorun(config.get('autorun'))
@@ -184,6 +187,11 @@ class BajooApp(wx.App):
             'password': event.password if event.use_auth else None
         }
         set_proxy(event.proxy_mode, settings)
+
+    @ensure_gui_thread
+    def _on_app_status_changes(self, value):
+        if self._task_bar_icon:
+            self._task_bar_icon.set_state(value)
 
     @ensure_gui_thread
     def create_home_window(self):
@@ -775,26 +783,7 @@ class BajooApp(wx.App):
             self._session, self.user_profile, self._notifier.send_message,
             self._container_sync_pool.add,
             self._container_sync_pool.remove)
-        self._task_bar_icon.set_state(AbstractTaskBarIcon.SYNC_PROGRESS)
-
-    @ensure_gui_thread
-    def _on_global_status_change(self, status):
-        """The global status of container sync pool has changed.
-
-        We update the tray icon.
-        """
-        if not self._user:
-            return  # We are in a disconnection phase.
-
-        mapping = {
-            ContainerSyncPool.STATUS_PAUSE: AbstractTaskBarIcon.SYNC_PAUSE,
-            ContainerSyncPool.STATUS_SYNCING:
-            AbstractTaskBarIcon.SYNC_PROGRESS,
-            ContainerSyncPool.STATUS_UP_TO_DATE:
-            AbstractTaskBarIcon.SYNC_DONE
-        }
-        if self._task_bar_icon:
-            self._task_bar_icon.set_state(mapping[status])
+        self.app_status.value = AppStatus.SYNC_IN_PROGRESS
 
     def _on_sync_error(self, err):
         self._notifier.send_message(_('Sync error'), _(err), is_error=True)
@@ -816,13 +805,14 @@ class BajooApp(wx.App):
             self._main_window = None
 
         self._user = None
-        self._task_bar_icon.set_state(AbstractTaskBarIcon.NOT_CONNECTED)
         if self._passphrase_manager:
             self._passphrase_manager.remove_passphrase()
 
         self._container_sync_pool.stop()
+
+        self.app_status.value = AppStatus.NOT_CONNECTED
         self._container_sync_pool = ContainerSyncPool(
-            self._on_global_status_change, self._on_sync_error)
+            self.app_status, self._on_sync_error)
         self._container_list.stop()
         self._container_list = None
 

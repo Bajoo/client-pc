@@ -6,6 +6,7 @@ from os import path
 from ...common.i18n import N_, _
 from ...common.path import resource_filename
 from ...common.util import open_folder
+from ...app_status import AppStatus
 
 
 class MenuEntry(object):
@@ -36,9 +37,7 @@ class AbstractTaskBarIcon(object):
     OPEN_HELP = 9
     TASK_BAR_EXIT = 10
 
-    # Different states possible for the App.
-    NOT_CONNECTED = 1
-    CONNECTION_PROGRESS = 2
+    # Different states possible for a container.
     SYNC_DONE = 3
     SYNC_PROGRESS = 4
     SYNC_PAUSE = 5
@@ -46,18 +45,18 @@ class AbstractTaskBarIcon(object):
     SYNC_ERROR = 7
 
     _tooltips = {
-        NOT_CONNECTED: N_('Not connected'),
-        CONNECTION_PROGRESS: N_('Connection in progress...'),
-        SYNC_DONE: N_('Sync up to date'),
-        SYNC_PROGRESS: N_('Shares currently syncing...'),
-        SYNC_PAUSE: N_('Synchronization suspended'),
-        SYNC_STOP: N_('Synchronization is not active'),
-        SYNC_ERROR: N_('An error occurred :(')
+        AppStatus.NOT_CONNECTED: N_('Not connected'),
+        AppStatus.CONNECTION_IN_PROGRESS: N_('Connection in progress...'),
+        AppStatus.SYNC_DONE: N_('Sync up to date'),
+        AppStatus.SYNC_IN_PROGRESS: N_('Shares currently syncing...'),
+        AppStatus.SYNC_PAUSED: N_('Synchronization suspended'),
+        AppStatus.SYNC_STOPPED: N_('Synchronization is not active'),
+        AppStatus.SYNC_IN_ERROR: N_('An error occurred :(')
     }
 
     def __init__(self):
         self._is_connected = False
-        self._state = self.NOT_CONNECTED
+        self._state = AppStatus.NOT_CONNECTED
 
         icon_path = 'assets/images/trayicon_status/%s.png'
         disconnected_icon = resource_filename(icon_path % 'disconnected')
@@ -75,11 +74,11 @@ class AbstractTaskBarIcon(object):
         container_status_error = resource_filename(icon_container % 'error')
 
         self._icons = {
-            self.NOT_CONNECTED: disconnected_icon,
-            self.CONNECTION_PROGRESS: connecting_icon,
-            self.SYNC_DONE: sync_icon,
-            self.SYNC_PROGRESS: progress_icon,
-            self.SYNC_PAUSE: paused_icon
+            AppStatus.NOT_CONNECTED: disconnected_icon,
+            AppStatus.CONNECTION_IN_PROGRESS: connecting_icon,
+            AppStatus.SYNC_DONE: sync_icon,
+            AppStatus.SYNC_IN_PROGRESS: progress_icon,
+            AppStatus.SYNC_PAUSED: paused_icon
         }
 
         self._container_icons = {
@@ -166,12 +165,11 @@ class AbstractTaskBarIcon(object):
         The icon and its tooltip will change according to the state.
 
         Args:
-            state: must be one of 'NOT_CONNECTED', 'CONNECTION_PROGRESS',
-                'SYNC_DONE', 'SYNC_PROGRESS' or 'SYNC_PAUSE'
+            state (AppStatus Enum): One of the possible values of AppStatus.
         """
 
         self._state = state
-        self._is_connected = state is not self.NOT_CONNECTED
+        self._is_connected = state is not AppStatus.NOT_CONNECTED
         self.set_icon(self._icons[state], _(self._tooltips[state]))
 
     def set_container_status_list(self, status_list):

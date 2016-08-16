@@ -12,6 +12,7 @@ import appindicator
 
 from functools import partial
 
+from ...app_status import AppStatus
 from ...common.i18n import set_lang, _
 from .abstract_task_bar_icon import AbstractTaskBarIcon
 from .unity_data_exchange import UnityDataExchange  # noqa
@@ -32,7 +33,7 @@ class UnityTaskBarIcon(AbstractTaskBarIcon):
         self.indicator = None
         gobject.idle_add(self._create_indicator)
 
-        self.set_state(self.NOT_CONNECTED)
+        self.set_state(AppStatus.NOT_CONNECTED)
 
         self.read_stdin = True
         thread = Thread(target=self._read_process_stdin)
