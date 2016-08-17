@@ -85,8 +85,7 @@ class AdvancedSettingsTab(wx.Panel, Translator):
 
     def restart(self, _evt=None):
         _logger.debug('Send event to restart Bajoo')
-        event = self.GetUpdaterRequest(self.GetId())
-        event.SetEventObject(self)
+        event = self.RestartRequest(self.GetId())
         wx.PostEvent(self, event)
 
     def update_bajoo(self, _evt=None):
