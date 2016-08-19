@@ -2,6 +2,8 @@
 import logging
 from hashlib import sha256
 
+from ..common import config
+from ..common import i18n
 from ..common.strings import ensure_unicode
 from ..network.errors import HTTPNotFoundError
 from .. import encryption
@@ -46,12 +48,10 @@ class User(object):
         hashed_password = User.hash_password(password)
         session = yield Session.from_client_credentials()
 
-        if not lang:
-            lang = 'en'
         yield session.send_api_request('POST', '/users', data={
             u'email': email,
             u'password': hashed_password,
-            u'lang': lang
+            u'lang': lang or i18n.get_lang()
         })
         yield None
 
@@ -102,6 +102,17 @@ class User(object):
         response = yield self._session.send_api_request('GET', '/user')
         content = response.get('content', {})
         self.name = content.get('email', '')
+
+        # Migration code: set a lang if the user has None.
+        if 'lang' not in content:
+            lang = config.get('lang') or i18n.get_lang()
+
+            if lang:
+                _logger.info('Set lang account to %s', lang)
+                response = yield self._session.send_api_request(
+                    'PATCH', '/user', data={u'lang': lang})
+                content = response.get('content', {})
+
         yield content
 
     def change_password(self, old_password, new_password):
@@ -266,7 +277,7 @@ if __name__ == '__main__':
 
     # Reset the old password
     session = Session.from_user_credentials('test+test_api@bajoo.fr',
-                                            'test+test_api_1@bajoo.fr')\
+                                            'test+test_api_1@bajoo.fr') \
         .result()
     user = User.load(session).result()
     _logger.debug(user.change_password('test+test_api_1@bajoo.fr',
