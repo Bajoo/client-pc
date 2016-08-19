@@ -61,11 +61,9 @@ class NetworkSharedContext(SharedContext):
         adapter = requests.adapters.HTTPAdapter(max_retries=MAX_RETRY)
         session.mount('http://', adapter)
         session.mount('https://', adapter)
-        session.headers.update({
-            'timeout': 4,
-            'User-Agent': 'Bajoo-client/%s python-requests/%s' % (
-                bajoo_version, requests_version)
-        })
+        user_agent = 'Bajoo-client/%s python-requests/%s' % (bajoo_version,
+                                                             requests_version)
+        session.headers['User-Agent'] = user_agent
         return session
 
 
