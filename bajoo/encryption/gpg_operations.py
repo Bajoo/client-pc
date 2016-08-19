@@ -28,10 +28,10 @@ def _get_tmp_dir():
             _logger.exception('Error when creating tmp dir for encryption '
                               'files')
             raise
+        atexit.register(_clean_tmp)
     return _tmp_dir
 
 
-@atexit.register
 def _clean_tmp():
     global _tmp_dir
 
