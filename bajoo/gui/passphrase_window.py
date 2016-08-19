@@ -27,6 +27,7 @@ class PassphraseWindow(wx.Dialog):
     ...     if window.ShowModal() == wx.ID_OK:
     ...         print(window.get_passphrase())
     ...         print(window.allow_save_on_disk())
+    ...     window.Destroy()
 
     Internal window elements:
      - "passphrase" is the wx.TextCtrl for the passphrase
@@ -88,6 +89,7 @@ class PassphraseWindow(wx.Dialog):
         if window.ShowModal() == wx.ID_OK:
             passphrase = window.get_passphrase()
             remember_passphrase = window.allow_save_on_disk()
+        window.Destroy()
         return passphrase, remember_passphrase
 
 
@@ -135,13 +137,15 @@ class PassphraseWindowView(BaseView):
 
 
 def main():
-    wx.App()
+    app = wx.App()
     win = PassphraseWindow()
 
     if win.ShowModal() == wx.ID_OK:
         print('OK')
     else:
         print('Action canceled')
+    win.Destroy()
+    app.Destroy()
 
 if __name__ == '__main__':
     main()
