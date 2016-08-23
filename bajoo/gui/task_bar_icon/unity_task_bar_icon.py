@@ -9,13 +9,13 @@ import gtk
 import gobject
 import appindicator
 
-
 from functools import partial
 
 from ...app_status import AppStatus
-from ...common.i18n import set_lang, _
-from .abstract_task_bar_icon import AbstractTaskBarIcon
+from ...common.i18n import set_lang
 from .unity_data_exchange import UnityDataExchange  # noqa
+from .common_view_data import (app_status_to_icon_files, MenuEntry,
+                               TaskBarIconAction)
 
 APPINDICATOR_ID = 'bajoo'
 
@@ -26,13 +26,24 @@ def print_to_stdout(value):
         sys.stdout.flush()
 
 
-class UnityTaskBarIcon(AbstractTaskBarIcon):
+class UnityTaskBarIcon(object):
+    """Implementation of task bar icon using libappindicator.
+
+    It's intended to be created and used by UnityAdapterView.
+
+    Notes:
+        The menu is build once, then reused at each click on the trayicon
+        (by opposite to other libraries like wxPython who rebuild the menu at
+        each display). We rebuild the menu only on explicit changes.
+
+    """
     def __init__(self):
-        AbstractTaskBarIcon.__init__(self)
 
         self.indicator = None
         gobject.idle_add(self._create_indicator)
 
+        self._is_connected = False
+        self._container_status_list = []
         self.set_state(AppStatus.NOT_CONNECTED)
 
         self.read_stdin = True
@@ -94,29 +105,23 @@ class UnityTaskBarIcon(AbstractTaskBarIcon):
     def _create_indicator(self):
         self.indicator = appindicator.Indicator(
             APPINDICATOR_ID,
-            self._icons[self.NOT_CONNECTED],
+            app_status_to_icon_files[AppStatus.NOT_CONNECTED],
             appindicator.CATEGORY_SYSTEM_SERVICES)
         self.indicator.set_status(appindicator.STATUS_ACTIVE)
 
     def set_container_status_list(self, status_list):
-        """
-            This override is needed because the libappindicator does not
-            rebuild the menu on each mouse clic and so it needs to be rebuilt
-            on each menu update.
-        """
-        AbstractTaskBarIcon.set_container_status_list(self, status_list)
+        self._container_status_list = status_list
         self.build_menu()
 
     def set_state(self, state):
-        AbstractTaskBarIcon.set_state(self, state)
+        self._is_connected = state != AppStatus.NOT_CONNECTED
+        icon_path = abspath(app_status_to_icon_files[state])
+        gobject.idle_add(self._set_icon, icon_path)
         self.build_menu()
 
     def set_lang(self, lang):
         set_lang(lang)
         self.build_menu()
-
-    def set_icon(self, icon, tooltip=None):
-        gobject.idle_add(self._set_icon, abspath(icon))
 
     def _set_icon(self, icon):
         self.indicator.set_icon(icon)
@@ -124,26 +129,25 @@ class UnityTaskBarIcon(AbstractTaskBarIcon):
     def _inner_build_menu(self, items_list):
         gtk_menu = gtk.Menu()
         for m in items_list:
-            if m is None:
+            if m is MenuEntry.Separator:
                 gtk_menu.append(gtk.SeparatorMenuItem())
                 continue
 
             if m.icon is None:
-                menu_item = gtk.MenuItem(_(m.title))
+                menu_item = gtk.MenuItem(m.title)
             else:
                 menu_item = gtk.ImageMenuItem()
-                menu_item.set_label(_(m.title))
+                menu_item.set_label(m.title)
 
+                # TODO: try to reuse Image !!!
                 img = gtk.Image()
                 img.set_from_file(m.icon)
                 menu_item.set_image(img)
                 menu_item.set_always_show_image(True)
 
-            if m.event_handler is None:
+            if m.action:
                 menu_item.connect('activate',
-                                  partial(self.clic_event, m.menu_id))
-            else:
-                menu_item.connect('activate', m.event_handler)
+                                  partial(self.clic_event, m.action, m.target))
 
             if m.children:
                 sub_gtk_menu = self._inner_build_menu(m.children)
@@ -157,8 +161,9 @@ class UnityTaskBarIcon(AbstractTaskBarIcon):
         return gtk_menu
 
     def build_menu(self):
-        menus = self._getMenuItems()
-        gtk_menu = self._inner_build_menu(menus)
+        items_list = MenuEntry.make_menu(self._is_connected,
+                                         self._container_status_list)
+        gtk_menu = self._inner_build_menu(items_list)
         gtk_menu.show_all()
 
         gobject.idle_add(self._build_menu, gtk_menu)
@@ -166,10 +171,10 @@ class UnityTaskBarIcon(AbstractTaskBarIcon):
     def _build_menu(self, menu):
         self.indicator.set_menu(menu)
 
-    def clic_event(self, menu_id, event):
-        print_to_stdout("event id %s" % menu_id)
+    def clic_event(self, action, target, _event):
+        print_to_stdout("event %s %s" % (action, target))
 
-        if menu_id == AbstractTaskBarIcon.TASK_BAR_EXIT:
+        if action == TaskBarIconAction.EXIT:
             self._exit()
 
         return False

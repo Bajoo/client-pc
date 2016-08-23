@@ -49,10 +49,8 @@ from .gui.tab.advanced_settings_tab import AdvancedSettingsTab
 from .gui.tab.creation_share_tab import CreationShareTab
 from .gui.tab.details_share_tab import DetailsShareTab
 from .gui.tab.list_shares_tab import ListSharesTab
-from .gui.task_bar_icon import make_task_bar_icon
-from .gui.task_bar_icon.abstract_task_bar_icon import AbstractTaskBarIcon
-from .gui.task_bar_icon.abstract_task_bar_icon_wx_interface import \
-    AbstractTaskBarIconWxInterface
+from .gui.task_bar_icon import make_task_bar_icon, WindowDestination
+from .gui.task_bar_icon import ContainerStatus as ContainerStatusTBIcon
 from .local_container import LocalContainer
 from .network import set_proxy
 from .network.errors import NetworkError
@@ -191,7 +189,11 @@ class BajooApp(wx.App):
     @ensure_gui_thread
     def _on_app_status_changes(self, value):
         if self._task_bar_icon:
-            self._task_bar_icon.set_state(value)
+            self._task_bar_icon.set_app_status(value)
+            # The task bar icon has no way to detect a container status change.
+            # AppStatus is updated each time there a container status changes,
+            # so we update the task bar icon's container list at the same time.
+            self._container_status_request()
 
     @ensure_gui_thread
     def create_home_window(self):
@@ -255,16 +257,14 @@ class BajooApp(wx.App):
         if not self._ensures_single_instance_running():
             return False
 
-        self._task_bar_icon = make_task_bar_icon(self)
+        self._task_bar_icon = make_task_bar_icon()
 
-        self._notifier = MessageNotifier(self._task_bar_icon)
+        self._notifier = MessageNotifier(self._task_bar_icon.view)
 
-        self.Bind(AbstractTaskBarIconWxInterface.EVT_OPEN_WINDOW,
-                  self._show_window)
-        self.Bind(AbstractTaskBarIconWxInterface.EVT_EXIT, self._exit)
+        self._task_bar_icon.navigate.connect(self._show_window)
+        self._task_bar_icon.exit_app.connect(self._exit)
+
         self.Bind(LanguageBox.EVT_LANG, self._on_lang_changed)
-        self.Bind(AbstractTaskBarIconWxInterface.EVT_CONTAINER_STATUS_REQUEST,
-                  self._container_status_request)
 
         self.Bind(CreationShareTab.EVT_CREATE_SHARE_REQUEST,
                   self._on_request_create_share)
@@ -300,28 +300,30 @@ class BajooApp(wx.App):
 
         return True
 
-    def _show_window(self, event):
+    @ensure_gui_thread
+    def _show_window(self, destination):
         """Catch event from tray icon, asking to show a window."""
         window = None
 
-        if event.target == AbstractTaskBarIcon.OPEN_HOME:
+        if destination == WindowDestination.HOME:
             self._show_home_window()
-        elif event.target == AbstractTaskBarIcon.OPEN_ABOUT:
+        elif destination == WindowDestination.ABOUT:
             window = self.get_window('_about_window', AboutBajooWindow)
-        elif event.target == AbstractTaskBarIcon.OPEN_SUSPEND:
+        elif destination == WindowDestination.SUSPEND:
             pass  # TODO: open window
-        elif event.target == AbstractTaskBarIcon.OPEN_INVITATION:
+        elif destination == WindowDestination.INVITATION:
             pass  # TODO: open window
-        elif event.target == AbstractTaskBarIcon.OPEN_SETTINGS:
+        elif destination == WindowDestination.SETTINGS:
             window = self.get_window('_main_window', MainWindow)
             window.show_settings_tab()
-        elif event.target == AbstractTaskBarIcon.OPEN_SHARES:
+        elif destination == WindowDestination.SHARES:
             window = self.get_window('_main_window', MainWindow)
             window.show_list_shares_tab()
-        elif event.target == AbstractTaskBarIcon.OPEN_DEV_CONTACT:
+        elif destination == WindowDestination.DEV_CONTACT:
             window = self.get_window('_contact_dev_window', BugReportWindow)
         else:
-            _logger.error('Unexpected "Open Window" event: %s' % event)
+            _logger.error('Unexpected "Navigation" destination: %s' %
+                          destination)
 
         if window:
             window.Show()
@@ -363,7 +365,8 @@ class BajooApp(wx.App):
             self._main_window.load_shares(self._container_list.get_list(),
                                           error_msg=error_msg, show_tab=False)
 
-    def _container_status_request(self, _event):
+    def _container_status_request(self):
+        """Update the task bar icon."""
 
         if not self._container_list:
             _logger.warning('the TaskBarIcon need the container list, '
@@ -371,22 +374,22 @@ class BajooApp(wx.App):
             return
 
         mapping = {
-            LocalContainer.STATUS_ERROR: AbstractTaskBarIcon.SYNC_ERROR,
-            LocalContainer.STATUS_PAUSED: AbstractTaskBarIcon.SYNC_PAUSE,
+            LocalContainer.STATUS_ERROR: ContainerStatusTBIcon.SYNC_ERROR,
+            LocalContainer.STATUS_PAUSED: ContainerStatusTBIcon.SYNC_PAUSE,
             LocalContainer.STATUS_QUOTA_EXCEEDED:
-            AbstractTaskBarIcon.SYNC_ERROR,
+                ContainerStatusTBIcon.SYNC_ERROR,
             LocalContainer.STATUS_WAIT_PASSPHRASE:
-            AbstractTaskBarIcon.SYNC_ERROR,
-            LocalContainer.STATUS_STOPPED: AbstractTaskBarIcon.SYNC_STOP,
-            LocalContainer.STATUS_UNKNOWN: AbstractTaskBarIcon.SYNC_PROGRESS
+                ContainerStatusTBIcon.SYNC_ERROR,
+            LocalContainer.STATUS_STOPPED: ContainerStatusTBIcon.SYNC_STOP,
+            LocalContainer.STATUS_UNKNOWN: ContainerStatusTBIcon.SYNC_PROGRESS
         }
         containers_status = []
         for container in self._container_list.get_list():
             if container.status == LocalContainer.STATUS_STARTED:
                 if container.is_up_to_date():
-                    status = AbstractTaskBarIcon.SYNC_DONE
+                    status = ContainerStatusTBIcon.SYNC_DONE
                 else:
-                    status = AbstractTaskBarIcon.SYNC_PROGRESS
+                    status = ContainerStatusTBIcon.SYNC_PROGRESS
             else:
                 status = mapping[container.status]
             row = (container.model.name, container.model.path, status)
@@ -705,7 +708,8 @@ class BajooApp(wx.App):
             if self._main_window:
                 self._main_window.on_password_changed()
 
-    def _exit(self, _event=None):
+    @ensure_gui_thread
+    def _exit(self):
         """Close all resources and quit the app."""
         if self._exit_flag:
             return
@@ -724,7 +728,7 @@ class BajooApp(wx.App):
         if self._contact_dev_window:
             self._contact_dev_window.Destroy()
 
-        self._task_bar_icon.Destroy()
+        self._task_bar_icon.destroy()
 
         if self._container_list:
             self._container_list.stop()
@@ -960,4 +964,4 @@ class BajooApp(wx.App):
             return
         _logger.info('Restart Bajoo now.')
         self._updater.register_restart_on_exit()
-        self._exit(None)
+        self._exit().result()
