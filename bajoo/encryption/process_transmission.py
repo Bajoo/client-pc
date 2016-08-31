@@ -95,5 +95,5 @@ def _recv_item(connection, item):
         handle = recv_handle(connection)
         if sys.platform == 'win32':
             handle = msvcrt.open_osfhandle(handle, os.O_RDONLY)
-        return os.fdopen(handle)
+        return os.fdopen(handle, 'rb')
     return item
