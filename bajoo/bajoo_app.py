@@ -253,50 +253,55 @@ class BajooApp(wx.App):
                 widget.notify_lang_change()
 
     def OnInit(self):
+        try:
+            if not self._ensures_single_instance_running():
+                return False
 
-        if not self._ensures_single_instance_running():
-            return False
+            self._task_bar_icon = make_task_bar_icon()
 
-        self._task_bar_icon = make_task_bar_icon()
+            self._notifier = MessageNotifier(self._task_bar_icon.view)
 
-        self._notifier = MessageNotifier(self._task_bar_icon.view)
+            self._task_bar_icon.navigate.connect(self._show_window)
+            self._task_bar_icon.exit_app.connect(self._exit)
 
-        self._task_bar_icon.navigate.connect(self._show_window)
-        self._task_bar_icon.exit_app.connect(self._exit)
+            self.Bind(LanguageBox.EVT_LANG, self._on_lang_changed)
 
-        self.Bind(LanguageBox.EVT_LANG, self._on_lang_changed)
-
-        self.Bind(CreationShareTab.EVT_CREATE_SHARE_REQUEST,
-                  self._on_request_create_share)
-        self.Bind(ListSharesTab.EVT_DATA_REQUEST,
-                  self._on_request_share_list)
-        self.Bind(ListSharesTab.EVT_CONTAINER_DETAIL_REQUEST,
-                  self._on_request_container_details)
-        self.Bind(SettingsTab.EVT_CONFIG_REQUEST, self._on_request_config)
-        self.Bind(AdvancedSettingsTab.EVT_GET_UPDATER_REQUEST,
-                  self._on_request_get_updater)
-        self.Bind(AdvancedSettingsTab.EVT_RESTART_REQUEST,
-                  self._restart_for_update)
-        self.Bind(MembersShareForm.EVT_SUBMIT,
-                  self._on_add_share_member)
-        self.Bind(MembersShareForm.EVT_REMOVE_MEMBER,
-                  self._on_remove_share_member)
-        self.Bind(DetailsShareTab.EVT_QUIT_SHARE_REQUEST,
-                  self._on_request_quit_share)
-        self.Bind(DetailsShareTab.EVT_DELETE_SHARE_REQUEST,
-                  self._on_request_delete_share)
-        self.Bind(DetailsShareTab.EVT_START_SYNC_CONTAINER_REQUEST,
-                  self._start_sync_container)
-        self.Bind(DetailsShareTab.EVT_STOP_SYNC_CONTAINER_REQUEST,
-                  self._stop_sync_container)
-        self.Bind(DetailsShareTab.EVT_MOVE_CONTAINER_REQUEST,
-                  self._move_synced_container)
-        self.Bind(AccountTab.EVT_DATA_REQUEST,
-                  self._on_request_account_info)
-        self.Bind(ChangePasswordWindow.EVT_CHANGE_PASSWORD_SUBMIT,
-                  self._on_request_change_password)
-        self.Bind(AccountTab.EVT_DISCONNECT_REQUEST, self.disconnect)
-        self.Bind(EVT_BUG_REPORT, self.send_bug_report)
+            self.Bind(CreationShareTab.EVT_CREATE_SHARE_REQUEST,
+                      self._on_request_create_share)
+            self.Bind(ListSharesTab.EVT_DATA_REQUEST,
+                      self._on_request_share_list)
+            self.Bind(ListSharesTab.EVT_CONTAINER_DETAIL_REQUEST,
+                      self._on_request_container_details)
+            self.Bind(SettingsTab.EVT_CONFIG_REQUEST, self._on_request_config)
+            self.Bind(AdvancedSettingsTab.EVT_GET_UPDATER_REQUEST,
+                      self._on_request_get_updater)
+            self.Bind(AdvancedSettingsTab.EVT_RESTART_REQUEST,
+                      self._restart_for_update)
+            self.Bind(MembersShareForm.EVT_SUBMIT,
+                      self._on_add_share_member)
+            self.Bind(MembersShareForm.EVT_REMOVE_MEMBER,
+                      self._on_remove_share_member)
+            self.Bind(DetailsShareTab.EVT_QUIT_SHARE_REQUEST,
+                      self._on_request_quit_share)
+            self.Bind(DetailsShareTab.EVT_DELETE_SHARE_REQUEST,
+                      self._on_request_delete_share)
+            self.Bind(DetailsShareTab.EVT_START_SYNC_CONTAINER_REQUEST,
+                      self._start_sync_container)
+            self.Bind(DetailsShareTab.EVT_STOP_SYNC_CONTAINER_REQUEST,
+                      self._stop_sync_container)
+            self.Bind(DetailsShareTab.EVT_MOVE_CONTAINER_REQUEST,
+                      self._move_synced_container)
+            self.Bind(AccountTab.EVT_DATA_REQUEST,
+                      self._on_request_account_info)
+            self.Bind(ChangePasswordWindow.EVT_CHANGE_PASSWORD_SUBMIT,
+                      self._on_request_change_password)
+            self.Bind(AccountTab.EVT_DISCONNECT_REQUEST, self.disconnect)
+            self.Bind(EVT_BUG_REPORT, self.send_bug_report)
+        except:
+            # wxPython hides OnInit's exceptions without any message.
+            # Bug always reproducible on Linux with wxPython Gtk2 (classic)
+            _logger.exception('Exception during BajooApp initialization')
+            raise
 
         return True
 
