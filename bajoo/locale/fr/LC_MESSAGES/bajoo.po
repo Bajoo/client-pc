@@ -1310,3 +1310,25 @@ msgid ""
 msgstr ""
 "Le proxy est activé, mais aucune URL n'a été définie.\n"
 "Vérifiez votre configuration."
+
+#: bajoo/gui/bug_report.py
+msgid ""
+"The configuration of your Bajoo client and its log files will "
+"be attached to your message.\n"
+"Please note that this is not a support channel and that no "
+"response will be made in this way. For inquiries, please "
+"contact support by email:"
+msgstr ""
+"La configuration de votre client Bajoo et ses fichiers de log seront joints à"
+" votre message.\n"
+"Veuillez noter que ce n'est pas un canal de support et qu'aucune réponse ne "
+"vous sera apportée par ce biais. Pour toute demande, veuillez contacter le "
+"support par email :"
+
+#: bajoo/gui/bug_report.py
+msgid "support-en@bajoo.fr"
+msgstr "support-fr@bajoo.fr"
+
+#: bajoo/gui/bug_report.py
+msgid "mailto:support-en@bajoo.fr"
+msgstr "mailto:support-fr@bajoo.fr"

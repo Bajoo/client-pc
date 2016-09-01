@@ -4,6 +4,7 @@
 import re
 import wx
 from wx.lib.newevent import NewCommandEvent
+from wx.lib.agw.hyperlink import HyperLinkCtrl
 
 from ..common.i18n import N_, _
 from .event_promise import ensure_gui_thread
@@ -20,7 +21,7 @@ class BugReportWindow(wx.Dialog):
                            parent,
                            wx.ID_ANY,
                            pos=wx.DefaultPosition,
-                           size=wx.Size(600, 250),
+                           size=wx.Size(600, 400),
                            style=style)
 
         self._view = BugReportView(self)
@@ -92,6 +93,29 @@ class BugReportView(BaseView):
         self.set_icon()
 
         sizer = wx.BoxSizer(wx.VERTICAL)
+
+        caption = wx.StaticText(window)
+        sizer.Add(caption, 0, wx.EXPAND | wx.ALL, border=10)
+        self.register_i18n(
+            caption,
+            caption.SetLabel,
+            N_('The configuration of your Bajoo client and its log files will '
+               'be attached to your message.\n'
+               'Please note that this is not a support channel and that no '
+               'response will be made in this way. For inquiries, please '
+               'contact support by email:'))
+        caption.Wrap(580)
+        email_link = HyperLinkCtrl(window)
+        sizer.Add(email_link, 0, wx.EXPAND | wx.RIGHT | wx.LEFT | wx.BOTTOM,
+                  border=10)
+        self.register_i18n(
+            email_link,
+            email_link.SetLabel,
+            N_('support-en@bajoo.fr'))
+        self.register_i18n(
+            email_link,
+            email_link.SetURL,
+            N_('mailto:support-en@bajoo.fr'))
 
         email_label = wx.StaticText(window, label=_('Email:'))
         self.email = wx.TextCtrl(window, name='email')
