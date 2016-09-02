@@ -22,3 +22,6 @@ pip-log.txt
 
 # external GPG executable and dependencies
 gpg/
+
+# MacOs
+.DS_Store

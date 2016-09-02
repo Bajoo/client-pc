@@ -4,10 +4,14 @@
 import errno
 import logging
 import os
-import pkg_resources
 import re
 import sys
 import appdirs
+
+if not (sys.platform == 'darwin' and
+        getattr(sys, 'frozen', False) and
+        getattr(sys, 'executable', False)):
+    import pkg_resources
 
 _logger = logging.getLogger(__name__)
 
@@ -70,7 +74,12 @@ def resource_filename(resource):
     # Note: it works only in non-zipped mode.
     if getattr(sys, 'frozen', False) and getattr(sys, 'executable', False):
         dir_executable = os.path.dirname(sys.executable)
-        result_path = os.path.join(dir_executable, 'bajoo', resource)
+        if sys.platform == 'darwin':
+            dir_executable = os.path.join(
+                dir_executable, '..', 'Resources', resource)
+            result_path = os.path.abspath(dir_executable)
+        else:
+            result_path = os.path.join(dir_executable, 'bajoo', resource)
     elif USR_DIR is not None:
         if resource.startswith('locale'):
             path_parts = (USR_DIR, 'share', resource,)

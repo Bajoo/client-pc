@@ -301,6 +301,10 @@ class OutLogger(object):
         except:
             pass  # There is nothing we can do.
 
+    def flush(self):
+        """this flush method does nothing but is required on macos."""
+        pass
+
 
 def _excepthook(exctype, value, traceback):
     try:
