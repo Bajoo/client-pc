@@ -21,6 +21,7 @@ import wx
 
 from . import __version__
 from . import encryption
+from . import gtk_process
 from . import promise
 from .api import Container, Session, TeamShare
 from .app_status import AppStatus
@@ -507,6 +508,9 @@ class BajooApp(wx.App):
         """
         config.set('lang', event.lang)
         set_lang(event.lang)
+
+        gtk_process.remote_call('set_lang', 'bajoo.common.i18n', event.lang)
+
         self._notify_lang_change()
 
     @promise.reduce_coroutine(safeguard=True)

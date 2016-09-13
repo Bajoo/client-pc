@@ -18,6 +18,7 @@ except ImportError:
     pass
 
 from .bajoo_app import BajooApp
+from .gtk_process import GtkProcessHandler
 from .common import log
 from .common import config
 from .common.i18n import set_lang
@@ -49,8 +50,9 @@ def main():
                 set_lang(lang)
 
             with encryption.Context():
-                app = BajooApp()
-                app.run()
+                with GtkProcessHandler():
+                    app = BajooApp()
+                    app.run()
 
 
 if __name__ == "__main__":
