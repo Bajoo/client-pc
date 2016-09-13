@@ -1,3 +1,13 @@
+bajoo (0.3.22-1) xenial; urgency=low
+
+  * Fix bug that was hidding some exceptions.
+  * Fix log rotatio not properly handled.
+  * Cleanup PassphraseWindows after use.
+  * Fix a bug preventing the deletion of encryption tmp dir.
+  * Rewrite TaskBarIcon module to a more lisible, MVC-based architecture.
+  
+ -- Bajoo <support@bajoo.fr>  Thu, 22 Sep 2016 12:05:52 +0200
+
 bajoo (0.3.21-3) xenial; urgency=low
 
   * Improves Bajoo stop delay.
