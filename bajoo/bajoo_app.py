@@ -742,6 +742,10 @@ class BajooApp(wx.App):
             self._contact_dev_window.Destroy()
 
         self._task_bar_icon.destroy()
+        # TODO: this manual deletion is required because cross-process
+        # references are not handled by the garbage collector.
+        self._task_bar_icon.view = None
+        self._task_bar_icon = None
 
         if self._container_list:
             self._container_list.stop()

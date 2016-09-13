@@ -44,7 +44,7 @@ class TaskBarIconBaseView(object):
 
     def destroy(self):
         """Clean up all resources (Window, files, etc.) before deletion."""
-        raise NotImplementedError()
+        pass
 
     def notify_lang_change(self):
         """Update the view after a change of language setting."""
