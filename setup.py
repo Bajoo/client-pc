@@ -198,7 +198,7 @@ if sys.platform not in ['win32', 'cygwin', 'win64']:
 
 elif sys.platform in ['win32', 'win64']:
     setup_kwargs['install_requires'] += [
-        'pypiwin32'
+        'pypiwin32',
         'py2exe'
     ]
 
