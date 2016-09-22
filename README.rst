@@ -13,10 +13,35 @@ can synchronize local folders with files stored in the Bajoo cloud.
 
 For more details, see https://www.bajoo.fr
 
+
+Installation from source
+------------------------
+
+Bajoo can run on Python 2.7 or Python 3.4 and higher. However, it's recommended to use the Python2 version.
+
+- Ubuntu with Python2.7:
+
+  Uses the packaged version of wxpython (classic version).
+
+  .. code-nlock:: bash
+
+     sudo apt-get install python-pip python-wxgtk3.0 build-essential python-dev libssl-dev libffi-dev
+     sudo pip2 install .
+
+- Ubuntu with Python3.4+
+
+  Uses the last nightly version of wxpython (Phoenix).
+
+  .. code-block:: bash
+
+    sudo apt-get install python3-pip build-essential python3-dev libssl-dev libffi-dev libgtk-3-dev mesa-common-dev libglu1-mesa-dev libgstreamer0.10-dev libgstreamer-plugins-base0.10-dev libgtk2.0-dev libwebkitgtk-dev
+    sudo pip3 install --process-dependency-links --allow-unverified wxpython --trusted-host wxpython.org .
+
+
 License and copyright
 ---------------------
 
-Copyright © 2015 Bajoo
+Copyright © 2015-2016 Bajoo
 
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software

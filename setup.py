@@ -81,7 +81,7 @@ class Install(InstallCommand):
         # If wxVersion is not available, either wxPython is not installed,
         # either the system only allows only one version of wxPython.
 
-        if sys.version_info[0] is 2:
+        if not self.force and sys.version_info[0] is 2:
             try:
                 import wxversion
                 try:
@@ -136,7 +136,6 @@ setup_kwargs = {
         'ndg-httpsclient>=0.4.0'
     ],
     'tests_require': ['tox'],
-    'dependency_links': ['http://wxpython.org/Phoenix/snapshot-builds/'],
     'entry_points': {
         "console_scripts": [
             "bajoo=bajoo:main"
@@ -199,7 +198,7 @@ if sys.platform not in ['win32', 'cygwin', 'win64']:
 
 elif sys.platform in ['win32', 'win64']:
     setup_kwargs['install_requires'] += [
-        'pypiwin32'
+        'pypiwin32',
         'py2exe'
     ]
 
@@ -210,6 +209,13 @@ if setup_kwargs['include_package_data']:
                   'assets/images/*.png', 'assets/images/*/*.png']
     }
 
+if sys.version_info[0] is 3:  # Python3 only
+    setup_kwargs['install_requires'] += [
+        'wxpython-phoenix>=3.dev'
+    ]
+    setup_kwargs.setdefault('dependency_links', [])
+    setup_kwargs['dependency_links'].append(
+        'http://wxpython.org/Phoenix/snapshot-builds/')
 
 try:
     from esky import bdist_esky

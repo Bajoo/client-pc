@@ -107,7 +107,9 @@ class HomeScreenView(BaseView):
         settings_sizer.AddStretchSpacer()
         settings_sizer.Add(lang_label,
                            flag=wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, border=10)
-        settings_sizer.Add(LanguageBox(home_screen, name='lang'))
+        self._language_box = LanguageBox(home_screen, name='lang')
+        self.add_i18n_child(self._language_box)
+        settings_sizer.Add(self._language_box)
 
         notebook_sizer = wx.BoxSizer(wx.HORIZONTAL)
         notebook_sizer.AddSpacer(15)

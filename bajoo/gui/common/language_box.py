@@ -2,10 +2,11 @@
 import wx
 from wx.lib.newevent import NewCommandEvent
 
-from ...common.i18n import available_langs
+from ...common.i18n import available_langs, _
+from ..translator import Translator
 
 
-class LanguageBox(wx.ComboBox):
+class LanguageBox(wx.ComboBox, Translator):
     """
     A language combo box which allows user to set application's language.
     If option 'Auto' is chosen, the system's default language will be used.
@@ -20,6 +21,7 @@ class LanguageBox(wx.ComboBox):
                 by default the system language.
             Other arguments are like in wx.ComboBox.__init__()
         """
+        Translator.__init__(self)
         if 'style' not in kwargs:
             kwargs['style'] = wx.CB_READONLY
 
@@ -27,6 +29,7 @@ class LanguageBox(wx.ComboBox):
         wx.ComboBox.__init__(self, *args, **kwargs)
         self._langs = available_langs.items()
 
+        self.Append(_('Auto'), None)
         for lang_code, lang_info in self._langs:
             self.Append(lang_info.get('name', ''), lang_code)
 
@@ -47,6 +50,10 @@ class LanguageBox(wx.ComboBox):
         lang_code = self.GetClientData(self.GetSelection())
         wx.PostEvent(self, LanguageBox.LanguageEvent(
             self.GetId(), lang=lang_code))
+
+    def notify_lang_change(self):
+        Translator.notify_lang_change(self)
+        self.SetString(0, _('Auto'))
 
 
 def main():

@@ -165,10 +165,6 @@ class _ConnectionProcess(object):
             try:
                 if action == 'register':
                     lang = config.get('lang')
-                    if lang:
-                        # the format of the 'lang' config property is 'EN_us'.
-                        # User.create() expects the two-character code 'en'.
-                        lang = lang[:2]
                     yield User.create(username, password, lang)
                     self.is_new_account = True
 

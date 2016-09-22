@@ -34,6 +34,13 @@ class RemovedLocalFilesTask(_Task, PushTaskMixin, AddedRemoteTaskMixin):
         _logger.debug('Execute task %s' % self)
 
         target = self.nodes[0]
+        if not hasattr(target, 'rel_path'):
+            # On Windows 10, watchdog sometimes detect directory deletion as a
+            # file deletion. There is no way to check what was the target (it
+            # doesn't exists anymore), other than ignoring deletions on
+            # DirectoryNode targets.
+            _logger.debug('deleted target is a directory. Nothing to do.')
+            return
 
         task = None
         if os.path.exists(os.path.join(self.local_path, target.rel_path)):
