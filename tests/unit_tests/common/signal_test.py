@@ -87,3 +87,15 @@ class TestSignal(object):
         s.connect(h)
         assert s.disconnect(lambda: None) is False
         assert s.disconnect(h) is True
+
+    def test_disconnect_all(self):
+        s = Signal()
+        h = HandlerMock()
+        h2 = HandlerMock()
+        s.connect(h)
+        s.fire()
+        s.connect(h2)
+        s.disconnect_all()
+        s.fire()
+        assert h.call_counter == 1
+        assert h2.call_counter == 0

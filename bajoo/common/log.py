@@ -131,8 +131,13 @@ class RotatingLogHandler(logging.FileHandler):
         except (OSError, IOError):
             pass
 
-    def remove_old_files(self):
-        """Remove old log files when there are more than the allowed."""
+    def remove_old_files(self, filename):
+        """Remove old log files when there are more than the allowed.
+
+        Args:
+            filename (str): base part of the filename (without date, nor
+                '.log' extension)
+        """
         log_dir = bajoo_path.get_log_dir()
         all_log_files = os.listdir(log_dir)
 
@@ -146,7 +151,7 @@ class RotatingLogHandler(logging.FileHandler):
                     os.remove(os.path.join(log_dir, f))
                 except (OSError, IOError):
                     pass
-            else:
+            elif f.startswith(filename):
                 recent_log_file.append(f)
 
         # 1st sort by date
@@ -190,7 +195,7 @@ class RotatingLogHandler(logging.FileHandler):
         filename, extension = os.path.splitext(self.baseFilename)
 
         self.rollover(self.baseFilename, filename, str_date, extension)
-        self.remove_old_files()
+        self.remove_old_files(filename)
 
         self.stream = self._open()
         self.rollover_at = self.compute_next_rollover()

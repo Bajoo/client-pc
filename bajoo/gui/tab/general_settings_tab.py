@@ -122,6 +122,7 @@ class GeneralSettingsView(BaseView):
         language_box_sizer = wx.StaticBoxSizer(language_box, wx.VERTICAL)
         language_box_sizer.Add(language_ctrl, 0,
                                wx.EXPAND | wx.ALL, 10)
+        self.add_i18n_child(language_ctrl)
 
         # Main sizer
         main_sizer = self.make_sizer(

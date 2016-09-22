@@ -63,3 +63,7 @@ class Signal(object):
             return True
         except ValueError:
             return False
+
+    def disconnect_all(self):
+        """Remove all handler/callback registered."""
+        self._handlers = []

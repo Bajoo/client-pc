@@ -12,6 +12,7 @@ from .filesync.filepath import is_path_allowed
 from .network.errors import HTTPEntityTooLargeError
 from .encryption.errors import PassphraseAbortError
 from .common.i18n import _
+from .app_status import AppStatus
 
 
 _logger = logging.getLogger(__name__)
@@ -27,24 +28,25 @@ class ContainerSyncPool(object):
 
     pause() and resume() allow to stop (and restart) sync for all containers
     at once.
-    """
 
-    STATUS_SYNCING = 1
-    STATUS_UP_TO_DATE = 2
-    STATUS_PAUSE = 3
+    When running, the pool updates the sync status of each container, as well
+    as the global app status.
+    """
 
     QUOTA_TIMEOUT = 300.0
 
-    def __init__(self, on_state_change, on_sync_error):
+    def __init__(self, app_status, on_sync_error):
         """
         Args:
-            on_state_change (callable): called when the global state change.
+            app_status (AppStatus): reference to the global application status.
+                The pool will update according to the sync state.
+            on_sync_error (callable): Called when an error occurs, with a str
+                message as argument.
         """
         self._local_containers = {}
-        self._on_state_change = on_state_change
         self._on_sync_error = on_sync_error
 
-        self._global_status = self.STATUS_UP_TO_DATE
+        self._app_status = app_status
         self._counter = 0
         self._passphrase_needed = False
 
@@ -82,7 +84,7 @@ class ContainerSyncPool(object):
             self._local_containers[container.id] = \
                 (local_container, updater, watcher,)
 
-            if self._global_status == ContainerSyncPool.STATUS_PAUSE:
+            if self._app_status.value == AppStatus.SYNC_PAUSED:
                 local_container.status = local_container.STATUS_PAUSED
                 return
 
@@ -138,7 +140,7 @@ class ContainerSyncPool(object):
             self._on_sync_error(_('No passphrase set.  Cyphered containers' +
                                   ' will be paused'))
 
-            if self._global_status == ContainerSyncPool.STATUS_PAUSE:
+            if self._app_status.value == AppStatus.SYNC_PAUSED:
                 return
 
             for lc, updater, watcher in self._local_containers.values():
@@ -161,7 +163,7 @@ class ContainerSyncPool(object):
 
             self._passphrase_needed = False
 
-            if self._global_status == ContainerSyncPool.STATUS_PAUSE:
+            if self._app_status.value == AppStatus.SYNC_PAUSED:
                 return
 
             for lc, updater, watcher in self._local_containers.values():
@@ -184,8 +186,7 @@ class ContainerSyncPool(object):
                 watcher.stop()
                 lc.error_msg = None
 
-                self._global_status = self.STATUS_PAUSE
-                self._on_state_change(self._global_status)
+                self._app_status.value = AppStatus.SYNC_PAUSED
 
     def resume(self):
         """Resume sync operations if they are paused."""
@@ -194,10 +195,9 @@ class ContainerSyncPool(object):
             _logger.debug('Resume sync')
 
             if self._counter == 0:
-                self._global_status = self.STATUS_UP_TO_DATE
+                self._app_status.value = AppStatus.SYNC_DONE
             else:
-                self._global_status = self.STATUS_SYNCING
-            self._on_state_change(self._global_status)
+                self._app_status.value = AppStatus.SYNC_IN_PROGRESS
 
             for lc, updater, watcher in self._local_containers.values():
                 if self._passphrase_needed and lc.container.is_encrypted:
@@ -217,21 +217,17 @@ class ContainerSyncPool(object):
     def _increment(self, _arg=None):
         with self._inner_lock:
             self._counter += 1
-            if self._global_status == self.STATUS_UP_TO_DATE:
-                self._global_status = self.STATUS_SYNCING
-                self._on_state_change(self._global_status)
+            if self._app_status.value == AppStatus.SYNC_DONE:
+                self._app_status.value = AppStatus.SYNC_IN_PROGRESS
 
     def _decrement(self, _arg=None):
         with self._inner_lock:
             self._counter -= 1
-            if self._global_status != self.STATUS_PAUSE:
+            if self._app_status.value != AppStatus.SYNC_PAUSED:
                 if self._counter == 0:
-                    if self._global_status != self.STATUS_UP_TO_DATE:
-                        self._global_status = self.STATUS_UP_TO_DATE
-                        self._on_state_change(self._global_status)
-                elif self._global_status != self.STATUS_SYNCING:
-                    self._global_status = self.STATUS_SYNCING
-                    self._on_state_change(self._global_status)
+                    self._app_status.value = AppStatus.SYNC_DONE
+                else:
+                    self._app_status.value = AppStatus.SYNC_IN_PROGRESS
 
     def _added_remote_file(self, container_id, files):
         _logger.info('Added (remote): %s files', len(files))

@@ -23,6 +23,7 @@ from . import __version__
 from . import encryption
 from . import promise
 from .api import Container, Session, TeamShare
+from .app_status import AppStatus
 from .common import autorun, config
 from .common import path as bajoo_path
 from .common.i18n import N_, _, set_lang
@@ -48,10 +49,8 @@ from .gui.tab.advanced_settings_tab import AdvancedSettingsTab
 from .gui.tab.creation_share_tab import CreationShareTab
 from .gui.tab.details_share_tab import DetailsShareTab
 from .gui.tab.list_shares_tab import ListSharesTab
-from .gui.task_bar_icon import make_task_bar_icon
-from .gui.task_bar_icon.abstract_task_bar_icon import AbstractTaskBarIcon
-from .gui.task_bar_icon.abstract_task_bar_icon_wx_interface import \
-    AbstractTaskBarIconWxInterface
+from .gui.task_bar_icon import make_task_bar_icon, WindowDestination
+from .gui.task_bar_icon import ContainerStatus as ContainerStatusTBIcon
 from .local_container import LocalContainer
 from .network import set_proxy
 from .network.errors import NetworkError
@@ -104,8 +103,9 @@ class BajooApp(wx.App):
         self._session = None
         self._user = None
         self._container_list = None
+        self.app_status = AppStatus(AppStatus.NOT_CONNECTED)
         self._container_sync_pool = ContainerSyncPool(
-            self._on_global_status_change, self._on_sync_error)
+            self.app_status, self._on_sync_error)
         self._passphrase_manager = None
         self._exit_flag = False  # When True, the app is exiting.
 
@@ -129,6 +129,7 @@ class BajooApp(wx.App):
         self._dummy_frame = wx.Frame(None)
 
         self.Bind(EVT_PROXY_FORM, self._on_proxy_config_changes)
+        self.app_status.changed.connect(self._on_app_status_changes)
 
         # Apply autorun on app startup to match with the config value
         autorun.set_autorun(config.get('autorun'))
@@ -183,6 +184,15 @@ class BajooApp(wx.App):
             'password': event.password if event.use_auth else None
         }
         set_proxy(event.proxy_mode, settings)
+
+    @ensure_gui_thread
+    def _on_app_status_changes(self, value):
+        if self._task_bar_icon:
+            self._task_bar_icon.set_app_status(value)
+            # The task bar icon has no way to detect a container status change.
+            # AppStatus is updated each time there a container status changes,
+            # so we update the task bar icon's container list at the same time.
+            self._container_status_request()
 
     @ensure_gui_thread
     def create_home_window(self):
@@ -242,77 +252,82 @@ class BajooApp(wx.App):
                 widget.notify_lang_change()
 
     def OnInit(self):
+        try:
+            if not self._ensures_single_instance_running():
+                return False
 
-        if not self._ensures_single_instance_running():
-            return False
+            self._task_bar_icon = make_task_bar_icon()
 
-        self._task_bar_icon = make_task_bar_icon(self)
+            self._notifier = MessageNotifier(self._task_bar_icon.view)
 
-        self._notifier = MessageNotifier(self._task_bar_icon)
+            self._task_bar_icon.navigate.connect(self._show_window)
+            self._task_bar_icon.exit_app.connect(self._exit)
 
-        self.Bind(AbstractTaskBarIconWxInterface.EVT_OPEN_WINDOW,
-                  self._show_window)
-        self.Bind(AbstractTaskBarIconWxInterface.EVT_EXIT, self._exit)
-        self.Bind(LanguageBox.EVT_LANG, self._on_lang_changed)
-        self.Bind(AbstractTaskBarIconWxInterface.EVT_CONTAINER_STATUS_REQUEST,
-                  self._container_status_request)
+            self.Bind(LanguageBox.EVT_LANG, self._on_lang_changed)
 
-        self.Bind(CreationShareTab.EVT_CREATE_SHARE_REQUEST,
-                  self._on_request_create_share)
-        self.Bind(ListSharesTab.EVT_DATA_REQUEST,
-                  self._on_request_share_list)
-        self.Bind(ListSharesTab.EVT_CONTAINER_DETAIL_REQUEST,
-                  self._on_request_container_details)
-        self.Bind(SettingsTab.EVT_CONFIG_REQUEST, self._on_request_config)
-        self.Bind(AdvancedSettingsTab.EVT_GET_UPDATER_REQUEST,
-                  self._on_request_get_updater)
-        self.Bind(AdvancedSettingsTab.EVT_RESTART_REQUEST,
-                  self._restart_for_update)
-        self.Bind(MembersShareForm.EVT_SUBMIT,
-                  self._on_add_share_member)
-        self.Bind(MembersShareForm.EVT_REMOVE_MEMBER,
-                  self._on_remove_share_member)
-        self.Bind(DetailsShareTab.EVT_QUIT_SHARE_REQUEST,
-                  self._on_request_quit_share)
-        self.Bind(DetailsShareTab.EVT_DELETE_SHARE_REQUEST,
-                  self._on_request_delete_share)
-        self.Bind(DetailsShareTab.EVT_START_SYNC_CONTAINER_REQUEST,
-                  self._start_sync_container)
-        self.Bind(DetailsShareTab.EVT_STOP_SYNC_CONTAINER_REQUEST,
-                  self._stop_sync_container)
-        self.Bind(DetailsShareTab.EVT_MOVE_CONTAINER_REQUEST,
-                  self._move_synced_container)
-        self.Bind(AccountTab.EVT_DATA_REQUEST,
-                  self._on_request_account_info)
-        self.Bind(ChangePasswordWindow.EVT_CHANGE_PASSWORD_SUBMIT,
-                  self._on_request_change_password)
-        self.Bind(AccountTab.EVT_DISCONNECT_REQUEST, self.disconnect)
-        self.Bind(EVT_BUG_REPORT, self.send_bug_report)
+            self.Bind(CreationShareTab.EVT_CREATE_SHARE_REQUEST,
+                      self._on_request_create_share)
+            self.Bind(ListSharesTab.EVT_DATA_REQUEST,
+                      self._on_request_share_list)
+            self.Bind(ListSharesTab.EVT_CONTAINER_DETAIL_REQUEST,
+                      self._on_request_container_details)
+            self.Bind(SettingsTab.EVT_CONFIG_REQUEST, self._on_request_config)
+            self.Bind(AdvancedSettingsTab.EVT_GET_UPDATER_REQUEST,
+                      self._on_request_get_updater)
+            self.Bind(AdvancedSettingsTab.EVT_RESTART_REQUEST,
+                      self._restart_for_update)
+            self.Bind(MembersShareForm.EVT_SUBMIT,
+                      self._on_add_share_member)
+            self.Bind(MembersShareForm.EVT_REMOVE_MEMBER,
+                      self._on_remove_share_member)
+            self.Bind(DetailsShareTab.EVT_QUIT_SHARE_REQUEST,
+                      self._on_request_quit_share)
+            self.Bind(DetailsShareTab.EVT_DELETE_SHARE_REQUEST,
+                      self._on_request_delete_share)
+            self.Bind(DetailsShareTab.EVT_START_SYNC_CONTAINER_REQUEST,
+                      self._start_sync_container)
+            self.Bind(DetailsShareTab.EVT_STOP_SYNC_CONTAINER_REQUEST,
+                      self._stop_sync_container)
+            self.Bind(DetailsShareTab.EVT_MOVE_CONTAINER_REQUEST,
+                      self._move_synced_container)
+            self.Bind(AccountTab.EVT_DATA_REQUEST,
+                      self._on_request_account_info)
+            self.Bind(ChangePasswordWindow.EVT_CHANGE_PASSWORD_SUBMIT,
+                      self._on_request_change_password)
+            self.Bind(AccountTab.EVT_DISCONNECT_REQUEST, self.disconnect)
+            self.Bind(EVT_BUG_REPORT, self.send_bug_report)
+        except:
+            # wxPython hides OnInit's exceptions without any message.
+            # Bug always reproducible on Linux with wxPython Gtk2 (classic)
+            _logger.exception('Exception during BajooApp initialization')
+            raise
 
         return True
 
-    def _show_window(self, event):
+    @ensure_gui_thread
+    def _show_window(self, destination):
         """Catch event from tray icon, asking to show a window."""
         window = None
 
-        if event.target == AbstractTaskBarIcon.OPEN_HOME:
+        if destination == WindowDestination.HOME:
             self._show_home_window()
-        elif event.target == AbstractTaskBarIcon.OPEN_ABOUT:
+        elif destination == WindowDestination.ABOUT:
             window = self.get_window('_about_window', AboutBajooWindow)
-        elif event.target == AbstractTaskBarIcon.OPEN_SUSPEND:
+        elif destination == WindowDestination.SUSPEND:
             pass  # TODO: open window
-        elif event.target == AbstractTaskBarIcon.OPEN_INVITATION:
+        elif destination == WindowDestination.INVITATION:
             pass  # TODO: open window
-        elif event.target == AbstractTaskBarIcon.OPEN_SETTINGS:
+        elif destination == WindowDestination.SETTINGS:
             window = self.get_window('_main_window', MainWindow)
             window.show_settings_tab()
-        elif event.target == AbstractTaskBarIcon.OPEN_SHARES:
+        elif destination == WindowDestination.SHARES:
             window = self.get_window('_main_window', MainWindow)
             window.show_list_shares_tab()
-        elif event.target == AbstractTaskBarIcon.OPEN_DEV_CONTACT:
+        elif destination == WindowDestination.DEV_CONTACT:
             window = self.get_window('_contact_dev_window', BugReportWindow)
         else:
-            _logger.error('Unexpected "Open Window" event: %s' % event)
+            _logger.error('Unexpected "Navigation" destination: %s' %
+                          destination)
 
         if window:
             window.Show()
@@ -354,7 +369,8 @@ class BajooApp(wx.App):
             self._main_window.load_shares(self._container_list.get_list(),
                                           error_msg=error_msg, show_tab=False)
 
-    def _container_status_request(self, _event):
+    def _container_status_request(self):
+        """Update the task bar icon."""
 
         if not self._container_list:
             _logger.warning('the TaskBarIcon need the container list, '
@@ -362,22 +378,22 @@ class BajooApp(wx.App):
             return
 
         mapping = {
-            LocalContainer.STATUS_ERROR: AbstractTaskBarIcon.SYNC_ERROR,
-            LocalContainer.STATUS_PAUSED: AbstractTaskBarIcon.SYNC_PAUSE,
+            LocalContainer.STATUS_ERROR: ContainerStatusTBIcon.SYNC_ERROR,
+            LocalContainer.STATUS_PAUSED: ContainerStatusTBIcon.SYNC_PAUSE,
             LocalContainer.STATUS_QUOTA_EXCEEDED:
-            AbstractTaskBarIcon.SYNC_ERROR,
+                ContainerStatusTBIcon.SYNC_ERROR,
             LocalContainer.STATUS_WAIT_PASSPHRASE:
-            AbstractTaskBarIcon.SYNC_ERROR,
-            LocalContainer.STATUS_STOPPED: AbstractTaskBarIcon.SYNC_STOP,
-            LocalContainer.STATUS_UNKNOWN: AbstractTaskBarIcon.SYNC_PROGRESS
+                ContainerStatusTBIcon.SYNC_ERROR,
+            LocalContainer.STATUS_STOPPED: ContainerStatusTBIcon.SYNC_STOP,
+            LocalContainer.STATUS_UNKNOWN: ContainerStatusTBIcon.SYNC_PROGRESS
         }
         containers_status = []
         for container in self._container_list.get_list():
             if container.status == LocalContainer.STATUS_STARTED:
                 if container.is_up_to_date():
-                    status = AbstractTaskBarIcon.SYNC_DONE
+                    status = ContainerStatusTBIcon.SYNC_DONE
                 else:
-                    status = AbstractTaskBarIcon.SYNC_PROGRESS
+                    status = ContainerStatusTBIcon.SYNC_PROGRESS
             else:
                 status = mapping[container.status]
             row = (container.model.name, container.model.path, status)
@@ -696,7 +712,8 @@ class BajooApp(wx.App):
             if self._main_window:
                 self._main_window.on_password_changed()
 
-    def _exit(self, _event=None):
+    @ensure_gui_thread
+    def _exit(self):
         """Close all resources and quit the app."""
         if self._exit_flag:
             return
@@ -715,7 +732,7 @@ class BajooApp(wx.App):
         if self._contact_dev_window:
             self._contact_dev_window.Destroy()
 
-        self._task_bar_icon.Destroy()
+        self._task_bar_icon.destroy()
 
         if self._container_list:
             self._container_list.stop()
@@ -741,9 +758,9 @@ class BajooApp(wx.App):
             _logger.critical('Uncaught exception on Run process',
                              exc_info=True)
 
-        future = connect_or_register(self.create_home_window)
-        future.then(self._on_connection)
-        future.then(None, _on_unhandled_exception)
+        p = connect_or_register(self.create_home_window)
+        p = p.then(self._on_connection)
+        p.then(None, _on_unhandled_exception)
 
         _logger.debug('Start main loop')
         self.MainLoop()
@@ -774,26 +791,7 @@ class BajooApp(wx.App):
             self._session, self.user_profile, self._notifier.send_message,
             self._container_sync_pool.add,
             self._container_sync_pool.remove)
-        self._task_bar_icon.set_state(AbstractTaskBarIcon.SYNC_PROGRESS)
-
-    @ensure_gui_thread
-    def _on_global_status_change(self, status):
-        """The global status of container sync pool has changed.
-
-        We update the tray icon.
-        """
-        if not self._user:
-            return  # We are in a disconnection phase.
-
-        mapping = {
-            ContainerSyncPool.STATUS_PAUSE: AbstractTaskBarIcon.SYNC_PAUSE,
-            ContainerSyncPool.STATUS_SYNCING:
-            AbstractTaskBarIcon.SYNC_PROGRESS,
-            ContainerSyncPool.STATUS_UP_TO_DATE:
-            AbstractTaskBarIcon.SYNC_DONE
-        }
-        if self._task_bar_icon:
-            self._task_bar_icon.set_state(mapping[status])
+        self.app_status.value = AppStatus.SYNC_IN_PROGRESS
 
     def _on_sync_error(self, err):
         self._notifier.send_message(_('Sync error'), _(err), is_error=True)
@@ -815,13 +813,14 @@ class BajooApp(wx.App):
             self._main_window = None
 
         self._user = None
-        self._task_bar_icon.set_state(AbstractTaskBarIcon.NOT_CONNECTED)
         if self._passphrase_manager:
             self._passphrase_manager.remove_passphrase()
 
         self._container_sync_pool.stop()
+
+        self.app_status.value = AppStatus.NOT_CONNECTED
         self._container_sync_pool = ContainerSyncPool(
-            self._on_global_status_change, self._on_sync_error)
+            self.app_status, self._on_sync_error)
         self._container_list.stop()
         self._container_list = None
 
@@ -969,4 +968,4 @@ class BajooApp(wx.App):
             return
         _logger.info('Restart Bajoo now.')
         self._updater.register_restart_on_exit()
-        self._exit(None)
+        self._exit().result()

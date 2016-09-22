@@ -185,11 +185,11 @@ class _EncryptionProcess(object):
         # The best way to deal with that is to reset all handlers, then
         # re-adding them.
         log.reset()
-        config.load()
-        log.set_debug_mode(config.get('debug_mode'))
-        log.set_logs_level(config.get('log_levels'))
 
         with log.Context('encryption-process.log'):
+            config.load()
+            log.set_debug_mode(config.get('debug_mode'))
+            log.set_logs_level(config.get('log_levels'))
             parent_in.close()
             self._output = child_output
             self._input = Client(input_address, None,

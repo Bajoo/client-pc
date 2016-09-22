@@ -111,4 +111,4 @@ class TestGenericExecutor(object):
         context = CustomContext()
         with GenericExecutor('test-name', 3, _worker, context) as e:
             assert e.context is context
-        assert context.customcontext is 3
+        assert context.custom_attribute is 3
