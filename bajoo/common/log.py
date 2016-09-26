@@ -297,7 +297,7 @@ class OutLogger(object):
 
     def write(self, txt):
         try:
-            logging.log(self._level, txt)
+            logging.log(self._level, txt.rstrip())
         except:
             pass  # There is nothing we can do.
 
