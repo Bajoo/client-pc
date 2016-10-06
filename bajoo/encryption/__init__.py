@@ -78,6 +78,7 @@ def _get_gpg_context():
             if e.errno == errno.ENOENT:
                 raise EncryptionError('GPG binary executable not found.')
             raise
+        _gpg.encoding = 'utf-8'
     return _gpg
 
 
