@@ -146,7 +146,7 @@ class IndexSaver(object):
         index = self.local_container.index.generate_dict()
 
         try:
-            tmp_index_file = NamedTemporaryFile(dir=get_cache_dir(),
+            tmp_index_file = NamedTemporaryFile(mode='w+', dir=get_cache_dir(),
                                                 delete=False)
             with tmp_index_file:
                 json.dump(index, tmp_index_file)
