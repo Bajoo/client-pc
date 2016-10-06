@@ -111,6 +111,10 @@ class RotatingLogHandler(logging.FileHandler):
         '$filename' is renamed into '$filename.$date.log'
         '$filename.$date.log' is renamed into '$filename.$date.1.log', and so
         on.
+
+        Args:
+            src (str): absolute path of the log file. ex: "/log/bajoo.log".
+            filename (str): full path, without extension. ex: "/log/bajoo".
         """
         if inc is 0:
             dest = '%s.%s%s' % (filename, str_date, extension)
@@ -195,7 +199,7 @@ class RotatingLogHandler(logging.FileHandler):
         filename, extension = os.path.splitext(self.baseFilename)
 
         self.rollover(self.baseFilename, filename, str_date, extension)
-        self.remove_old_files(filename)
+        self.remove_old_files(os.path.basename(filename))
 
         self.stream = self._open()
         self.rollover_at = self.compute_next_rollover()
