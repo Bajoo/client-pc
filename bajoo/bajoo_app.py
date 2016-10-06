@@ -186,7 +186,7 @@ class BajooApp(wx.App):
         }
         set_proxy(event.proxy_mode, settings)
 
-    @ensure_gui_thread()
+    @ensure_gui_thread(safeguard=True)
     def _on_app_status_changes(self, value):
         if self._task_bar_icon:
             self._task_bar_icon.set_app_status(value)
@@ -305,7 +305,7 @@ class BajooApp(wx.App):
 
         return True
 
-    @ensure_gui_thread()
+    @ensure_gui_thread(safeguard=True)
     def _show_window(self, destination):
         """Catch event from tray icon, asking to show a window."""
         window = None
@@ -713,7 +713,7 @@ class BajooApp(wx.App):
             if self._main_window:
                 self._main_window.on_password_changed()
 
-    @ensure_gui_thread()
+    @ensure_gui_thread(safeguard=True)
     def _exit(self):
         """Close all resources and quit the app."""
         if self._exit_flag:
@@ -942,7 +942,7 @@ class BajooApp(wx.App):
         self.restart_when_idle(_already_bound=True,
                                _window_being_destroyed=window_being_destroyed)
 
-    @ensure_gui_thread()
+    @ensure_gui_thread(safeguard=True)
     def restart_when_idle(self, _already_bound=False,
                           _window_being_destroyed=None):
         # Under Windows, the window being destroyed during EVT_WINDOW_DESTROY
@@ -969,4 +969,4 @@ class BajooApp(wx.App):
             return
         _logger.info('Restart Bajoo now.')
         self._updater.register_restart_on_exit()
-        self._exit().result()
+        return self._exit()
