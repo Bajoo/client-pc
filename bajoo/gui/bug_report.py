@@ -54,7 +54,7 @@ class BugReportWindow(wx.Dialog):
             self.Destroy()
             event.Skip()
 
-    @ensure_gui_thread
+    @ensure_gui_thread()
     def set_error_message(self, message):
         """Display a message to the user in response of the form submission.
 
@@ -69,7 +69,7 @@ class BugReportWindow(wx.Dialog):
         dlg.ShowModal()
         dlg.Destroy()
 
-    @ensure_gui_thread
+    @ensure_gui_thread()
     def display_confirmation(self):
         """Display a confirmation message, then closes the window."""
         message = _('Your message has been sent to the developers. They will'

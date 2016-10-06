@@ -96,22 +96,22 @@ class MainWindow(wx.Frame, Translator):
             self._view.details_share_tab = None
             self._view.creation_shares_tab = None
 
-    @ensure_gui_thread
+    @ensure_gui_thread()
     def show_account_tab(self):
         """Make the account tab shown on top."""
         self._show_tab(MainWindow.ACCOUNT_TAB)
 
-    @ensure_gui_thread
+    @ensure_gui_thread()
     def show_list_shares_tab(self, refresh=True):
         """Make the share list tab shown on top."""
         self._show_tab(MainWindow.LIST_SHARES_TAB, {'refresh': refresh})
 
-    @ensure_gui_thread
+    @ensure_gui_thread()
     def show_creation_shares_tab(self):
         """Make the creation share tab shown on top."""
         self._show_share_tab(self._view.creation_shares_tab)
 
-    @ensure_gui_thread
+    @ensure_gui_thread()
     def show_details_share_tab(self, share):
         self._show_share_tab(self._view.details_share_tab)
         self._view.details_share_tab.set_data(share)
@@ -120,7 +120,7 @@ class MainWindow(wx.Frame, Translator):
         """Make the Settings tab shown on top."""
         self._show_tab(MainWindow.SETTINGS_TAB)
 
-    @ensure_gui_thread
+    @ensure_gui_thread()
     def set_account_info(self, account_info):
         """
         Args:
@@ -132,7 +132,7 @@ class MainWindow(wx.Frame, Translator):
 
             self._view.account_tab.populate()
 
-    @ensure_gui_thread
+    @ensure_gui_thread()
     def load_shares(self, shares, success_msg=None, error_msg=None,
                     show_tab=True):
         """
@@ -174,20 +174,20 @@ class MainWindow(wx.Frame, Translator):
                 self._view.details_share_tab.set_data(
                     container, success_msg, error_msg)
 
-    @ensure_gui_thread
+    @ensure_gui_thread()
     def set_share_details(self, share_details):
         if self._view.details_share_tab:
             self._view.details_share_tab.set_data(share_details)
 
-    @ensure_gui_thread
+    @ensure_gui_thread()
     def load_config(self, config):
         self._view.settings_tab.load_config(config)
 
-    @ensure_gui_thread
+    @ensure_gui_thread()
     def on_new_share_created(self, new_share):
         self.show_list_shares_tab()
 
-    @ensure_gui_thread
+    @ensure_gui_thread()
     def on_share_member_added(self, share, email, permission, message=None):
         if self._view.details_share_tab:
             self._view.details_share_tab.enable()
@@ -229,7 +229,7 @@ class MainWindow(wx.Frame, Translator):
                 if message:
                     self._view.details_share_tab.show_error_message(message)
 
-    @ensure_gui_thread
+    @ensure_gui_thread()
     def on_quit_or_delete_share(self, share):
         """
         After quit or delete successfully a share,
@@ -247,12 +247,12 @@ class MainWindow(wx.Frame, Translator):
         if share:
             self.show_list_shares_tab()
 
-    @ensure_gui_thread
+    @ensure_gui_thread()
     def on_password_changed(self):
         if self._view.account_tab:
             self._view.account_tab.on_password_change_success()
 
-    @ensure_gui_thread
+    @ensure_gui_thread()
     def on_password_change_error(self, message):
         if self._view.account_tab:
             self._view.account_tab.show_password_change_error(message)

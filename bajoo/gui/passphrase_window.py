@@ -81,7 +81,7 @@ class PassphraseWindow(wx.Dialog):
         return cls._ask_passphrase(is_retry).result()
 
     @classmethod
-    @ensure_gui_thread
+    @ensure_gui_thread()
     def _ask_passphrase(cls, is_retry):
         window = cls(is_retry)
         passphrase = None

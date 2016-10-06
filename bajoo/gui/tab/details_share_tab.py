@@ -209,7 +209,7 @@ class DetailsShareTab(BaseForm):
 
         self.FindWindow('btn_browse_location').Enable(not do_not_sync)
 
-    @ensure_gui_thread
+    @ensure_gui_thread()
     def set_data(self, share, success_msg=None, error_msg=None):
         """Display data received about the container.
 
@@ -300,7 +300,7 @@ class DetailsShareTab(BaseForm):
 
         self.Layout()
 
-    @ensure_gui_thread
+    @ensure_gui_thread()
     def _refresh_admin_controls(self):
         show_share_options = \
             self._share.container and type(self._share.container) is TeamShare
@@ -653,7 +653,7 @@ def main():
             'space': 260000000
         }
 
-    @ensure_gui_thread
+    @ensure_gui_thread()
     def load_data_to_view(_future_result):
         global share
         win.Show(True)

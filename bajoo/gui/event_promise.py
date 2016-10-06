@@ -82,32 +82,38 @@ class EventPromise(Promise):
                 return False
 
 
-def ensure_gui_thread(f):
+def ensure_gui_thread(safeguard=False):
     """Ensure the function will always be called in the GUI thread.
 
     This decorator will execute the function only in the GUI thread.
     If we are not in the right thread, it will delay the execution (using
     wx.PostEvent).
 
+    Args:
+        safeguard (boolean): if True, use `Promise.safeguard()` on the
+            resulting promise.
     Returns:
         Promise: a Promise fulfilled with the return value of the function
             decorated. If the function raise an exception, the promise is
             rejected.
     """
 
-    RunEvent, EVT_RUN = NewEvent()
-    handler = wx.EvtHandler()
+    def decorator(f):
+        RunEvent, EVT_RUN = NewEvent()
+        handler = wx.EvtHandler()
 
-    def wrapper(*args, **kwargs):
-        if wx.IsMainThread():
-            try:
-                return Promise.resolve(f(*args, **kwargs))
-            except BaseException as error:
-                return Promise.reject(error)
-        else:
-            future = EventPromise(handler, EVT_RUN)
-            future = future.then(lambda _evt: f(*args, **kwargs))
-            wx.PostEvent(handler, RunEvent())
-            return future
-
-    return wrapper
+        def wrapper(*args, **kwargs):
+            if wx.IsMainThread():
+                try:
+                    p = Promise.resolve(f(*args, **kwargs))
+                except BaseException as error:
+                    p = Promise.reject(error)
+            else:
+                p = EventPromise(handler, EVT_RUN)
+                p = p.then(lambda _evt: f(*args, **kwargs))
+                wx.PostEvent(handler, RunEvent())
+            if safeguard:
+                p.safeguard()
+            return p
+        return wrapper
+    return decorator

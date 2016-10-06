@@ -38,7 +38,7 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
             event.Veto()
             self.Hide()
 
-    @ensure_gui_thread
+    @ensure_gui_thread()
     def wait_activation(self):
         self._view.set_screen(ActivationScreen)
         self._view.current_screen.reset_form()
@@ -54,7 +54,7 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
         f = EventPromise(self, ActivationScreen.EVT_ACTIVATION_DONE)
         return f.then(callback)
 
-    @ensure_gui_thread
+    @ensure_gui_thread()
     def ask_for_settings(self, folder_setting=True, key_setting=True,
                          root_folder_error=None, gpg_error=None):
         self._view.set_screen(SetupConfigScreen)
@@ -68,7 +68,7 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
                                     data.passphrase,
                                     data.allow_save_on_disk))
 
-    @ensure_gui_thread
+    @ensure_gui_thread()
     def get_register_or_connection_credentials(self, last_username=None,
                                                errors=None):
 
@@ -88,7 +88,7 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
             EventPromise(self, HomeScreen.EVT_REGISTER_SUBMIT),
         ]).then(callback)
 
-    @ensure_gui_thread
+    @ensure_gui_thread()
     def inform_user_is_connected(self):
         self._notify(_('connection successful'),
                      _("You've been successfully connected."))
