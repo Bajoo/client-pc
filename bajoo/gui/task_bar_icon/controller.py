@@ -83,12 +83,15 @@ class Controller(TaskBarIconBaseController):
     def navigate_action(self, destination):
         _logger.debug('Navigate action to %s', destination)
 
-        if destination in (WindowDestination.CLIENT_SPACE,
-                           WindowDestination.ONLINE_HELP):
-            if destination is WindowDestination.CLIENT_SPACE:
-                webbrowser.open('https://www.bajoo.fr/client_space')
-            else:
-                webbrowser.open(_('https://www.bajoo.fr/help'))
+        web_navigation_mapping = {
+            WindowDestination.CLIENT_SPACE:
+                'https://www.bajoo.fr/client_space',
+            WindowDestination.ONLINE_HELP: _('https://www.bajoo.fr/help'),
+            WindowDestination.BAJOO_DROP: 'https://drop.bajoo.fr'
+        }
+
+        if destination in web_navigation_mapping:
+            webbrowser.open(web_navigation_mapping[destination])
         else:
             self.navigate.fire(destination)
 

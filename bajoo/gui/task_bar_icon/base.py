@@ -13,6 +13,7 @@ class WindowDestination(object):
     DEV_CONTACT = 'DEV_CONTACT'
     CLIENT_SPACE = 'CLIENT_SPACE'
     ONLINE_HELP = 'ONLINE_HELP'
+    BAJOO_DROP = 'BAJOO_DROP'
 
 
 class ContainerStatus(object):

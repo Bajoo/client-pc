@@ -146,7 +146,8 @@ class MenuEntry(object):
     def _unauthenticated_menu_part(cls):
         """TaskBarIcon's menu part, only present when user is not logged."""
         return [
-            cls(_('Login window'), target=WindowDestination.HOME)
+            cls(_('Login window'), target=WindowDestination.HOME),
+            cls('Bajoo Drop', target=WindowDestination.BAJOO_DROP)
         ]
 
     @classmethod
@@ -160,14 +161,15 @@ class MenuEntry(object):
 
         return [
             container_menu,
-            cls(_('Suspend synchronization'), enabled=False,
-                target=WindowDestination.SUSPEND),
+            # cls(_('Suspend synchronization'), enabled=False,
+            #     target=WindowDestination.SUSPEND),
             cls(_('Manage my folders...'), target=WindowDestination.SHARES),
             cls.Separator,
-            cls(_('My client space'), enabled=False,
-                target=WindowDestination.CLIENT_SPACE),
-            cls(_('Invite a friend on Bajoo'), enabled=False,
-                target=WindowDestination.INVITATION),
+            # cls(_('My client space'), enabled=False,
+            #     target=WindowDestination.CLIENT_SPACE),
+            # cls(_('Invite a friend on Bajoo'), enabled=False,
+            #     target=WindowDestination.INVITATION),
+            cls('Bajoo Drop', target=WindowDestination.BAJOO_DROP),
             cls(_('Online help'), target=WindowDestination.ONLINE_HELP),
             cls.Separator,
             cls(_('Settings ...'), target=WindowDestination.SETTINGS)
