@@ -17,129 +17,125 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: Poedit 1.5.4\n"
 
-#: bajoo/api/session.py:29
+#: bajoo/api/session.py:34
 msgid "The authentication server has returned invalid data."
 msgstr ""
 
-#: bajoo/bajoo_app.py:161
+#: bajoo/bajoo_app.py:162
 msgid ""
 "Another instance of Bajoo is actually running.\n"
 "You can't open Bajoo twice."
 msgstr ""
 
 # TODO translate me
-#: bajoo/bajoo_app.py:163
+#: bajoo/bajoo_app.py:164
 msgid "Bajoo already started"
 msgstr ""
 
-#: bajoo/bajoo_app.py:355
+#: bajoo/bajoo_app.py:367
 #, python-format
 msgid "Error occurred: %s."
 msgstr "错误 : %s"
 
-#: bajoo/bajoo_app.py:439
+#: bajoo/bajoo_app.py:452
 msgid ""
 "Cannot add this member to team share; maybe this account does not exist."
 msgstr "该团队共享文件无法加入; 可能该账户已不存在。 "
 
-#: bajoo/bajoo_app.py:449
+#: bajoo/bajoo_app.py:462
 #, python-format
 msgid "%(email)s has been given access to team share '%(name)s'"
 msgstr "%(email)s 以获准进入团队共享 '%(name)s'"
 
-#: bajoo/bajoo_app.py:456
+#: bajoo/bajoo_app.py:469
 msgid "Unidentified container, cannot add member"
 msgstr "无法辨认身份，不能添加成员"
 
-#: bajoo/bajoo_app.py:471
+#: bajoo/bajoo_app.py:484
 msgid "Cannot remove this member from this team share."
 msgstr "无法从该团队共享移除此成员"
 
-#: bajoo/bajoo_app.py:478
+#: bajoo/bajoo_app.py:491
 #, python-format
 msgid "%(email)s's access to team share '%(name)s' has been removed."
 msgstr "%(email)s 进入团队共享 '%(name)s' 已被移除."
 
-#: bajoo/bajoo_app.py:485
+#: bajoo/bajoo_app.py:498
 msgid "Unidentified container, cannot remove member"
 msgstr "无法辨认身份，不能移除成员"
 
-#: bajoo/bajoo_app.py:518
+#: bajoo/bajoo_app.py:531
 #, python-format
 msgid "Cannot create share %s"
 msgstr "创建共享失败 %s。"
 
-#: bajoo/bajoo_app.py:533
+#: bajoo/bajoo_app.py:546
 msgid ""
 "Some members cannot be added to this team share. Please verify the email "
 "addresses."
 msgstr "一些成员不能加入到该团队共享。 请检查一下电子邮件地址。"
 
-#: bajoo/bajoo_app.py:535
+#: bajoo/bajoo_app.py:548
 #, python-format
 msgid "Team share %s has been successfully created"
 msgstr "团队共享 %s 已成功建立。"
 
-#: bajoo/bajoo_app.py:579
+#: bajoo/bajoo_app.py:592
 msgid "This folder has been succesfully moved to the new location."
 msgstr "该文件夹已成功被移动"
 
-#: bajoo/bajoo_app.py:586
+#: bajoo/bajoo_app.py:599
 msgid "The synchronization of this share is stopped."
 msgstr "该共享同步已停止"
 
-#: bajoo/bajoo_app.py:592
+#: bajoo/bajoo_app.py:605
 #, fuzzy
 msgid "The synchronization of this share has restarted."
 msgstr "该共享同步已重新开始"
 
-#: bajoo/bajoo_app.py:611 bajoo/gui/bug_report.py:66
+#: bajoo/bajoo_app.py:624 bajoo/gui/bug_report.py:67
 #: bajoo/local_container.py:52
 msgid "Error"
 msgstr "错误"
 
-#: bajoo/bajoo_app.py:612
+#: bajoo/bajoo_app.py:625
 #, python-format
 msgid "An error occured when trying to quit team share %s."
 msgstr "试图退出团队共享时出现错误 %s。"
 
-#: bajoo/bajoo_app.py:623 bajoo/gui/common/message_box.py:34
+#: bajoo/bajoo_app.py:636 bajoo/gui/common/message_box.py:34
 msgid "Quit team share"
 msgstr "退出团队共享"
 
-#: bajoo/bajoo_app.py:624 bajoo/bajoo_app.py:630
+#: bajoo/bajoo_app.py:637 bajoo/bajoo_app.py:643
 #, python-format
 msgid "You have no longer access to team share %s."
 msgstr "您不能再进入团队共享 %s。"
 
-#: bajoo/bajoo_app.py:648
+#: bajoo/bajoo_app.py:661
 msgid "A team share has been successfully deleted from server."
 msgstr "一个团队共享成功在服务器上删除。"
 
-#: bajoo/bajoo_app.py:653
+#: bajoo/bajoo_app.py:666
 #, python-format
 msgid "Team share %s cannot be deleted from server."
 msgstr "无法删除服务器上的 %s 团队共享文件。"
 
-#: bajoo/bajoo_app.py:672
+#: bajoo/bajoo_app.py:685
 msgid "Beta tester account"
 msgstr "Beta测试账号"
 
-#: bajoo/bajoo_app.py:693
+#: bajoo/bajoo_app.py:706
 msgid "Failure when attempting to change password."
 msgstr "更改密码失败"
 
-#: bajoo/bajoo_app.py:800
+#: bajoo/bajoo_app.py:798
 msgid "Sync error"
 msgstr "同步出错"
 
-#: bajoo/bajoo_app.py:888
+#: bajoo/bajoo_app.py:887
 msgid "An error happened! Consult the logs for more details"
 msgstr ""
-
-#: bajoo/common/i18n.py:114
-msgid "Auto"
-msgstr "自动"
 
 #: bajoo/common/util.py:10
 msgid "B"
@@ -177,31 +173,31 @@ msgstr ""
 msgid "ZB"
 msgstr ""
 
-#: bajoo/connection_registration_process.py:220
+#: bajoo/connection_registration_process.py:216
 msgid ""
 "This program's version is no longer supported by Bajoo service. Please "
 "update to continue.\n"
 msgstr "这个版本将不再被Bajoo服务器支持。请更新。\n"
 
-#: bajoo/connection_registration_process.py:224
+#: bajoo/connection_registration_process.py:220
 msgid "Invalid username or password."
 msgstr "无效用户名或密码。"
 
-#: bajoo/connection_registration_process.py:226
+#: bajoo/connection_registration_process.py:222
 msgid "There is already an account with this email."
 msgstr "此电子邮件账户已存在。"
 
-#: bajoo/connection_registration_process.py:236
+#: bajoo/connection_registration_process.py:232
 #, python-format
 msgid "An error occurred: %s"
 msgstr "发生错误 : %s"
 
-#: bajoo/connection_registration_process.py:347
+#: bajoo/connection_registration_process.py:343
 #, python-format
 msgid "Error: %s"
 msgstr "错误: %s"
 
-#: bajoo/connection_registration_process.py:350
+#: bajoo/connection_registration_process.py:346
 #, python-format
 msgid ""
 "Error when applying the Bajoo root folder config:\n"
@@ -210,11 +206,11 @@ msgstr ""
 "Bajoo根文件配置应用错误 :\n"
 " %s"
 
-#: bajoo/connection_registration_process.py:361
+#: bajoo/connection_registration_process.py:357
 msgid "You haven't yet registered a GPG key."
 msgstr "您还没有输入GPG密钥。"
 
-#: bajoo/connection_registration_process.py:369
+#: bajoo/connection_registration_process.py:365
 #, python-format
 msgid ""
 "Error during the GPG key check:\n"
@@ -223,36 +219,36 @@ msgstr ""
 "GPG密钥检查过程中出错 :\n"
 " %s"
 
-#: bajoo/connection_registration_process.py:393
+#: bajoo/connection_registration_process.py:389
 #, fuzzy, python-format
 msgid "%s doesn't exist, or is not a directory"
 msgstr "%s 不存在，或者不是一个文件夹。"
 
-#: bajoo/connection_registration_process.py:398
+#: bajoo/connection_registration_process.py:394
 #, python-format
 msgid "%s has not the read and/or write permissions."
 msgstr "%s 没有权利阅读和/或编辑。"
 
-#: bajoo/connection_registration_process.py:427
+#: bajoo/connection_registration_process.py:423
 #: bajoo/gui/tab/creation_share_tab.py:132
 #: bajoo/gui/tab/details_share_tab.py:132 bajoo/local_container.py:134
 msgid "Shares"
 msgstr "我的共享"
 
-#: bajoo/container_sync_pool.py:92 bajoo/container_sync_pool.py:154
+#: bajoo/container_sync_pool.py:94 bajoo/container_sync_pool.py:156
 #: bajoo/container_sync_pool.py:205
 msgid "No passphrase set.  Syncing is disabled"
 msgstr "没有设定密令，同步无效"
 
-#: bajoo/container_sync_pool.py:138
+#: bajoo/container_sync_pool.py:140
 msgid "No passphrase set.  Cyphered containers will be paused"
 msgstr "没有设定密令，加密将被暂停"
 
-#: bajoo/container_sync_pool.py:354
+#: bajoo/container_sync_pool.py:350
 msgid "Quota limit reached"
 msgstr "已达到配额限制"
 
-#: bajoo/container_sync_pool.py:358
+#: bajoo/container_sync_pool.py:354
 msgid ""
 "Your quota has exceeded. All upload operations are delayed in the next 5 "
 "minutes."
@@ -337,7 +333,7 @@ msgid ""
 "Either the shares have been deleted, or your permissions have been revoked."
 msgstr "共享已被删除或您的权限已被撤销。"
 
-#: bajoo/encryption/errors.py:31
+#: bajoo/encryption/errors.py:36
 msgid "The passphrase request has been rejected by the user."
 msgstr "该密令请求已被用户拒绝"
 
@@ -358,35 +354,35 @@ msgid ""
 "%(error)s"
 msgstr "文件同步时出错 \"%(filename)s\" 在 文件夹 \"%(name)s\":%(error)s"
 
-#: bajoo/gui/about_window.py:105 bajoo/gui/about_window.py:293
+#: bajoo/gui/about_window.py:105 bajoo/gui/about_window.py:287
 msgid "Official software for Bajoo online storage service."
 msgstr "对于Bajoo在线存储服务版"
 
-#: bajoo/gui/about_window.py:109 bajoo/gui/about_window.py:295
+#: bajoo/gui/about_window.py:109 bajoo/gui/about_window.py:289
 msgid "Version: "
 msgstr "官方客户端 :"
 
-#: bajoo/gui/about_window.py:121 bajoo/gui/about_window.py:296
+#: bajoo/gui/about_window.py:121 bajoo/gui/about_window.py:290
 msgid "This software is distributed under the terms of the MIT License."
 msgstr "这个软件是在MIT许可证下发布。"
 
-#: bajoo/gui/about_window.py:126 bajoo/gui/about_window.py:298
+#: bajoo/gui/about_window.py:126 bajoo/gui/about_window.py:292
 msgid "It is freely redistributable, the source code is available"
 msgstr "它是可自由配置的, 源代码是可用的"
 
-#: bajoo/gui/about_window.py:130 bajoo/gui/about_window.py:300
+#: bajoo/gui/about_window.py:130 bajoo/gui/about_window.py:294
 msgid "on GitHub."
 msgstr "在 GitHub."
 
-#: bajoo/gui/about_window.py:136 bajoo/gui/about_window.py:301
+#: bajoo/gui/about_window.py:136 bajoo/gui/about_window.py:295
 msgid "Bajoo is a registered trademark."
 msgstr "Bajoo的注册商标。"
 
-#: bajoo/gui/about_window.py:139 bajoo/gui/about_window.py:302
+#: bajoo/gui/about_window.py:139 bajoo/gui/about_window.py:296
 msgid "www.bajoo.fr"
 msgstr ""
 
-#: bajoo/gui/about_window.py:143 bajoo/gui/about_window.py:303
+#: bajoo/gui/about_window.py:143 bajoo/gui/about_window.py:297
 msgid "List of frequently asked questions."
 msgstr "常见问题列表"
 
@@ -394,42 +390,41 @@ msgstr "常见问题列表"
 msgid "If you have a new question, feel free to "
 msgstr "如果你有新的问题，请随意的"
 
-#: bajoo/gui/about_window.py:152 bajoo/gui/about_window.py:306
+#: bajoo/gui/about_window.py:152 bajoo/gui/about_window.py:300
 msgid "contact us"
 msgstr "联系我们"
 
-#: bajoo/gui/about_window.py:158 bajoo/gui/about_window.py:307
+#: bajoo/gui/about_window.py:158 bajoo/gui/about_window.py:301
 msgid " or "
 msgstr "或者"
 
 # TODO translate me (message changed)
-#: bajoo/gui/about_window.py:161 bajoo/gui/about_window.py:308
+#: bajoo/gui/about_window.py:161 bajoo/gui/about_window.py:302
 msgid "report a problem."
 msgstr "联系我们的开发者团队。"
 
-#: bajoo/gui/about_window.py:167 bajoo/gui/about_window.py:309
+#: bajoo/gui/about_window.py:167 bajoo/gui/about_window.py:303
 msgid "Bajoo uses the following libraries:"
 msgstr "Bajoo使用以下库 :"
 
-#: bajoo/gui/about_window.py:290
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:144
+#: bajoo/gui/about_window.py:284
+#: bajoo/gui/task_bar_icon/common_view_data.py:219
 msgid "About Bajoo"
 msgstr "关于Bajoo"
 
-#: bajoo/gui/about_window.py:305
+#: bajoo/gui/about_window.py:299
 msgid "If you have a new question, feel free to"
 msgstr "如果您有新的问题，请向我们提出"
 
-#: bajoo/gui/base_view.py:120 bajoo/gui/bug_report.py:122
-#: bajoo/gui/form/change_password_form.py:132
-#: bajoo/gui/passphrase_window.py:49 bajoo/gui/proxy_window.py:73
-#: bajoo/gui/tab/creation_share_tab.py:188
+#: bajoo/gui/base_view.py:120 bajoo/gui/bug_report.py:146
+#: bajoo/gui/form/change_password_form.py:132 bajoo/gui/passphrase_window.py:50
+#: bajoo/gui/proxy_window.py:73 bajoo/gui/tab/creation_share_tab.py:188
 #: bajoo/gui/tab/details_share_tab.py:604
 msgid "Cancel"
 msgstr "取消"
 
 #: bajoo/gui/base_view.py:121 bajoo/gui/form/change_password_form.py:133
-#: bajoo/gui/passphrase_window.py:48 bajoo/gui/proxy_window.py:76
+#: bajoo/gui/passphrase_window.py:49 bajoo/gui/proxy_window.py:76
 msgid "OK"
 msgstr "可以"
 
@@ -437,55 +432,75 @@ msgstr "可以"
 msgid "Apply"
 msgstr "应用"
 
-#: bajoo/gui/bug_report.py:35
+#: bajoo/gui/bug_report.py:36
 #, fuzzy
 msgid "The bug description is required"
 msgstr "需要错误描述"
 
-#: bajoo/gui/bug_report.py:39
+#: bajoo/gui/bug_report.py:40
 #, fuzzy
 msgid "The email field is required"
 msgstr "必填项"
 
-#: bajoo/gui/bug_report.py:43
+#: bajoo/gui/bug_report.py:44
 #, fuzzy
 msgid "The email must be valid."
 msgstr "该电子邮件无效。"
 
-#: bajoo/gui/bug_report.py:74
+#: bajoo/gui/bug_report.py:75
 msgid ""
 "Your message has been sent to the developers. They will reply to you by "
 "email."
 msgstr ""
 
-#: bajoo/gui/bug_report.py:78
+#: bajoo/gui/bug_report.py:79
 msgid "Bug report sent!"
 msgstr ""
 
-#: bajoo/gui/bug_report.py:91
+#: bajoo/gui/bug_report.py:92
 msgid "Send a message to the developers"
 msgstr "给开发者发送信息"
 
-#: bajoo/gui/bug_report.py:96
+#: bajoo/gui/bug_report.py:102
+msgid ""
+"The configuration of your Bajoo client and its log files will be attached to "
+"your message.\n"
+"Please note that this is not a support channel and that no response will be "
+"made in this way. For inquiries, please contact support by email:"
+msgstr ""
+
+#: bajoo/gui/bug_report.py:114
+msgid "support-en@bajoo.fr"
+msgstr ""
+
+#: bajoo/gui/bug_report.py:118
+msgid "mailto:support-en@bajoo.fr"
+msgstr ""
+
+#: bajoo/gui/bug_report.py:120
 #, fuzzy
 msgid "Email:"
 msgstr "电子邮件"
 
-#: bajoo/gui/bug_report.py:105
+#: bajoo/gui/bug_report.py:129
 msgid "Write your message here: "
 msgstr "在这里写下你的留言："
 
-#: bajoo/gui/bug_report.py:116
+#: bajoo/gui/bug_report.py:140
 msgid "Settings and log files will be joined to your message."
 msgstr "设定和日志文件夹将会被加入到你的留言当中。"
 
-#: bajoo/gui/bug_report.py:126
+#: bajoo/gui/bug_report.py:150
 msgid "Send"
 msgstr "发送"
 
 #: bajoo/gui/change_password_window.py:27
 msgid "Bajoo - Change password"
 msgstr "Bajoo - 更改密码"
+
+#: bajoo/gui/common/language_box.py:32 bajoo/gui/common/language_box.py:56
+msgid "Auto"
+msgstr "自动"
 
 #: bajoo/gui/common/message_box.py:10
 msgid "No"
@@ -671,21 +686,21 @@ msgstr "创建新的共享"
 msgid "Folder details"
 msgstr "详细信息"
 
-#: bajoo/gui/passphrase_window.py:46
+#: bajoo/gui/passphrase_window.py:47
 msgid "Invalid passphrase!"
 msgstr "密码无效 !"
 
-#: bajoo/gui/passphrase_window.py:99
+#: bajoo/gui/passphrase_window.py:101
 msgid "Bajoo - Ask for passphrase"
 msgstr "Bajoo - 要求密令"
 
-#: bajoo/gui/passphrase_window.py:128
+#: bajoo/gui/passphrase_window.py:130
 msgid ""
 "Enter your Bajoo pasphrase to start the synchronization of your encrypted "
 "files."
 msgstr "输入您的Bajoo密码开始同步您的 加密文件。"
 
-#: bajoo/gui/passphrase_window.py:134
+#: bajoo/gui/passphrase_window.py:136
 #: bajoo/gui/screen/setup_config_screen.py:144
 msgid "Memorize the passphrase"
 msgstr "存储我的密码"
@@ -814,103 +829,103 @@ msgstr "重新设置我的密令"
 msgid "Change password"
 msgstr "更改您的密码"
 
-#: bajoo/gui/tab/advanced_settings_tab.py:161
+#: bajoo/gui/tab/advanced_settings_tab.py:160
 #, fuzzy, python-format
 msgid "Actual version: %s"
 msgstr "当前版本: %s"
 
-#: bajoo/gui/tab/advanced_settings_tab.py:162
+#: bajoo/gui/tab/advanced_settings_tab.py:161
 #, fuzzy
 msgid "Automatically send crash reports to Bajoo"
 msgstr "自动发送错误报告"
 
-#: bajoo/gui/tab/advanced_settings_tab.py:163
+#: bajoo/gui/tab/advanced_settings_tab.py:162
 msgid "Activate debug mode"
 msgstr "启动除错程序"
 
-#: bajoo/gui/tab/advanced_settings_tab.py:164
+#: bajoo/gui/tab/advanced_settings_tab.py:163
 msgid "Apply the updates automatically"
 msgstr "自动更新应用"
 
-#: bajoo/gui/tab/advanced_settings_tab.py:165
+#: bajoo/gui/tab/advanced_settings_tab.py:164
 msgid "Don't synchronize hidden files"
 msgstr "不同步隐藏文件"
 
-#: bajoo/gui/tab/advanced_settings_tab.py:166
+#: bajoo/gui/tab/advanced_settings_tab.py:165
 msgid "Updates"
 msgstr "更新"
 
-#: bajoo/gui/tab/advanced_settings_tab.py:196
+#: bajoo/gui/tab/advanced_settings_tab.py:195
 #, fuzzy
 msgid "Check updates"
 msgstr "检查更新"
 
-#: bajoo/gui/tab/advanced_settings_tab.py:210
+#: bajoo/gui/tab/advanced_settings_tab.py:209
 msgid "Restart"
 msgstr ""
 
-#: bajoo/gui/tab/advanced_settings_tab.py:240
+#: bajoo/gui/tab/advanced_settings_tab.py:239
 msgid "Checking last update available ..."
 msgstr ""
 
-#: bajoo/gui/tab/advanced_settings_tab.py:241
+#: bajoo/gui/tab/advanced_settings_tab.py:240
 msgid ""
 "Automatic Bajoo updates are available only for the packaged Windows version."
 msgstr ""
 
-#: bajoo/gui/tab/advanced_settings_tab.py:243
+#: bajoo/gui/tab/advanced_settings_tab.py:242
 msgid "Update attempt has been aborted."
 msgstr ""
 
-#: bajoo/gui/tab/advanced_settings_tab.py:244
+#: bajoo/gui/tab/advanced_settings_tab.py:243
 msgid "Your software is up to date."
 msgstr ""
 
-#: bajoo/gui/tab/advanced_settings_tab.py:245
+#: bajoo/gui/tab/advanced_settings_tab.py:244
 msgid "Searching new updates ..."
 msgstr ""
 
-#: bajoo/gui/tab/advanced_settings_tab.py:246
+#: bajoo/gui/tab/advanced_settings_tab.py:245
 #, python-format
 msgid "New version found: %s"
 msgstr ""
 
-#: bajoo/gui/tab/advanced_settings_tab.py:247
+#: bajoo/gui/tab/advanced_settings_tab.py:246
 msgid "Downloading the new version ..."
 msgstr ""
 
-#: bajoo/gui/tab/advanced_settings_tab.py:248
+#: bajoo/gui/tab/advanced_settings_tab.py:247
 #, fuzzy
 msgid "Retrying after an error happened ..."
 msgstr "发生错误 :("
 
-#: bajoo/gui/tab/advanced_settings_tab.py:249
+#: bajoo/gui/tab/advanced_settings_tab.py:248
 #, fuzzy, python-format
 msgid ""
 "An error happened:\n"
 "%s"
 msgstr "发生错误 : %s"
 
-#: bajoo/gui/tab/advanced_settings_tab.py:250
+#: bajoo/gui/tab/advanced_settings_tab.py:249
 msgid "New version ready to be installed ..."
 msgstr ""
 
-#: bajoo/gui/tab/advanced_settings_tab.py:251
+#: bajoo/gui/tab/advanced_settings_tab.py:250
 #, fuzzy
 msgid "Install in progress ..."
 msgstr "正在连接中 ..."
 
-#: bajoo/gui/tab/advanced_settings_tab.py:252
+#: bajoo/gui/tab/advanced_settings_tab.py:251
 msgid "Cleaning up old files"
 msgstr ""
 
-#: bajoo/gui/tab/advanced_settings_tab.py:253
+#: bajoo/gui/tab/advanced_settings_tab.py:252
 #, python-format
 msgid ""
 "Bajoo has been updated to version %s. It must be restarted to apply changes."
 msgstr ""
 
-#: bajoo/gui/tab/advanced_settings_tab.py:265 bajoo/gui/tab/settings_tab.py:94
+#: bajoo/gui/tab/advanced_settings_tab.py:264 bajoo/gui/tab/settings_tab.py:94
 msgid "Advanced settings"
 msgstr "高级设置"
 
@@ -956,8 +971,7 @@ msgstr "共享名"
 msgid "<< Back to share list"
 msgstr "<< 返回共享目录"
 
-#: bajoo/gui/tab/creation_share_tab.py:208
-#: bajoo/gui/tab/list_shares_tab.py:245
+#: bajoo/gui/tab/creation_share_tab.py:208 bajoo/gui/tab/list_shares_tab.py:245
 msgid "New share"
 msgstr "新的共享"
 
@@ -1024,20 +1038,20 @@ msgstr "该文件夹已存在"
 msgid "Share Details"
 msgstr "共享详细信息"
 
-#: bajoo/gui/tab/general_settings_tab.py:133
+#: bajoo/gui/tab/general_settings_tab.py:134
 msgid "Launch Bajoo at system startup"
 msgstr "开机启动Bajoo"
 
-#: bajoo/gui/tab/general_settings_tab.py:134
+#: bajoo/gui/tab/general_settings_tab.py:135
 msgid "Activate status icon and the contextual menu"
 msgstr "激活状态图标和上下文菜单"
 
-#: bajoo/gui/tab/general_settings_tab.py:136
+#: bajoo/gui/tab/general_settings_tab.py:137
 #, fuzzy
 msgid "Display a notification when file download is finished"
 msgstr "当文件下载完成时显示通知 "
 
-#: bajoo/gui/tab/general_settings_tab.py:138
+#: bajoo/gui/tab/general_settings_tab.py:139
 msgid "Language"
 msgstr "语言"
 
@@ -1075,41 +1089,57 @@ msgstr "一般设置"
 msgid "Network settings"
 msgstr "网络设置"
 
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:47
+#: bajoo/gui/task_bar_icon/common_view_data.py:64
 msgid "Not connected"
 msgstr "断开"
 
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:48
+#: bajoo/gui/task_bar_icon/common_view_data.py:65
 msgid "Connection in progress..."
 msgstr "正在连接中 ..."
 
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:49
+#: bajoo/gui/task_bar_icon/common_view_data.py:66
 msgid "Sync up to date"
 msgstr "同步更新"
 
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:50
+#: bajoo/gui/task_bar_icon/common_view_data.py:67
 msgid "Shares currently syncing..."
 msgstr "共享正在同步 ..."
 
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:51
+#: bajoo/gui/task_bar_icon/common_view_data.py:68
 msgid "Synchronization suspended"
 msgstr "暂停同步"
 
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:52
+#: bajoo/gui/task_bar_icon/common_view_data.py:69
 msgid "Synchronization is not active"
 msgstr "停止同步"
 
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:53
+#: bajoo/gui/task_bar_icon/common_view_data.py:70
 msgid "An error occurred :("
 msgstr "发生错误 :("
 
+#: bajoo/gui/task_bar_icon/common_view_data.py:149
+msgid "Login window"
+msgstr "登录窗口"
+
 # TODO translate me
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:101
+#: bajoo/gui/task_bar_icon/common_view_data.py:158
 msgid "Bajoo folder"
 msgstr ""
 
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:102
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:214
+# TODO: translate me
+#: bajoo/gui/task_bar_icon/common_view_data.py:166
+msgid "Manage my folders..."
+msgstr ""
+
+#: bajoo/gui/task_bar_icon/common_view_data.py:173
+msgid "Online help"
+msgstr "在线支援"
+
+#: bajoo/gui/task_bar_icon/common_view_data.py:175
+msgid "Settings ..."
+msgstr "设置中 ..."
+
+#: bajoo/gui/task_bar_icon/common_view_data.py:204
 msgid ""
 "Looks like you don't\n"
 "have any share"
@@ -1117,57 +1147,20 @@ msgstr ""
 "这里没有 \n"
 "任何共享。"
 
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:108
-msgid "Suspend synchronization"
-msgstr "暂停同步"
-
-# TODO: translate me
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:112
-msgid "Manage my folders..."
-msgstr ""
-
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:116
-msgid "My client space"
-msgstr "我的账户"
-
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:120
-msgid "Invite a friend on Bajoo"
-msgstr "邀请朋友加入Bajoo"
-
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:124
-msgid "Online help"
-msgstr "在线支援"
-
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:128
-msgid "Settings ..."
-msgstr "设置中 ..."
-
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:136
-msgid "Login window"
-msgstr "登录窗口"
-
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:137
-msgid "Open the login and registration window"
-msgstr "打开登录窗口 / 注册"
-
-# TODO translate me (message changed)
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:145
-msgid "Report a problem"
-msgstr "联系我们的开发者团队"
-
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:148
-msgid "Quit"
-msgstr "离开"
-
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:149
-msgid "Quit Bajoo"
-msgstr "离开Bajoo"
-
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:186
+#: bajoo/gui/task_bar_icon/common_view_data.py:208
 msgid "Shares folder"
 msgstr "共享文件"
 
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon_wx_interface.py:38
+# TODO translate me (message changed)
+#: bajoo/gui/task_bar_icon/common_view_data.py:220
+msgid "Report a problem"
+msgstr "联系我们的开发者团队"
+
+#: bajoo/gui/task_bar_icon/common_view_data.py:222
+msgid "Quit"
+msgstr "离开"
+
+#: bajoo/gui/task_bar_icon/controller.py:89
 msgid "https://www.bajoo.fr/help"
 msgstr ""
 
@@ -1226,65 +1219,85 @@ msgstr "本地文件夹丢失。"
 msgid "Folder creation failed: %s"
 msgstr "文件创建失败 : %s"
 
-#: bajoo/network/errors.py:38
+#: bajoo/network/errors.py:39
 msgid "A network error has occurred."
 msgstr "网络错误。"
 
-#: bajoo/network/errors.py:59
+#: bajoo/network/errors.py:60
 msgid "Unable to connect to the Bajoo servers."
 msgstr "无法连接到Bajoo服务器。"
 
-#: bajoo/network/errors.py:65
+#: bajoo/network/errors.py:66
 msgid "The server did not respond on time."
 msgstr "服务器没有响应。"
 
-#: bajoo/network/errors.py:71
+#: bajoo/network/errors.py:72
 msgid "Proxy error"
 msgstr "代理服务器错误"
 
-#: bajoo/network/errors.py:100
+#: bajoo/network/errors.py:101
 #, python-format
 msgid "The server has returned an HTTP error: %(code)s %(reason)s"
 msgstr "服务器返回一个HTTP错误 : %(code)s %(reason)s"
 
-#: bajoo/network/errors.py:139
+#: bajoo/network/errors.py:140
 msgid ""
 "The HTTP request is invalid. This is a bug, either in the client or in the "
 "server. Sorry for the inconvenience :("
 msgstr "HTTP请求无效。 这是一个服务器或客户端之间的 错误。 造成不便深感抱歉 :("
 
-#: bajoo/network/errors.py:149
+#: bajoo/network/errors.py:150
 msgid "Your session has expired."
 msgstr "您的会话已过期。"
 
-#: bajoo/network/errors.py:155
+#: bajoo/network/errors.py:156
 msgid "You don't have the permission to do this operation."
 msgstr "您没有权利执行这个操作。"
 
-#: bajoo/network/errors.py:162
+#: bajoo/network/errors.py:163
 msgid "The element you're looking for has not been found."
 msgstr "没有与搜索条件匹配的项。"
 
-#: bajoo/network/errors.py:168
+#: bajoo/network/errors.py:169
 msgid "The Bajoo servers have encountered an unexpected error :("
 msgstr "Bajoo服务器遇到一个意外的错误 :("
 
-#: bajoo/network/errors.py:175
+#: bajoo/network/errors.py:176
 msgid "Bajoo service does not understand or does not support this function."
 msgstr "Bajoo服务器不包括或不支持此功能。"
 
-#: bajoo/network/errors.py:182
+#: bajoo/network/errors.py:183
 msgid "The Bajoo servers are temporarily unavailable. Please try again later."
 msgstr "Bajoo服务器暂时无法使用。 请稍后再尝试。"
 
-#: bajoo/network/errors.py:189
+#: bajoo/network/errors.py:190
 msgid "Your quota has exceeded."
 msgstr "已达到限额限制"
 
-#: bajoo/network/proxy.py:66
+#: bajoo/network/errors.py:209
+msgid ""
+"The download has been interrupted, either by the server, or by a connexion "
+"failure."
+msgstr ""
+
+#: bajoo/network/errors.py:216
+#, fuzzy
+msgid "The downloaded content is not valid."
+msgstr "该电子邮件无效。"
+
+#: bajoo/network/proxy.py:83
 msgid ""
 "Proxy is activate, but no URL is present.\n"
 "Check your configuration."
 msgstr ""
 "代理服务器已被激活，但不存在URL。\n"
 "请检查您的配置。"
+
+#~ msgid "Suspend synchronization"
+#~ msgstr "暂停同步"
+
+#~ msgid "My client space"
+#~ msgstr "我的账户"
+
+#~ msgid "Invite a friend on Bajoo"
+#~ msgstr "邀请朋友加入Bajoo"

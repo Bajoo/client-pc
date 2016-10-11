@@ -207,7 +207,7 @@ class InterruptedDownloadError(NetworkError):
     def __init__(self, error):
         NetworkError.__init__(self, error,
                               N_("The download has been interrupted, either by"
-                                 "the server, or by a connexion failure."))
+                                 " the server, or by a connexion failure."))
 
 
 class CorruptedDownloadError(NetworkError):
