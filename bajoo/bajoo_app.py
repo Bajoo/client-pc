@@ -746,6 +746,18 @@ class BajooApp(wx.App):
         task_consumer.stop()
 
         self._dummy_frame.Destroy()
+
+        # This wx App_CleanUp exit handler is bogged on macos and
+        # results in a segmentation fault at each exit.
+        # It probably tries to free a wxWidget that was already destroyed.
+        # But which one... (it is not the dummy frame)
+        if sys.platform == 'darwin' and sys.version_info[0] < 3:
+            import atexit
+            for handler in atexit._exithandlers:
+                if handler[0].__name__ == 'App_CleanUp':
+                    atexit._exithandlers.remove(handler)
+                    break
+
         _logger.debug('Exiting done !')
 
     # Note (Kevin): OnEventLoopEnter(), from wx.App, is inconsistent. run()
