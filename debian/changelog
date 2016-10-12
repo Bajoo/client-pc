@@ -1,7 +1,19 @@
+bajoo (0.3.23-1) xenial; urgency=low
+
+  * Update translations files.
+  * Clean menu entries in Task Bar Icon menu.
+  * Fix a bug preventing the deletion of old logs.
+  * Fix bug on Linux, deleting the log folder at each start.
+  * Force GPG to use UTF-8 encoding.
+  * Detect uncaught errors on delayed GUI actions, and log them.
+  * Saves of containers indexes files are now atomic.
+
+ -- Bajoo <support@bajoo.fr>  Tue, 11 Oct 2016 12:47:36 +0200
+
 bajoo (0.3.22-1) xenial; urgency=low
 
   * Fix bug that was hidding some exceptions.
-  * Fix log rotatio not properly handled.
+  * Fix log rotation not properly handled.
   * Cleanup PassphraseWindows after use.
   * Fix a bug preventing the deletion of encryption tmp dir.
   * Rewrite TaskBarIcon module to a more lisible, MVC-based architecture.

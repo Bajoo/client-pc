@@ -79,7 +79,7 @@ class AdvancedSettingsTab(wx.Panel, Translator):
             software_updater.status_changed.connect(
                 self._update_status_changed)
 
-    @ensure_gui_thread
+    @ensure_gui_thread()
     def _update_status_changed(self, status):
         self._view.update_from_updater(self._updater)
 

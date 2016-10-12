@@ -5,7 +5,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Bajoo 0.3.22\n"
+"Project-Id-Version: Bajoo 0.3.23\n"
 "Report-Msgid-Bugs-To: Bajoo <support-en@bajoo.fr>\n"
 "POT-Creation-Date: 2015-10-20 12:12+0200\n"
 "PO-Revision-Date: 2016-01-27 11:31+0100\n"
@@ -17,62 +17,62 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: Poedit 1.5.4\n"
 
-#: bajoo/api/session.py:29
+#: bajoo/api/session.py:34
 msgid "The authentication server has returned invalid data."
-msgstr ""
+msgstr "Máy chủ định danh trả về dữ liệu không hợp lệ."
 
-# TODO translate me
-#: bajoo/bajoo_app.py:161
+#: bajoo/bajoo_app.py:162
 msgid ""
 "Another instance of Bajoo is actually running.\n"
 "You can't open Bajoo twice."
 msgstr ""
+"Ứng dụng Bajoo đang hoạt động.\n"
+"Bạn không thể bật Bajoo hai lần."
 
-# TODO translate me
-#: bajoo/bajoo_app.py:163
+#: bajoo/bajoo_app.py:164
 msgid "Bajoo already started"
-msgstr ""
+msgstr "Bajoo đã được khởi động"
 
-#: bajoo/bajoo_app.py:355
+#: bajoo/bajoo_app.py:367
 #, python-format
 msgid "Error occurred: %s."
 msgstr "Lỗi: %s"
 
-#: bajoo/bajoo_app.py:439
+#: bajoo/bajoo_app.py:452
 msgid ""
 "Cannot add this member to team share; maybe this account does not exist."
 msgstr ""
 "Không thể thêm thành viên này vào chia sẻ nhóm; có thể rằng tài khoản không "
 "tồn tại."
 
-#: bajoo/bajoo_app.py:449
+#: bajoo/bajoo_app.py:462
 #, python-format
 msgid "%(email)s has been given access to team share '%(name)s'"
 msgstr "%(email)s đã được cho phép truy cập vào chia sẻ nhóm '%(name)s'"
 
-#: bajoo/bajoo_app.py:456
+#: bajoo/bajoo_app.py:469
 msgid "Unidentified container, cannot add member"
 msgstr "Thư mục không xác định, không thể thêm thành viên vào."
 
-#: bajoo/bajoo_app.py:471
+#: bajoo/bajoo_app.py:484
 msgid "Cannot remove this member from this team share."
 msgstr "Không thể bỏ thành viên này ra khỏi chia sẻ nhóm"
 
-#: bajoo/bajoo_app.py:478
+#: bajoo/bajoo_app.py:491
 #, python-format
 msgid "%(email)s's access to team share '%(name)s' has been removed."
 msgstr "Đã bỏ quyền truy cập của %(email)s khỏi chia sẻ nhóm '%(name)s'."
 
-#: bajoo/bajoo_app.py:485
+#: bajoo/bajoo_app.py:498
 msgid "Unidentified container, cannot remove member"
 msgstr "Thư mục không xác định, không thể bỏ thành viên ra khỏi nhóm."
 
-#: bajoo/bajoo_app.py:518
+#: bajoo/bajoo_app.py:531
 #, python-format
 msgid "Cannot create share %s"
 msgstr "Lỗi khi tạo thư mục chia sẻ %s."
 
-#: bajoo/bajoo_app.py:533
+#: bajoo/bajoo_app.py:546
 msgid ""
 "Some members cannot be added to this team share. Please verify the email "
 "addresses."
@@ -80,71 +80,67 @@ msgstr ""
 "Vài thành viên không được cấp quyền cho chia sẻ này. Vui lòng kiểm tra các "
 "địa chỉ email."
 
-#: bajoo/bajoo_app.py:535
+#: bajoo/bajoo_app.py:548
 #, python-format
 msgid "Team share %s has been successfully created"
 msgstr "Thư mục chia sẻ nhóm %s đã được tạo thành công."
 
-#: bajoo/bajoo_app.py:579
+#: bajoo/bajoo_app.py:592
 msgid "This folder has been succesfully moved to the new location."
 msgstr "Thư mục này đã được di chuyển đến nơi mới."
 
-#: bajoo/bajoo_app.py:586
+#: bajoo/bajoo_app.py:599
 msgid "The synchronization of this share is stopped."
 msgstr "Đã ngừng đồng bộ hóa thư mục chia sẻ này."
 
-#: bajoo/bajoo_app.py:592
+#: bajoo/bajoo_app.py:605
 #, fuzzy
 msgid "The synchronization of this share has restarted."
 msgstr "Đã tái khởi động đồng bộ hóa thư mục chia sẻ này."
 
-#: bajoo/bajoo_app.py:611 bajoo/gui/bug_report.py:66
+#: bajoo/bajoo_app.py:624 bajoo/gui/bug_report.py:67
 #: bajoo/local_container.py:52
 msgid "Error"
 msgstr "Lỗi"
 
-#: bajoo/bajoo_app.py:612
+#: bajoo/bajoo_app.py:625
 #, python-format
 msgid "An error occured when trying to quit team share %s."
 msgstr "Lỗi khi muốn thoát khỏi chia sẻ nhóm %s."
 
-#: bajoo/bajoo_app.py:623 bajoo/gui/common/message_box.py:34
+#: bajoo/bajoo_app.py:636 bajoo/gui/common/message_box.py:34
 msgid "Quit team share"
 msgstr "Thoát khỏi chia sẻ nhóm"
 
-#: bajoo/bajoo_app.py:624 bajoo/bajoo_app.py:630
+#: bajoo/bajoo_app.py:637 bajoo/bajoo_app.py:643
 #, python-format
 msgid "You have no longer access to team share %s."
 msgstr "Bạn không còn quyền truy cập vào chia sẻ nhóm %s."
 
-#: bajoo/bajoo_app.py:648
+#: bajoo/bajoo_app.py:661
 msgid "A team share has been successfully deleted from server."
 msgstr "Chia sẻ nhóm đã được xóa khỏi máy chủ."
 
-#: bajoo/bajoo_app.py:653
+#: bajoo/bajoo_app.py:666
 #, python-format
 msgid "Team share %s cannot be deleted from server."
 msgstr "Lỗi khi xóa chia sẻ nhóm %s trên máy chủ."
 
-#: bajoo/bajoo_app.py:672
+#: bajoo/bajoo_app.py:685
 msgid "Beta tester account"
 msgstr "Tài khoản kiểm thử beta."
 
-#: bajoo/bajoo_app.py:693
+#: bajoo/bajoo_app.py:706
 msgid "Failure when attempting to change password."
 msgstr "Lỗi khi đổi mật khẩu."
 
-#: bajoo/bajoo_app.py:800
+#: bajoo/bajoo_app.py:798
 msgid "Sync error"
 msgstr "Lỗi đồng bộ hóa"
 
-#: bajoo/bajoo_app.py:888
+#: bajoo/bajoo_app.py:887
 msgid "An error happened! Consult the logs for more details"
-msgstr ""
-
-#: bajoo/common/i18n.py:114
-msgid "Auto"
-msgstr "Tự động"
+msgstr "Có lỗi xảy ra! Vui lòng xem các tập tin nhật ký để biết thêm chi tiết."
 
 #: bajoo/common/util.py:10
 msgid "B"
@@ -182,7 +178,7 @@ msgstr ""
 msgid "ZB"
 msgstr ""
 
-#: bajoo/connection_registration_process.py:220
+#: bajoo/connection_registration_process.py:216
 msgid ""
 "This program's version is no longer supported by Bajoo service. Please "
 "update to continue.\n"
@@ -190,25 +186,25 @@ msgstr ""
 "Phiên bản Bajoo này không còn được hỗ trợ. Mời bạn vui lòng cập nhật phiên "
 "bản mới để tiếp tục.\n"
 
-#: bajoo/connection_registration_process.py:224
+#: bajoo/connection_registration_process.py:220
 msgid "Invalid username or password."
 msgstr "Tên đăng nhập hoặc mật khẩu không hợp lệ."
 
-#: bajoo/connection_registration_process.py:226
+#: bajoo/connection_registration_process.py:222
 msgid "There is already an account with this email."
 msgstr "Đã có người dùng email này."
 
-#: bajoo/connection_registration_process.py:236
+#: bajoo/connection_registration_process.py:232
 #, python-format
 msgid "An error occurred: %s"
 msgstr "Đã có lỗi xảy ra: %s"
 
-#: bajoo/connection_registration_process.py:347
+#: bajoo/connection_registration_process.py:343
 #, python-format
 msgid "Error: %s"
 msgstr "Lỗi: %s"
 
-#: bajoo/connection_registration_process.py:350
+#: bajoo/connection_registration_process.py:346
 #, python-format
 msgid ""
 "Error when applying the Bajoo root folder config:\n"
@@ -217,11 +213,11 @@ msgstr ""
 "Lỗi khi áp dùng tùy chỉnh với thư mục gốc Bajoo :\n"
 " %s"
 
-#: bajoo/connection_registration_process.py:361
+#: bajoo/connection_registration_process.py:357
 msgid "You haven't yet registered a GPG key."
 msgstr "Bạn chưa lưu khóa GPG nào."
 
-#: bajoo/connection_registration_process.py:369
+#: bajoo/connection_registration_process.py:365
 #, python-format
 msgid ""
 "Error during the GPG key check:\n"
@@ -230,38 +226,38 @@ msgstr ""
 "Lỗi khi kiểm tra khóa GPG GPG :\n"
 " %s"
 
-#: bajoo/connection_registration_process.py:393
+#: bajoo/connection_registration_process.py:389
 #, fuzzy, python-format
 msgid "%s doesn't exist, or is not a directory"
 msgstr "%s không tồn tại, hoặc không phải thư mục."
 
-#: bajoo/connection_registration_process.py:398
+#: bajoo/connection_registration_process.py:394
 #, python-format
 msgid "%s has not the read and/or write permissions."
 msgstr "%s không được cấp phép đọc và/hoặc lưu."
 
-#: bajoo/connection_registration_process.py:427
+#: bajoo/connection_registration_process.py:423
 #: bajoo/gui/tab/creation_share_tab.py:132
 #: bajoo/gui/tab/details_share_tab.py:132 bajoo/local_container.py:134
 msgid "Shares"
 msgstr "Chia sẻ"
 
-#: bajoo/container_sync_pool.py:92 bajoo/container_sync_pool.py:154
+#: bajoo/container_sync_pool.py:94 bajoo/container_sync_pool.py:156
 #: bajoo/container_sync_pool.py:205
 msgid "No passphrase set.  Syncing is disabled"
 msgstr "Chuỗi khóa mã hóa chưa thiết lập. Tiến trình đồng bộ hóa đã tắt"
 
-#: bajoo/container_sync_pool.py:138
+#: bajoo/container_sync_pool.py:140
 msgid "No passphrase set.  Cyphered containers will be paused"
 msgstr ""
 "Chuỗi khóa mã hóa chưa thiết lập. Các thư mục được mã hóa sẽ tạm ngưng đồng "
 "bộ"
 
-#: bajoo/container_sync_pool.py:354
+#: bajoo/container_sync_pool.py:350
 msgid "Quota limit reached"
 msgstr "Quota vượt giới hạn"
 
-#: bajoo/container_sync_pool.py:358
+#: bajoo/container_sync_pool.py:354
 msgid ""
 "Your quota has exceeded. All upload operations are delayed in the next 5 "
 "minutes."
@@ -349,7 +345,7 @@ msgid ""
 msgstr ""
 "Có thể các thư mục chia sẻ Bajoo đã bị xóa, hoặc bạn không còn được cấp phép."
 
-#: bajoo/encryption/errors.py:31
+#: bajoo/encryption/errors.py:36
 msgid "The passphrase request has been rejected by the user."
 msgstr "Yêu cầu tạo mật mã mã hóa đã bị người dùng từ chối."
 
@@ -372,36 +368,36 @@ msgstr ""
 "Lỗi khi đồng bộ hóa tập tin \"%(filename)s\" trong thư mục \"%(name)s\":"
 "%(error)s"
 
-#: bajoo/gui/about_window.py:105 bajoo/gui/about_window.py:293
+#: bajoo/gui/about_window.py:105 bajoo/gui/about_window.py:287
 msgid "Official software for Bajoo online storage service."
 msgstr "Phần mềm chính thức của dịch vụ lưu trữ trực tuyến Bajoo."
 
-#: bajoo/gui/about_window.py:109 bajoo/gui/about_window.py:295
+#: bajoo/gui/about_window.py:109 bajoo/gui/about_window.py:289
 msgid "Version: "
 msgstr "Phiên bản:"
 
-#: bajoo/gui/about_window.py:121 bajoo/gui/about_window.py:296
+#: bajoo/gui/about_window.py:121 bajoo/gui/about_window.py:290
 msgid "This software is distributed under the terms of the MIT License."
 msgstr "Phần mềm này được phân phối dưới giấy phép MIT."
 
-#: bajoo/gui/about_window.py:126 bajoo/gui/about_window.py:298
+#: bajoo/gui/about_window.py:126 bajoo/gui/about_window.py:292
 msgid "It is freely redistributable, the source code is available"
 msgstr ""
 "Mọi người có toàn quyền tái phân phối nó, mã nguồn có thể được truy cập"
 
-#: bajoo/gui/about_window.py:130 bajoo/gui/about_window.py:300
+#: bajoo/gui/about_window.py:130 bajoo/gui/about_window.py:294
 msgid "on GitHub."
 msgstr "trên GitHub."
 
-#: bajoo/gui/about_window.py:136 bajoo/gui/about_window.py:301
+#: bajoo/gui/about_window.py:136 bajoo/gui/about_window.py:295
 msgid "Bajoo is a registered trademark."
 msgstr "Bajoo là một thương hiệu đã được đăng ký."
 
-#: bajoo/gui/about_window.py:139 bajoo/gui/about_window.py:302
+#: bajoo/gui/about_window.py:139 bajoo/gui/about_window.py:296
 msgid "www.bajoo.fr"
 msgstr ""
 
-#: bajoo/gui/about_window.py:143 bajoo/gui/about_window.py:303
+#: bajoo/gui/about_window.py:143 bajoo/gui/about_window.py:297
 msgid "List of frequently asked questions."
 msgstr "Các câu hỏi thường gặp."
 
@@ -409,41 +405,40 @@ msgstr "Các câu hỏi thường gặp."
 msgid "If you have a new question, feel free to "
 msgstr "Nếu bạn có thắc mắc gì, cứ tự nhiên"
 
-#: bajoo/gui/about_window.py:152 bajoo/gui/about_window.py:306
+#: bajoo/gui/about_window.py:152 bajoo/gui/about_window.py:300
 msgid "contact us"
 msgstr "liên lạc với chúng tôi"
 
-#: bajoo/gui/about_window.py:158 bajoo/gui/about_window.py:307
+#: bajoo/gui/about_window.py:158 bajoo/gui/about_window.py:301
 msgid " or "
 msgstr " hoặc "
 
-#: bajoo/gui/about_window.py:161 bajoo/gui/about_window.py:308
+#: bajoo/gui/about_window.py:161 bajoo/gui/about_window.py:302
 msgid "report a problem."
 msgstr "gửi thông báo lỗi."
 
-#: bajoo/gui/about_window.py:167 bajoo/gui/about_window.py:309
+#: bajoo/gui/about_window.py:167 bajoo/gui/about_window.py:303
 msgid "Bajoo uses the following libraries:"
 msgstr "Bajoo sử dụng các thư viện sau đây:"
 
-#: bajoo/gui/about_window.py:290
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:144
+#: bajoo/gui/about_window.py:284
+#: bajoo/gui/task_bar_icon/common_view_data.py:219
 msgid "About Bajoo"
 msgstr "Nói về Bajoo"
 
-#: bajoo/gui/about_window.py:305
+#: bajoo/gui/about_window.py:299
 msgid "If you have a new question, feel free to"
 msgstr "Nếu bạn có câu hỏi mới nào, xin cứ tự nhiên"
 
-#: bajoo/gui/base_view.py:120 bajoo/gui/bug_report.py:122
-#: bajoo/gui/form/change_password_form.py:132
-#: bajoo/gui/passphrase_window.py:49 bajoo/gui/proxy_window.py:73
-#: bajoo/gui/tab/creation_share_tab.py:188
+#: bajoo/gui/base_view.py:120 bajoo/gui/bug_report.py:146
+#: bajoo/gui/form/change_password_form.py:132 bajoo/gui/passphrase_window.py:50
+#: bajoo/gui/proxy_window.py:73 bajoo/gui/tab/creation_share_tab.py:188
 #: bajoo/gui/tab/details_share_tab.py:604
 msgid "Cancel"
 msgstr "Hủy"
 
 #: bajoo/gui/base_view.py:121 bajoo/gui/form/change_password_form.py:133
-#: bajoo/gui/passphrase_window.py:48 bajoo/gui/proxy_window.py:76
+#: bajoo/gui/passphrase_window.py:49 bajoo/gui/proxy_window.py:76
 msgid "OK"
 msgstr ""
 
@@ -451,54 +446,77 @@ msgstr ""
 msgid "Apply"
 msgstr "Áp dụng"
 
-#: bajoo/gui/bug_report.py:35
+#: bajoo/gui/bug_report.py:36
 #, fuzzy
 msgid "The bug description is required"
 msgstr "Vui lòng mô tả lỗi"
 
-#: bajoo/gui/bug_report.py:39
+#: bajoo/gui/bug_report.py:40
 #, fuzzy
 msgid "The email field is required"
 msgstr "Đây là thông tin bắt buộc."
 
-#: bajoo/gui/bug_report.py:43
+#: bajoo/gui/bug_report.py:44
 #, fuzzy
 msgid "The email must be valid."
 msgstr "Email này không hợp lệ."
 
-#: bajoo/gui/bug_report.py:74
+#: bajoo/gui/bug_report.py:75
 msgid ""
 "Your message has been sent to the developers. They will reply to you by "
 "email."
-msgstr ""
+msgstr "Thông điệp của bạn đã được gửi đến các nhà phát triển phần mềm. Họ sẽ trả lời bạn qua email."
 
-#: bajoo/gui/bug_report.py:78
+#: bajoo/gui/bug_report.py:79
 msgid "Bug report sent!"
-msgstr ""
+msgstr "Báo cáo lỗi đã được gửi đi!"
 
-#: bajoo/gui/bug_report.py:91
+#: bajoo/gui/bug_report.py:92
 msgid "Send a message to the developers"
 msgstr "Gửi tin nhắn đến các nhà phát triển phần mềm"
 
-#: bajoo/gui/bug_report.py:96
+#: bajoo/gui/bug_report.py:102
+msgid ""
+"The configuration of your Bajoo client and its log files will be attached to "
+"your message.\n"
+"Please note that this is not a support channel and that no response will be "
+"made in this way. For inquiries, please contact support by email:"
+msgstr ""
+"Các tùy chỉnh của Bajoo và các tập tin logs sẽ được đính kèm với tin nhắn của bạn.\n"
+"Vui lòng lưu ý rằng đây không phải là kênh hỗ trợ và bạn sẽ không nhận được câu trả lời qua đây."
+"Khi cần kíp, bạn vui lòng liên lạc qua email hỗ trợ khách hàng:"
+
+#: bajoo/gui/bug_report.py:114
+msgid "support-en@bajoo.fr"
+msgstr ""
+
+#: bajoo/gui/bug_report.py:118
+msgid "mailto:support-en@bajoo.fr"
+msgstr ""
+
+#: bajoo/gui/bug_report.py:120
 msgid "Email:"
 msgstr ""
 
-#: bajoo/gui/bug_report.py:105
+#: bajoo/gui/bug_report.py:129
 msgid "Write your message here: "
 msgstr "Viết tin nhắn của bạn ở đây:"
 
-#: bajoo/gui/bug_report.py:116
+#: bajoo/gui/bug_report.py:140
 msgid "Settings and log files will be joined to your message."
 msgstr "Các thiết lập và tập tin nhật ký sẽ được gửi kèm tin nhắn"
 
-#: bajoo/gui/bug_report.py:126
+#: bajoo/gui/bug_report.py:150
 msgid "Send"
 msgstr "Gửi"
 
 #: bajoo/gui/change_password_window.py:27
 msgid "Bajoo - Change password"
 msgstr "Bajoo - Đổi mật khẩu"
+
+#: bajoo/gui/common/language_box.py:32 bajoo/gui/common/language_box.py:56
+msgid "Auto"
+msgstr "Tự động"
 
 #: bajoo/gui/common/message_box.py:10
 msgid "No"
@@ -686,22 +704,22 @@ msgstr "Tạo thư mục chia sẻ mới"
 msgid "Folder details"
 msgstr "Chi tiết thông tin thư mục"
 
-#: bajoo/gui/passphrase_window.py:46
+#: bajoo/gui/passphrase_window.py:47
 msgid "Invalid passphrase!"
 msgstr "Mật mã không hợp lệ!"
 
-#: bajoo/gui/passphrase_window.py:99
+#: bajoo/gui/passphrase_window.py:101
 msgid "Bajoo - Ask for passphrase"
 msgstr "Bajoo - Yêu cầu mật mã mã hóa"
 
-#: bajoo/gui/passphrase_window.py:128
+#: bajoo/gui/passphrase_window.py:130
 msgid ""
 "Enter your Bajoo pasphrase to start the synchronization of your encrypted "
 "files."
 msgstr ""
 "Nhập mật mã mã hóa để bắt đầu đồng bộ hóa những tập tin mã hóa của bạn."
 
-#: bajoo/gui/passphrase_window.py:134
+#: bajoo/gui/passphrase_window.py:136
 #: bajoo/gui/screen/setup_config_screen.py:144
 msgid "Memorize the passphrase"
 msgstr "Nhớ mật mã mã hóa"
@@ -833,103 +851,107 @@ msgstr "Tạo lại mật mã mã hóa"
 msgid "Change password"
 msgstr "Đổi mật khẩu"
 
-#: bajoo/gui/tab/advanced_settings_tab.py:161
+#: bajoo/gui/tab/advanced_settings_tab.py:160
 #, fuzzy, python-format
 msgid "Actual version: %s"
 msgstr "Phiên bản hiện tại: %s"
 
-#: bajoo/gui/tab/advanced_settings_tab.py:162
+#: bajoo/gui/tab/advanced_settings_tab.py:161
 #, fuzzy
 msgid "Automatically send crash reports to Bajoo"
 msgstr "Tự động gửi báo cáo lỗi cho Bajoo"
 
-#: bajoo/gui/tab/advanced_settings_tab.py:163
+#: bajoo/gui/tab/advanced_settings_tab.py:162
 msgid "Activate debug mode"
 msgstr "Kích hoạt chế độ debug"
 
-#: bajoo/gui/tab/advanced_settings_tab.py:164
+#: bajoo/gui/tab/advanced_settings_tab.py:163
 msgid "Apply the updates automatically"
 msgstr "Cập nhật tự động"
 
-#: bajoo/gui/tab/advanced_settings_tab.py:165
+#: bajoo/gui/tab/advanced_settings_tab.py:164
 msgid "Don't synchronize hidden files"
 msgstr "Không đồng bộ hóa các tập tin ẩn"
 
-#: bajoo/gui/tab/advanced_settings_tab.py:166
+#: bajoo/gui/tab/advanced_settings_tab.py:165
 msgid "Updates"
 msgstr "Cập nhật"
 
-#: bajoo/gui/tab/advanced_settings_tab.py:196
+#: bajoo/gui/tab/advanced_settings_tab.py:195
 #, fuzzy
 msgid "Check updates"
 msgstr "Kiểm tra bản cập nhật"
 
-#: bajoo/gui/tab/advanced_settings_tab.py:210
+#: bajoo/gui/tab/advanced_settings_tab.py:209
 msgid "Restart"
-msgstr ""
+msgstr "Khởi động lại"
+
+#: bajoo/gui/tab/advanced_settings_tab.py:239
+msgid "Checking last update available ..."
+msgstr "Kiểm tra bản cập nhật mới nhất..."
 
 #: bajoo/gui/tab/advanced_settings_tab.py:240
-msgid "Checking last update available ..."
-msgstr ""
-
-#: bajoo/gui/tab/advanced_settings_tab.py:241
 msgid ""
 "Automatic Bajoo updates are available only for the packaged Windows version."
-msgstr ""
+msgstr "Chức năng tự động cập nhật hiện chỉ có ở phiên bản Windows."
+
+#: bajoo/gui/tab/advanced_settings_tab.py:242
+msgid "Update attempt has been aborted."
+msgstr "Bạn đã bỏ qua cập nhật."
 
 #: bajoo/gui/tab/advanced_settings_tab.py:243
-msgid "Update attempt has been aborted."
-msgstr ""
+msgid "Your software is up to date."
+msgstr "Bạn đang dùng phiên bản mới nhất."
 
 #: bajoo/gui/tab/advanced_settings_tab.py:244
-msgid "Your software is up to date."
-msgstr ""
+msgid "Searching new updates ..."
+msgstr "Tìm phiên bản cập nhật mới..."
 
 #: bajoo/gui/tab/advanced_settings_tab.py:245
-msgid "Searching new updates ..."
-msgstr ""
-
-#: bajoo/gui/tab/advanced_settings_tab.py:246
 #, python-format
 msgid "New version found: %s"
-msgstr ""
+msgstr "Tìm thấy phiên bản mới: %s"
+
+#: bajoo/gui/tab/advanced_settings_tab.py:246
+msgid "Downloading the new version ..."
+msgstr "Tải phiên bản mới"
 
 #: bajoo/gui/tab/advanced_settings_tab.py:247
-msgid "Downloading the new version ..."
-msgstr ""
-
-#: bajoo/gui/tab/advanced_settings_tab.py:248
 #, fuzzy
 msgid "Retrying after an error happened ..."
 msgstr "Đã có lỗi xảy ra :("
 
-#: bajoo/gui/tab/advanced_settings_tab.py:249
+#: bajoo/gui/tab/advanced_settings_tab.py:248
 #, fuzzy, python-format
 msgid ""
 "An error happened:\n"
 "%s"
-msgstr "Đã có lỗi xảy ra: %s"
+msgstr ""
+"Đã có lỗi xảy ra:\n"
+"%s"
+
+#: bajoo/gui/tab/advanced_settings_tab.py:249
+msgid "New version ready to be installed ..."
+msgstr "Phiên bản mới đã sẵn sàng được cài đặt..."
 
 #: bajoo/gui/tab/advanced_settings_tab.py:250
-msgid "New version ready to be installed ..."
-msgstr ""
-
-#: bajoo/gui/tab/advanced_settings_tab.py:251
 #, fuzzy
 msgid "Install in progress ..."
 msgstr "Đang kết nối..."
 
-#: bajoo/gui/tab/advanced_settings_tab.py:252
+#: bajoo/gui/tab/advanced_settings_tab.py:251
 msgid "Cleaning up old files"
-msgstr ""
+msgstr "Dọn dẹp các tập tin cũ"
 
-#: bajoo/gui/tab/advanced_settings_tab.py:253
+#: bajoo/gui/tab/advanced_settings_tab.py:252
 #, python-format
 msgid ""
 "Bajoo has been updated to version %s. It must be restarted to apply changes."
 msgstr ""
+"Bajoo đã được cập nhật đến phiên bản %s. Bạn cần khởi động lại phần "
+"mềm để các thay đổi mới được áp dụng."
 
-#: bajoo/gui/tab/advanced_settings_tab.py:265 bajoo/gui/tab/settings_tab.py:94
+#: bajoo/gui/tab/advanced_settings_tab.py:264 bajoo/gui/tab/settings_tab.py:94
 msgid "Advanced settings"
 msgstr "Tùy chỉnh nâng cao"
 
@@ -975,8 +997,7 @@ msgstr "Tên chia sẻ"
 msgid "<< Back to share list"
 msgstr "<< Quay lại danh sách chia sẻ"
 
-#: bajoo/gui/tab/creation_share_tab.py:208
-#: bajoo/gui/tab/list_shares_tab.py:245
+#: bajoo/gui/tab/creation_share_tab.py:208 bajoo/gui/tab/list_shares_tab.py:245
 msgid "New share"
 msgstr "Chia sẻ mới"
 
@@ -1043,20 +1064,20 @@ msgstr "Thư mục này đã có rồi"
 msgid "Share Details"
 msgstr "Thông tin chi tiết chia sẻ"
 
-#: bajoo/gui/tab/general_settings_tab.py:133
+#: bajoo/gui/tab/general_settings_tab.py:134
 msgid "Launch Bajoo at system startup"
 msgstr "Chạy phần mềm Bajoo khi khởi động hệ thống"
 
-#: bajoo/gui/tab/general_settings_tab.py:134
+#: bajoo/gui/tab/general_settings_tab.py:135
 msgid "Activate status icon and the contextual menu"
 msgstr "Kích hoạt biểu tượng hiện trạng và thực đơn ngữ cảnh"
 
-#: bajoo/gui/tab/general_settings_tab.py:136
+#: bajoo/gui/tab/general_settings_tab.py:137
 #, fuzzy
 msgid "Display a notification when file download is finished"
 msgstr "Hiển thị một thông báo khi tải thành công những tập tin đã thay đổi"
 
-#: bajoo/gui/tab/general_settings_tab.py:138
+#: bajoo/gui/tab/general_settings_tab.py:139
 msgid "Language"
 msgstr "Ngôn ngữ"
 
@@ -1094,40 +1115,55 @@ msgstr "Tùy chỉnh chung"
 msgid "Network settings"
 msgstr "Tùy chỉnh mạng"
 
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:47
+#: bajoo/gui/task_bar_icon/common_view_data.py:64
 msgid "Not connected"
 msgstr "Kết nối bị ngắt"
 
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:48
+#: bajoo/gui/task_bar_icon/common_view_data.py:65
 msgid "Connection in progress..."
 msgstr "Đang kết nối..."
 
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:49
+#: bajoo/gui/task_bar_icon/common_view_data.py:66
 msgid "Sync up to date"
 msgstr "Đã đồng bộ"
 
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:50
+#: bajoo/gui/task_bar_icon/common_view_data.py:67
 msgid "Shares currently syncing..."
 msgstr "Các thư mục chia sẻ đăng được đồng bộ hóa..."
 
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:51
+#: bajoo/gui/task_bar_icon/common_view_data.py:68
 msgid "Synchronization suspended"
 msgstr "Tạm ngưng đồng bộ hóa"
 
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:52
+#: bajoo/gui/task_bar_icon/common_view_data.py:69
 msgid "Synchronization is not active"
 msgstr "Chưa bật đồng bộ hóa"
 
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:53
+#: bajoo/gui/task_bar_icon/common_view_data.py:70
 msgid "An error occurred :("
 msgstr "Đã có lỗi xảy ra :("
 
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:101
+#: bajoo/gui/task_bar_icon/common_view_data.py:149
+msgid "Login window"
+msgstr "Cửa sổ đăng nhập"
+
+#: bajoo/gui/task_bar_icon/common_view_data.py:158
 msgid "Bajoo folder"
 msgstr "Thư mục Bajoo"
 
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:102
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:214
+#: bajoo/gui/task_bar_icon/common_view_data.py:166
+msgid "Manage my folders..."
+msgstr "Quản lý các thư mục..."
+
+#: bajoo/gui/task_bar_icon/common_view_data.py:173
+msgid "Online help"
+msgstr "Hỗ trợ trực tuyến"
+
+#: bajoo/gui/task_bar_icon/common_view_data.py:175
+msgid "Settings ..."
+msgstr "Hiệu chỉnh..."
+
+#: bajoo/gui/task_bar_icon/common_view_data.py:204
 msgid ""
 "Looks like you don't\n"
 "have any share"
@@ -1135,55 +1171,19 @@ msgstr ""
 "Có vẻ như bạn không có\n"
 "thư mục chia sẻ nào."
 
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:108
-msgid "Suspend synchronization"
-msgstr "Tạm ngưng đồng bộ hóa"
-
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:112
-msgid "Manage my folders..."
-msgstr "Quản lý các thư mục..."
-
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:116
-msgid "My client space"
-msgstr "Không gian khách hàng"
-
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:120
-msgid "Invite a friend on Bajoo"
-msgstr "Mời một người bạn đến với Bajoo"
-
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:124
-msgid "Online help"
-msgstr "Hỗ trợ trực tuyến"
-
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:128
-msgid "Settings ..."
-msgstr "Hiệu chỉnh..."
-
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:136
-msgid "Login window"
-msgstr "Cửa sổ đăng nhập"
-
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:137
-msgid "Open the login and registration window"
-msgstr "Mở cửa sổ đăng nhập / đăng ký"
-
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:145
-msgid "Report a problem"
-msgstr "Gửi thông báo lỗi"
-
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:148
-msgid "Quit"
-msgstr "Thoát"
-
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:149
-msgid "Quit Bajoo"
-msgstr "Thoát Bajoo"
-
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon.py:186
+#: bajoo/gui/task_bar_icon/common_view_data.py:208
 msgid "Shares folder"
 msgstr "Các thư mục chia sẻ"
 
-#: bajoo/gui/task_bar_icon/abstract_task_bar_icon_wx_interface.py:38
+#: bajoo/gui/task_bar_icon/common_view_data.py:220
+msgid "Report a problem"
+msgstr "Gửi thông báo lỗi"
+
+#: bajoo/gui/task_bar_icon/common_view_data.py:222
+msgid "Quit"
+msgstr "Thoát"
+
+#: bajoo/gui/task_bar_icon/controller.py:89
 msgid "https://www.bajoo.fr/help"
 msgstr ""
 
@@ -1244,28 +1244,28 @@ msgstr "Thư mục tương ứng trên máy bạn không còn."
 msgid "Folder creation failed: %s"
 msgstr "Lỗi khi tạo thư mục trên máy bạn: %s"
 
-#: bajoo/network/errors.py:38
+#: bajoo/network/errors.py:39
 msgid "A network error has occurred."
 msgstr "Đã có lỗi truy cập mạng."
 
-#: bajoo/network/errors.py:59
+#: bajoo/network/errors.py:60
 msgid "Unable to connect to the Bajoo servers."
 msgstr "Không thể kết nối đến các máy chủ Bajoo."
 
-#: bajoo/network/errors.py:65
+#: bajoo/network/errors.py:66
 msgid "The server did not respond on time."
 msgstr "Máy chủ không gửi được câu trả lời."
 
-#: bajoo/network/errors.py:71
+#: bajoo/network/errors.py:72
 msgid "Proxy error"
 msgstr "Lỗi proxy"
 
-#: bajoo/network/errors.py:100
+#: bajoo/network/errors.py:101
 #, python-format
 msgid "The server has returned an HTTP error: %(code)s %(reason)s"
 msgstr "Máy chủ trả về lỗi HTTP : %(code)s %(reason)s"
 
-#: bajoo/network/errors.py:139
+#: bajoo/network/errors.py:140
 msgid ""
 "The HTTP request is invalid. This is a bug, either in the client or in the "
 "server. Sorry for the inconvenience :("
@@ -1273,38 +1273,58 @@ msgstr ""
 "Yêu cầu HTTP không hợp lệ. Đây là lỗi ở phía máy chủ hoặc phần mềm. Chúng "
 "tôi xin lỗi vì sự bất tiện này. :("
 
-#: bajoo/network/errors.py:149
+#: bajoo/network/errors.py:150
 msgid "Your session has expired."
 msgstr "Buổi làm việc (session) của bạn đã hết hạn."
 
-#: bajoo/network/errors.py:155
+#: bajoo/network/errors.py:156
 msgid "You don't have the permission to do this operation."
 msgstr "Bạn không được cấp quyền cho chức năng này."
 
-#: bajoo/network/errors.py:162
+#: bajoo/network/errors.py:163
 msgid "The element you're looking for has not been found."
 msgstr "Cái bạn muốn tìm không được tìm thấy."
 
-#: bajoo/network/errors.py:168
+#: bajoo/network/errors.py:169
 msgid "The Bajoo servers have encountered an unexpected error :("
 msgstr "Các máy chủ Bajoo đã gặp sự cố không mong muốn :("
 
-#: bajoo/network/errors.py:175
+#: bajoo/network/errors.py:176
 msgid "Bajoo service does not understand or does not support this function."
 msgstr "Dịch vụ Bajoo không hiểu hoặc không hỗ trợ chức năng này."
 
-#: bajoo/network/errors.py:182
+#: bajoo/network/errors.py:183
 msgid "The Bajoo servers are temporarily unavailable. Please try again later."
 msgstr "Hiện tại các máy chủ Bajoo không truy cập được. Vui lòng thử lại sau."
 
-#: bajoo/network/errors.py:189
+#: bajoo/network/errors.py:190
 msgid "Your quota has exceeded."
 msgstr "Bạn đã dùng vượt quota"
 
-#: bajoo/network/proxy.py:66
+#: bajoo/network/errors.py:209
+msgid ""
+"The download has been interrupted, either by the server, or by a connexion "
+"failure."
+msgstr "Lượt tải đã thật bại, có thể do máy chủ hoặc kết nối bị ngắt."
+
+#: bajoo/network/errors.py:216
+#, fuzzy
+msgid "The downloaded content is not valid."
+msgstr "Email này không hợp lệ."
+
+#: bajoo/network/proxy.py:83
 msgid ""
 "Proxy is activate, but no URL is present.\n"
 "Check your configuration."
 msgstr ""
 "Proxy đã được bật, nhưng không có URL.\n"
 "Vui lòng kiểm tra thông tin."
+
+#~ msgid "Suspend synchronization"
+#~ msgstr "Tạm ngưng đồng bộ hóa"
+
+#~ msgid "My client space"
+#~ msgstr "Không gian khách hàng"
+
+#~ msgid "Invite a friend on Bajoo"
+#~ msgstr "Mời một người bạn đến với Bajoo"

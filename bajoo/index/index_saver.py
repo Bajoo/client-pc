@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 
-import ctypes
-import errno
 import io
 import json
 import logging
 import os
-import sys
+from tempfile import NamedTemporaryFile
 import threading
 import time
 
+from ..common.fs import hide_file_if_windows, replace_file
+from ..common.path import get_cache_dir
 from ..common.strings import ensure_unicode
 
 # To avoid index saving after every file change, the software waits
@@ -76,19 +76,28 @@ class IndexSaver(object):
 
         return self.index_path
 
-    def trigger_save(self):
+    def trigger_save(self, nb_err=0):
         """Trigger a save
 
         This method is used to indicate if a save is needed.
         It also start the period task.
+
+        Args:
+            nb_err (number): If set, indicate that this action is a retry.
+                It's used to retry without indefinitely looping over the same
+                problem.
         """
+        if nb_err >= 6:
+            _logger.warning('Stop retrying saving index %s', self.index_path)
+            return
 
         self.last_update = time.time()
 
         # do not allow two parallel timer
         if self.short_timer_lock.acquire(False):
             self.last_timer = threading.Timer(_SAVE_AFTER_INACTIVE_DURING,
-                                              self._short_timer_saving)
+                                              self._short_timer_saving,
+                                              args=(nb_err,))
             self.last_timer.start()
 
     def load(self):
@@ -108,9 +117,9 @@ class IndexSaver(object):
         with io.open(self.index_path, "w", encoding='utf-8') as index_file:
             index_file.write(u'{}')
 
-        self._hide_file_if_win()
+        self._hide_file_if_win(self.index_path)
 
-    def _short_timer_saving(self):
+    def _short_timer_saving(self, nb_err=0):
         current_time = time.time()
         previous_time = self.last_update + _SAVE_AFTER_INACTIVE_DURING
         self.previous_update = current_time
@@ -120,60 +129,40 @@ class IndexSaver(object):
 
             if self.timer_restart_count < _MAX_TIMER_RESTART:
                 self.last_timer = threading.Timer(_SAVE_AFTER_INACTIVE_DURING,
-                                                  self._short_timer_saving)
+                                                  self._short_timer_saving,
+                                                  args=(nb_err,))
                 self.last_timer.start()
                 return
 
         self.timer_restart_count = 0
         self.short_timer_lock.release()
-        self._save()
+        self._save(nb_err)
 
-    def _save(self):
+    def _save(self, nb_err=0):
         # the file index need to be deleted because python is not able to
         # open write access on a hidden file (windows issue)
         _logger.debug('save index')
 
-        try:
-            os.remove(self.index_path)
-        except (OSError, IOError) as e:
-            if e.errno != errno.ENOENT:
-                _logger.exception('Unable to remove index %s:' %
-                                  self.index_path)
-                self.trigger_save()
-                return
-        except Exception:
-            _logger.exception('Unexpected exception on index removing %s: ' %
-                              self.index_path)
-            self.trigger_save()
-            return
-
         index = self.local_container.index.generate_dict()
 
         try:
-            with open(self.index_path, 'w') as index_file:
-                json.dump(index, index_file)
-        except (OSError, IOError):
+            tmp_index_file = NamedTemporaryFile(mode='w+', dir=get_cache_dir(),
+                                                delete=False)
+            with tmp_index_file:
+                json.dump(index, tmp_index_file)
+            replace_file(tmp_index_file.name, self.index_path)
+            self._hide_file_if_win(self.index_path)
+        except:
             _logger.exception('Unable to save index %s:' % self.index_path)
-            self.trigger_save()
-        except Exception:
-            _logger.exception('Unexpected exception on index saving %s: ' %
-                              self.index_path)
-            self.trigger_save()
-        else:
-            self._hide_file_if_win()
 
-    def _hide_file_if_win(self):
-        if sys.platform in ['win32', 'cygwin', 'win64']:
-            try:
-                # Set HIDDEN_FILE_ATTRIBUTE (0x02)
-                ret = ctypes.windll.kernel32.SetFileAttributesW(
-                    self.index_path,
-                    0x02)
-                if not ret:
-                    raise ctypes.WinError()
-            except:
-                _logger.warning('Tentative to set HIDDEN file attribute to '
-                                '%s failed' % self.index_path, exc_info=True)
+            self.trigger_save(nb_err+1)
+
+    def _hide_file_if_win(self, index_path):
+        try:
+            hide_file_if_windows(self.index_path)
+        except:
+            _logger.warning('Tentative to set HIDDEN file attribute to '
+                            '%s failed' % index_path, exc_info=True)
 
     def stop(self):
         if self.last_timer:

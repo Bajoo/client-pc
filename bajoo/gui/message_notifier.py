@@ -5,7 +5,7 @@ from ..common.path import resource_filename
 import logging
 import os
 import sys
-if sys.platform not in ['win32', 'cygwin', 'win64']:
+if sys.platform not in ['win32', 'cygwin', 'win64', 'darwin']:
     import notify2
     try:
         from html import escape
@@ -28,7 +28,7 @@ class MessageNotifier(object):
     def __init__(self, tray_icon):
         if sys.platform in ['win32', 'cygwin', 'win64']:
             self._tray_icon = tray_icon
-        else:
+        elif sys.platform != 'darwin':
             notify2.init('Bajoo')
             self._need_escape = 'body-markup' in notify2.get_server_caps()
 
@@ -41,13 +41,6 @@ class MessageNotifier(object):
             is_error (boolean): Change the displayed icon, to indicate if
                 it's an error message or an informative message.
         """
-        if is_error:
-            icon_path = resource_filename(
-                'assets/images/icon_notification_error.png')
-        else:
-            icon_path = resource_filename(
-                'assets/images/trayicon_status/sync.png')
-
         if sys.platform in ['win32', 'cygwin', 'win64']:
             # Before Windows 10, the balloon has no icon visible.
             # On Windows 10, the icon from the TrayIcon is used.
@@ -57,7 +50,16 @@ class MessageNotifier(object):
             # ugly, but wxPython offers no ways to fix it.
             # TODO: use an alternative notification method.
             self._tray_icon.ShowBalloon(title, message)
+        elif sys.platform == 'darwin':
+            pass  # TODO
         else:
+            if is_error:
+                icon_path = resource_filename(
+                    'assets/images/icon_notification_error.png')
+            else:
+                icon_path = resource_filename(
+                    'assets/images/trayicon_status/sync.png')
+
             if self._need_escape:
                 message = escape(message)
 

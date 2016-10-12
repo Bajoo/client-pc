@@ -10,4 +10,5 @@ import sys
 
 import bajoo
 
-sys.exit(bajoo.main())
+if __name__ == "__main__":
+    sys.exit(bajoo.main())

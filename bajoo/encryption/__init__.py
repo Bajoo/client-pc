@@ -22,6 +22,8 @@ from functools import partial
 import io
 import logging
 import os.path
+import sys
+
 from ..gnupg import GPG
 
 from ..promise import reduce_coroutine
@@ -71,13 +73,29 @@ def _get_gpg_context():
     global _gpg
 
     if not _gpg:
+        gpg_init_args = {
+            'verbose': False,
+            'gnupghome': _gpg_home_dir,
+            'use_agent': False
+        }
+
+        # if macos and frozen app, gpg is in resources directory
+        if (getattr(sys, 'frozen', False) and
+           getattr(sys, 'executable', False) and
+           sys.platform == 'darwin'):
+            dir_executable = os.path.dirname(sys.executable)
+            dir_executable = os.path.join(
+                dir_executable, '..', 'Resources', 'gpg2')
+            gpg_init_args['gpgbinary'] = os.path.abspath(dir_executable)
+
         try:
-            _gpg = GPG(verbose=False, gnupghome=_gpg_home_dir, use_agent=False)
+            _gpg = GPG(**gpg_init_args)
         except (IOError, OSError) as e:
             _logger.exception("GPG() can't be initialized")
             if e.errno == errno.ENOENT:
                 raise EncryptionError('GPG binary executable not found.')
             raise
+        _gpg.encoding = 'utf-8'
     return _gpg
 
 

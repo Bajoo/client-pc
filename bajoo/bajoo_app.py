@@ -185,7 +185,7 @@ class BajooApp(wx.App):
         }
         set_proxy(event.proxy_mode, settings)
 
-    @ensure_gui_thread
+    @ensure_gui_thread(safeguard=True)
     def _on_app_status_changes(self, value):
         if self._task_bar_icon:
             self._task_bar_icon.set_app_status(value)
@@ -194,7 +194,7 @@ class BajooApp(wx.App):
             # so we update the task bar icon's container list at the same time.
             self._container_status_request()
 
-    @ensure_gui_thread
+    @ensure_gui_thread()
     def create_home_window(self):
         """Create a new HomeWindow instance and return it.
 
@@ -304,7 +304,7 @@ class BajooApp(wx.App):
 
         return True
 
-    @ensure_gui_thread
+    @ensure_gui_thread(safeguard=True)
     def _show_window(self, destination):
         """Catch event from tray icon, asking to show a window."""
         window = None
@@ -712,7 +712,7 @@ class BajooApp(wx.App):
             if self._main_window:
                 self._main_window.on_password_changed()
 
-    @ensure_gui_thread
+    @ensure_gui_thread(safeguard=True)
     def _exit(self):
         """Close all resources and quit the app."""
         if self._exit_flag:
@@ -745,6 +745,18 @@ class BajooApp(wx.App):
         task_consumer.stop()
 
         self._dummy_frame.Destroy()
+
+        # This wx App_CleanUp exit handler is bogged on macos and
+        # results in a segmentation fault at each exit.
+        # It probably tries to free a wxWidget that was already destroyed.
+        # But which one... (it is not the dummy frame)
+        if sys.platform == 'darwin' and sys.version_info[0] < 3:
+            import atexit
+            for handler in atexit._exithandlers:
+                if handler[0].__name__ == 'App_CleanUp':
+                    atexit._exithandlers.remove(handler)
+                    break
+
         _logger.debug('Exiting done !')
 
     # Note (Kevin): OnEventLoopEnter(), from wx.App, is inconsistent. run()
@@ -765,7 +777,7 @@ class BajooApp(wx.App):
         _logger.debug('Start main loop')
         self.MainLoop()
 
-    @ensure_gui_thread
+    @ensure_gui_thread()
     def _on_connection(self, session_and_user):
         self._session, self._user, self.user_profile = session_and_user
 
@@ -941,7 +953,7 @@ class BajooApp(wx.App):
         self.restart_when_idle(_already_bound=True,
                                _window_being_destroyed=window_being_destroyed)
 
-    @ensure_gui_thread
+    @ensure_gui_thread(safeguard=True)
     def restart_when_idle(self, _already_bound=False,
                           _window_being_destroyed=None):
         # Under Windows, the window being destroyed during EVT_WINDOW_DESTROY
@@ -962,10 +974,10 @@ class BajooApp(wx.App):
             self.Unbind(wx.EVT_WINDOW_DESTROY, handler=self._restart_if_idle)
             return self._restart_for_update()
 
-    @ensure_gui_thread
+    @ensure_gui_thread()
     def _restart_for_update(self, _evt=None):
         if self._exit_flag:
             return
         _logger.info('Restart Bajoo now.')
         self._updater.register_restart_on_exit()
-        self._exit().result()
+        return self._exit()
