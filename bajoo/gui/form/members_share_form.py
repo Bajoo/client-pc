@@ -207,7 +207,7 @@ class MembersShareView(BaseView):
         self._cmb_permission.SetString(1, _('Read Write'))
         self._cmb_permission.SetString(2, _('Read Only'))
 
-    @ensure_gui_thread
+    @ensure_gui_thread(safeguard=True)
     def load_members_view(self, members=None):
         if members is None:
             members = self._data

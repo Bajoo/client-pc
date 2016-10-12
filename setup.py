@@ -148,7 +148,55 @@ setup_kwargs = {
         'build_translation': BuildTranslation
     },
     'zip_safe': False,
-    'options': {
+    'data_files': []
+}
+
+# ############################################################################
+# ### UNIX/LINUX #############################################################
+# ############################################################################
+
+setup_kwargs['include_package_data'] = True
+if sys.platform not in ['win32', 'cygwin', 'win64', 'darwin']:
+    setup_kwargs['install_requires'] += [
+        'notify2>=0.3'
+    ]
+
+    if sys.platform.startswith('linux'):
+        setup_kwargs['data_files'].extend([
+            ('share/applications', ['bajoo/assets/bajoo.desktop']),
+            ('share/bajoo/assets/images', glob('bajoo/assets/images/*.png')),
+            ('share/bajoo/assets/images/container_status',
+             glob('bajoo/assets/images/container_status/*.png')),
+            ('share/bajoo/assets/images/trayicon_status',
+             glob('bajoo/assets/images/trayicon_status/*.png')),
+            ('share/bajoo/assets', ['bajoo/assets/exe_icon.ico',
+                                    'bajoo/assets/window_icon.png', ])
+        ])
+
+        setup_kwargs['data_files'].extend([
+            (os.path.join('share', mo_dir[6:]),
+             [os.path.join(mo_dir, 'bajoo.mo')])
+            for mo_dir in glob('bajoo/locale/*/LC_MESSAGES')])
+
+        setup_kwargs['data_files'].extend([
+            (os.path.join('share/icons/hicolor', mo_dir[19:], 'apps'),
+             glob(os.path.join(mo_dir, "*")))
+            for mo_dir in glob('bajoo/assets/icons/*')])
+
+        setup_kwargs['include_package_data'] = False
+
+# ############################################################################
+# ### WINDOWS ################################################################
+# ############################################################################
+
+elif sys.platform in ['win32', 'win64']:
+    setup_kwargs['install_requires'] += [
+        'pypiwin32'
+    ]
+    setup_kwargs['setup_requires'] += [
+        'py2exe'
+    ]
+    setup_kwargs['options'] = {
         'bdist_esky': {
             'freezer_module': 'py2exe',
             'freezer_options': {
@@ -161,46 +209,97 @@ setup_kwargs = {
                 },
                 'skip_archive': True
             }
-        },
-
+        }
     }
-}
 
-setup_kwargs['include_package_data'] = True
-if sys.platform not in ['win32', 'cygwin', 'win64']:
-    setup_kwargs['install_requires'] += [
-        'notify2>=0.3'
-    ]
+# ############################################################################
+# ### MACOS ##################################################################
+# ############################################################################
 
-    if sys.platform.startswith('linux'):
-        setup_kwargs['data_files'] = [
-            ('share/applications', ['bajoo/assets/bajoo.desktop']),
-            ('share/bajoo/assets/images', glob('bajoo/assets/images/*.png')),
-            ('share/bajoo/assets/images/container_status',
-             glob('bajoo/assets/images/container_status/*.png')),
-            ('share/bajoo/assets/images/trayicon_status',
-             glob('bajoo/assets/images/trayicon_status/*.png')),
-            ('share/bajoo/assets', ['bajoo/assets/exe_icon.ico',
-                                    'bajoo/assets/window_icon.png', ])
+elif sys.platform == 'darwin':
+    PYTHON_DIR = '/System/Library/Frameworks/Python.framework/Versions'
+    PYTHON_LIB = PYTHON_DIR+'/2.7/lib/python2.7/'
+    COPYRIGHT = (u"Copyright © 2016 Bajoo <support@bajoo.fr>, All Rights "
+                 u"Reserved")
+
+    py2app_options = {
+        'plist': {
+            'argv_emulation': True,
+            'site_packages': True,
+            'CFBundleIconFile': 'assets/exe_icon.icns',
+            # keep the following in lower case because it is used to build
+            # some path and esky only use lower case path
+            'CFBundleName': 'bajoo',
+            'CFBundleDisplayName': 'Bajoo',
+            'CFBundleGetInfoString': "File sharing",
+            'CFBundleIdentifier': "com.bajoo.osx.client",
+            'CFBundleVersion': __version__,  # noqa
+            'CFBundleShortVersionString': __version__,  # noqa
+            'NSHumanReadableCopyright': COPYRIGHT,
+            # disable the icon in the doc
+            'LSUIElement': '1',
+            'PyResourcePackages': [
+                PYTHON_LIB,
+                PYTHON_LIB+'lib-dynload/',
+                PYTHON_LIB+'plat-mac/'
+            ],
+            'LSEnvironment': {
+                'REQUESTS_CA_BUNDLE': '../Resources/cacert.pem'
+            }
+        },
+        'frameworks': [
+            # these libs are needed by gpg2
+            '/usr/local/MacGPG2/lib/libz.1.2.8.dylib',
+            '/usr/local/MacGPG2/lib/libintl.8.dylib',
+            '/usr/local/MacGPG2/lib/libgcrypt.20.dylib',
+            '/usr/local/MacGPG2/lib/libgpg-error.0.dylib',
+            '/usr/local/MacGPG2/lib/libiconv.2.dylib',
+            '/usr/local/MacGPG2/lib/libassuan.0.dylib',
+        ],
+        'resources': [
+            '/usr/local/MacGPG2/bin/gpg2'
         ]
+    }
 
-        setup_kwargs['data_files'] += [
-            (os.path.join('share', mo_dir[6:]),
-             [os.path.join(mo_dir, 'bajoo.mo')])
-            for mo_dir in glob('bajoo/locale/*/LC_MESSAGES')]
+    setup_kwargs['options'] = {
+        'py2app': py2app_options,
+        'bdist_esky': {
+            'freezer_module': 'py2app',
+            # need to duplicate py2app option here, esky does not seem able
+            # to retrieve them from 'py2app' dict in 'options'
+            'freezer_options': py2app_options
+        }
+    }
 
-        setup_kwargs['data_files'] += [
-            (os.path.join('share/icons/hicolor', mo_dir[19:], 'apps'),
-             glob(os.path.join(mo_dir, "*")))
-            for mo_dir in glob('bajoo/assets/icons/*')]
+    setup_kwargs['app'] = ['start.py']
+    setup_kwargs['setup_requires'].append('py2app')
 
-        setup_kwargs['include_package_data'] = False
+    setup_kwargs['data_files'].extend([
+        ('assets', ['bajoo/assets/bajoo.desktop',
+                    'bajoo/assets/exe_icon.ico',
+                    'bajoo/assets/exe_icon.icns',
+                    'bajoo/assets/window_icon.png']),
+        ('assets/images', glob('bajoo/assets/images/*.png')),
+        ('assets/images/container_status',
+         glob('bajoo/assets/images/container_status/*.png')),
+        ('assets/images/trayicon_status',
+         glob('bajoo/assets/images/trayicon_status/*.png'))
+    ])
 
-elif sys.platform in ['win32', 'win64']:
-    setup_kwargs['install_requires'] += [
-        'pypiwin32',
-        'py2exe'
-    ]
+    setup_kwargs['data_files'].extend([
+        (mo_dir[6:], [os.path.join(mo_dir, 'bajoo.mo')])
+        for mo_dir in glob('bajoo/locale/*/LC_MESSAGES')])
+
+    setup_kwargs['data_files'].extend([
+        (os.path.join('icons', mo_dir[19:], 'apps'),
+         glob(os.path.join(mo_dir, "*")))
+        for mo_dir in glob('bajoo/assets/icons/*')])
+
+    setup_kwargs['include_package_data'] = False
+
+# ############################################################################
+# ### DATA ###################################################################
+# ############################################################################
 
 if setup_kwargs['include_package_data']:
     setup_kwargs['package_data'] = {
@@ -209,6 +308,10 @@ if setup_kwargs['include_package_data']:
                   'assets/images/*.png', 'assets/images/*/*.png']
     }
 
+# ############################################################################
+# ### PYTHON 3 ###############################################################
+# ############################################################################
+
 if sys.version_info[0] is 3:  # Python3 only
     setup_kwargs['install_requires'] += [
         'wxpython-phoenix>=3.dev'
@@ -216,6 +319,10 @@ if sys.version_info[0] is 3:  # Python3 only
     setup_kwargs.setdefault('dependency_links', [])
     setup_kwargs['dependency_links'].append(
         'http://wxpython.org/Phoenix/snapshot-builds/')
+
+# ############################################################################
+# ### ESKY ###################################################################
+# ############################################################################
 
 try:
     from esky import bdist_esky
@@ -235,17 +342,36 @@ else:
                 print('\tpip install http://sourceforge.net/projects/py2exe/'
                       'files/latest/download?source=files')
 
+        cacert_path = requests.certs.where()
+        setup_kwargs['data_files'].extend((
+            ('.', glob('gpg/*.exe') + glob('gpg/*.dll'),),
+            ('requests', (cacert_path,),),))
         icon_path = './bajoo/assets/exe_icon.ico'
+
+    elif sys.platform == 'darwin':
+        import requests
+
+        try:
+            import py2app  # noqa
+        except ImportError:
+            print('Warning: To use esky, py2app must be installed manually'
+                  ' using this command:')
+            print('\tpip install --upgrade py2app')
+
+        setup_kwargs['options']['py2app']['resources'].append(
+            requests.certs.where()
+        )
+        icon_path = './assets/exe_icon.icns'
+
+    if sys.platform in ['win32', 'cygwin', 'win64', 'darwin']:
+        for f in glob('docs/*'):
+            setup_kwargs['data_files'].extend((
+                ('../%s' % f, glob('%s/*' % f),),))
+
         setup_kwargs['scripts'] = [
             bdist_esky.Executable('start.py', name='Bajoo', gui_only=True,
                                   icon=icon_path)
         ]
-        cacert_path = requests.certs.where()
-        setup_kwargs['data_files'] = [('.', glob('gpg/*.exe') +
-                                       glob('gpg/*.dll')),
-                                      ('requests', [cacert_path])]
-        for f in glob('docs/*'):
-            setup_kwargs['data_files'].append(('../%s' % f, glob('%s/*' % f)))
 
 
 setup(**setup_kwargs)

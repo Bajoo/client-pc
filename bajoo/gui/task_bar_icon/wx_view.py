@@ -19,8 +19,9 @@ class WxView(wx.TaskBarIcon, TaskBarIconBaseView):
         wx.TaskBarIcon.__init__(self)
         TaskBarIconBaseView.__init__(self, ctrl)
 
-        self._app_status_icons = {key: wx.Icon(path) for (key, path) in
-                                  app_status_to_icon_files.items()}
+        self._app_status_icons = {
+            key: wx.Icon(path, desiredWidth=128, desiredHeight=128) for
+            (key, path) in app_status_to_icon_files.items()}
 
         # mapping path -> wxImage
         self._container_status_icons = {

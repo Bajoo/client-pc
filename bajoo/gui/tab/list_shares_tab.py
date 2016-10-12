@@ -87,7 +87,7 @@ class ListSharesTab(wx.Panel, Translator):
                 get_bitmap('container_status/error.png')
         }
 
-    @ensure_gui_thread
+    @ensure_gui_thread()
     def set_data(self, data):
         self._shares = data.get('shares', [])
         self._view.generate_share_views(self._shares)

@@ -39,6 +39,11 @@ def _migration_remove_tmp_folders():
                      err2unicode(err))
         return
 
+    try:
+        tmp_dirs.remove('log')
+    except ValueError:
+        pass
+
     def _remove_tmp_dir_thread(tmp_dirs):
         _logger.debug('Start cleaning old tmp dirs.')
         cache_dir = get_cache_dir()
