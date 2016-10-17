@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
+import sys
 import wx
-from wx.lib.newevent import NewEvent
 
-from ..promise import Promise, CancelledError
+from ..promise import Deferred, Promise, CancelledError
 
 
 class EventPromise(Promise):
@@ -82,12 +82,28 @@ class EventPromise(Promise):
                 return False
 
 
+def _wrap_deferred(df, fc, *args, **kwargs):
+    """Call a function and use the result to resolve or reject a Deferred.
+
+    Args:
+        df (Deferred): deferred to reject or resolve.
+        fc (Callable): function that will be called.
+        *args: fc arguments
+        **kwargs: fc kwargs
+    """
+    try:
+        r = fc(*args, **kwargs)
+    except:
+        df.reject(*sys.exc_info())
+    else:
+        df.resolve(r)
+
+
 def ensure_gui_thread(safeguard=False):
     """Ensure the function will always be called in the GUI thread.
 
     This decorator will execute the function only in the GUI thread.
-    If we are not in the right thread, it will delay the execution (using
-    wx.PostEvent).
+    It will delay the execution.
 
     Args:
         safeguard (boolean): if True, use `Promise.safeguard()` on the
@@ -99,21 +115,11 @@ def ensure_gui_thread(safeguard=False):
     """
 
     def decorator(f):
-        RunEvent, EVT_RUN = NewEvent()
-        handler = wx.EvtHandler()
-
         def wrapper(*args, **kwargs):
-            if wx.IsMainThread():
-                try:
-                    p = Promise.resolve(f(*args, **kwargs))
-                except BaseException as error:
-                    p = Promise.reject(error)
-            else:
-                p = EventPromise(handler, EVT_RUN)
-                p = p.then(lambda _evt: f(*args, **kwargs))
-                wx.PostEvent(handler, RunEvent())
+            df = Deferred()
+            wx.CallAfter(_wrap_deferred, df, f, *args, **kwargs)
             if safeguard:
-                p.safeguard()
-            return p
+                df.promise.safeguard()
+            return df.promise
         return wrapper
     return decorator
