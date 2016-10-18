@@ -4,6 +4,7 @@ import wx
 
 from ..common.i18n import _
 from ..common.path import resource_filename
+from ..common.util import macos_activate_app
 from ..promise import Promise
 from ..ui_handler_of_connection import UIHandlerOfConnection
 from .base_view import BaseView
@@ -75,6 +76,8 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
         self._view.set_screen(HomeScreen)
         self._view.current_screen.reset_form(last_username, errors)
         self.Show(True)
+        self.Raise()
+        macos_activate_app()
 
         def callback(evt):
             if evt.GetEventType() == HomeScreen.EVT_CONNECTION_SUBMIT.typeId:
