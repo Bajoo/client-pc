@@ -8,6 +8,16 @@ class BaseNode(object):
     flags to see if the object is sync between local and server, and if all its
     descendants are sync.
 
+    The two attributes `local_state` and `remote_state` are representations of
+    the content's node. Theirs type are dependents of the Node type, and is
+    defined in subclasses. Both local and remote states are of the same type.
+    A None value means the target don't exist.
+    Obviously, the state attributes are only the last version known to Bajoo.
+
+    The two attributes `local_hint` and `remote_hint` are values set when an
+    event is detected, and the node's corresponding value as changed. It's a
+    "hint" that can be used for syncing the node.
+
     Attributes:
         name (Text): filename, used to represent the node.
         parent (Optional[BaseNode]): parent node. If None, this node is a root
@@ -25,6 +35,12 @@ class BaseNode(object):
         task (Any): if not None, there is an ongoing operation to sync this
             node. This task object means the node is "in use" and another task
             should not work on the same node.
+        local_state (Any): last known state of the node content, local-side
+        remote_state (Any):last known state of the node content, remote-side
+        local_hint (Optional[Hint]): if set, hint representing the presumed
+            local modifications of the content pointed by this node.
+        remote_hint (Optional[Hint]): if set, hint representing the presumed
+            remote modifications of the content pointed by this node.
     Notes:
         `sync` refers to the node only; `dirty` refers the hierarchy. A
         non-sync node is always dirty.
@@ -42,7 +58,12 @@ class BaseNode(object):
         self._sync = False
         self._dirty = True
 
+        self.local_state = None
+        self.remote_state = None
+
         self.task = None
+        self.local_hint = None
+        self.remote_hint = None
 
     def add_child(self, node):
         """Add a child to this node.
@@ -112,3 +133,16 @@ class BaseNode(object):
         """Remove itself from the tree."""
         if self.parent:
             self.parent.rm_child(self)
+
+    def exists(self):
+        """Check if the node physically existed the last time it was sync.
+
+        Note:
+            If the target has been created after the last sync, it will still
+            returns True. It only considers the synced data (and ignore the
+            hints).
+
+        Returns:
+            bool: True if it exists; otherwise False
+        """
+        return self.local_state is not None or self.remote_state is not None
