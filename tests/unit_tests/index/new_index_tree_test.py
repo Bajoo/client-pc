@@ -1,30 +1,37 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import unicode_literals
 from bajoo.index.base_node import BaseNode
 from bajoo.index.new_index_tree import IndexTree
 
 
-class TestIndexTree(object):
+class MyNode(BaseNode):
+    pass
 
-    def _make_tree(self, node_def, default_sync=False):
-        """Quick helper to generate a BaseNode hierarchy.
 
-        Args:
-            Tuple[str, List[Tuple], bool]: node definition, of the form:
-                ('node name', [children definitions], sync). Both part 2 and 3
-                of the tuple are optional.
-            default_sync (bool, optional): default value to set the 'sync' flag
-        Returns:
-            BaseNode: node built from the definition.
-        """
-        name = node_def[0]
-        children = node_def[1] if len(node_def) > 1 else []
-        sync_flag = node_def[2] if len(node_def) > 2 else default_sync
-        node = BaseNode(name)
-        node.sync = sync_flag
-        for child_def in children:
-            node.add_child(self._make_tree(child_def, default_sync))
-        return node
+def _make_tree(node_def, default_sync=False):
+    """Quick helper to generate a BaseNode hierarchy.
+
+    Args:
+        Tuple[str, List[Tuple], bool]: node definition, of the form:
+            ('node name', [children definitions], sync). Both part 2 and 3
+            of the tuple are optional.
+        default_sync (bool, optional): default value to set the 'sync' flag
+    Returns:
+        BaseNode: node built from the definition.
+    """
+    name = node_def[0]
+    children = node_def[1] if len(node_def) > 1 else []
+    sync_flag = node_def[2] if len(node_def) > 2 else default_sync
+    node = BaseNode(name)
+    node.sync = sync_flag
+    for child_def in children:
+        node.add_child(_make_tree(child_def, default_sync))
+    return node
+
+
+class TestBrowseIndexTree(object):
+    """Test of the IndexTree.browse_all_non_sync_nodes() method."""
 
     def test_browse_empty_tree_will_return_empty_generator(self):
         tree = IndexTree()
@@ -33,7 +40,7 @@ class TestIndexTree(object):
 
     def test_browse_clean_tree_returns_empty_generator(self):
         tree = IndexTree()
-        tree._root = self._make_tree(('root', [
+        tree._root = _make_tree(('root', [
             ('A', [('1',), ('2',)]),
             ('B', [('1',), ('2',)]),
         ]), default_sync=True)
@@ -43,7 +50,7 @@ class TestIndexTree(object):
 
     def test_browse_dirty_tree_returns_only_non_sync_nodes(self):
         tree = IndexTree()
-        tree._root = self._make_tree(('root', [
+        tree._root = _make_tree(('root', [
             ('A', [('A1', [], False), ('A2',)]),
             ('B', [('B1',), ('B2', [], False)], False),
             ('C', [('C1', [], False), ('C2', [], False)]),
@@ -65,7 +72,7 @@ class TestIndexTree(object):
         no longer a task on it.
         """
         tree = IndexTree()
-        tree._root = self._make_tree(('root', [
+        tree._root = _make_tree(('root', [
             ('A', [('A1', [], False), ('A2',)]),
             ('B', [('B1',), ('B2', [], False)], False),
             ('C', [('C1', [], False), ('C2', [], False)]),
@@ -94,7 +101,7 @@ class TestIndexTree(object):
         whole tree is marked not dirty).
         """
         tree = IndexTree()
-        tree._root = self._make_tree(('node A', [('node B',)], True))
+        tree._root = _make_tree(('node A', [('node B',)], True))
         node_a = tree._root
         node_b = tree._root.children['node B']
         # At start: A is sync, but not B
@@ -140,8 +147,8 @@ class TestIndexTree(object):
         `BROWSE_WAIT_FOR_TASK`.
         """
         tree = IndexTree()
-        tree._root = self._make_tree(('root', [('A',), ('B',)], True),
-                                     default_sync=False)
+        tree._root = _make_tree(('root', [('A',), ('B',)], True),
+                                default_sync=False)
         tree._root.children['A'].task = True
         tree._root.children['B'].task = True
 
@@ -159,3 +166,66 @@ class TestIndexTree(object):
         tree._root.children['B'].sync = True
         # Although B is still reserved by a task, it's no longer dirty.
         assert next(gen, None) is None  # Iterator is empty
+
+
+class TestGetNodeFromIndexTree(object):
+    """Tests about node access methods of IndexTree."""
+
+    def test_get_node_by_path(self):
+        tree = IndexTree()
+        tree._root = _make_tree(('root', [('A', [('A1',)]),
+                                          ('B', [('B1',), ('B2',)])]))
+        node_a1 = tree.get_node_by_path('A/A1')
+        node_b = tree.get_node_by_path('B')
+        assert node_a1 and node_a1.name == 'A1'
+        assert node_b and node_b.name == 'B'
+
+    def test_get_root_node_by_path(self):
+        tree = IndexTree()
+        tree._root = _make_tree(('root', [('A',), ('B',)]))
+        assert tree.get_node_by_path('.') is tree._root
+
+    def test_get_missing_node_by_path(self):
+        tree = IndexTree()
+        tree._root = _make_tree(('root', [('A',), ('B',)]))
+        assert tree.get_node_by_path('A/ghost') is None
+
+    def test_get_missing_root_node_by_path(self):
+        tree = IndexTree()
+        assert tree.get_node_by_path('.') is None
+
+    def test_get_node_by_path_with_missing_folder(self):
+        tree = IndexTree()
+        tree._root = _make_tree(('root', [('A',), ('B',)]))
+        assert tree.get_node_by_path('A/B/C/ghost') is None
+
+    def test_get_or_create_node_by_path(self):
+        tree = IndexTree()
+        tree._root = _make_tree(('root', [('A', [('A1',)]),
+                                          ('B', [('B1',), ('B2',)])]))
+        node_a1 = tree.get_or_create_node_by_path('A/A1', None)
+        node_b = tree.get_or_create_node_by_path('B', None)
+        assert node_a1 and node_a1.name == 'A1'
+        assert node_b and node_b.name == 'B'
+
+    def test_get_or_create_root_node_by_path(self):
+        tree = IndexTree()
+        tree._root = _make_tree(('root', [('A',), ('B',)]))
+        assert tree.get_or_create_node_by_path('.', None) is tree._root
+
+    def test_get_or_create_missing_node_by_path(self):
+        tree = IndexTree()
+        tree._root = _make_tree(('root', [('A',), ('B',)]))
+        node = tree.get_or_create_node_by_path('A/ghost', MyNode)
+        assert isinstance(node, MyNode)
+
+    def test_get_or_create_node_by_path_without_root(self):
+        tree = IndexTree()
+        node = tree.get_or_create_node_by_path('A/b/c', MyNode)
+        assert isinstance(node, MyNode)
+
+    def test_get_or_create_node_by_path_with_missing_folder(self):
+        tree = IndexTree()
+        tree._root = _make_tree(('root', [('A',), ('B',)]))
+        node = tree.get_or_create_node_by_path('A/B/C/ghost', MyNode)
+        assert isinstance(node, MyNode)

@@ -5,6 +5,7 @@ import logging
 import os.path
 import threading
 from ..common.strings import ensure_unicode
+from .folder_node import FolderNode
 
 _logger = logging.getLogger(__name__)
 
@@ -118,4 +119,40 @@ class IndexTree(object):
             if node is None:
                 return None
             node = node.children.get(name)
+        return node
+
+    def get_or_create_node_by_path(self, node_path, node_factory):
+        """Search and return a node from its file path. Create it if needed.
+
+        If the node don't exists, it will be created using a constructor
+        provided by the caller. All missing nodes between the selected node and
+        the root will be created as instances of FolderNode.
+
+        Args:
+            node_path (Text): path of the node, relative to the root folder.
+            node_factory (Callable[[Text], BaseNode]): constructor of the leaf
+                node.
+        Return:
+            BaseNode: node referenced by the path.
+        """
+        node_path = ensure_unicode(node_path)
+        node_names = os.path.normpath(node_path).split(os.path.sep)
+
+        if not self._root:
+            self._root = FolderNode(u'.')
+
+        if node_names == ['.']:
+            return self._root
+
+        node = self._root
+        for idx, name in enumerate(node_names):
+            parent = node
+            node = parent.children.get(name)
+            if node is None:
+                if idx + 1 == len(node_names):
+                    # leaf
+                    node = node_factory(name)
+                else:
+                    node = FolderNode(name)
+                parent.add_child(node)
         return node
