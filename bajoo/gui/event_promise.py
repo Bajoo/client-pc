@@ -3,7 +3,7 @@
 import sys
 import wx
 
-from ..promise import Deferred, Promise, CancelledError
+from ..promise import Deferred, is_thenable, Promise, CancelledError
 
 
 class EventPromise(Promise):
@@ -96,14 +96,21 @@ def _wrap_deferred(df, fc, *args, **kwargs):
     except:
         df.reject(*sys.exc_info())
     else:
-        df.resolve(r)
+        if is_thenable(r):
+            r.then(df.resolve, df.reject, True)
+        else:
+            df.resolve(r)
 
 
 def ensure_gui_thread(safeguard=False):
     """Ensure the function will always be called in the GUI thread.
 
     This decorator will execute the function only in the GUI thread.
-    It will delay the execution.
+    It will delay the execution, and wrap the result in a Promise.
+
+    Notes:
+        If the wrapped function returns a Promise, this Promise will be
+        chained, in order to never have nested promises.
 
     Args:
         safeguard (boolean): if True, use `Promise.safeguard()` on the
