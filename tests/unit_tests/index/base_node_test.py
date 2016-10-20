@@ -116,3 +116,53 @@ class TestBaseNode(object):
         node.sync = True
         assert node.dirty
         assert node.sync
+
+    def test_rm_child(self):
+        root = BaseNode('root')
+        child_a = BaseNode('A')
+        child_b = BaseNode('B')
+        for node in (child_a, child_b):
+            root.add_child(node)
+
+        root.rm_child(child_a)
+        assert child_a.parent is None
+        assert child_a not in root.children
+
+    def test_rm_dirty_child_updates_parent_flag(self):
+        node = BaseNode('node')
+        child1 = BaseNode('child 1')
+        child2 = BaseNode('child 2')
+        node.add_child(child1)
+        node.add_child(child2)
+        node.sync = True
+        child1.sync = True
+        child2.sync = False
+
+        assert node.dirty
+        node.rm_child(child2)
+        assert not node.dirty
+
+    def test_node_remove_itself(self):
+        root = BaseNode('root')
+        child_a = BaseNode('A')
+        child_b = BaseNode('B')
+        for node in (child_a, child_b):
+            root.add_child(node)
+
+        child_a.remove_itself()
+        assert child_a.parent is None
+        assert child_a not in root.children
+
+    def test_dirty_node_removing_itself_updates_parent_flag(self):
+        node = BaseNode('node')
+        child1 = BaseNode('child 1')
+        child2 = BaseNode('child 2')
+        node.add_child(child1)
+        node.add_child(child2)
+        node.sync = True
+        child1.sync = True
+        child2.sync = False
+
+        assert node.dirty
+        child2.remove_itself()
+        assert not node.dirty

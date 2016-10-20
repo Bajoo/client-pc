@@ -52,12 +52,16 @@ class BaseNode(object):
         """
         node.parent = self
         self.children[node.name] = node
-        if node._dirty:
-            # propagate dirty flag
-            node = self
-            while node and not node._dirty:
-                node._dirty = True
-                node = node.parent
+        if node.dirty:
+            self._propagate_dirty_flag()
+
+    def rm_child(self, node):
+        """Remove a child from this node."""
+        del self.children[node.name]
+        if node.dirty:
+            # will recalculate the dirty flag.
+            self._clean_dirty_flags()
+        node.parent = None
 
     @property
     def dirty(self):
@@ -84,16 +88,27 @@ class BaseNode(object):
         self._sync = flag  # La sync ne change que pour nous !
 
         if self._sync:
-            # Clean all ancestors when theirs children are not dirty.
-            node = self
-            while node and node._sync:
-                if any(child.dirty for child in node.children.values()):
-                    break  # this node has at least one dirty child.
-                node._dirty = False
-                node = node.parent
+            self._clean_dirty_flags()
         else:
-            # Set all ancestors as dirty.
-            node = self
-            while node and not node._dirty:
-                node._dirty = True
-                node = node.parent
+            self._propagate_dirty_flag()
+
+    def _propagate_dirty_flag(self):
+        """Set this node and all ancestors as dirty."""
+        node = self
+        while node and not node._dirty:
+            node._dirty = True
+            node = node.parent
+
+    def _clean_dirty_flags(self):
+        """Clean dirty flag for this node and all its ancestors."""
+        node = self
+        while node and node._sync:
+            if any(child.dirty for child in node.children.values()):
+                break  # this node has at least one dirty child.
+            node._dirty = False
+            node = node.parent
+
+    def remove_itself(self):
+        """Remove itself from the tree."""
+        if self.parent:
+            self.parent.rm_child(self)
