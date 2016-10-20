@@ -71,6 +71,7 @@ class _ConnectionProcess(object):
         self._root_folder_error = None
         self._gpg_error = None
 
+    @promise.reduce_coroutine()
     def _get_ui_handler(self):
         """Create the UI handler if it's not done yet, and returns it.
 
@@ -79,8 +80,8 @@ class _ConnectionProcess(object):
         """
         if not self.ui_handler:
             _logger.debug('Load UI Handler')
-            self.ui_handler = self.ui_factory().result()
-        return self.ui_handler
+            self.ui_handler = yield self.ui_factory()
+        yield self.ui_handler
 
     @promise.reduce_coroutine(safeguard=True)
     def run(self):
@@ -150,7 +151,7 @@ class _ConnectionProcess(object):
 
         else:
             if not password:
-                ui_handler = self._get_ui_handler()
+                ui_handler = yield self._get_ui_handler()
                 credentials = yield \
                     ui_handler.get_register_or_connection_credentials(
                         last_username=username, errors=error_msg)
@@ -202,7 +203,7 @@ class _ConnectionProcess(object):
 
             if error.err_code == 'account_not_activated':
                 _logger.debug('login failed: the account is not activated.')
-                ui_handler = self._get_ui_handler()
+                ui_handler = yield self._get_ui_handler()
                 yield ui_handler.wait_activation()
                 yield self.connection(username, password=password,
                                       refresh_token=refresh_token)
@@ -285,14 +286,15 @@ class _ConnectionProcess(object):
 
         return f
 
+    @promise.reduce_coroutine()
     def _get_settings_and_apply(self):
         """Ask settings from the user, then apply them."""
-        ui_handler = self._get_ui_handler()
-        f = ui_handler.ask_for_settings(
+        ui_handler = yield self._get_ui_handler()
+        settings = yield ui_handler.ask_for_settings(
             self._need_root_folder_config, self._need_gpg_config,
             root_folder_error=self._root_folder_error,
             gpg_error=self._gpg_error)
-        return f.then(self._apply_setup_settings)
+        yield self._apply_setup_settings(settings)
 
     def _ask_config_if_flags(self, __):
         if self._need_gpg_config or self._need_root_folder_config:
