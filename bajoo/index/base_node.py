@@ -22,7 +22,9 @@ class BaseNode(object):
         dirty (bool, read-only): Flag set to True when the node or one of its
             descendants is not sync. Its value is updated over the hierarchy
             when `sync` changes.
-
+        task (Any): if not None, there is an ongoing operation to sync this
+            node. This task object means the node is "in use" and another task
+            should not work on the same node.
     Notes:
         `sync` refers to the node only; `dirty` refers the hierarchy. A
         non-sync node is always dirty.
@@ -39,6 +41,8 @@ class BaseNode(object):
         self.children = {}
         self._sync = False
         self._dirty = True
+
+        self.task = None
 
     def add_child(self, node):
         """Add a child to this node.
