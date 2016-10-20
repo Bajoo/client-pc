@@ -6,7 +6,7 @@
 # export PYBUILD_DISABLE=test
 
 ifeq ($(shell dpkg-vendor --derives-from Ubuntu && echo yes),yes)
-	SUBSTVARS = -Vdist:Depends=", python-gtk2, python-appindicator"
+	SUBSTVARS = -Vdist:Depends=", python-gi, gir1.2-appindicator3-0.1, libappindicator3-1"
 else
 	SUBSTVARS = -Vdist:Depends=""
 endif
