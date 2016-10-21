@@ -267,6 +267,8 @@ class BajooApp(wx.App):
 
             self.Bind(LanguageBox.EVT_LANG, self._on_lang_changed)
 
+            self.Bind(HomeWindow.EVT_RESEND_CONFIRM_EMAIL,
+                      self._resend_confirm_email)
             self.Bind(CreationShareTab.EVT_CREATE_SHARE_REQUEST,
                       self._on_request_create_share)
             self.Bind(ListSharesTab.EVT_DATA_REQUEST,
@@ -348,6 +350,12 @@ class BajooApp(wx.App):
             self._main_window.Show()
             self._main_window.Raise()
             macos_activate_app()
+
+    @promise.reduce_coroutine(safeguard=True)
+    def _resend_confirm_email(self, event):
+        session = yield Session.from_client_credentials()
+        yield session.send_api_request(
+            'POST', '/user/%s/resend_activation_email' % event.user_email)
 
     @promise.reduce_coroutine(safeguard=True)
     def _on_request_share_list(self, _event):

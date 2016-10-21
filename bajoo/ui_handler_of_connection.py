@@ -43,7 +43,7 @@ class UIHandlerOfConnection(object):
         pass
 
     @abc.abstractmethod
-    def wait_activation(self):
+    def wait_activation(self, username):
         """Ask the user to activate his account, and wait his confirmation.
 
         The future resolves when it's done.
@@ -51,6 +51,8 @@ class UIHandlerOfConnection(object):
         Note that the future resolve when the user *tells* his account is
         validated, but this may be not the case.
 
+        Args:
+            username (Text): email address of the user we wait the activation.
         Returns:
             Future<None>: resolves when the user indicates he has validated
                 his account.

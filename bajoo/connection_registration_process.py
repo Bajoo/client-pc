@@ -204,7 +204,7 @@ class _ConnectionProcess(object):
             if error.err_code == 'account_not_activated':
                 _logger.debug('login failed: the account is not activated.')
                 ui_handler = yield self._get_ui_handler()
-                yield ui_handler.wait_activation()
+                yield ui_handler.wait_activation(username)
                 yield self.connection(username, password=password,
                                       refresh_token=refresh_token)
                 return
