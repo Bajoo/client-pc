@@ -1,3 +1,18 @@
+bajoo (0.3.24-1) xenial; urgency=low
+
+  * Add button to resend confirmation email.
+  * Fix bug in encryption module when stopping the application
+  * Fix error raised when an index and cache folder were located on different disks.
+  * Resend lang setting to server when an invalid value has been previously sent.
+  * Fix race condition in connection procedure.
+  * Update Unity's version of the task bar icon to use Gtk3 instead of Gtk2.
+  * Fix bug in function to switch to the graphic thread.
+  * Fix bug preventing proxy settings to be applied.
+  * Prevent the regeneration of passphrase if there is an error during GPG key fetch.
+  * Upload again container keys when they have an 'Upload-required' metadata.
+
+ -- Bajoo <support@bajoo.fr>  Mon, 24 Oct 2016 11:23:53 +0200
+
 bajoo (0.3.23-1) xenial; urgency=low
 
   * Update translations files.
