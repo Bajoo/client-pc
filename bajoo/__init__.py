@@ -38,16 +38,16 @@ def main():
         cwd = to_unicode(os.getcwd(), in_enc=sys.getfilesystemencoding())
         logger.debug('Current working directory is : "%s"', cwd)
 
+        config.load()  # config must be loaded before network
+        log.set_debug_mode(config.get('debug_mode'))
+        log.set_logs_level(config.get('log_levels'))
+
+        # Set the lang from the config file if available
+        lang = config.get('lang')
+        if lang is not None:
+            set_lang(lang)
+
         with network.Context():
-            config.load()
-            log.set_debug_mode(config.get('debug_mode'))
-            log.set_logs_level(config.get('log_levels'))
-
-            # Set the lang from the config file if available
-            lang = config.get('lang')
-            if lang is not None:
-                set_lang(lang)
-
             with encryption.Context():
                 app = BajooApp()
                 app.run()
