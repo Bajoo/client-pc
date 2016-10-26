@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import errno
-import locale
 import logging
 import os
 import sys
@@ -10,6 +9,7 @@ from .api import User
 from .api.session import Session
 from .common import config
 from .common.i18n import N_, _
+from .common.strings import err2unicode
 from .encryption import set_gpg_home_dir
 from .network.errors import HTTPError
 from . import promise
@@ -297,7 +297,7 @@ class _ConnectionProcess(object):
         yield self._apply_setup_settings(settings)
 
     def _ask_config_if_flags(self, __):
-        if self._need_gpg_config or self._need_root_folder_config:
+        if self._gpg_error or self._need_root_folder_config:
             return self._get_settings_and_apply()
         else:
             return None
@@ -328,8 +328,10 @@ class _ConnectionProcess(object):
             set_gpg_home_dir(self.profile.gpg_folder_path)
             f2 = self.user.create_encryption_key(gpg_passphrase)
             f2 = f2.then(self.check_gpg_config)
-            f2 = f2.then(self._set_gpg_flag, self._set_gpg_flag)
-            futures.append(f2)
+        else:
+            f2 = self.check_gpg_config()
+        f2 = f2.then(self._set_gpg_flag, self._set_gpg_flag)
+        futures.append(f2)
 
         return promise.Promise.all(futures).then(self._ask_config_if_flags)
 
@@ -355,20 +357,18 @@ class _ConnectionProcess(object):
 
     def _set_gpg_flag(self, result):
 
+        self._gpg_error = None
+        self._need_gpg_config = False
+
         if result is False:
             self._gpg_error = N_("You haven't yet registered a GPG key.")
-
-        if isinstance(result, Exception):
-            if isinstance(result, (IOError, OSError)):
-                encoding = locale.getpreferredencoding()
-                if sys.version_info[0] < 3:  # Python 2
-                    result = unicode(str(result), encoding)
-            self._gpg_error = \
-                N_('Error during the GPG key check:\n %s') \
-                % result
-            _logger.warning('Error when applying the GPG config: %s' % result)
-
-        self._need_gpg_config = (result is not True)
+            self._need_gpg_config = True
+        elif isinstance(result, Exception):
+            result = err2unicode(result)
+            self._gpg_error = N_('Error during the GPG key check:\n'
+                                 ' %s') % result
+            _logger.warning('Error when applying the GPG config',
+                            exc_info=True)
 
     def check_bajoo_root_folder(self, __=None):
         """Check that the root Bajoo folder is valid.

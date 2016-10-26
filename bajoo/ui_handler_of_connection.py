@@ -72,8 +72,11 @@ class UIHandlerOfConnection(object):
         folder path, or the passphrase for generating a new GPG user key, or
         both. The caller specifies which setting he wants, using arguments.
 
-        Note: At least one of ``folder_setting`` or ``key_setting`` must be
-        True.
+        Notes:
+            At least one of ``folder_setting``, ``key_setting`` or
+            ``gpg_error`` must be True.
+            If `key_setting` is False, but `gpg_error`is True, the passphrase
+            exists (and shouldn't be changed) but is unavailable.
 
         Args:
             folder_setting (boolean): If True, this method asks the Bajoo root
