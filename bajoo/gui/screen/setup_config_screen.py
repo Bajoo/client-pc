@@ -108,7 +108,7 @@ class SetupConfigScreenView(BaseView):
         gpg_error = BaseValidator(encryption_section, hide_if_valid=True,
                                   name='gpg_error')
         encryption_form = wx.Window(encryption_section,
-                                       name='encryption_form')
+                                    name='encryption_form')
 
         encryption_txt = wx.StaticText(encryption_form)
         passphrase = wx.TextCtrl(encryption_form, name='passphrase',
