@@ -5,7 +5,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Bajoo 0.3.24\n"
+"Project-Id-Version: Bajoo 0.3.25\n"
 "Report-Msgid-Bugs-To: Bajoo <support-en@bajoo.fr>\n"
 "POT-Creation-Date: 2015-10-20 12:12+0200\n"
 "PO-Revision-Date: 2016-01-27 11:31+0100\n"

@@ -1,3 +1,9 @@
+bajoo (0.3.25-1) xenial; urgency=low
+
+  * Fix critical bug introduced in previous version.
+
+ -- Bajoo <support@bajoo.fr>  Fri, 28 Oct 2016 18:32:12 +0200
+
 bajoo (0.3.24-1) xenial; urgency=low
 
   * Add button to resend confirmation email.
