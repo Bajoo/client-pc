@@ -33,7 +33,7 @@ from .container_model import ContainerModel
 from .container_sync_pool import ContainerSyncPool
 from .dynamic_container_list import DynamicContainerList
 from .filesync import task_consumer
-from .gui.about_window import AboutBajooWindow
+from .gui import AboutWindow
 from .gui.bug_report import BugReportWindow, EVT_BUG_REPORT
 from .gui.change_password_window import ChangePasswordWindow
 from .gui.common.language_box import LanguageBox
@@ -235,7 +235,7 @@ class BajooApp(wx.App):
         if getattr(self, attribute):
             return getattr(self, attribute)
 
-        _logger.debug('Creation of Window %s' % attribute)
+        _logger.debug('Creation of (wx) Window %s' % attribute)
         window = cls()
 
         # clean variable when destroyed.
@@ -245,6 +245,27 @@ class BajooApp(wx.App):
 
         self.Bind(wx.EVT_WINDOW_DESTROY, clean, source=window)
 
+        setattr(self, attribute, window)
+        return window
+
+    def _get_mvc_window(self, attribute, cls):
+        """Get a window, or create it if it's not instantiated yet.
+
+        the attribute used to store the Window is set to None
+        when the window is deleted.
+        Args:
+            attribute (str): attribute of this class, used to ref the window.
+            cls (Type[T]): Class of the Window.
+        Returns:
+            T: window
+        """
+        if getattr(self, attribute):
+            return getattr(self, attribute)
+
+        _logger.debug('Creation of (MVC) Window %s' % attribute)
+        window = cls()
+
+        window.destroyed.connect(lambda: setattr(self, attribute, None))
         setattr(self, attribute, window)
         return window
 
@@ -319,7 +340,7 @@ class BajooApp(wx.App):
         if destination == WindowDestination.HOME:
             self._show_home_window()
         elif destination == WindowDestination.ABOUT:
-            window = self.get_window('_about_window', AboutBajooWindow)
+            window = self._get_mvc_window('_about_window', AboutWindow)
         elif destination == WindowDestination.SUSPEND:
             pass  # TODO: open window
         elif destination == WindowDestination.INVITATION:
@@ -337,8 +358,11 @@ class BajooApp(wx.App):
                           destination)
 
         if window:
-            window.Show()
-            window.Raise()
+            try:
+                window.show()
+            except AttributeError:  # compatibility code for legacy wx GUI
+                window.Show()
+                window.Raise()
             macos_activate_app()
 
     def _show_home_window(self):
@@ -743,7 +767,7 @@ class BajooApp(wx.App):
             self._main_window.Destroy()
 
         if self._about_window:
-            self._about_window.Destroy()
+            self._about_window.destroy()
 
         if self._contact_dev_window:
             self._contact_dev_window.Destroy()
@@ -978,9 +1002,15 @@ class BajooApp(wx.App):
         if not _already_bound:
             _logger.info('Will restart Bajoo when all windows will be closed.')
         all_windows = (self._home_window, self._main_window,
-                       self._about_window, self._contact_dev_window)
+                       self._contact_dev_window)
 
-        if any(w and w is not _window_being_destroyed and w.IsShown()
+        def is_in_use(w):  # Compatibility code between Wx and MVC windows
+            try:
+                return w.is_in_use()
+            except AttributeError:
+                return w.IsShown()
+
+        if any(w and w is not _window_being_destroyed and is_in_use(w)
                for w in all_windows):
             if not _already_bound:
                 self.Bind(wx.EVT_SHOW, self._restart_if_idle)
