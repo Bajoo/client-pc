@@ -75,7 +75,8 @@ class SetupConfigScreen(BaseForm):
         if gpg_error:
             gpg_error_txt.set_msg(gpg_error)
         self.FindWindow('encryption_form').Show(key_setting)
-        self.FindWindow('encryption_section').Show(key_setting or gpg_error)
+        self.FindWindow('encryption_section').Show(
+            bool(key_setting or gpg_error))
 
         self.enable()
 
