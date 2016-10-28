@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import errno
-import locale
 import logging
 import os
 import sys
@@ -10,6 +9,7 @@ from .api import User
 from .api.session import Session
 from .common import config
 from .common.i18n import N_, _
+from .common.strings import err2unicode
 from .encryption import set_gpg_home_dir
 from .network.errors import HTTPError
 from . import promise
@@ -71,6 +71,7 @@ class _ConnectionProcess(object):
         self._root_folder_error = None
         self._gpg_error = None
 
+    @promise.reduce_coroutine()
     def _get_ui_handler(self):
         """Create the UI handler if it's not done yet, and returns it.
 
@@ -79,8 +80,8 @@ class _ConnectionProcess(object):
         """
         if not self.ui_handler:
             _logger.debug('Load UI Handler')
-            self.ui_handler = self.ui_factory().result()
-        return self.ui_handler
+            self.ui_handler = yield self.ui_factory()
+        yield self.ui_handler
 
     @promise.reduce_coroutine(safeguard=True)
     def run(self):
@@ -150,7 +151,7 @@ class _ConnectionProcess(object):
 
         else:
             if not password:
-                ui_handler = self._get_ui_handler()
+                ui_handler = yield self._get_ui_handler()
                 credentials = yield \
                     ui_handler.get_register_or_connection_credentials(
                         last_username=username, errors=error_msg)
@@ -202,8 +203,8 @@ class _ConnectionProcess(object):
 
             if error.err_code == 'account_not_activated':
                 _logger.debug('login failed: the account is not activated.')
-                ui_handler = self._get_ui_handler()
-                yield ui_handler.wait_activation()
+                ui_handler = yield self._get_ui_handler()
+                yield ui_handler.wait_activation(username)
                 yield self.connection(username, password=password,
                                       refresh_token=refresh_token)
                 return
@@ -285,17 +286,18 @@ class _ConnectionProcess(object):
 
         return f
 
+    @promise.reduce_coroutine()
     def _get_settings_and_apply(self):
         """Ask settings from the user, then apply them."""
-        ui_handler = self._get_ui_handler()
-        f = ui_handler.ask_for_settings(
+        ui_handler = yield self._get_ui_handler()
+        settings = yield ui_handler.ask_for_settings(
             self._need_root_folder_config, self._need_gpg_config,
             root_folder_error=self._root_folder_error,
             gpg_error=self._gpg_error)
-        return f.then(self._apply_setup_settings)
+        yield self._apply_setup_settings(settings)
 
     def _ask_config_if_flags(self, __):
-        if self._need_gpg_config or self._need_root_folder_config:
+        if self._gpg_error or self._need_root_folder_config:
             return self._get_settings_and_apply()
         else:
             return None
@@ -326,8 +328,10 @@ class _ConnectionProcess(object):
             set_gpg_home_dir(self.profile.gpg_folder_path)
             f2 = self.user.create_encryption_key(gpg_passphrase)
             f2 = f2.then(self.check_gpg_config)
-            f2 = f2.then(self._set_gpg_flag, self._set_gpg_flag)
-            futures.append(f2)
+        else:
+            f2 = self.check_gpg_config()
+        f2 = f2.then(self._set_gpg_flag, self._set_gpg_flag)
+        futures.append(f2)
 
         return promise.Promise.all(futures).then(self._ask_config_if_flags)
 
@@ -353,20 +357,18 @@ class _ConnectionProcess(object):
 
     def _set_gpg_flag(self, result):
 
+        self._gpg_error = None
+        self._need_gpg_config = False
+
         if result is False:
             self._gpg_error = N_("You haven't yet registered a GPG key.")
-
-        if isinstance(result, Exception):
-            if isinstance(result, (IOError, OSError)):
-                encoding = locale.getpreferredencoding()
-                if sys.version_info[0] < 3:  # Python 2
-                    result = unicode(str(result), encoding)
-            self._gpg_error = \
-                N_('Error during the GPG key check:\n %s') \
-                % result
-            _logger.warning('Error when applying the GPG config: %s' % result)
-
-        self._need_gpg_config = (result is not True)
+            self._need_gpg_config = True
+        elif isinstance(result, Exception):
+            result = err2unicode(result)
+            self._gpg_error = N_('Error during the GPG key check:\n'
+                                 ' %s') % result
+            _logger.warning('Error when applying the GPG config',
+                            exc_info=True)
 
     def check_bajoo_root_folder(self, __=None):
         """Check that the root Bajoo folder is valid.

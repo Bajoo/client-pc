@@ -23,9 +23,13 @@ Bajoo can run on Python 2.7 or Python 3.4 and higher. However, it's recommended 
 
   Uses the packaged version of wxpython (classic version).
 
-  .. code-nlock:: bash
+  .. code-block:: bash
 
-     sudo apt-get install python-pip python-wxgtk3.0 build-essential python-dev libssl-dev libffi-dev
+     sudo apt-get install python-pip python-wxgtk3.0 build-essential python-dev libssl-dev libffi-dev python-dbus
+
+     # For Unity only; You don't need these packages if you use another DE (eg: XFCE)
+     sudo apt-get install python-gi gir1.2-appindicator3-0.1 libappindicator3-1
+
      sudo pip2 install .
 
 - Ubuntu with Python3.4+
@@ -34,9 +38,12 @@ Bajoo can run on Python 2.7 or Python 3.4 and higher. However, it's recommended 
 
   .. code-block:: bash
 
-    sudo apt-get install python3-pip build-essential python3-dev libssl-dev libffi-dev libgtk-3-dev mesa-common-dev libglu1-mesa-dev libgstreamer0.10-dev libgstreamer-plugins-base0.10-dev libgtk2.0-dev libwebkitgtk-dev
-    sudo pip3 install --process-dependency-links --allow-unverified wxpython --trusted-host wxpython.org .
+    sudo apt-get install python3-pip build-essential python3-dev libssl-dev libffi-dev libgtk-3-dev python3-dbus mesa-common-dev libglu1-mesa-dev libgstreamer0.10-dev libgstreamer-plugins-base0.10-dev libgtk2.0-dev libwebkitgtk-dev
 
+    # For Unity only; You don't need these packages if you use another DE (eg: XFCE)
+    sudo apt-get install python3-gi gir1.2-appindicator3-0.1 libappindicator3-1
+
+    sudo pip3 install --process-dependency-links --allow-unverified wxpython --trusted-host wxpython.org .
 
 License and copyright
 ---------------------

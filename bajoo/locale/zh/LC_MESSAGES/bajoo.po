@@ -5,7 +5,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Bajoo 0.3.23\n"
+"Project-Id-Version: Bajoo 0.3.24\n"
 "Report-Msgid-Bugs-To: Bajoo <support-en@bajoo.fr>\n"
 "POT-Creation-Date: 2015-10-20 12:12+0200\n"
 "PO-Revision-Date: 2016-01-27 11:31+0100\n"
@@ -21,183 +21,183 @@ msgstr ""
 msgid "The authentication server has returned invalid data."
 msgstr ""
 
-#: bajoo/bajoo_app.py:162
+#: bajoo/bajoo_app.py:163
 msgid ""
 "Another instance of Bajoo is actually running.\n"
 "You can't open Bajoo twice."
 msgstr ""
 
 # TODO translate me
-#: bajoo/bajoo_app.py:164
+#: bajoo/bajoo_app.py:165
 msgid "Bajoo already started"
 msgstr ""
 
-#: bajoo/bajoo_app.py:367
+#: bajoo/bajoo_app.py:379
 #, python-format
 msgid "Error occurred: %s."
 msgstr "错误 : %s"
 
-#: bajoo/bajoo_app.py:452
+#: bajoo/bajoo_app.py:464
 msgid ""
 "Cannot add this member to team share; maybe this account does not exist."
 msgstr "该团队共享文件无法加入; 可能该账户已不存在。 "
 
-#: bajoo/bajoo_app.py:462
+#: bajoo/bajoo_app.py:474
 #, python-format
 msgid "%(email)s has been given access to team share '%(name)s'"
 msgstr "%(email)s 以获准进入团队共享 '%(name)s'"
 
-#: bajoo/bajoo_app.py:469
+#: bajoo/bajoo_app.py:481
 msgid "Unidentified container, cannot add member"
 msgstr "无法辨认身份，不能添加成员"
 
-#: bajoo/bajoo_app.py:484
+#: bajoo/bajoo_app.py:496
 msgid "Cannot remove this member from this team share."
 msgstr "无法从该团队共享移除此成员"
 
-#: bajoo/bajoo_app.py:491
+#: bajoo/bajoo_app.py:503
 #, python-format
 msgid "%(email)s's access to team share '%(name)s' has been removed."
 msgstr "%(email)s 进入团队共享 '%(name)s' 已被移除."
 
-#: bajoo/bajoo_app.py:498
+#: bajoo/bajoo_app.py:510
 msgid "Unidentified container, cannot remove member"
 msgstr "无法辨认身份，不能移除成员"
 
-#: bajoo/bajoo_app.py:531
+#: bajoo/bajoo_app.py:543
 #, python-format
 msgid "Cannot create share %s"
 msgstr "创建共享失败 %s。"
 
-#: bajoo/bajoo_app.py:546
+#: bajoo/bajoo_app.py:558
 msgid ""
 "Some members cannot be added to this team share. Please verify the email "
 "addresses."
 msgstr "一些成员不能加入到该团队共享。 请检查一下电子邮件地址。"
 
-#: bajoo/bajoo_app.py:548
+#: bajoo/bajoo_app.py:560
 #, python-format
 msgid "Team share %s has been successfully created"
 msgstr "团队共享 %s 已成功建立。"
 
-#: bajoo/bajoo_app.py:592
+#: bajoo/bajoo_app.py:604
 msgid "This folder has been succesfully moved to the new location."
 msgstr "该文件夹已成功被移动"
 
-#: bajoo/bajoo_app.py:599
+#: bajoo/bajoo_app.py:611
 msgid "The synchronization of this share is stopped."
 msgstr "该共享同步已停止"
 
-#: bajoo/bajoo_app.py:605
+#: bajoo/bajoo_app.py:617
 #, fuzzy
 msgid "The synchronization of this share has restarted."
 msgstr "该共享同步已重新开始"
 
-#: bajoo/bajoo_app.py:624 bajoo/gui/bug_report.py:67
+#: bajoo/bajoo_app.py:636 bajoo/gui/bug_report.py:67
 #: bajoo/local_container.py:52
 msgid "Error"
 msgstr "错误"
 
-#: bajoo/bajoo_app.py:625
+#: bajoo/bajoo_app.py:637
 #, python-format
 msgid "An error occured when trying to quit team share %s."
 msgstr "试图退出团队共享时出现错误 %s。"
 
-#: bajoo/bajoo_app.py:636 bajoo/gui/common/message_box.py:34
+#: bajoo/bajoo_app.py:648 bajoo/gui/common/message_box.py:34
 msgid "Quit team share"
 msgstr "退出团队共享"
 
-#: bajoo/bajoo_app.py:637 bajoo/bajoo_app.py:643
+#: bajoo/bajoo_app.py:649 bajoo/bajoo_app.py:655
 #, python-format
 msgid "You have no longer access to team share %s."
 msgstr "您不能再进入团队共享 %s。"
 
-#: bajoo/bajoo_app.py:661
+#: bajoo/bajoo_app.py:673
 msgid "A team share has been successfully deleted from server."
 msgstr "一个团队共享成功在服务器上删除。"
 
-#: bajoo/bajoo_app.py:666
+#: bajoo/bajoo_app.py:678
 #, python-format
 msgid "Team share %s cannot be deleted from server."
 msgstr "无法删除服务器上的 %s 团队共享文件。"
 
-#: bajoo/bajoo_app.py:685
+#: bajoo/bajoo_app.py:697
 msgid "Beta tester account"
 msgstr "Beta测试账号"
 
-#: bajoo/bajoo_app.py:706
+#: bajoo/bajoo_app.py:718
 msgid "Failure when attempting to change password."
 msgstr "更改密码失败"
 
-#: bajoo/bajoo_app.py:798
+#: bajoo/bajoo_app.py:822
 msgid "Sync error"
 msgstr "同步出错"
 
-#: bajoo/bajoo_app.py:887
+#: bajoo/bajoo_app.py:911
 msgid "An error happened! Consult the logs for more details"
 msgstr ""
 
-#: bajoo/common/util.py:10
+#: bajoo/common/util.py:14
 msgid "B"
 msgstr ""
 
-#: bajoo/common/util.py:10
+#: bajoo/common/util.py:14
 msgid "GB"
 msgstr ""
 
-#: bajoo/common/util.py:10
+#: bajoo/common/util.py:14
 msgid "KB"
 msgstr ""
 
-#: bajoo/common/util.py:10
+#: bajoo/common/util.py:14
 msgid "MB"
 msgstr ""
 
-#: bajoo/common/util.py:10
+#: bajoo/common/util.py:14
 msgid "PB"
 msgstr ""
 
-#: bajoo/common/util.py:10
+#: bajoo/common/util.py:14
 msgid "TB"
 msgstr ""
 
-#: bajoo/common/util.py:11
+#: bajoo/common/util.py:15
 msgid "EB"
 msgstr ""
 
-#: bajoo/common/util.py:11
+#: bajoo/common/util.py:15
 msgid "YB"
 msgstr ""
 
-#: bajoo/common/util.py:11
+#: bajoo/common/util.py:15
 msgid "ZB"
 msgstr ""
 
-#: bajoo/connection_registration_process.py:216
+#: bajoo/connection_registration_process.py:217
 msgid ""
 "This program's version is no longer supported by Bajoo service. Please "
 "update to continue.\n"
 msgstr "这个版本将不再被Bajoo服务器支持。请更新。\n"
 
-#: bajoo/connection_registration_process.py:220
+#: bajoo/connection_registration_process.py:221
 msgid "Invalid username or password."
 msgstr "无效用户名或密码。"
 
-#: bajoo/connection_registration_process.py:222
+#: bajoo/connection_registration_process.py:223
 msgid "There is already an account with this email."
 msgstr "此电子邮件账户已存在。"
 
-#: bajoo/connection_registration_process.py:232
+#: bajoo/connection_registration_process.py:233
 #, python-format
 msgid "An error occurred: %s"
 msgstr "发生错误 : %s"
 
-#: bajoo/connection_registration_process.py:343
+#: bajoo/connection_registration_process.py:345
 #, python-format
 msgid "Error: %s"
 msgstr "错误: %s"
 
-#: bajoo/connection_registration_process.py:346
+#: bajoo/connection_registration_process.py:348
 #, python-format
 msgid ""
 "Error when applying the Bajoo root folder config:\n"
@@ -206,11 +206,11 @@ msgstr ""
 "Bajoo根文件配置应用错误 :\n"
 " %s"
 
-#: bajoo/connection_registration_process.py:357
+#: bajoo/connection_registration_process.py:359
 msgid "You haven't yet registered a GPG key."
 msgstr "您还没有输入GPG密钥。"
 
-#: bajoo/connection_registration_process.py:365
+#: bajoo/connection_registration_process.py:367
 #, python-format
 msgid ""
 "Error during the GPG key check:\n"
@@ -219,17 +219,17 @@ msgstr ""
 "GPG密钥检查过程中出错 :\n"
 " %s"
 
-#: bajoo/connection_registration_process.py:389
+#: bajoo/connection_registration_process.py:391
 #, fuzzy, python-format
 msgid "%s doesn't exist, or is not a directory"
 msgstr "%s 不存在，或者不是一个文件夹。"
 
-#: bajoo/connection_registration_process.py:394
+#: bajoo/connection_registration_process.py:396
 #, python-format
 msgid "%s has not the read and/or write permissions."
 msgstr "%s 没有权利阅读和/或编辑。"
 
-#: bajoo/connection_registration_process.py:423
+#: bajoo/connection_registration_process.py:425
 #: bajoo/gui/tab/creation_share_tab.py:132
 #: bajoo/gui/tab/details_share_tab.py:132 bajoo/local_container.py:134
 msgid "Shares"
@@ -655,11 +655,11 @@ msgstr "确认密码"
 msgid "Create my account"
 msgstr "建立我的账户"
 
-#: bajoo/gui/home_window.py:93
+#: bajoo/gui/home_window.py:99
 msgid "connection successful"
 msgstr "连接成功"
 
-#: bajoo/gui/home_window.py:94
+#: bajoo/gui/home_window.py:100
 msgid "You've been successfully connected."
 msgstr "您已经成功连接。"
 
@@ -709,15 +709,15 @@ msgstr "存储我的密码"
 msgid "Bajoo - Proxy"
 msgstr "Bajoo - 代理服务器"
 
-#: bajoo/gui/screen/activation_screen.py:56
+#: bajoo/gui/screen/activation_screen.py:73
 msgid "Bajoo - Activate your account"
 msgstr "Bajoo - 激活您的账号"
 
-#: bajoo/gui/screen/activation_screen.py:71
+#: bajoo/gui/screen/activation_screen.py:89
 msgid "Your account is not activated."
 msgstr "您的账号还未激活。"
 
-#: bajoo/gui/screen/activation_screen.py:73
+#: bajoo/gui/screen/activation_screen.py:91
 msgid ""
 "For continuing, your must activate your account.\n"
 "You should receive in the next minutes, a confirmation email with an "
@@ -728,11 +728,15 @@ msgstr ""
 "几分钟您将会收到一封带有激活链接的 电子邮件。\n"
 "您必须按照此链接去激活您的账号。"
 
-#: bajoo/gui/screen/activation_screen.py:78
+#: bajoo/gui/screen/activation_screen.py:96
 msgid "Come back later"
 msgstr "过会儿回来"
 
-#: bajoo/gui/screen/activation_screen.py:79
+#: bajoo/gui/screen/activation_screen.py:97
+msgid "Send confirmation email again"
+msgstr ""
+
+#: bajoo/gui/screen/activation_screen.py:98
 msgid "It's done!"
 msgstr "完成了!"
 

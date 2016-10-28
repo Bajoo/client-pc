@@ -107,13 +107,17 @@ class Container(object):
                 passphrase_callback=Container.passphrase_callback)
 
             # key = encryption.AsymmetricKey.load(key_content)
-            key = yield self._compat_load_key(key_content)
+
+            force_upload = result.get('headers').get(
+                'X-Object-Meta-Update-Required') is not None
+
+            key = yield self._compat_load_key(key_content, force_upload)
             self._encryption_key = key
             yield key
             return
 
     @reduce_coroutine()
-    def _compat_load_key(self, key_file):
+    def _compat_load_key(self, key_file, force_upload=False):
         # TODO this code is for compatibility backward, to remove
         # as soon as every key encoded in a such way will be
         # removed from the server
@@ -125,7 +129,12 @@ class Container(object):
             key_content.seek(0)
 
             try:
-                yield encryption.AsymmetricKey.load(key_content)
+                key = encryption.AsymmetricKey.load(key_content)
+                if force_upload:
+                    _logger.info('Force upload of key for container #%s' %
+                                 self.id)
+                    yield self._encrypt_and_upload_key(key)
+                yield key
                 return
             except encryption.errors.EncryptionError as err:
                 # Retry in "compatibility" mode.

@@ -4,11 +4,6 @@ import pickle
 import sys
 from threading import Thread
 from os.path import abspath
-
-import gtk
-import gobject
-import appindicator
-
 from functools import partial
 
 from ...app_status import AppStatus
@@ -16,6 +11,11 @@ from ...common.i18n import set_lang
 from .unity_data_exchange import UnityDataExchange  # noqa
 from .common_view_data import (app_status_to_icon_files, MenuEntry,
                                TaskBarIconAction)
+
+import gi
+gi.require_version('AppIndicator3', '0.1')
+from gi.repository import AppIndicator3, GObject, Gtk  # noqa
+
 
 APPINDICATOR_ID = 'bajoo'
 
@@ -40,7 +40,7 @@ class UnityTaskBarIcon(object):
     def __init__(self):
 
         self.indicator = None
-        gobject.idle_add(self._create_indicator)
+        GObject.idle_add(self._create_indicator)
 
         self._is_connected = False
         self._container_status_list = []
@@ -103,11 +103,11 @@ class UnityTaskBarIcon(object):
                         self.set_lang(data.lang)
 
     def _create_indicator(self):
-        self.indicator = appindicator.Indicator(
+        self.indicator = AppIndicator3.Indicator.new(
             APPINDICATOR_ID,
             app_status_to_icon_files[AppStatus.NOT_CONNECTED],
-            appindicator.CATEGORY_SYSTEM_SERVICES)
-        self.indicator.set_status(appindicator.STATUS_ACTIVE)
+            AppIndicator3.IndicatorCategory.SYSTEM_SERVICES)
+        self.indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)
 
     def set_container_status_list(self, status_list):
         self._container_status_list = status_list
@@ -116,7 +116,7 @@ class UnityTaskBarIcon(object):
     def set_state(self, state):
         self._is_connected = state != AppStatus.NOT_CONNECTED
         icon_path = abspath(app_status_to_icon_files[state])
-        gobject.idle_add(self._set_icon, icon_path)
+        GObject.idle_add(self._set_icon, icon_path)
         self.build_menu()
 
     def set_lang(self, lang):
@@ -127,20 +127,20 @@ class UnityTaskBarIcon(object):
         self.indicator.set_icon(icon)
 
     def _inner_build_menu(self, items_list):
-        gtk_menu = gtk.Menu()
+        gtk_menu = Gtk.Menu()
         for m in items_list:
             if m is MenuEntry.Separator:
-                gtk_menu.append(gtk.SeparatorMenuItem())
+                gtk_menu.append(Gtk.SeparatorMenuItem())
                 continue
 
             if m.icon is None:
-                menu_item = gtk.MenuItem(m.title)
+                menu_item = Gtk.MenuItem(m.title)
             else:
-                menu_item = gtk.ImageMenuItem()
+                menu_item = Gtk.ImageMenuItem()
                 menu_item.set_label(m.title)
 
                 # TODO: try to reuse Image !!!
-                img = gtk.Image()
+                img = Gtk.Image()
                 img.set_from_file(m.icon)
                 menu_item.set_image(img)
                 menu_item.set_always_show_image(True)
@@ -166,7 +166,7 @@ class UnityTaskBarIcon(object):
         gtk_menu = self._inner_build_menu(items_list)
         gtk_menu.show_all()
 
-        gobject.idle_add(self._build_menu, gtk_menu)
+        GObject.idle_add(self._build_menu, gtk_menu)
 
     def _build_menu(self, menu):
         self.indicator.set_menu(menu)
@@ -183,13 +183,12 @@ class UnityTaskBarIcon(object):
         self.read_stdin = False
         sys.stdin.close()
         sys.stdout.close()
-        gtk.main_quit()
+        Gtk.main_quit()
 
 
 def main():
-    gobject.threads_init()
     UnityTaskBarIcon()
-    gtk.main()
+    Gtk.main()
 
 
 if __name__ == '__main__':
