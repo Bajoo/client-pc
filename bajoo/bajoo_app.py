@@ -27,6 +27,7 @@ from .app_status import AppStatus
 from .common import autorun, config
 from .common import path as bajoo_path
 from .common.i18n import N_, _, set_lang
+from .common.util import macos_activate_app
 from .connection_registration_process import connect_or_register
 from .container_model import ContainerModel
 from .container_sync_pool import ContainerSyncPool
@@ -265,6 +266,8 @@ class BajooApp(wx.App):
 
             self.Bind(LanguageBox.EVT_LANG, self._on_lang_changed)
 
+            self.Bind(HomeWindow.EVT_RESEND_CONFIRM_EMAIL,
+                      self._resend_confirm_email)
             self.Bind(CreationShareTab.EVT_CREATE_SHARE_REQUEST,
                       self._on_request_create_share)
             self.Bind(ListSharesTab.EVT_DATA_REQUEST,
@@ -332,17 +335,26 @@ class BajooApp(wx.App):
         if window:
             window.Show()
             window.Raise()
+            macos_activate_app()
 
     def _show_home_window(self):
         if not self._session:
             if self._home_window:
                 self._home_window.Show()
                 self._home_window.Raise()
+                macos_activate_app()
         else:
             if not self._main_window:
                 self._main_window = MainWindow()
             self._main_window.Show()
             self._main_window.Raise()
+            macos_activate_app()
+
+    @promise.reduce_coroutine(safeguard=True)
+    def _resend_confirm_email(self, event):
+        session = yield Session.from_client_credentials()
+        yield session.send_api_request(
+            'POST', '/user/%s/resend_activation_email' % event.user_email)
 
     @promise.reduce_coroutine(safeguard=True)
     def _on_request_share_list(self, _event):

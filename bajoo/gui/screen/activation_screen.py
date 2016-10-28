@@ -19,23 +19,40 @@ class ActivationScreen(wx.Panel):
             to have activated his account.
         EVT_ACTIVATION_DELAYED (Event Id): event emitted when the user
             indicates he will not activate his account soon.
+        EVT_RESEND_CONFIRM_EMAIL(Event Id): event emitted when the user
+            want to receive again the activation email. The event contains an
+            attribute `user_email`.
+
+        user_email (Text): email of the user we wait the activation. It's set
+            by the parent class at construction.
     """
 
     ActivationDoneEvent, EVT_ACTIVATION_DONE = NewCommandEvent()
     ActivationDelayedEvent, EVT_ACTIVATION_DELAYED = NewCommandEvent()
+    ResendConfirmEmailEvent, EVT_RESEND_CONFIRM_EMAIL = NewCommandEvent()
 
     def __init__(self, parent):
+        self.user_email = None
+
         wx.Panel.__init__(self, parent)
         self._view = ActivationScreenView(self)
 
         self.Bind(wx.EVT_BUTTON, self._send_delayed_event,
                   source=self.FindWindow('come_back_btn'))
+        self.Bind(wx.EVT_BUTTON, self._send_resend_email_event,
+                  source=self.FindWindow('resend_email_btn'))
         self.Bind(wx.EVT_BUTTON, self._send_done_event,
                   source=self.FindWindow('done_btn'))
 
     def _send_done_event(self, _event):
         self.FindWindow('form').disable()
         wx.PostEvent(self, self.ActivationDoneEvent(self.GetId()))
+
+    def _send_resend_email_event(self, _event):
+        self.FindWindow('resend_email_btn').Disable()
+        event = self.ResendConfirmEmailEvent(self.GetId())
+        event.user_email = self.user_email
+        wx.PostEvent(self, event)
 
     def _send_delayed_event(self, _event):
         wx.PostEvent(self, self.ActivationDelayedEvent(self.GetId()))
@@ -61,9 +78,10 @@ class ActivationScreenView(BaseView):
 
         form = BaseForm(activation_screen, name='form')
         come_back_later_btn = wx.Button(form, name='come_back_btn')
+        resend_email_btn = wx.Button(form, name='resend_email_btn')
         done_btn = wx.Button(form, name='done_btn')
-        form_sizer = self.make_sizer(wx.HORIZONTAL,
-                                     [come_back_later_btn, None, done_btn],
+        form_sizer = self.make_sizer(wx.HORIZONTAL, [
+            come_back_later_btn, None, resend_email_btn, None, done_btn],
                                      outside_border=False)
         form.SetSizer(form_sizer)
 
@@ -76,6 +94,7 @@ class ActivationScreenView(BaseView):
                 "You should follow that link to continue."
             ),
             come_back_later_btn: N_('Come back later'),
+            resend_email_btn: N_("Send confirmation email again"),
             done_btn: N_("It's done!")
         })
 

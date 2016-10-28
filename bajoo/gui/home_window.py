@@ -4,6 +4,7 @@ import wx
 
 from ..common.i18n import _
 from ..common.path import resource_filename
+from ..common.util import macos_activate_app
 from ..promise import Promise
 from ..ui_handler_of_connection import UIHandlerOfConnection
 from .base_view import BaseView
@@ -23,6 +24,8 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
     The default screen is the HomeScreen, containing the connexion form.
     """
 
+    EVT_RESEND_CONFIRM_EMAIL = ActivationScreen.EVT_RESEND_CONFIRM_EMAIL
+
     def __init__(self, notify):
         wx.Frame.__init__(self, parent=None, title='Bajoo',
                           style=(wx.DEFAULT_FRAME_STYLE & ~wx.MAXIMIZE_BOX & ~
@@ -39,8 +42,9 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
             self.Hide()
 
     @ensure_gui_thread()
-    def wait_activation(self):
+    def wait_activation(self, username):
         self._view.set_screen(ActivationScreen)
+        self._view.current_screen.user_email = username
         self._view.current_screen.reset_form()
         self.Show()
 
@@ -75,6 +79,8 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
         self._view.set_screen(HomeScreen)
         self._view.current_screen.reset_form(last_username, errors)
         self.Show(True)
+        self.Raise()
+        macos_activate_app()
 
         def callback(evt):
             if evt.GetEventType() == HomeScreen.EVT_CONNECTION_SUBMIT.typeId:

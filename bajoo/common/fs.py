@@ -5,6 +5,12 @@ import os
 import sys
 from .strings import ensure_unicode
 
+HIDDEN_FILE_ATTRIBUTE = 0x02
+NORMAL_FILE_ATTRIBUTE = 0x80
+MOVEFILE_REPLACE_EXISTING = 0x01
+MOVEFILE_COPY_ALLOWED = 0x02
+MOVEFILE_WRITE_THROUGH = 0x08
+
 
 def hide_file_if_windows(file_path):
     """If running on Windows, set the file as hidden.
@@ -18,7 +24,6 @@ def hide_file_if_windows(file_path):
     """
     file_path = ensure_unicode(file_path)
     if sys.platform in ['win32', 'cygwin']:
-        HIDDEN_FILE_ATTRIBUTE = 0x02
         ret = ctypes.windll.kernel32.SetFileAttributesW(
             file_path,
             HIDDEN_FILE_ATTRIBUTE)
@@ -47,10 +52,27 @@ except AttributeError:
             """
             src = ensure_unicode(src)
             dst = ensure_unicode(dst)
-            MOVEFILE_REPLACE_EXISTING = 1
             ret = ctypes.windll.kernel32.MoveFileExW(
-                src, dst, MOVEFILE_REPLACE_EXISTING)
-            if not ret:
-                raise ctypes.WinError()
+                src, dst, (MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED |
+                           MOVEFILE_WRITE_THROUGH))
+            if ret:
+                return
+
+            err = ctypes.WinError()
+
+            if getattr(err, 'winerror', 0) == 5:  # PERMISSION_DENIED_ERROR
+                # When MoveFile is done in two step (copy then delete), it
+                # can fail on hidden files. This case occurs when the source
+                # and the destination file are not on the same disk.
+                ret = ctypes.windll.kernel32.SetFileAttributesW(
+                    dst, NORMAL_FILE_ATTRIBUTE)
+                if not ret:
+                    raise ctypes.WinError()
+                ret = ctypes.windll.kernel32.MoveFileExW(
+                    src, dst, (MOVEFILE_REPLACE_EXISTING |
+                               MOVEFILE_COPY_ALLOWED | MOVEFILE_WRITE_THROUGH))
+                if not ret:
+                    raise ctypes.WinError()
+
     else:
         replace_file = os.rename

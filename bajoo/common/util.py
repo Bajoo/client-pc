@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+import os
+import subprocess
+import sys
+
 from itertools import cycle
 
 from .i18n import _, N_
@@ -37,10 +41,6 @@ def human_readable_bytes(value):
 def open_folder(folder_path):
     """Open a folder using the platform-specific explorer."""
 
-    import sys
-    import os
-    import subprocess
-
     if sys.platform.startswith('darwin'):
         subprocess.call(('open', folder_path))
     elif os.name == 'nt':
@@ -69,6 +69,27 @@ def xor(data, key):
     data = list(bytearray(data))
     key = list(bytearray(key))
     return bytes(bytearray([c ^ k for c, k in zip(data, cycle(key))]))
+
+
+def macos_activate_app():
+    """
+    This function allow to activate an app that is a background app.
+    Because Bajoo has only a trayicon icon and no icon in the dock menu,
+    osx consider it as a background app.  And so, the windows of a
+    background may sometime appear behind other app's windows.
+
+    Activate an app put its windows on the top of the other app's windows.
+    """
+
+    if not sys.platform == 'darwin':
+        return
+
+    subprocess.Popen(['osascript', '-e', '''\
+        tell application "System Events"
+          set procName to name of first process whose unix id is %s
+        end tell
+        tell application procName to activate
+    ''' % os.getpid()])
 
 
 def main():

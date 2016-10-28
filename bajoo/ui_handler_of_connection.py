@@ -43,7 +43,7 @@ class UIHandlerOfConnection(object):
         pass
 
     @abc.abstractmethod
-    def wait_activation(self):
+    def wait_activation(self, username):
         """Ask the user to activate his account, and wait his confirmation.
 
         The future resolves when it's done.
@@ -51,6 +51,8 @@ class UIHandlerOfConnection(object):
         Note that the future resolve when the user *tells* his account is
         validated, but this may be not the case.
 
+        Args:
+            username (Text): email address of the user we wait the activation.
         Returns:
             Future<None>: resolves when the user indicates he has validated
                 his account.
@@ -70,8 +72,11 @@ class UIHandlerOfConnection(object):
         folder path, or the passphrase for generating a new GPG user key, or
         both. The caller specifies which setting he wants, using arguments.
 
-        Note: At least one of ``folder_setting`` or ``key_setting`` must be
-        True.
+        Notes:
+            At least one of ``folder_setting``, ``key_setting`` or
+            ``gpg_error`` must be True.
+            If `key_setting` is False, but `gpg_error`is True, the passphrase
+            exists (and shouldn't be changed) but is unavailable.
 
         Args:
             folder_setting (boolean): If True, this method asks the Bajoo root

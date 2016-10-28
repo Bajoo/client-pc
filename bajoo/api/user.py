@@ -103,8 +103,10 @@ class User(object):
         content = response.get('content', {})
         self.name = content.get('email', '')
 
-        # Migration code: set a lang if the user has None.
-        if 'lang' not in content:
+        # Migration code: the lang defined server-side is unreliable if
+        # lang_unset is true (due to old client sending bad values).
+        # In this case, we update the lang.
+        if content.get('lang_unset'):
             lang = config.get('lang') or i18n.get_lang()
 
             if lang:
