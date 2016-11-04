@@ -12,7 +12,9 @@ from .task_bar_icon_unity_adapter_view import TaskBarIconUnityAdapterView
 
 if is_gtk3_process():
     from .task_bar_icon_gtk_view import TaskBarIconGtkView
+    from .about_window_gtk_view import AboutWindowGtkView
 else:
+    AboutWindowGtkView = proxy_factory('AboutWindowView', __name__)
     TaskBarIconGtkView = proxy_factory('TaskBarIconView', __name__)
 
 
