@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from .__version__ import __version__  # noqa
+from .__version__ import __version__
 
 import logging
 import multiprocessing
@@ -36,6 +36,7 @@ def main():
 
         logger = logging.getLogger(__name__)
         cwd = to_unicode(os.getcwd(), in_enc=sys.getfilesystemencoding())
+        logger.debug('Start Bajoo version %s', __version__)
         logger.debug('Current working directory is : "%s"', cwd)
 
         config.load()  # config must be loaded before network
