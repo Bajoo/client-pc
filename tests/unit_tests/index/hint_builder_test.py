@@ -56,41 +56,38 @@ class TestHintBuilder(object):
 
     def test_modification_event_on_empty_node(self):
         """Should add the ModifiedHint."""
-        builder = HintBuilder()
         node = FakeNode('C')
         tree = FakeIndexTree({
             'A/B/C': node
         })
 
-        builder.apply_modified_event(tree, HintBuilder.SCOPE_LOCAL, 'A/B/C',
-                                     'NEW STATE', FakeNode)
+        HintBuilder.apply_modified_event(tree, HintBuilder.SCOPE_LOCAL,
+                                         'A/B/C', 'NEW STATE', FakeNode)
         assert isinstance(node.local_hint, ModifiedHint)
         assert node.local_hint.new_data == 'NEW STATE'
         assert node.remote_hint is None
 
     def test_deletion_event_on_empty_node(self):
         """Should add the DeletedHint."""
-        builder = HintBuilder()
         node = FakeNode('C')
         tree = FakeIndexTree({
             'A/B/C': node
         })
 
-        builder.apply_deleted_event(tree, HintBuilder.SCOPE_REMOTE, 'A/B/C')
+        HintBuilder.apply_deleted_event(tree, HintBuilder.SCOPE_REMOTE,
+                                        'A/B/C')
         assert isinstance(node.remote_hint, DeletedHint)
         assert node.local_hint is None
 
     def test_move_event_from_empty_node(self):
         """Should add the SourceMoveHint, then create a destination node."""
-
-        builder = HintBuilder()
         src_node = FakeNode('C')
         tree = FakeIndexTree({
             'A/B/C': src_node
         })
 
-        builder.apply_move_event(tree, HintBuilder.SCOPE_REMOTE, 'A/B/C',
-                                 'D/E/F', FakeNode)
+        HintBuilder.apply_move_event(tree, HintBuilder.SCOPE_REMOTE, 'A/B/C',
+                                     'D/E/F', FakeNode)
 
         assert isinstance(src_node.remote_hint, SourceMoveHint)
         dest_node = tree.get_node_by_path('D/E/F')
@@ -101,10 +98,9 @@ class TestHintBuilder(object):
     def test_modification_event_on_missing_node(self):
         """Should create a new node."""
         tree = FakeIndexTree()
-        builder = HintBuilder()
 
-        builder.apply_modified_event(tree, HintBuilder.SCOPE_LOCAL, 'A/B/C',
-                                     'NEW STATE', FakeNode)
+        HintBuilder.apply_modified_event(tree, HintBuilder.SCOPE_LOCAL,
+                                         'A/B/C', 'NEW STATE', FakeNode)
 
         node = tree.get_node_by_path('A/B/C')
         assert isinstance(node.local_hint, ModifiedHint)
@@ -114,9 +110,8 @@ class TestHintBuilder(object):
     def test_deletion_on_missing_node(self):
         """Deletion should do nothing if the file don't exists."""
         tree = FakeIndexTree()
-        builder = HintBuilder()
 
-        builder.apply_deleted_event(tree, HintBuilder.SCOPE_LOCAL, 'A/B/C')
+        HintBuilder.apply_deleted_event(tree, HintBuilder.SCOPE_LOCAL, 'A/B/C')
 
         assert tree.get_node_by_path('A/B/C') is None
 
@@ -129,10 +124,9 @@ class TestHintBuilder(object):
         node's hint will be set to "Modified".
         """
         tree = FakeIndexTree()
-        builder = HintBuilder()
 
-        builder.apply_move_event(tree, HintBuilder.SCOPE_LOCAL, 'A/B/C',
-                                 'D/E/F', FakeNode)
+        HintBuilder.apply_move_event(tree, HintBuilder.SCOPE_LOCAL, 'A/B/C',
+                                     'D/E/F', FakeNode)
 
         assert tree.get_node_by_path('A/B/C') is None
         dest_node = tree.get_node_by_path('D/E/F')
@@ -141,16 +135,15 @@ class TestHintBuilder(object):
 
     def test_modification_event_on_modified_node(self):
         """Should Replace the first modification."""
-        builder = HintBuilder()
         node = FakeNode('C')
         tree = FakeIndexTree({
             'A/B/C': node
         })
 
-        builder.apply_modified_event(tree, HintBuilder.SCOPE_REMOTE, 'A/B/C',
-                                     'STATE 1', FakeNode)
-        builder.apply_modified_event(tree, HintBuilder.SCOPE_REMOTE, 'A/B/C',
-                                     'STATE 2', FakeNode)
+        HintBuilder.apply_modified_event(tree, HintBuilder.SCOPE_REMOTE,
+                                         'A/B/C', 'STATE 1', FakeNode)
+        HintBuilder.apply_modified_event(tree, HintBuilder.SCOPE_REMOTE,
+                                         'A/B/C', 'STATE 2', FakeNode)
 
         assert isinstance(node.remote_hint, ModifiedHint)
         assert node.remote_hint.new_data == 'STATE 2'
@@ -158,15 +151,14 @@ class TestHintBuilder(object):
 
     def test_modification_event_on_deleted_node(self):
         """Should replace the deleted event."""
-        builder = HintBuilder()
         node = FakeNode('C')
         tree = FakeIndexTree({
             'A/B/C': node
         })
 
-        builder.apply_deleted_event(tree, HintBuilder.SCOPE_LOCAL, 'A/B/C')
-        builder.apply_modified_event(tree, HintBuilder.SCOPE_LOCAL, 'A/B/C',
-                                     'STATE', FakeNode)
+        HintBuilder.apply_deleted_event(tree, HintBuilder.SCOPE_LOCAL, 'A/B/C')
+        HintBuilder.apply_modified_event(tree, HintBuilder.SCOPE_LOCAL,
+                                         'A/B/C', 'STATE', FakeNode)
 
         assert isinstance(node.local_hint, ModifiedHint)
         assert node.local_hint.new_data == 'STATE'
@@ -179,16 +171,15 @@ class TestHintBuilder(object):
         There is too much changes to use the "move" information, as we don't
         have the source.
         """
-        builder = HintBuilder()
         node = FakeNode('C', local_state='INITIAL STATE')
         tree = FakeIndexTree({
             'A/B/C': node
         })
 
-        builder.apply_move_event(tree, HintBuilder.SCOPE_LOCAL, 'A/B/C',
-                                 'D/E/F', FakeNode)
-        builder.apply_modified_event(tree, HintBuilder.SCOPE_LOCAL, 'A/B/C',
-                                     'STATE', FakeNode)
+        HintBuilder.apply_move_event(tree, HintBuilder.SCOPE_LOCAL, 'A/B/C',
+                                     'D/E/F', FakeNode)
+        HintBuilder.apply_modified_event(tree, HintBuilder.SCOPE_LOCAL,
+                                         'A/B/C', 'STATE', FakeNode)
 
         assert isinstance(node.local_hint, ModifiedHint)
         assert node.local_hint.new_data == 'STATE'
@@ -202,16 +193,15 @@ class TestHintBuilder(object):
         The destination node's hint is replaced by the new one. The source
         node has moved, which is equivalent to a deletion.
         """
-        builder = HintBuilder()
         source_node = FakeNode('C')
         tree = FakeIndexTree({
             'A/B/C': source_node
         })
 
-        builder.apply_move_event(tree, HintBuilder.SCOPE_REMOTE, 'A/B/C',
-                                 'D/E/F', FakeNode)
-        builder.apply_modified_event(tree, HintBuilder.SCOPE_REMOTE, 'D/E/F',
-                                     'STATE', FakeNode)
+        HintBuilder.apply_move_event(tree, HintBuilder.SCOPE_REMOTE, 'A/B/C',
+                                     'D/E/F', FakeNode)
+        HintBuilder.apply_modified_event(tree, HintBuilder.SCOPE_REMOTE,
+                                         'D/E/F', 'STATE', FakeNode)
 
         assert isinstance(source_node.remote_hint, DeletedHint)
         dest_node = tree.get_node_by_path('D/E/F')
@@ -220,25 +210,23 @@ class TestHintBuilder(object):
 
     def test_deletion_event_on_modified_node(self):
         """It should delete the node anyway."""
-        builder = HintBuilder()
         node = FakeNode('C')
         tree = FakeIndexTree({
             'A/B/C': node
         })
 
-        builder.apply_modified_event(tree, HintBuilder.SCOPE_LOCAL, 'A/B/C',
-                                     'STATE', FakeNode)
-        builder.apply_deleted_event(tree, HintBuilder.SCOPE_LOCAL, 'A/B/C')
+        HintBuilder.apply_modified_event(tree, HintBuilder.SCOPE_LOCAL,
+                                         'A/B/C', 'STATE', FakeNode)
+        HintBuilder.apply_deleted_event(tree, HintBuilder.SCOPE_LOCAL, 'A/B/C')
 
         assert isinstance(node.local_hint, DeletedHint)
 
     def test_deletion_event_on_new_node_should_remote_it(self):
         tree = FakeIndexTree()
-        builder = HintBuilder()
 
-        builder.apply_modified_event(tree, HintBuilder.SCOPE_LOCAL, 'A/B/C',
-                                     'NEW STATE', FakeNode)
-        builder.apply_deleted_event(tree, HintBuilder.SCOPE_LOCAL, 'A/B/C')
+        HintBuilder.apply_modified_event(tree, HintBuilder.SCOPE_LOCAL,
+                                         'A/B/C', 'NEW STATE', FakeNode)
+        HintBuilder.apply_deleted_event(tree, HintBuilder.SCOPE_LOCAL, 'A/B/C')
 
         assert tree.get_node_by_path('A/B/C') is None
 
@@ -247,15 +235,15 @@ class TestHintBuilder(object):
 
         The target has moved: it's already gone, there is nothing to delete.
         """
-        builder = HintBuilder()
         source_node = FakeNode('C')
         tree = FakeIndexTree({
             'A/B/C': source_node
         })
 
-        builder.apply_move_event(tree, HintBuilder.SCOPE_REMOTE, 'A/B/C',
-                                 'D/E/F', FakeNode)
-        builder.apply_deleted_event(tree, HintBuilder.SCOPE_REMOTE, 'A/B/C')
+        HintBuilder.apply_move_event(tree, HintBuilder.SCOPE_REMOTE, 'A/B/C',
+                                     'D/E/F', FakeNode)
+        HintBuilder.apply_deleted_event(tree, HintBuilder.SCOPE_REMOTE,
+                                        'A/B/C')
 
         assert isinstance(source_node.remote_hint, SourceMoveHint)
         dest_node = tree.get_node_by_path('D/E/F')
@@ -270,15 +258,15 @@ class TestHintBuilder(object):
         If the destination didn't exist before the move, the node should be
         removed.
         """
-        builder = HintBuilder()
         source_node = FakeNode('C')
         tree = FakeIndexTree({
             'A/B/C': source_node
         })
 
-        builder.apply_move_event(tree, HintBuilder.SCOPE_REMOTE, 'A/B/C',
-                                 'D/E/F', FakeNode)
-        builder.apply_deleted_event(tree, HintBuilder.SCOPE_REMOTE, 'D/E/F')
+        HintBuilder.apply_move_event(tree, HintBuilder.SCOPE_REMOTE, 'A/B/C',
+                                     'D/E/F', FakeNode)
+        HintBuilder.apply_deleted_event(tree, HintBuilder.SCOPE_REMOTE,
+                                        'D/E/F')
 
         assert isinstance(source_node.remote_hint, DeletedHint)
         assert tree.get_node_by_path('D/E/F') is None
@@ -290,16 +278,15 @@ class TestHintBuilder(object):
         "Modified", and should keep the data the source node had before the
         move.
         """
-        builder = HintBuilder()
         src_node = FakeNode('C')
         tree = FakeIndexTree({
             'A/B/C': src_node
         })
 
-        builder.apply_modified_event(tree, HintBuilder.SCOPE_REMOTE, 'A/B/C',
-                                     'NEW STATE', FakeNode)
-        builder.apply_move_event(tree, HintBuilder.SCOPE_REMOTE, 'A/B/C',
-                                 'D/E/F', FakeNode)
+        HintBuilder.apply_modified_event(tree, HintBuilder.SCOPE_REMOTE,
+                                         'A/B/C', 'NEW STATE', FakeNode)
+        HintBuilder.apply_move_event(tree, HintBuilder.SCOPE_REMOTE, 'A/B/C',
+                                     'D/E/F', FakeNode)
 
         assert isinstance(src_node.remote_hint, DeletedHint)
         dest_node = tree.get_node_by_path('D/E/F')
@@ -314,15 +301,15 @@ class TestHintBuilder(object):
         will be "Modified", without state. The source node's hint is "Deleted"
         anyway.
         """
-        builder = HintBuilder()
         src_node = FakeNode('C', remote_state='STATE?')
         tree = FakeIndexTree({
             'A/B/C': src_node
         })
 
-        builder.apply_deleted_event(tree, HintBuilder.SCOPE_REMOTE, 'A/B/C')
-        builder.apply_move_event(tree, HintBuilder.SCOPE_REMOTE, 'A/B/C',
-                                 'D/E/F', FakeNode)
+        HintBuilder.apply_deleted_event(tree, HintBuilder.SCOPE_REMOTE,
+                                        'A/B/C')
+        HintBuilder.apply_move_event(tree, HintBuilder.SCOPE_REMOTE, 'A/B/C',
+                                     'D/E/F', FakeNode)
 
         assert isinstance(src_node.remote_hint, DeletedHint)
         dest_node = tree.get_node_by_path('D/E/F')
@@ -336,15 +323,14 @@ class TestHintBuilder(object):
         We can't be sure the source was correct: We set a "Modified" hint
         without new state to the destination node.
         """
-        builder = HintBuilder()
         src_node = FakeNode('C')
         tree = FakeIndexTree({
             'A/B/C': src_node
         })
-        builder.apply_move_event(tree, HintBuilder.SCOPE_REMOTE, 'A/B/C',
-                                 'D/E/F', FakeNode)
-        builder.apply_move_event(tree, HintBuilder.SCOPE_REMOTE, 'A/B/C',
-                                 'G/H/I', FakeNode)
+        HintBuilder.apply_move_event(tree, HintBuilder.SCOPE_REMOTE, 'A/B/C',
+                                     'D/E/F', FakeNode)
+        HintBuilder.apply_move_event(tree, HintBuilder.SCOPE_REMOTE, 'A/B/C',
+                                     'G/H/I', FakeNode)
 
         first_dest_node = tree.get_node_by_path('D/E/F')
         second_dest_node = tree.get_node_by_path('G/H/I')
@@ -360,15 +346,14 @@ class TestHintBuilder(object):
         - It equivalents of a move from A to C
         - B is deleted during the operation.
         """
-        builder = HintBuilder()
         src_node = FakeNode('A')
         tree = FakeIndexTree({
             'A': src_node
         })
-        builder.apply_move_event(tree, HintBuilder.SCOPE_LOCAL, 'A', 'B',
-                                 FakeNode)
-        builder.apply_move_event(tree, HintBuilder.SCOPE_LOCAL, 'B', 'C',
-                                 FakeNode)
+        HintBuilder.apply_move_event(tree, HintBuilder.SCOPE_LOCAL, 'A', 'B',
+                                     FakeNode)
+        HintBuilder.apply_move_event(tree, HintBuilder.SCOPE_LOCAL, 'B', 'C',
+                                     FakeNode)
 
         assert tree.get_node_by_path('B') is None
         dest_node = tree.get_node_by_path('C')
@@ -384,30 +369,28 @@ class TestHintBuilder(object):
         The source node shouldn't change. The destination node (B) should be
         destroyed in the operation.
         """
-        builder = HintBuilder()
         src_node = FakeNode('A')
         tree = FakeIndexTree({
             'A': src_node
         })
-        builder.apply_move_event(tree, HintBuilder.SCOPE_LOCAL, 'A', 'B',
-                                 FakeNode)
-        builder.apply_move_event(tree, HintBuilder.SCOPE_LOCAL, 'B', 'A',
-                                 FakeNode)
+        HintBuilder.apply_move_event(tree, HintBuilder.SCOPE_LOCAL, 'A', 'B',
+                                     FakeNode)
+        HintBuilder.apply_move_event(tree, HintBuilder.SCOPE_LOCAL, 'B', 'A',
+                                     FakeNode)
 
         assert tree.get_node_by_path('B') is None
         assert src_node.local_hint is None
 
     def test_move_event_to_existing_node(self):
         """It should replace the destination node."""
-        builder = HintBuilder()
         src_node = FakeNode('A')
         dest_node = FakeNode('B')
         tree = FakeIndexTree({
             'A': src_node,
             'B': dest_node
         })
-        builder.apply_move_event(tree, HintBuilder.SCOPE_LOCAL, 'A', 'B',
-                                 FakeNode)
+        HintBuilder.apply_move_event(tree, HintBuilder.SCOPE_LOCAL, 'A', 'B',
+                                     FakeNode)
 
         assert isinstance(src_node.local_hint, SourceMoveHint)
         assert isinstance(dest_node.local_hint, DestMoveHint)
@@ -416,17 +399,16 @@ class TestHintBuilder(object):
 
     def test_move_event_to_existing_modified_node(self):
         """It should replace the destination node."""
-        builder = HintBuilder()
         src_node = FakeNode('A')
         dest_node = FakeNode('B')
         tree = FakeIndexTree({
             'A': src_node,
             'B': dest_node
         })
-        builder.apply_modified_event(tree, HintBuilder.SCOPE_LOCAL, 'B',
-                                     'state', FakeNode)
-        builder.apply_move_event(tree, HintBuilder.SCOPE_LOCAL, 'A', 'B',
-                                 FakeNode)
+        HintBuilder.apply_modified_event(tree, HintBuilder.SCOPE_LOCAL, 'B',
+                                         'state', FakeNode)
+        HintBuilder.apply_move_event(tree, HintBuilder.SCOPE_LOCAL, 'A', 'B',
+                                     FakeNode)
 
         assert isinstance(src_node.local_hint, SourceMoveHint)
         assert isinstance(dest_node.local_hint, DestMoveHint)
@@ -435,16 +417,15 @@ class TestHintBuilder(object):
 
     def test_move_event_to_existing_deleted_node(self):
         """It should replace the destination node."""
-        builder = HintBuilder()
         src_node = FakeNode('A')
         dest_node = FakeNode('B')
         tree = FakeIndexTree({
             'A': src_node,
             'B': dest_node
         })
-        builder.apply_deleted_event(tree, HintBuilder.SCOPE_LOCAL, 'B')
-        builder.apply_move_event(tree, HintBuilder.SCOPE_LOCAL, 'A', 'B',
-                                 FakeNode)
+        HintBuilder.apply_deleted_event(tree, HintBuilder.SCOPE_LOCAL, 'B')
+        HintBuilder.apply_move_event(tree, HintBuilder.SCOPE_LOCAL, 'A', 'B',
+                                     FakeNode)
 
         assert isinstance(src_node.local_hint, SourceMoveHint)
         assert isinstance(dest_node.local_hint, DestMoveHint)
@@ -460,17 +441,16 @@ class TestHintBuilder(object):
         However, the node C's hint, originally a "DestMoveHint", must be
         replaced by a "ModifiedHint".
         """
-        builder = HintBuilder()
         src_node = FakeNode('A')
         dest_node = FakeNode('B', local_state='INITIAL B STATE')
         tree = FakeIndexTree({
             'A': src_node,
             'B': dest_node
         })
-        builder.apply_move_event(tree, HintBuilder.SCOPE_LOCAL, 'B', 'C',
-                                 FakeNode)
-        builder.apply_move_event(tree, HintBuilder.SCOPE_LOCAL, 'A', 'B',
-                                 FakeNode)
+        HintBuilder.apply_move_event(tree, HintBuilder.SCOPE_LOCAL, 'B', 'C',
+                                     FakeNode)
+        HintBuilder.apply_move_event(tree, HintBuilder.SCOPE_LOCAL, 'A', 'B',
+                                     FakeNode)
 
         assert isinstance(src_node.local_hint, SourceMoveHint)
         assert isinstance(dest_node.local_hint, DestMoveHint)
@@ -490,17 +470,16 @@ class TestHintBuilder(object):
         However, the node B's hint, originally a "SourceMoveHint", must be
         replaced by a "DeletedHint".
         """
-        builder = HintBuilder()
         src_node = FakeNode('A')
         first_source_node = FakeNode('B')
         tree = FakeIndexTree({
             'A': src_node,
             'B': first_source_node
         })
-        builder.apply_move_event(tree, HintBuilder.SCOPE_LOCAL, 'B', 'C',
-                                 FakeNode)
-        builder.apply_move_event(tree, HintBuilder.SCOPE_LOCAL, 'A', 'C',
-                                 FakeNode)
+        HintBuilder.apply_move_event(tree, HintBuilder.SCOPE_LOCAL, 'B', 'C',
+                                     FakeNode)
+        HintBuilder.apply_move_event(tree, HintBuilder.SCOPE_LOCAL, 'A', 'C',
+                                     FakeNode)
 
         dest_node = tree.get_node_by_path('C')
         assert isinstance(src_node.local_hint, SourceMoveHint)

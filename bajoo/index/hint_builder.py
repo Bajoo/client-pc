@@ -46,7 +46,8 @@ class HintBuilder(object):
         else:
             return node.remote_state
 
-    def _set_delete_hint(self, node, scope):
+    @classmethod
+    def _set_delete_hint(cls, node, scope):
         """Set a DeletedHint(), or directly delete the node when possible.
 
         In some case, a node can be removed from the tree when two hints have
@@ -59,19 +60,20 @@ class HintBuilder(object):
             `_set_hint(node, scope, DeletedHint())`.
         """
         if not node.exists():
-            if scope == self.SCOPE_REMOTE:
-                other_scope = self.SCOPE_LOCAL
+            if scope == cls.SCOPE_REMOTE:
+                other_scope = cls.SCOPE_LOCAL
             else:
-                other_scope = self.SCOPE_REMOTE
-            hint = self._get_hint(node, other_scope)
+                other_scope = cls.SCOPE_REMOTE
+            hint = cls._get_hint(node, other_scope)
             if hint is None or isinstance(hint, DeletedHint):
                 # No need to action: the entire node can be deleted safely.
                 node.remove_itself()
                 return
 
-        self._set_hint(node, scope, DeletedHint())
+        cls._set_hint(node, scope, DeletedHint())
 
-    def _set_move_hints(self, scope, source_node, dest_node):
+    @classmethod
+    def _set_move_hints(cls, scope, source_node, dest_node):
         """Set both hints needed to indicate a move between two nodes.
 
         Args:
@@ -79,10 +81,11 @@ class HintBuilder(object):
             source_node (BaseNode): source node
             dest_node (BaseNode): destination node
         """
-        self._set_hint(source_node, scope, SourceMoveHint(dest_node))
-        self._set_hint(dest_node, scope, DestMoveHint(source_node))
+        cls._set_hint(source_node, scope, SourceMoveHint(dest_node))
+        cls._set_hint(dest_node, scope, DestMoveHint(source_node))
 
-    def apply_modified_event(self, tree, scope, path, new_state, node_factory):
+    @classmethod
+    def apply_modified_event(cls, tree, scope, path, new_state, node_factory):
         """Create or update hint from a MODIFIED or an ADDED event.
 
         Args:
@@ -99,23 +102,24 @@ class HintBuilder(object):
         with tree.lock:
             node = tree.get_or_create_node_by_path(path, node_factory)
             node.sync = False
-            previous_hint = self._get_hint(node, scope)
+            previous_hint = cls._get_hint(node, scope)
 
             if isinstance(previous_hint,
                           (type(None), DeletedHint, ModifiedHint)):
-                self._set_hint(node, scope, ModifiedHint(new_state))
+                cls._set_hint(node, scope, ModifiedHint(new_state))
             elif isinstance(previous_hint, SourceMoveHint):
                 # If we've a 'MOVE' event, we're sure the source state is the
                 # new state of the destination node.
-                origin_state = self._get_state(node, scope)
-                self._set_hint(previous_hint.dest_node, scope,
-                               ModifiedHint(origin_state))
-                self._set_hint(node, scope, ModifiedHint(new_state))
+                origin_state = cls._get_state(node, scope)
+                cls._set_hint(previous_hint.dest_node, scope,
+                              ModifiedHint(origin_state))
+                cls._set_hint(node, scope, ModifiedHint(new_state))
             elif isinstance(previous_hint, DestMoveHint):
-                self._set_delete_hint(previous_hint.source_node, scope)
-                self._set_hint(node, scope, ModifiedHint(new_state))
+                cls._set_delete_hint(previous_hint.source_node, scope)
+                cls._set_hint(node, scope, ModifiedHint(new_state))
 
-    def apply_deleted_event(self, tree, scope, path):
+    @classmethod
+    def apply_deleted_event(cls, tree, scope, path):
         """Create or update hint from a DELETED event.
 
         Args:
@@ -129,7 +133,7 @@ class HintBuilder(object):
                 return  # Nothing to do: the node don't exists.
 
             node.sync = False
-            previous_hint = self._get_hint(node, scope)
+            previous_hint = cls._get_hint(node, scope)
 
             if isinstance(previous_hint, SourceMoveHint):
                 # This case shouldn't happens (deletion of an object that is
@@ -139,13 +143,14 @@ class HintBuilder(object):
                                 'Path is %s', path)
                 return
 
-            self._set_delete_hint(node, scope)
+            cls._set_delete_hint(node, scope)
 
             if isinstance(previous_hint, DestMoveHint):
                 # Delete the source move. We've already deleted the destination
-                self._set_delete_hint(previous_hint.source_node, scope)
+                cls._set_delete_hint(previous_hint.source_node, scope)
 
-    def apply_move_event(self, tree, scope, src_path, dst_path, node_factory):
+    @classmethod
+    def apply_move_event(cls, tree, scope, src_path, dst_path, node_factory):
         """Create or update hint from a MOVE event.
 
         Notes:
@@ -168,45 +173,45 @@ class HintBuilder(object):
             dst_node.sync = False
 
             if src_node is None:  # Unusual case: source don't exists
-                self._set_hint(dst_node, scope, ModifiedHint())
+                cls._set_hint(dst_node, scope, ModifiedHint())
                 return
 
             src_node.sync = False
-            previous_src_hint = self._get_hint(src_node, scope)
-            previous_dest_hint = self._get_hint(dst_node, scope)
+            previous_src_hint = cls._get_hint(src_node, scope)
+            previous_dest_hint = cls._get_hint(dst_node, scope)
 
             # "Break" the link between a couple of "moved" node, if we replace
             # one part of the move.
             if isinstance(previous_dest_hint, SourceMoveHint):
-                state = self._get_state(dst_node, scope)
-                self._set_hint(previous_dest_hint.dest_node, scope,
-                               ModifiedHint(state))
+                state = cls._get_state(dst_node, scope)
+                cls._set_hint(previous_dest_hint.dest_node, scope,
+                              ModifiedHint(state))
             elif isinstance(previous_dest_hint, DestMoveHint):
-                self._set_hint(previous_dest_hint.source_node, scope,
-                               DeletedHint())
+                cls._set_hint(previous_dest_hint.source_node, scope,
+                              DeletedHint())
 
             if previous_src_hint is None:
-                self._set_move_hints(scope, src_node, dst_node)
+                cls._set_move_hints(scope, src_node, dst_node)
             elif isinstance(previous_src_hint, ModifiedHint):
-                self._set_delete_hint(src_node, scope)
-                self._set_hint(dst_node, scope, previous_src_hint)
+                cls._set_delete_hint(src_node, scope)
+                cls._set_hint(dst_node, scope, previous_src_hint)
             elif isinstance(previous_src_hint, DeletedHint):
-                self._set_hint(dst_node, scope, ModifiedHint())
+                cls._set_hint(dst_node, scope, ModifiedHint())
             elif isinstance(previous_src_hint, SourceMoveHint):
                 _logger.warning('Two move event from the same source. This '
                                 'should not happens. Path is "%s"', src_path)
 
-                self._set_hint(previous_src_hint.dest_node, scope,
-                               ModifiedHint())
-                self._set_delete_hint(src_node, scope)
-                self._set_hint(dst_node, scope, ModifiedHint())
+                cls._set_hint(previous_src_hint.dest_node, scope,
+                              ModifiedHint())
+                cls._set_delete_hint(src_node, scope)
+                cls._set_hint(dst_node, scope, ModifiedHint())
             elif isinstance(previous_src_hint, DestMoveHint):
                 # There are 2 subsequent moves. They're reduced in one move.
                 # A --> B --> C become A --> C (and B is deleted)
                 if previous_src_hint.source_node is dst_node:
                     # Special case: A --> B --> A
-                    self._set_hint(dst_node, scope, None)
+                    cls._set_hint(dst_node, scope, None)
                 else:
-                    self._set_move_hints(scope, previous_src_hint.source_node,
-                                         dst_node)
-                self._set_delete_hint(src_node, scope)
+                    cls._set_move_hints(scope, previous_src_hint.source_node,
+                                        dst_node)
+                cls._set_delete_hint(src_node, scope)
