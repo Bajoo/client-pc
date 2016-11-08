@@ -166,3 +166,18 @@ class TestBaseNode(object):
         assert node.dirty
         child2.remove_itself()
         assert not node.dirty
+
+    def test_set_hierarchy_not_sync(self):
+        node = BaseNode('node')
+        child1 = BaseNode('child 1')
+        child2 = BaseNode('child 2')
+        node.add_child(child1)
+        node.add_child(child2)
+        node.sync = True
+        child1.sync = True
+        child2.sync = True
+
+        node.set_all_hierarchy_not_sync()
+        assert node.sync is False
+        assert child1.sync is False
+        assert child2.sync is False

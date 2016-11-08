@@ -146,3 +146,13 @@ class BaseNode(object):
             bool: True if it exists; otherwise False
         """
         return self.local_state is not None or self.remote_state is not None
+
+    def set_all_hierarchy_not_sync(self):
+        """Set the sync flag to false for this node and all its children.
+
+        Note: this method does not update the parent node! It should be used
+        only on root nodes.
+        """
+        self._sync = False
+        for child in self.children.values():
+            child.set_all_hierarchy_not_sync()

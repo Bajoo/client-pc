@@ -229,3 +229,20 @@ class TestGetNodeFromIndexTree(object):
         tree._root = _make_tree(('root', [('A',), ('B',)]))
         node = tree.get_or_create_node_by_path('A/B/C/ghost', MyNode)
         assert isinstance(node, MyNode)
+
+    def test_set_tree_node_sync(self):
+        tree = IndexTree()
+        tree._root = _make_tree(('root', [('A', [('A1',)]),
+                                          ('B', [('B1',), ('B2',)])]))
+        tree.set_tree_not_sync()
+        assert tree._root.sync is False
+        assert tree._root.children['A'].sync is False
+        assert tree._root.children['B'].sync is False
+        assert tree._root.children['A'].children['A1'].sync is False
+        assert tree._root.children['B'].children['B1'].sync is False
+        assert tree._root.children['B'].children['B2'].sync is False
+
+    def test_set_empty_tree_node_not_sync(self):
+        tree = IndexTree()
+        # should do nothing
+        tree.set_tree_not_sync()

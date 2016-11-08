@@ -156,3 +156,9 @@ class IndexTree(object):
                     node = FolderNode(name)
                 parent.add_child(node)
         return node
+
+    def set_tree_not_sync(self):
+        """Set all tree nodes as not sync."""
+        with self.lock:
+            if self._root:
+                self._root.set_all_hierarchy_not_sync()
