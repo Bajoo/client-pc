@@ -156,3 +156,25 @@ class BaseNode(object):
         self._sync = False
         for child in self.children.values():
             child.set_all_hierarchy_not_sync()
+
+    def get_full_path(self):
+        """Return the path of the node, relative to the root node.
+
+        The root node always returns '.', and nodes that are direct child of
+        the root node returns theirs names.
+
+        Returns:
+            Text: full path, composed of each node's names separated by a '/'.
+        """
+        if self.parent is None:
+            return u'.'
+
+        path_part = []
+        node = self
+        while node:
+            path_part.append(node.name)
+            node = node.parent
+
+        path_part.reverse()
+
+        return u'/'.join(path_part[1:])
