@@ -24,7 +24,6 @@ def generate_task(tester, target, create_mode=False):
         (target,
          ),
         tester.local_container,
-        tester.error_append,
         None,
         create_mode)
 
@@ -45,12 +44,12 @@ class Test_Local_file_does_not_exist(TestTaskAbstract):
         self.assert_not_in_index(self.path)
 
     def test_UpdateMode(self):
-        task = self.execute_task(generate_task(self, target=self.path,
-                                               create_mode=False))
+        self.execute_task(generate_task(self, target=self.path,
+                                        create_mode=False))
 
         # task on error
-        self.assert_error_on_task(task)
-        assert "No such file or directory" in self.error_string
+        assert self.result[0].error is not None
+        assert "No such file or directory" in str(self.result[0].error)
 
         self.check_action(downloaded=(self.path,))  # no action
         self.assert_conflict(count=0)

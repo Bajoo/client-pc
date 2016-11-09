@@ -19,8 +19,7 @@ def teardown_module(module):
 
 def generate_task(tester, target):
     return RemovedRemoteFilesTask(tester.container, (target,),
-                                  tester.local_container,
-                                  tester.error_append, None)
+                                  tester.local_container)
 
 
 class Test_file_does_not_exist(TestTaskAbstract):

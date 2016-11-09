@@ -32,7 +32,6 @@ def trigger_local_create_task(filename, previous_task):
     create_task = AddedLocalFilesTask(previous_task.container,
                                       (filename,),
                                       previous_task.local_container,
-                                      previous_task.display_error_cb,
                                       create_mode=True)
     add_task(create_task, priority=True)
     return create_task
@@ -51,8 +50,7 @@ def trigger_local_delete_task(filename, previous_task):
     """
     delete_task = RemovedLocalFilesTask(previous_task.container,
                                         (filename,),
-                                        previous_task.local_container,
-                                        previous_task.display_error_cb)
+                                        previous_task.local_container)
     add_task(delete_task, priority=True)
     return delete_task
 
@@ -71,8 +69,7 @@ def trigger_local_moved_task(src, dest, previous_task):
     """
     moved_task = MovedLocalFilesTask(previous_task.container,
                                      (src, dest,),
-                                     previous_task.local_container,
-                                     previous_task.display_error_cb)
+                                     previous_task.local_container)
     add_task(moved_task, priority=True)
     return moved_task
 
@@ -719,7 +716,6 @@ class IndexTree(object):
         create_task = AddedLocalFilesTask(previous_task.container,
                                           (filename,),
                                           previous_task.local_container,
-                                          previous_task.display_error_cb,
                                           create_mode=True)
         self._replace_task(node, filename, create_task, cancel_task)
         return create_task
@@ -745,8 +741,7 @@ class IndexTree(object):
         filename = node.get_complete_path()
         delete_task = RemovedLocalFilesTask(previous_task.container,
                                             (filename,),
-                                            previous_task.local_container,
-                                            previous_task.display_error_cb)
+                                            previous_task.local_container)
 
         self._replace_task(node, filename, delete_task, cancel_task)
         return delete_task

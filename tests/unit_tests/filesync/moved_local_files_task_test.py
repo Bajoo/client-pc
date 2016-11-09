@@ -24,9 +24,7 @@ def generate_task(tester, src_target, dst_target):
         (src_target,
          dst_target,
          ),
-        tester.local_container,
-        tester.error_append,
-        None)
+        tester.local_container)
 
 
 class FakeMovedLocalFilesTask(MovedLocalFilesTask):
@@ -35,7 +33,6 @@ class FakeMovedLocalFilesTask(MovedLocalFilesTask):
         return AddedLocalFilesTask(self.container,
                                    (generate_random_string(),),
                                    self.local_container,
-                                   self.display_error_cb,
                                    parent_path=self._parent_path,
                                    create_mode=create_mode)
 
@@ -47,8 +44,7 @@ def generate_fake_task(tester, src_target, dst_target):
          dst_target,
          ),
         tester.local_container,
-        tester.error_append,
-        None)
+        tester.error_append)
 
 
 class Test_special_case(TestTaskAbstract):

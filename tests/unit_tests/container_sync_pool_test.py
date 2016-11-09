@@ -131,11 +131,10 @@ class FakeFileSyncModule(object):
         self.increment("removed_remotly_count")
         return add_task(FakeTask)
 
-    def added_local_files(self, container, local_container, filename,
-                          display_error_cb):
+    def added_local_files(self, container, local_container, filename):
 
         task = AddedLocalFilesTask(container, (filename,), local_container,
-                                   display_error_cb, create_mode=True)
+                                   create_mode=True)
         self.increment("added_locally_count")
         return add_task(task)
 

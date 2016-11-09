@@ -64,11 +64,10 @@ class MovedStateMachineStatus(object):
 
 class MovedLocalFilesTask(_Task, PushTaskMixin, RemovedTaskMixin):
 
-    def __init__(self, container, target, local_container,
-                 display_error_cb, parent_path=None):
+    def __init__(self, container, target, local_container, parent_path=None):
 
         _Task.__init__(self, container, target, local_container,
-                       display_error_cb, parent_path, expected_target_count=2)
+                       parent_path, expected_target_count=2)
 
     @staticmethod
     def get_type():

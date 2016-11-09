@@ -12,6 +12,7 @@ from .filesync.filepath import is_path_allowed
 from .network.errors import HTTPEntityTooLargeError
 from .encryption.errors import PassphraseAbortError
 from .common.i18n import _
+from .common.strings import err2unicode
 from .app_status import AppStatus
 
 
@@ -288,8 +289,7 @@ class ContainerSyncPool(object):
         Args:
             task_factory (callable): function who generates a new task. it
                 must accept a container and a local_container as its 1rst and
-                2nd arguments, and a callback as named argument
-                'display_error_cb'.
+                2nd arguments.
             container_id (str): id of the container.
             *args (...): supplementary args passed to the
                 task_factory.
@@ -314,8 +314,7 @@ class ContainerSyncPool(object):
         container = local_container.container
 
         self._increment()
-        f = task_factory(container, local_container, *args,
-                         display_error_cb=self._on_sync_error)
+        f = task_factory(container, local_container, *args)
 
         if f:
             f.then(self._on_task_success, self._on_task_failed).safeguard()
@@ -386,12 +385,29 @@ class ContainerSyncPool(object):
         for task in errors:
             if isinstance(task.error, HTTPEntityTooLargeError):
                 upload_limit_reached = True
-
-            if isinstance(task.error, PassphraseAbortError):
+            elif isinstance(task.error, PassphraseAbortError):
                 passphrase_not_set = True
+            else:
+                if task.container.error:
+                    # The task error is probably provoked by the (more
+                    # important) container error.
+                    # NOTE: A container key problem is a container error.
+                    self._manage_container_error(task.local_container,
+                                                 task.container.error)
 
-            if hasattr(task.error, 'container_id'):
-                self._manage_container_error(task.error)
+                    self._on_sync_error(
+                        _('Error during the sync of the "%(name)s" container:'
+                          '\n%(error)s')
+                        % {'name': task.container.name,
+                           'error': err2unicode(task.error)})
+                else:
+                    target_string = ', '.join(task.target_list)
+                    self._on_sync_error(
+                        _('Error during sync of the file(s) "%(filename)s" '
+                          'in the "%(name)s" container:\n%(error)s')
+                        % {'filename': target_string,
+                           'name': task.container.name,
+                           'error': err2unicode(task.error)})
 
         if upload_limit_reached:
             local_container = task.local_container
@@ -413,13 +429,14 @@ class ContainerSyncPool(object):
             error (Exception): the exception raised during the task execution
 
         """
-
-        if hasattr(error, 'container_id'):
-            self._manage_container_error(error)
+        # "Normal" errors are returned by the task as a successful promise.
+        # This case should never happen.
+        _logger.error('Unexpected error during the task execution: %s',
+                      err2unicode(error))
 
         self._decrement()
 
-    def _manage_container_error(self, error):
+    def _manage_container_error(self, local_container, error):
         # TODO only a failed download of the encryption key
         # will trigger this statement, is it normal ?
         # should it manage other container error ?
@@ -427,9 +444,6 @@ class ContainerSyncPool(object):
         # TODO and once the local container is in error state
         # what is it supposed to do ?
 
-        local_container, __, __ = self._local_containers.get(
-            error.container_id, (None, None, None))
-        if local_container is not None:
-            self.remove(local_container)
-            local_container.status = local_container.STATUS_ERROR
-            local_container.error_msg = str(error)
+        self.remove(local_container)
+        local_container.status = local_container.STATUS_ERROR
+        local_container.error_msg = str(error)
