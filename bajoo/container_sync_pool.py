@@ -99,7 +99,7 @@ class ContainerSyncPool(object):
             watcher.start()
             self._create_task(filesync.sync_folder, container.id, u'.')
 
-    def remove(self, container_id):
+    def remove(self, local_container):
         """Remove a container and stop its sync operations.
 
         Note: if a container has been removed when bajoo was not running, this
@@ -109,7 +109,7 @@ class ContainerSyncPool(object):
         Args:
             local_container (LocalContainer)
         """
-
+        container_id = local_container.container.id
         with self._inner_lock:
             if container_id in list(self._local_containers):
                 lc, updater, watcher = self._local_containers[container_id]
@@ -211,8 +211,8 @@ class ContainerSyncPool(object):
                     self._create_task(filesync.sync_folder, lc.model.id, u'.')
 
     def stop(self):
-        for container_id in list(self._local_containers):
-            self.remove(container_id)
+        for local_container, __, __ in self._local_containers.values():
+            self.remove(local_container)
 
     def _increment(self, _arg=None):
         with self._inner_lock:
@@ -427,7 +427,9 @@ class ContainerSyncPool(object):
         # TODO and once the local container is in error state
         # what is it supposed to do ?
 
-        local_container = self.remove(error.container_id)
+        local_container, __, __ = self._local_containers.get(
+            error.container_id, (None, None, None))
         if local_container is not None:
+            self.remove(local_container)
             local_container.status = local_container.STATUS_ERROR
             local_container.error_msg = str(error)
