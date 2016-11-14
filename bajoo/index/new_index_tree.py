@@ -5,6 +5,7 @@ import logging
 import os.path
 import threading
 from ..common.strings import ensure_unicode
+from .file_node import FileNode
 from .folder_node import FolderNode
 
 _logger = logging.getLogger(__name__)
@@ -162,3 +163,169 @@ class IndexTree(object):
         with self.lock:
             if self._root:
                 self._root.set_all_hierarchy_not_sync()
+
+    def load(self, data):
+        """Load the tree from JSON data.
+
+        There is two format used to store data. The "legacy" format (version
+        prior to 0.4.0) and the actual one. If the legacy format is detected,
+        `load()` will call `_legacy_load()`.
+
+        The `data` dict contains two members:
+        - 'version' contains the version format, and should be "2"
+        - 'root': root node representing the top-level folder. If there is no
+            information, "root" can be None.
+
+        Each node has the following attributes:
+        - "type": one of "FILE" or "FOLDER".
+        - "children" (Optional[Dict]): list of children, under the form
+        {u'name': node_def}.
+        - "local_state" (Optional[Dict]): None, or dict representing the local
+            content of the node. Actually, it only contains the "hash" element
+            for file nodes.
+        - "remote_state" (Optional[Any]): None, or a value representing the
+            remote content of the node. values for FileNode should be a dict
+            which contains only the "hash" entry.
+
+        If a attribute is not present, it's considered equal as a None value.
+
+        Examples:
+            >>> data={
+            ...     'version': 2,
+            ...     'root': {
+            ...         'type': 'FOLDER',
+            ...         'local_state': None,
+            ...         'remote_state': None,
+            ...         'children': {
+            ...             'file.txt': {
+            ...                 'type': 'FILE',
+            ...                 'local_state': {
+            ...                     'hash': '3f4855158eb3266a74cf3a5d78b361cc'
+            ...                 },
+            ...                 'remote_state': {
+            ...                     'hash': 'd32239bcb673463ab874e80d47fae504'
+            ...                 }
+            ...             }
+            ...         }
+            ...     }
+            ... }
+            >>> tree = indexTree()
+            >>> tree.load(data)
+
+        Args:
+            data (Dict): index tree data, crated by an `export_data()` call.
+        """
+        # Legacy format don't have a 'version' attribute, but it could have a
+        # "version" file.
+        try:
+            format_version = int(data.get('version', 1))
+        except TypeError:
+            format_version = 1
+
+        if format_version is 1:
+            self._legacy_load(data)
+            return
+
+        # TODO: assert version is 2 ?
+
+        root_def = data.get('root')
+        if root_def:
+            with self.lock:
+                self._root = self._load_node(u'.', root_def)
+
+    def _load_node(self, name, node_def):
+        """Create a node instance from a node definition.
+
+        Args:
+            name (Text): name of the node.
+            node_def (Dict): node definition. See `load(data)`.
+        Returns:
+            baseNode: Node created from definition.
+        """
+
+        if node_def.get('type') == "FOLDER":
+            node = FolderNode(name)
+        else:
+            node = FileNode(name)
+
+        node.local_state = node_def.get('local_state')
+        node.remote_state = node_def.get('remote_state')
+        for (name, node_def) in node_def.get('children', {}).items():
+            node.add_child(self._load_node(name, node_def))
+        return node
+
+    def _legacy_load(self, data):
+        """Load index tree from legacy JSON file format.
+
+        data is a flatten Dict. Each entry represent a file.
+        There is no representation of folder. The presence of folder is
+        determined from the presence of separator '/' in file paths.
+
+        Examples:
+
+            >>> data = {
+            ...     u'file.txt': ('3f4855158eb3266a74cf3a5d78b361cc',
+            ...                   'd32239bcb673463ab874e80d47fae504')
+            ...     u'folder/file.txt': ('fcd56b5ada439b96cd1f3809df533f00',
+            ...                          None)
+            ... }
+            >>> tree = IndexTree()
+            >>> tree.load(data)
+
+        Args:
+            data (Dict[Text, Tuple[Optional[str], Optional[str]]]): dictionary
+                of pair to insert into the index. The key is the file path and
+                the value is a tuple of two hashes, the first one is the local
+                hash, and the second is the remote hash.
+        """
+        with self.lock:
+            self._root = None
+            for path, (local_hash, remote_md5,) in data.items():
+                node = self.get_or_create_node_by_path(path, FileNode)
+                node.local_state = local_hash
+                node.remote_state = local_hash
+
+    def export_data(self):
+        """Export all persistent data of the tree.
+
+        Exported can be used to reload an index tree later (by calling the
+        `load()` method).
+
+        Returns:
+            Dict: index data, under the form of Dict and List directly
+                convertible to JSON format.
+        """
+        with self.lock:
+            root = None
+            if self._root:
+                root = self._export_node(self._root)
+
+            return {
+                'version': 2,
+                'root': root
+            }
+
+    def _export_node(self, node):
+        """Export node in a serialized format convertible to JSON.
+
+        Args:
+            node (BaseNode): node to export.
+        Returns:
+            Dict: serialized node
+        """
+        if isinstance(node, FileNode):
+            node_type = "FILE"
+        else:
+            node_type = "FOLDER"
+
+        result = {
+            'type': node_type
+        }
+        if node.local_state is not None:
+            result['local_state'] = node.local_state
+        if node.remote_state is not None:
+            result['remote_state'] = node.remote_state
+        if node.children:
+            result['children'] = {name: self._export_node(child)
+                                  for name, child in node.children.items()}
+        return result
