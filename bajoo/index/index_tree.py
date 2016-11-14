@@ -288,7 +288,7 @@ class IndexTree(object):
 
         return self.locked_count != 0
 
-    def generate_dict(self):
+    def export_data(self):
         """ Generate a dictionary with the correct format to be stored in
             a json file.
 

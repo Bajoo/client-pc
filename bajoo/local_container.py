@@ -63,8 +63,10 @@ class LocalContainer(object):
         self.container = container
         self.model = model
         self.is_moving = False
-        self.index_saver = IndexSaver(self, self.model.path, self.model.id)
+        # TODO: remove cross-dependency (IndexSaver and Index) at creation.
+        self.index_saver = IndexSaver(None, self.model.path, self.model.id)
         self.index = IndexTree(self.index_saver)
+        self.index_saver.index_tree = self.index
 
     def check_path(self):
         """Check that the path is the folder corresponding to the container.

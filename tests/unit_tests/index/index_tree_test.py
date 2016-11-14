@@ -301,8 +301,8 @@ class TestIndexTree(object):
 
             assert not child.is_locked()
 
-    def test_generate_dict(self):
-        dico = self.tree.generate_dict()
+    def test_export_data(self):
+        dico = self.tree.export_data()
         assert len(dico) == 5
         for key, (local, remote) in dico.items():
             assert key.endswith(remote[7:])
