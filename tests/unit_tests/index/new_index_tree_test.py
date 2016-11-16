@@ -411,3 +411,42 @@ class TestSaveAndLoadIndexTree(object):
         child_node_def = folder_node_def['children']['child']
         assert child_node_def['local_state'] == 5
         assert child_node_def['remote_state'] == 6
+
+
+class TestIndexTree(object):
+    """Other IndexTree tests who doesn't fit in other classes."""
+
+    def test_get_remote_hash_of_empty_tree(self):
+        tree = IndexTree()
+        assert tree.get_remote_hashes() == {}
+
+    def test_get_remote_hash_of_tree_containing_only_folders(self):
+        tree = IndexTree()
+        tree._root = FolderNode('.')
+        node_folder = FolderNode('folder')
+        tree._root.add_child(node_folder)
+        node_folder.add_child(FolderNode('nested folder'))
+
+        assert tree.get_remote_hashes() == {}
+
+    def test_get_remote_hash_of_tree_with_files(self):
+        tree = IndexTree()
+        file_a1 = FileNode('A1')
+        file_a1.remote_state = 1234
+        file_b1 = FileNode('B1')
+        file_b1.remote_state = 5678
+
+        tree._root = FolderNode('.')
+        tree._root.add_child(FolderNode('A'))
+        tree._root.children['A'].add_child(file_a1)
+        tree._root.children['A'].add_child(FolderNode('A2'))
+        tree._root.add_child(FolderNode('B'))
+        tree._root.children['B'].add_child(file_b1)
+        tree._root.children['B'].add_child(FileNode('B2'))
+
+        data = tree.get_remote_hashes()
+        assert data == {
+            u'A/A1': 1234,
+            u'B/B1': 5678,
+            u'B/B2': None
+        }

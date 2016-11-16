@@ -329,3 +329,27 @@ class IndexTree(object):
             result['children'] = {name: self._export_node(child)
                                   for name, child in node.children.items()}
         return result
+
+    def get_remote_hashes(self):
+        """Get the flatten list of remote hashes of all file nodes.
+
+        Note:
+            The file is added to the dict even if its remote hash is None.
+            Also, nodes that are not instance of FileNode are ignored.
+
+        Returns:
+            Dict[Text, str]: dict of all files, with file path as key and
+                remote hash as value.
+        """
+
+        with self.lock:
+            if not self._root:
+                return {}
+            return self._get_remote_hashes(self._root, {})
+
+    def _get_remote_hashes(self, node, acc):
+        if isinstance(node, FileNode):
+            acc[node.get_full_path()] = node.remote_state
+        for child in node.children.values():
+            self._get_remote_hashes(child, acc)
+        return acc
