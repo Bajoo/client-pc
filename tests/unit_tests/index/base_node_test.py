@@ -206,3 +206,83 @@ class TestBaseNode(object):
         node_b.add_child(node_c)
 
         assert node_c.get_full_path() == u'A/B/C'
+
+    def test_release_method_set_task_to_none(self):
+        node = BaseNode(u'root')
+        node.task = 'X'
+        node.release()
+        assert node.task is None
+
+    def test_release_method_set_node_as_sync_if_node_has_no_hint(self):
+        node = BaseNode(u'root')
+        node.state = {'exists': True}
+        node.task = 'X'
+        node.release()
+        assert node.sync is True
+
+    def test_release_method_let_node_non_sync_if_node_has_hint(self):
+        node = BaseNode(u'root')
+        node.state = {'exists': True}
+        node.task = 'X'
+        node.local_hint = "HINT"
+        node.release()
+        assert node.sync is False
+
+    def test_release_method_remove_node_from_tree_when_state_is_none(self):
+        root = BaseNode(u'root')
+        folder = BaseNode(u'folder')
+        child = BaseNode(u'child')
+        child.task = 'X'
+        root.add_child(folder)
+        folder.add_child(child)
+
+        child.release()
+        assert child.parent is None
+        assert len(folder.children) is 0
+
+    def test_release_method_dont_remove_node_when_children_exists(self):
+        root = BaseNode(u'root')
+        child = BaseNode(u'child')
+        child.task = 'X'
+        child.add_child(BaseNode(u'X'))
+        root.add_child(child)
+
+        child.release()
+        assert child.parent is root
+
+    def test_release_method_dont_remove_node_if_hint_exists(self):
+        root = BaseNode(u'root')
+        folder = BaseNode(u'folder')
+        child = BaseNode(u'child')
+        child.task = 'X'
+        child.local_hint = "HINT"
+        root.add_child(folder)
+        folder.add_child(child)
+
+        child.release()
+        assert child.parent is folder
+
+    def test_release_method_set_empty_parent_dirty_after_removal(self):
+        root = BaseNode(u'root')
+        folder = BaseNode(u'folder')
+        folder.sync = True
+        child = BaseNode(u'child')
+        child.task = 'X'
+        root.add_child(folder)
+        folder.add_child(child)
+
+        child.release()
+        assert folder.sync is False
+
+    def test_release_method_leave_non_empty_parent_intact_after_removal(self):
+        root = BaseNode(u'root')
+        folder = BaseNode(u'folder')
+        folder.sync = True
+        child = BaseNode(u'child')
+        child.task = 'X'
+        root.add_child(folder)
+        folder.add_child(child)
+        folder.add_child(BaseNode(u'other child'))
+
+        child.release()
+        assert folder.sync is True

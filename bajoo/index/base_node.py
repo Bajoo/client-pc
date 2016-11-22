@@ -147,11 +147,13 @@ class BaseNode(object):
             If the node has been created after the last sync, it will still
             returns False. It only considers the synced data (and ignore the
             hints).
+            Root node always exists.
 
         Returns:
             bool: True if it exists; otherwise False
         """
-        return self.state is not None or self.children
+        return (self.state is not None or self.children or
+                self.parent is None)
 
     def set_all_hierarchy_not_sync(self):
         """Set the sync flag to false for this node and all its children.
@@ -195,3 +197,23 @@ class BaseNode(object):
             state (Optional[Dict]): new state
         """
         self.state = state
+
+    def release(self):
+        """Release the node reserved by a task.
+
+        If no other events (hints) has been set meanwhile, it also set the
+        node as sync.
+        if the node's state is None, and the node has not child, it's removed
+        from the tree.
+        """
+        self.task = None
+        if not self.local_hint and not self.remote_hint:
+            if not self.exists():
+                parent_node = self.parent
+                self.remove_itself()
+
+                # if parent is also empty, trigger a chain deletion.
+                if parent_node and not parent_node.exists():
+                    parent_node.sync = False
+            else:
+                self.sync = True
