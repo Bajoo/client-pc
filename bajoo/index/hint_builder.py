@@ -215,3 +215,38 @@ class HintBuilder(object):
                     cls._set_move_hints(scope, previous_src_hint.source_node,
                                         dst_node)
                 cls._set_delete_hint(src_node, scope)
+
+    @classmethod
+    def break_coupled_hints(cls, node, scope=None):
+        """Convert couples of linked hints into two independent hints.
+
+        It's useful to break links between nodes before modifying them.
+
+        If the node has no linked hint, do nothing.
+
+        Args:
+            node (BaseNode): node which the links between others nodes must be
+                broken.
+            scope (Optional[str]): One of SCOPE_LOCAL, SCOPE_REMOTE or None. If
+                a scope is specified, only the hints of this scope will be
+                broken. By default, both hints are checked.
+        """
+        if scope != cls.SCOPE_REMOTE:
+            if isinstance(node.local_hint, DestMoveHint):
+                target = node.local_hint.source_node
+            else:
+                target = node
+            if isinstance(target.local_hint, SourceMoveHint):
+                dest_node = target.local_hint.dest_node
+                dest_node.local_hint = ModifiedHint(target.local_state)
+                target.local_hint = DeletedHint()
+
+        if scope != cls.SCOPE_LOCAL:
+            if isinstance(node.remote_hint, DestMoveHint):
+                target = node.remote_hint.source_node
+            else:
+                target = node
+            if isinstance(target.remote_hint, SourceMoveHint):
+                dest_node = target.remote_hint.dest_node
+                dest_node.remote_hint = ModifiedHint(target.remote_state)
+                target.remote_hint = DeletedHint()

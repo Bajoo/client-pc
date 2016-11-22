@@ -8,13 +8,13 @@ from bajoo.index.hint_builder import HintBuilder
 
 class FakeNode(object):
     def __init__(self, name, exists=False, local_state=None,
-                 remote_state=None):
+                 remote_state=None, local_hint=None, remote_hint=None):
         self.name = name
-        self.local_hint = None
-        self.remote_hint = remote_state
+        self.local_hint = local_hint
+        self.remote_hint = remote_hint
         self.task = None
         self.local_state = local_state
-        self.remote_state = None
+        self.remote_state = remote_state
         self._exists = exists
 
         self.tree = None
@@ -488,3 +488,118 @@ class TestHintBuilder(object):
         assert src_node.local_hint.dest_node is dest_node
 
         assert isinstance(first_source_node.local_hint, DeletedHint)
+
+    def test_break_coupled_hints_on_node_without_hint(self):
+        """The method should have no effect."""
+        node = FakeNode('.')
+        HintBuilder.break_coupled_hints(node)
+        assert node.local_hint is None
+        assert node.remote_hint is None
+
+    def test_break_coupled_hints_on_node_with_modified_local_hint(self):
+        """Modified hints are not "linked" hint: the method has no effect."""
+        node = FakeNode('.', local_hint=ModifiedHint("NEW STATE"))
+        HintBuilder.break_coupled_hints(node)
+        assert isinstance(node.local_hint, ModifiedHint)
+        assert node.local_hint.new_data == "NEW STATE"
+        assert node.remote_hint is None
+
+    def test_break_coupled_hints_on_node_with_deleted_remote_hint(self):
+        """Deleted hints are not "linked" hint: the method has no effect."""
+        node = FakeNode('.', remote_hint=DeletedHint())
+        HintBuilder.break_coupled_hints(node)
+        assert node.local_hint is None
+        assert isinstance(node.remote_hint, DeletedHint)
+
+    def test_break_coupled_hints_on_node_with_two_modified_hint(self):
+        """Modified hints are not "linked" hint: the method has no effect."""
+        node = FakeNode('.', local_hint=ModifiedHint(),
+                        remote_hint=ModifiedHint())
+        HintBuilder.break_coupled_hints(node)
+        assert isinstance(node.local_hint, ModifiedHint)
+        assert isinstance(node.remote_hint, ModifiedHint)
+
+    def test_break_coupled_hints_on_node_with_local_src_move_hint(self):
+        """Both source and dest node will have theirs hints changed.
+
+        The local "source move" hint will become a "Deleted" hint, and the
+        local hint of the destination node will become a "Modified" hint with
+        the state of the source node.
+        """
+        dest_node = FakeNode('dest')
+        source_node = FakeNode('source', local_state='SOURCE DATA',
+                               local_hint=SourceMoveHint(dest_node=dest_node),
+                               remote_hint=ModifiedHint())
+        dest_node.local_hint = DestMoveHint(source_node=source_node)
+
+        HintBuilder.break_coupled_hints(source_node)
+        assert isinstance(source_node.local_hint, DeletedHint)
+        assert isinstance(dest_node.local_hint, ModifiedHint)
+        assert dest_node.local_hint.new_data == 'SOURCE DATA'
+        assert isinstance(source_node.remote_hint, ModifiedHint)
+
+    def test_break_coupled_hints_on_node_with_remote_dest_move_hint(self):
+        """Both source and dest node will have theirs hints changed.
+
+        The local "dest move" hint will become a "Modified" hint with the
+        state of the source node, and the local hint of the source node will
+        become a "Deleted" hint.
+        """
+        dest_node = FakeNode('dest')
+        source_node = FakeNode('source', remote_state='SOURCE DATA',
+                               remote_hint=SourceMoveHint(dest_node=dest_node))
+        dest_node.remote_hint = DestMoveHint(source_node=source_node)
+
+        HintBuilder.break_coupled_hints(source_node)
+        assert isinstance(source_node.remote_hint, DeletedHint)
+        assert isinstance(dest_node.remote_hint, ModifiedHint)
+        assert dest_node.remote_hint.new_data == 'SOURCE DATA'
+
+    def test_break_coupled_hints_on_node_with_two_move_hints(self):
+        """Both hints will be converted."""
+        node = FakeNode('node', remote_state='NODE STATE')
+        local_source_node = FakeNode('source', local_state='SOURCE STATE',
+                                     local_hint=SourceMoveHint(dest_node=node))
+        remote_dest_node = FakeNode('dest',
+                                    remote_hint=DestMoveHint(source_node=node))
+        node.local_hint = DestMoveHint(source_node=local_source_node)
+        node.remote_hint = SourceMoveHint(dest_node=remote_dest_node)
+
+        HintBuilder.break_coupled_hints(node)
+        assert isinstance(node.local_hint, ModifiedHint)
+        assert node.local_hint.new_data == 'SOURCE STATE'
+        assert isinstance(node.remote_hint, DeletedHint)
+        assert isinstance(local_source_node.local_hint, DeletedHint)
+        assert isinstance(remote_dest_node.remote_hint, ModifiedHint)
+        assert remote_dest_node.remote_hint.new_data == 'NODE STATE'
+
+    def test_break_local_coupled_hints_on_node_with_two_move_hints(self):
+        """only local hints should be modified"""
+        node = FakeNode('node', remote_state='NODE STATE')
+        local_source_node = FakeNode('source', local_state='SOURCE STATE',
+                                     local_hint=SourceMoveHint(dest_node=node))
+        remote_dest_node = FakeNode('dest',
+                                    remote_hint=DestMoveHint(source_node=node))
+        node.local_hint = DestMoveHint(source_node=local_source_node)
+        node.remote_hint = SourceMoveHint(dest_node=remote_dest_node)
+
+        HintBuilder.break_coupled_hints(node, scope=HintBuilder.SCOPE_LOCAL)
+        assert isinstance(node.local_hint, ModifiedHint)
+        assert node.local_hint.new_data == 'SOURCE STATE'
+        assert isinstance(node.remote_hint, SourceMoveHint)
+        assert isinstance(local_source_node.local_hint, DeletedHint)
+        assert isinstance(remote_dest_node.remote_hint, DestMoveHint)
+
+    def test_break_remote_coupled_hints_on_node_with_local_move_hint(self):
+        """The local hint remains as it, and the method do nothing"""
+        dest_node = FakeNode('dest')
+        source_node = FakeNode('source', local_state='SOURCE DATA',
+                               local_hint=SourceMoveHint(dest_node=dest_node),
+                               remote_hint=ModifiedHint())
+        dest_node.local_hint = DestMoveHint(source_node=source_node)
+
+        HintBuilder.break_coupled_hints(source_node,
+                                        scope=HintBuilder.SCOPE_REMOTE)
+        assert isinstance(source_node.local_hint, SourceMoveHint)
+        assert isinstance(dest_node.local_hint, DestMoveHint)
+        assert isinstance(source_node.remote_hint, ModifiedHint)
