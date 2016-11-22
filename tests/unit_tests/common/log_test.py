@@ -107,6 +107,7 @@ class TestLogFormating(object):
                 ColoredFormatter._colors['RESET'] in \
                 colorFormater.formatException(sys.exc_info())
 
+
 frozen_back_up = None
 handlers_backup = []
 

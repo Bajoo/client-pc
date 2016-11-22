@@ -108,6 +108,7 @@ def _(msg):
         # a non-translated string (probably a generated string).
         return msg
 
+
 available_langs = {
     'en': {
         'code': 'en',
