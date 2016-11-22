@@ -459,3 +459,18 @@ class TestIndexTree(object):
             u'A/A1': 1234,
             u'B/B1': 5678,
         }
+
+    def test_empty_tree_is_not_dirty(self):
+        tree = IndexTree()
+        assert tree.is_dirty() is False
+
+    def test_tree_is_dirty_if_root_node_is_dirty(self):
+        tree = IndexTree()
+        tree._root = MyNode('.')
+        assert tree.is_dirty() is True
+
+    def test_tree_is_not_dirty_if_root_node_is_not_dirty(self):
+        tree = IndexTree()
+        tree._root = MyNode('.')
+        tree._root.sync = True
+        assert tree.is_dirty() is False

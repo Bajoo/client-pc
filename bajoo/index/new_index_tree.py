@@ -346,3 +346,14 @@ class IndexTree(object):
         for child in node.children.values():
             self._get_remote_hashes(child, acc)
         return acc
+
+    def is_dirty(self):
+        """Determine if the tree is dirty or sync.
+
+        An empty tree is always sync.
+
+        Returns:
+            bool: True if the tree is dirty; otherwise False.
+        """
+        with self.lock:
+            return bool(self._root and self._root.dirty)
