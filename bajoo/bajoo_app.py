@@ -94,9 +94,11 @@ class BajooApp(wx.App):
 
     def __init__(self):
         self._checker = None
-        self._updater = SoftwareUpdater(
-            self,
-            "https://www.bajoo.fr/downloads/win32/updates")
+        if sys.platform == 'darwin':
+            update_url = "https://www.bajoo.fr/downloads/osx/updates"
+        else:
+            update_url = "https://www.bajoo.fr/downloads/win32/updates"
+        self._updater = SoftwareUpdater(self, update_url)
         self._home_window = None
         self._main_window = None
         self._about_window = None
