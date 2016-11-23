@@ -8,9 +8,9 @@ from functools import partial
 
 from ...app_status import AppStatus
 from ...common.i18n import set_lang
-from .unity_data_exchange import UnityDataExchange  # noqa
-from .common_view_data import (app_status_to_icon_files, MenuEntry,
-                               TaskBarIconAction)
+from .task_bar_icon_unity_data_exchange import UnityDataExchange  # noqa
+from .task_bar_icon_base_view import (app_status_to_icon_files, MenuEntry,
+                                      TaskBarIconAction)
 
 import gi
 gi.require_version('AppIndicator3', '0.1')

@@ -33,10 +33,12 @@ from .container_model import ContainerModel
 from .container_sync_pool import ContainerSyncPool
 from .dynamic_container_list import DynamicContainerList
 from .filesync import task_consumer
-from .gui import AboutWindow
+from .gui import AboutWindow, TaskBarIcon
 from .gui.bug_report import BugReportWindow, EVT_BUG_REPORT
 from .gui.change_password_window import ChangePasswordWindow
 from .gui.common.language_box import LanguageBox
+from .gui.enums import WindowDestination
+from .gui.enums import ContainerStatus as ContainerStatusTBIcon
 from .gui.event_promise import ensure_gui_thread
 from .gui.form.members_share_form import MembersShareForm
 from .gui.home_window import HomeWindow
@@ -50,8 +52,6 @@ from .gui.tab.advanced_settings_tab import AdvancedSettingsTab
 from .gui.tab.creation_share_tab import CreationShareTab
 from .gui.tab.details_share_tab import DetailsShareTab
 from .gui.tab.list_shares_tab import ListSharesTab
-from .gui.task_bar_icon import make_task_bar_icon, WindowDestination
-from .gui.task_bar_icon import ContainerStatus as ContainerStatusTBIcon
 from .local_container import LocalContainer
 from .network import set_proxy
 from .network.errors import NetworkError
@@ -282,7 +282,7 @@ class BajooApp(wx.App):
             if not self._ensures_single_instance_running():
                 return False
 
-            self._task_bar_icon = make_task_bar_icon()
+            self._task_bar_icon = TaskBarIcon()
 
             self._notifier = MessageNotifier(self._task_bar_icon.view)
 
