@@ -2,6 +2,7 @@
 import re
 import sys
 from .about_window import AboutWindowTestController
+from .task_bar_icon import TaskBarIconTestController
 
 
 def wx_context():
@@ -41,5 +42,10 @@ graphic_items = {
     'about_window': (AboutWindowTestController, {
         'wx': (wx_context, 'AboutWindowWxView'),
         'gtk': (gtk_context, 'AboutWindowGtkView')
+    }),
+    'task_bar_icon': (TaskBarIconTestController, {
+        'wx': (wx_context, 'TaskBarIconWxView'),
+        'gtk': (gtk_context, 'TaskBarIconGtkView'),
+        'appindicator': (gtk_context, 'TaskBarIconAppIndicatorView'),
     })
 }
