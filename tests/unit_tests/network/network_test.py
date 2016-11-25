@@ -11,9 +11,6 @@ import bajoo.network
 class TestNetwork(object):
     """Test of the bajoo.network module"""
 
-    def __init__(self):
-        self._context = None
-
     def setup(self):
         self._context = bajoo.network.Context()
         self._context.start()
