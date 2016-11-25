@@ -159,23 +159,3 @@ class AboutWindowGtkView(Gtk.Window, AboutWindowBaseView):
 
         for widget, text in mapping_widget_text.items():
             widget.set_label(text)
-
-
-def main():
-    class C(object):
-        def close_action(self):
-            Gtk.main_quit()
-
-        def open_webpage_action(self, page):
-            print('Open %s' % page)
-
-        def bug_report_action(self):
-            print('Bug report action!')
-
-    win = AboutWindowGtkView(C())
-    win.show()
-    Gtk.main()
-
-
-if __name__ == '__main__':
-    main()

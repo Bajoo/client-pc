@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 
-import multiprocessing
 from .gtk_process import GtkProcessHandler  # noqa
 from .rpc_handler import get_global_rpc_handler
 
 
 def is_gtk3_process():
-    return multiprocessing.current_process().name == 'bajoo-gtk3-gui'
+    try:
+        import gi
+        return gi.get_required_version('Gtk') == '3.0'
+    except ImportError:
+        return False
 
 
 def remote_call(name, module, *args, **kwargs):

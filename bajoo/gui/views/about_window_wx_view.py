@@ -309,16 +309,3 @@ class AboutWindowWxView(wx.Frame, AboutWindowBaseView, BaseView):
 
     def destroy(self):
         self.Destroy()
-
-
-def main():
-    class C(object):
-        pass
-    app = wx.App()
-    win = AboutWindowWxView(C())
-    win.show()
-    app.MainLoop()
-
-
-if __name__ == '__main__':
-    main()
