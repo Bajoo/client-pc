@@ -6,11 +6,10 @@ from .base_node import BaseNode
 class FolderNode(BaseNode):
     """Node representing a classic folder.
 
-    The `remote_state` is always None, as the storage server don't understand
-    the notion of folder.
-    The `local_state` is set to True when the folder exists on the filesystem.
+    Server-side, folders are implicit and don't exists as entity. As a
+    consequence, the `state` attribute is always `None`
     """
 
-    def __init__(self, name):
-        BaseNode.__init__(self, name)
-        self.local_state = True
+    def set_state(self, state):
+        if state is not None:
+            raise ValueError('FolderNode accepts only None state.')

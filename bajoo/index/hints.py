@@ -12,6 +12,8 @@ class DeletedHint(BaseHint):
 class ModifiedHint(BaseHint):
     """The node content has been added or modified.
 
+    Note that the state can be incomplete and/or have irrelevant data.
+
     Attributes:
         new_state (Optional[Any]): if set, state data that should be used to
             determine the new state of the node. It will be used by the Task.

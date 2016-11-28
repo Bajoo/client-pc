@@ -279,14 +279,31 @@ class TestSaveAndLoadIndexTree(object):
         assert isinstance(tree.get_node_by_path('deep/nested'), FolderNode)
         assert isinstance(tree.get_node_by_path('deep/nested/file'), FileNode)
 
+    def test_load_from_legacy_should_correctly_set_hashes(self):
+        tree = IndexTree()
+        tree.load({
+            u'root_file': ('3f4855158eb3266a74cf3a5d78b361cc',
+                           '1e4c2746ef98ebb5fe703723ecc3b8fd'),
+            u'nested/file': ('148fff4717a87b8ddacb8a4b1fd18531',
+                             '02d70d1f6d522c454883d6114c7f315f')
+        })
+        assert tree._root is not None
+        root_file = tree.get_node_by_path('root_file')
+        assert root_file.state == {
+            'local_hash': '3f4855158eb3266a74cf3a5d78b361cc',
+            'remote_hash': '1e4c2746ef98ebb5fe703723ecc3b8fd'}
+        nested_file = tree.get_node_by_path('nested/file')
+        assert nested_file.state == {
+            'local_hash': '148fff4717a87b8ddacb8a4b1fd18531',
+            'remote_hash': '02d70d1f6d522c454883d6114c7f315f'}
+
     def test_root_node_should_be_named_dot_after_load(self):
         tree = IndexTree()
         tree.load({
             'version': 2,
             'root': {
                 'type': 'FOLDER',
-                'local_state': None,
-                'remote_state': None
+                'state': None,
             }
         })
         assert tree._root is not None
@@ -298,7 +315,7 @@ class TestSaveAndLoadIndexTree(object):
         assert tree._root is not None
         assert tree._root.name == u'.'
 
-    def tets_load_tree_should_set_defualt_state_to_none(self):
+    def test_load_tree_should_set_default_state_to_none(self):
         tree = IndexTree()
         tree.load({
             'version': 2,
@@ -306,8 +323,7 @@ class TestSaveAndLoadIndexTree(object):
                 'type': 'FOLDER',
             }
         })
-        assert tree._root.local_state is None
-        assert tree._root.remote_state is None
+        assert tree._root.state is None
 
     def test_load_tree_should_set_all_node_names(self):
         tree = IndexTree()
@@ -318,17 +334,18 @@ class TestSaveAndLoadIndexTree(object):
                 'children': {
                     u'file1': {
                         'type': "FILE",
-                        'local_state': {'hash': 'hash1'},
-                        'remote_hash': {'hash': 'hash2'}
+                        'state': {'local_hash': 'hash1',
+                                  'remote_hash': 'hash2'}
                     },
                     u'file2': {
                         'type': "FILE",
-                        'local_state': {'hash': 'hash3'},
+                        'state': {'local_hash': 'hash3',
+                                  'remote_hash': 'hash4'},
                     },
                     u'file3': {
                         'type': "FILE",
-                        'local_state': None,
-                        'remote_state': {'hash': 'hash4'}
+                        'state': {'local_hash': 'hash5',
+                                  'remote_hash': 'hash6'}
                     },
                     u'file4': {'type': "FILE"},
                     u'nested': {
@@ -394,23 +411,17 @@ class TestSaveAndLoadIndexTree(object):
         tree._root.add_child(node_folder)
         node_folder.add_child(node_child)
 
-        tree._root.local_state = 1
-        tree._root.remote_state = 2
-        node_folder.local_state = 3
-        node_folder.remote_state = 4
-        node_child.local_state = 5
-        node_child.remote_state = 6
+        tree._root.state = {'local_hash': 1, 'remote_hash': 2}
+        node_folder.state = {'local_hash': 3, 'remote_hash': 4}
+        node_child.state = {'local_hash': 5, 'remote_hash': 6}
 
         data = tree.export_data()
         root_node_def = data['root']
-        assert root_node_def['local_state'] == 1
-        assert root_node_def['remote_state'] == 2
+        assert root_node_def['state'] == {'local_hash': 1, 'remote_hash': 2}
         folder_node_def = root_node_def['children']['folder']
-        assert folder_node_def['local_state'] == 3
-        assert folder_node_def['remote_state'] == 4
+        assert folder_node_def['state'] == {'local_hash': 3, 'remote_hash': 4}
         child_node_def = folder_node_def['children']['child']
-        assert child_node_def['local_state'] == 5
-        assert child_node_def['remote_state'] == 6
+        assert child_node_def['state'] == {'local_hash': 5, 'remote_hash': 6}
 
 
 class TestIndexTree(object):
@@ -432,9 +443,9 @@ class TestIndexTree(object):
     def test_get_remote_hash_of_tree_with_files(self):
         tree = IndexTree()
         file_a1 = FileNode('A1')
-        file_a1.remote_state = 1234
+        file_a1.state = {'local_hash': 'abcd', 'remote_hash': 1234}
         file_b1 = FileNode('B1')
-        file_b1.remote_state = 5678
+        file_b1.state = {'local_hash': 'ef01', 'remote_hash': 5678}
 
         tree._root = FolderNode('.')
         tree._root.add_child(FolderNode('A'))
@@ -442,11 +453,9 @@ class TestIndexTree(object):
         tree._root.children['A'].add_child(FolderNode('A2'))
         tree._root.add_child(FolderNode('B'))
         tree._root.children['B'].add_child(file_b1)
-        tree._root.children['B'].add_child(FileNode('B2'))
 
         data = tree.get_remote_hashes()
         assert data == {
             u'A/A1': 1234,
             u'B/B1': 5678,
-            u'B/B2': None
         }

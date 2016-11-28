@@ -8,11 +8,18 @@ class BaseNode(object):
     flags to see if the object is sync between local and server, and if all its
     descendants are sync.
 
-    The two attributes `local_state` and `remote_state` are representations of
-    the content's node. Theirs type are dependents of the Node type, and is
-    defined in subclasses. Both local and remote states are of the same type.
-    A None value means the target don't exist.
-    Obviously, the state attributes are only the last version known to Bajoo.
+    The `state` attribute is a representation of the node content. It's a
+    Dict containing all metadata related to the node. Its content depend of
+    the Node type, and is defined in each Node subclass.
+    Obviously, the state attribute only contains the last version known to
+    Bajoo (ie: the last "sync" version).
+    If the state is None, it means the node doesn't exists as visible entity in
+    Bajoo: it can be a new file, not yet sync. Such node will be processed,
+    either by being assigned a state or by being deleted.
+
+    a Node with a None state and children are a special case: they don't have
+    an existence known by Bajoo, but must exists to contains theirs children.
+    It the case of regular folders.
 
     The two attributes `local_hint` and `remote_hint` are values set when an
     event is detected, and the node's corresponding value as changed. It's a
@@ -35,8 +42,8 @@ class BaseNode(object):
         task (Any): if not None, there is an ongoing operation to sync this
             node. This task object means the node is "in use" and another task
             should not work on the same node.
-        local_state (Any): last known state of the node content, local-side
-        remote_state (Any):last known state of the node content, remote-side
+        state (Optional[Dict]): last known state of the node content. Its
+            content depends of the Node subclass.
         local_hint (Optional[Hint]): if set, hint representing the presumed
             local modifications of the content pointed by this node.
         remote_hint (Optional[Hint]): if set, hint representing the presumed
@@ -58,8 +65,7 @@ class BaseNode(object):
         self._sync = False
         self._dirty = True
 
-        self.local_state = None
-        self.remote_state = None
+        self.state = None
 
         self.task = None
         self.local_hint = None
@@ -138,14 +144,14 @@ class BaseNode(object):
         """Check if the node physically existed the last time it was sync.
 
         Note:
-            If the target has been created after the last sync, it will still
-            returns True. It only considers the synced data (and ignore the
+            If the node has been created after the last sync, it will still
+            returns False. It only considers the synced data (and ignore the
             hints).
 
         Returns:
             bool: True if it exists; otherwise False
         """
-        return self.local_state is not None or self.remote_state is not None
+        return self.state is not None or self.children
 
     def set_all_hierarchy_not_sync(self):
         """Set the sync flag to false for this node and all its children.
@@ -178,3 +184,14 @@ class BaseNode(object):
         path_part.reverse()
 
         return u'/'.join(path_part[1:])
+
+    def set_state(self, state):
+        """Set the state of the node.
+
+        This method is destined to be overridden to add specific check for
+        subclass.
+
+        Args:
+            state (Optional[Dict]): new state
+        """
+        self.state = state

@@ -180,30 +180,26 @@ class IndexTree(object):
         - "type": one of "FILE" or "FOLDER".
         - "children" (Optional[Dict]): list of children, under the form
         {u'name': node_def}.
-        - "local_state" (Optional[Dict]): None, or dict representing the local
-            content of the node. Actually, it only contains the "hash" element
-            for file nodes.
-        - "remote_state" (Optional[Any]): None, or a value representing the
-            remote content of the node. values for FileNode should be a dict
-            which contains only the "hash" entry.
+        - "state" (Optional[Dict]): None, or dict representing the content of
+            the node. Each Node subclass has its own values.
+            FileNode have always two attributes `local_hash` and `remote_hash`.
 
-        If a attribute is not present, it's considered equal as a None value.
+        If an attribute is not present, it's considered equal as a None value.
 
         Examples:
             >>> data={
             ...     'version': 2,
             ...     'root': {
             ...         'type': 'FOLDER',
-            ...         'local_state': None,
-            ...         'remote_state': None,
+            ...         'state': None,
             ...         'children': {
             ...             'file.txt': {
             ...                 'type': 'FILE',
-            ...                 'local_state': {
-            ...                     'hash': '3f4855158eb3266a74cf3a5d78b361cc'
-            ...                 },
-            ...                 'remote_state': {
-            ...                     'hash': 'd32239bcb673463ab874e80d47fae504'
+            ...                 'state': {
+            ...                     'local_hash':
+            ...                         '3f4855158eb3266a74cf3a5d78b361cc',
+            ...                     'remote_hash':
+            ...                         'd32239bcb673463ab874e80d47fae504'
             ...                 }
             ...             }
             ...         }
@@ -248,8 +244,7 @@ class IndexTree(object):
         else:
             node = FileNode(name)
 
-        node.local_state = node_def.get('local_state')
-        node.remote_state = node_def.get('remote_state')
+        node.set_state(node_def.get('state'))
         for (name, node_def) in node_def.get('children', {}).items():
             node.add_child(self._load_node(name, node_def))
         return node
@@ -280,10 +275,10 @@ class IndexTree(object):
         """
         with self.lock:
             self._root = None
-            for path, (local_hash, remote_md5,) in data.items():
+            for path, (local_hash, remote_hash,) in data.items():
                 node = self.get_or_create_node_by_path(path, FileNode)
-                node.local_state = local_hash
-                node.remote_state = local_hash
+                node.set_state({'local_hash': local_hash,
+                                'remote_hash': remote_hash})
 
     def export_data(self):
         """Export all persistent data of the tree.
@@ -321,10 +316,8 @@ class IndexTree(object):
         result = {
             'type': node_type
         }
-        if node.local_state is not None:
-            result['local_state'] = node.local_state
-        if node.remote_state is not None:
-            result['remote_state'] = node.remote_state
+        if node.state is not None:
+            result['state'] = node.state
         if node.children:
             result['children'] = {name: self._export_node(child)
                                   for name, child in node.children.items()}
@@ -334,8 +327,7 @@ class IndexTree(object):
         """Get the flatten list of remote hashes of all file nodes.
 
         Note:
-            The file is added to the dict even if its remote hash is None.
-            Also, nodes that are not instance of FileNode are ignored.
+            Nodes that are not instance of FileNode are ignored.
 
         Returns:
             Dict[Text, str]: dict of all files, with file path as key and
@@ -348,8 +340,9 @@ class IndexTree(object):
             return self._get_remote_hashes(self._root, {})
 
     def _get_remote_hashes(self, node, acc):
-        if isinstance(node, FileNode):
-            acc[node.get_full_path()] = node.remote_state
+        if isinstance(node, FileNode) and node.state:
+            if 'remote_hash' in node.state:
+                acc[node.get_full_path()] = node.state['remote_hash']
         for child in node.children.values():
             self._get_remote_hashes(child, acc)
         return acc

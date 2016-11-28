@@ -40,13 +40,6 @@ class HintBuilder(object):
             node.remote_hint = hint
 
     @classmethod
-    def _get_state(cls, node, scope):
-        if scope is cls.SCOPE_LOCAL:
-            return node.local_state
-        else:
-            return node.remote_state
-
-    @classmethod
     def _set_delete_hint(cls, node, scope):
         """Set a DeletedHint(), or directly delete the node when possible.
 
@@ -92,8 +85,9 @@ class HintBuilder(object):
             tree (IndexTree): index of concerned node.
             scope (str): One of SCOPE_LOCAL or SCOPE_REMOTE.
             path (Text): path of the added/modified element.
-            new_state (Optional[Any]): data representing the node state of
-                the node. state's type is dependent of the node's type.
+            new_state (Optional[Any]): new information that could replace (part
+                of) the node state.  state content is dependent of the
+                node type.
             node_factory (Callable[[Text], BaseNode]): function used to create
                 the node, if needed. It receives the node's name in argument
                 and must return a single node.
@@ -110,9 +104,8 @@ class HintBuilder(object):
             elif isinstance(previous_hint, SourceMoveHint):
                 # If we've a 'MOVE' event, we're sure the source state is the
                 # new state of the destination node.
-                origin_state = cls._get_state(node, scope)
                 cls._set_hint(previous_hint.dest_node, scope,
-                              ModifiedHint(origin_state))
+                              ModifiedHint(node.state))
                 cls._set_hint(node, scope, ModifiedHint(new_state))
             elif isinstance(previous_hint, DestMoveHint):
                 cls._set_delete_hint(previous_hint.source_node, scope)
@@ -183,9 +176,8 @@ class HintBuilder(object):
             # "Break" the link between a couple of "moved" node, if we replace
             # one part of the move.
             if isinstance(previous_dest_hint, SourceMoveHint):
-                state = cls._get_state(dst_node, scope)
                 cls._set_hint(previous_dest_hint.dest_node, scope,
-                              ModifiedHint(state))
+                              ModifiedHint(dst_node.state))
             elif isinstance(previous_dest_hint, DestMoveHint):
                 cls._set_hint(previous_dest_hint.source_node, scope,
                               DeletedHint())
@@ -238,7 +230,7 @@ class HintBuilder(object):
                 target = node
             if isinstance(target.local_hint, SourceMoveHint):
                 dest_node = target.local_hint.dest_node
-                dest_node.local_hint = ModifiedHint(target.local_state)
+                dest_node.local_hint = ModifiedHint(target.state)
                 target.local_hint = DeletedHint()
 
         if scope != cls.SCOPE_LOCAL:
@@ -248,5 +240,5 @@ class HintBuilder(object):
                 target = node
             if isinstance(target.remote_hint, SourceMoveHint):
                 dest_node = target.remote_hint.dest_node
-                dest_node.remote_hint = ModifiedHint(target.remote_state)
+                dest_node.remote_hint = ModifiedHint(target.state)
                 target.remote_hint = DeletedHint()
