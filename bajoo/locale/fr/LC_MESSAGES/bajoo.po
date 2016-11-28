@@ -5,7 +5,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Bajoo 0.3.23\n"
+"Project-Id-Version: Bajoo 0.3.25\n"
 "Report-Msgid-Bugs-To: Bajoo <support-en@bajoo.fr>\n"
 "POT-Creation-Date: 2015-10-20 12:12+0200\n"
 "PO-Revision-Date: 2016-02-04 09:25+0100\n"
@@ -21,7 +21,7 @@ msgstr ""
 msgid "The authentication server has returned invalid data."
 msgstr "Le serveur d'authentification a retourné des données invalides."
 
-#: bajoo/bajoo_app.py:162
+#: bajoo/bajoo_app.py:163
 msgid ""
 "Another instance of Bajoo is actually running.\n"
 "You can't open Bajoo twice."
@@ -29,50 +29,50 @@ msgstr ""
 "Une autre instance de Bajoo est demarrée.\n"
 "Vous ne pouvez pas ouvrir Bajoo deux fois."
 
-#: bajoo/bajoo_app.py:164
+#: bajoo/bajoo_app.py:165
 msgid "Bajoo already started"
 msgstr "Bajoo déjà démarré"
 
-#: bajoo/bajoo_app.py:367
+#: bajoo/bajoo_app.py:379
 #, python-format
 msgid "Error occurred: %s."
 msgstr "Erreur : %s"
 
-#: bajoo/bajoo_app.py:452
+#: bajoo/bajoo_app.py:464
 msgid ""
 "Cannot add this member to team share; maybe this account does not exist."
 msgstr ""
 "Impossible d'ajouter ce membre au partage collaboratif; peut-être que ce "
 "compte n'existe pas."
 
-#: bajoo/bajoo_app.py:462
+#: bajoo/bajoo_app.py:474
 #, python-format
 msgid "%(email)s has been given access to team share '%(name)s'"
 msgstr "%(email)s a maintenant accès au partage '%(name)s'"
 
-#: bajoo/bajoo_app.py:469
+#: bajoo/bajoo_app.py:481
 msgid "Unidentified container, cannot add member"
 msgstr "Conteneur inconnu, impossible d'ajouter un membre"
 
-#: bajoo/bajoo_app.py:484
+#: bajoo/bajoo_app.py:496
 msgid "Cannot remove this member from this team share."
 msgstr "Impossible de retirer ce membre du partage."
 
-#: bajoo/bajoo_app.py:491
+#: bajoo/bajoo_app.py:503
 #, python-format
 msgid "%(email)s's access to team share '%(name)s' has been removed."
 msgstr "Les accès de %(email)s au partage '%(name)s' ont été retirés."
 
-#: bajoo/bajoo_app.py:498
+#: bajoo/bajoo_app.py:510
 msgid "Unidentified container, cannot remove member"
 msgstr "Conteneur inconnu, impossible de retirer un membre"
 
-#: bajoo/bajoo_app.py:531
+#: bajoo/bajoo_app.py:543
 #, python-format
 msgid "Cannot create share %s"
 msgstr "Impossible de créer le partage %s."
 
-#: bajoo/bajoo_app.py:546
+#: bajoo/bajoo_app.py:558
 msgid ""
 "Some members cannot be added to this team share. Please verify the email "
 "addresses."
@@ -80,106 +80,106 @@ msgstr ""
 "Certains membres n'ont pas pu être ajoutés au partage collaboratif. Merci de "
 "vérifier les adresses email."
 
-#: bajoo/bajoo_app.py:548
+#: bajoo/bajoo_app.py:560
 #, python-format
 msgid "Team share %s has been successfully created"
 msgstr "Le partage collaboratif %s a été créé avec succès"
 
-#: bajoo/bajoo_app.py:592
+#: bajoo/bajoo_app.py:604
 msgid "This folder has been succesfully moved to the new location."
 msgstr "Le dossier a bien été déplacé vers son nouvel emplacement."
 
-#: bajoo/bajoo_app.py:599
+#: bajoo/bajoo_app.py:611
 msgid "The synchronization of this share is stopped."
 msgstr "La synchronisation de se partage est stoppée."
 
-#: bajoo/bajoo_app.py:605
+#: bajoo/bajoo_app.py:617
 msgid "The synchronization of this share has restarted."
 msgstr "La synchronisation de ce partage a redémarré."
 
-#: bajoo/bajoo_app.py:624 bajoo/gui/bug_report.py:67
+#: bajoo/bajoo_app.py:636 bajoo/gui/bug_report.py:67
 #: bajoo/local_container.py:52
 msgid "Error"
 msgstr "Erreur"
 
-#: bajoo/bajoo_app.py:625
+#: bajoo/bajoo_app.py:637
 #, python-format
 msgid "An error occured when trying to quit team share %s."
 msgstr "Erreur lors de la tentative de sortie du partage %s."
 
-#: bajoo/bajoo_app.py:636 bajoo/gui/common/message_box.py:34
+#: bajoo/bajoo_app.py:648 bajoo/gui/common/message_box.py:34
 msgid "Quit team share"
 msgstr "Quitter un partage collaboratif"
 
-#: bajoo/bajoo_app.py:637 bajoo/bajoo_app.py:643
+#: bajoo/bajoo_app.py:649 bajoo/bajoo_app.py:655
 #, python-format
 msgid "You have no longer access to team share %s."
 msgstr "Vous n'avez plus accès au partage collaboratif %s."
 
-#: bajoo/bajoo_app.py:661
+#: bajoo/bajoo_app.py:673
 msgid "A team share has been successfully deleted from server."
 msgstr "Un partage collaboratif a été supprimé du serveur avec succès."
 
-#: bajoo/bajoo_app.py:666
+#: bajoo/bajoo_app.py:678
 #, python-format
 msgid "Team share %s cannot be deleted from server."
 msgstr "Impossible de supprimer le partage collaboratif %s sur le serveur."
 
-#: bajoo/bajoo_app.py:685
+#: bajoo/bajoo_app.py:697
 msgid "Beta tester account"
 msgstr "Compte bêta testeur"
 
-#: bajoo/bajoo_app.py:706
+#: bajoo/bajoo_app.py:718
 msgid "Failure when attempting to change password."
 msgstr "Echec du changement de mot de passe."
 
-#: bajoo/bajoo_app.py:798
+#: bajoo/bajoo_app.py:822
 msgid "Sync error"
 msgstr "Erreur de synchronisation"
 
-#: bajoo/bajoo_app.py:887
+#: bajoo/bajoo_app.py:911
 msgid "An error happened! Consult the logs for more details"
 msgstr ""
 "Une erreur s'est produite ! Consultez les journaux d'évènements pour plus de "
 "détails"
 
-#: bajoo/common/util.py:10
+#: bajoo/common/util.py:14
 msgid "B"
 msgstr "octet"
 
-#: bajoo/common/util.py:10
+#: bajoo/common/util.py:14
 msgid "GB"
 msgstr "Go"
 
-#: bajoo/common/util.py:10
+#: bajoo/common/util.py:14
 msgid "KB"
 msgstr "Ko"
 
-#: bajoo/common/util.py:10
+#: bajoo/common/util.py:14
 msgid "MB"
 msgstr "Mo"
 
-#: bajoo/common/util.py:10
+#: bajoo/common/util.py:14
 msgid "PB"
 msgstr "Po"
 
-#: bajoo/common/util.py:10
+#: bajoo/common/util.py:14
 msgid "TB"
 msgstr "To"
 
-#: bajoo/common/util.py:11
+#: bajoo/common/util.py:15
 msgid "EB"
 msgstr "Eo"
 
-#: bajoo/common/util.py:11
+#: bajoo/common/util.py:15
 msgid "YB"
 msgstr "Yo"
 
-#: bajoo/common/util.py:11
+#: bajoo/common/util.py:15
 msgid "ZB"
 msgstr "Zo"
 
-#: bajoo/connection_registration_process.py:216
+#: bajoo/connection_registration_process.py:217
 msgid ""
 "This program's version is no longer supported by Bajoo service. Please "
 "update to continue.\n"
@@ -187,25 +187,25 @@ msgstr ""
 "La version de ce logiciel n'est plus supportée par les services Bajoo. "
 "Veuillez le mettre à jour.\n"
 
-#: bajoo/connection_registration_process.py:220
+#: bajoo/connection_registration_process.py:221
 msgid "Invalid username or password."
 msgstr "Identifiant ou mot de passe invalide."
 
-#: bajoo/connection_registration_process.py:222
+#: bajoo/connection_registration_process.py:223
 msgid "There is already an account with this email."
 msgstr "Il y a déjà un compte utilisant cet email."
 
-#: bajoo/connection_registration_process.py:232
+#: bajoo/connection_registration_process.py:233
 #, python-format
 msgid "An error occurred: %s"
 msgstr "Une erreur s'est produite : %s"
 
-#: bajoo/connection_registration_process.py:343
+#: bajoo/connection_registration_process.py:345
 #, python-format
 msgid "Error: %s"
 msgstr "Erreur: %s"
 
-#: bajoo/connection_registration_process.py:346
+#: bajoo/connection_registration_process.py:348
 #, python-format
 msgid ""
 "Error when applying the Bajoo root folder config:\n"
@@ -214,11 +214,11 @@ msgstr ""
 "Erreur d'application de la configuration du dossier racine Bajoo :\n"
 " %s"
 
-#: bajoo/connection_registration_process.py:357
+#: bajoo/connection_registration_process.py:359
 msgid "You haven't yet registered a GPG key."
 msgstr "Vous n'avez pas encore enregistré de clé GPG."
 
-#: bajoo/connection_registration_process.py:365
+#: bajoo/connection_registration_process.py:367
 #, python-format
 msgid ""
 "Error during the GPG key check:\n"
@@ -227,17 +227,17 @@ msgstr ""
 "Erreur lors de la vérification de la clé GPG :\n"
 " %s"
 
-#: bajoo/connection_registration_process.py:389
+#: bajoo/connection_registration_process.py:391
 #, python-format
 msgid "%s doesn't exist, or is not a directory"
 msgstr "%s n'existe plus, ou n'est pas un dossier."
 
-#: bajoo/connection_registration_process.py:394
+#: bajoo/connection_registration_process.py:396
 #, python-format
 msgid "%s has not the read and/or write permissions."
 msgstr "%s n'a pas de droit de lecture et/ou d'écriture."
 
-#: bajoo/connection_registration_process.py:423
+#: bajoo/connection_registration_process.py:425
 #: bajoo/gui/tab/creation_share_tab.py:132
 #: bajoo/gui/tab/details_share_tab.py:132 bajoo/local_container.py:134
 msgid "Shares"
@@ -674,11 +674,11 @@ msgstr "Confirmation du mot de passe"
 msgid "Create my account"
 msgstr "Créer un compte"
 
-#: bajoo/gui/home_window.py:93
+#: bajoo/gui/home_window.py:99
 msgid "connection successful"
 msgstr "Connexion réussie"
 
-#: bajoo/gui/home_window.py:94
+#: bajoo/gui/home_window.py:100
 msgid "You've been successfully connected."
 msgstr "Vous avez bien été connecté."
 
@@ -729,15 +729,15 @@ msgstr "Mémoriser ma phrase secrète"
 msgid "Bajoo - Proxy"
 msgstr "Bajoo - Proxy"
 
-#: bajoo/gui/screen/activation_screen.py:56
+#: bajoo/gui/screen/activation_screen.py:73
 msgid "Bajoo - Activate your account"
 msgstr "Bajoo - Activer votre compte"
 
-#: bajoo/gui/screen/activation_screen.py:71
+#: bajoo/gui/screen/activation_screen.py:89
 msgid "Your account is not activated."
 msgstr "Votre compte n'est pas encore activé."
 
-#: bajoo/gui/screen/activation_screen.py:73
+#: bajoo/gui/screen/activation_screen.py:91
 msgid ""
 "For continuing, your must activate your account.\n"
 "You should receive in the next minutes, a confirmation email with an "
@@ -749,11 +749,16 @@ msgstr ""
 "d'activation.\n"
 "Veuillez cliquer sur ce lien pour continuer."
 
-#: bajoo/gui/screen/activation_screen.py:78
+#: bajoo/gui/screen/activation_screen.py:96
 msgid "Come back later"
 msgstr "Revenez plus tard"
 
-#: bajoo/gui/screen/activation_screen.py:79
+#: bajoo/gui/screen/activation_screen.py:97
+#, fuzzy
+msgid "Send confirmation email again"
+msgstr "Renvoyer le mail de confirmation"
+
+#: bajoo/gui/screen/activation_screen.py:98
 msgid "It's done!"
 msgstr "C'est fait !"
 
@@ -1306,8 +1311,8 @@ msgid ""
 "The download has been interrupted, either by the server, or by a connexion "
 "failure."
 msgstr ""
-"le téléchargement a été interrompu, soit par le serveur, soit à cause "
-"d'un problème de connexion."
+"le téléchargement a été interrompu, soit par le serveur, soit à cause d'un "
+"problème de connexion."
 
 #: bajoo/network/errors.py:216
 #, fuzzy

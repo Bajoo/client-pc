@@ -24,7 +24,6 @@ class FakeSyncTask(SyncTask,):
         return AddedLocalFilesTask(self.container,
                                    (generate_random_string(),),
                                    self.local_container,
-                                   self.display_error_cb,
                                    parent_path=self._parent_path,
                                    create_mode=create_mode)
 
@@ -34,7 +33,6 @@ def generate_fake_task(tester, target, create_mode=False):
         tester.container,
         (target,),
         tester.local_container,
-        tester.error_append,
         None,
         create_mode)
 

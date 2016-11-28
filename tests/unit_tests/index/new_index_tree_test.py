@@ -3,6 +3,8 @@
 from __future__ import unicode_literals
 from bajoo.index.base_node import BaseNode
 from bajoo.index.new_index_tree import IndexTree
+from bajoo.index.file_node import FileNode
+from bajoo.index.folder_node import FolderNode
 
 
 class MyNode(BaseNode):
@@ -229,3 +231,222 @@ class TestGetNodeFromIndexTree(object):
         tree._root = _make_tree(('root', [('A',), ('B',)]))
         node = tree.get_or_create_node_by_path('A/B/C/ghost', MyNode)
         assert isinstance(node, MyNode)
+
+    def test_set_tree_node_sync(self):
+        tree = IndexTree()
+        tree._root = _make_tree(('root', [('A', [('A1',)]),
+                                          ('B', [('B1',), ('B2',)])]))
+        tree.set_tree_not_sync()
+        assert tree._root.sync is False
+        assert tree._root.children['A'].sync is False
+        assert tree._root.children['B'].sync is False
+        assert tree._root.children['A'].children['A1'].sync is False
+        assert tree._root.children['B'].children['B1'].sync is False
+        assert tree._root.children['B'].children['B2'].sync is False
+
+    def test_set_empty_tree_node_not_sync(self):
+        tree = IndexTree()
+        # should do nothing
+        tree.set_tree_not_sync()
+
+
+class TestSaveAndLoadIndexTree(object):
+
+    def test_load_from_legacy_empty_tree(self):
+        tree = IndexTree()
+        tree.load({})
+        assert tree._root is None
+
+    def test_load_from_legacy_flat_tree(self):
+        tree = IndexTree()
+        tree.load({
+            u'file1': ('hash1', 'hash2'),
+            u'file2': ('hash3', None),
+            u'file3': ('hash4', None),
+            u'file4': (None, None)
+        })
+        assert tree._root is not None
+        for path in ('file1', 'file2', 'file3', 'file4'):
+            assert isinstance(tree.get_node_by_path(path), FileNode)
+        assert tree.get_node_by_path('file5') is None
+
+    def test_load_from_legacy_nested_tree(self):
+        tree = IndexTree()
+        tree.load({
+            u'deep/nested/file': ('123546', 'abcdef')
+        })
+        assert tree._root is not None
+        assert isinstance(tree.get_node_by_path('deep/nested'), FolderNode)
+        assert isinstance(tree.get_node_by_path('deep/nested/file'), FileNode)
+
+    def test_root_node_should_be_named_dot_after_load(self):
+        tree = IndexTree()
+        tree.load({
+            'version': 2,
+            'root': {
+                'type': 'FOLDER',
+                'local_state': None,
+                'remote_state': None
+            }
+        })
+        assert tree._root is not None
+        assert tree._root.name == u'.'
+
+    def test_root_node_should_be_named_dot_after_legacy_load(self):
+        tree = IndexTree()
+        tree.load({u'x': (None, None)})
+        assert tree._root is not None
+        assert tree._root.name == u'.'
+
+    def tets_load_tree_should_set_defualt_state_to_none(self):
+        tree = IndexTree()
+        tree.load({
+            'version': 2,
+            'root': {
+                'type': 'FOLDER',
+            }
+        })
+        assert tree._root.local_state is None
+        assert tree._root.remote_state is None
+
+    def test_load_tree_should_set_all_node_names(self):
+        tree = IndexTree()
+        tree.load({
+            'version': 2,
+            'root': {
+                'type': "FOLDER",
+                'children': {
+                    u'file1': {
+                        'type': "FILE",
+                        'local_state': {'hash': 'hash1'},
+                        'remote_hash': {'hash': 'hash2'}
+                    },
+                    u'file2': {
+                        'type': "FILE",
+                        'local_state': {'hash': 'hash3'},
+                    },
+                    u'file3': {
+                        'type': "FILE",
+                        'local_state': None,
+                        'remote_state': {'hash': 'hash4'}
+                    },
+                    u'file4': {'type': "FILE"},
+                    u'nested': {
+                        'type': "FOLDER",
+                        'children': {
+                            u'child.txt': {
+                                'type': "FILE",
+                            }
+                        }
+                    }
+                }
+            }
+        })
+        assert tree._root is not None
+        for path in ('file1', 'file2', 'file3', 'file4'):
+            node = tree.get_node_by_path(path)
+            assert node.name == path
+        node = tree.get_node_by_path('nested/child.txt')
+        assert node.name == 'child.txt'
+
+    def test_export_index_should_be_informat_version_2(self):
+        tree = IndexTree()
+        data = tree.export_data()
+        assert data.get('version') == 2
+
+    def test_export_index_tree_without_root_node(self):
+        tree = IndexTree()
+        data = tree.export_data()
+        assert data.get('version') == 2
+
+    def test_export_index_tree_with_only_root_node(self):
+        tree = IndexTree()
+        tree._root = FolderNode('.')
+        data = tree.export_data()
+        root_def = data.get('root')
+        assert root_def['type'] == "FOLDER"
+        assert len(root_def.get('children', {})) == 0
+
+    def test_export_index_tree_with_nested_nodes(self):
+        tree = IndexTree()
+        tree._root = FolderNode('.')
+        tree._root.add_child(FolderNode('A'))
+        tree._root.children['A'].add_child(FileNode('A1'))
+        tree._root.children['A'].add_child(FolderNode('A2'))
+        tree._root.add_child(FolderNode('B'))
+        tree._root.children['B'].add_child(FileNode('B1'))
+
+        data = tree.export_data()
+        assert data['root']['type'] == "FOLDER"
+        node_a_def = data['root']['children']['A']
+        node_b_def = data['root']['children']['B']
+        assert node_a_def['type'] == "FOLDER"
+        assert node_b_def['type'] == "FOLDER"
+        assert node_a_def['children']['A1']['type'] == "FILE"
+        assert node_a_def['children']['A2']['type'] == "FOLDER"
+        assert node_b_def['children']['B1']['type'] == "FILE"
+
+    def test_export_index_tree_returns_states(self):
+        tree = IndexTree()
+        tree._root = FolderNode('.')
+        node_folder = FolderNode('folder')
+        node_child = FileNode('child')
+        tree._root.add_child(node_folder)
+        node_folder.add_child(node_child)
+
+        tree._root.local_state = 1
+        tree._root.remote_state = 2
+        node_folder.local_state = 3
+        node_folder.remote_state = 4
+        node_child.local_state = 5
+        node_child.remote_state = 6
+
+        data = tree.export_data()
+        root_node_def = data['root']
+        assert root_node_def['local_state'] == 1
+        assert root_node_def['remote_state'] == 2
+        folder_node_def = root_node_def['children']['folder']
+        assert folder_node_def['local_state'] == 3
+        assert folder_node_def['remote_state'] == 4
+        child_node_def = folder_node_def['children']['child']
+        assert child_node_def['local_state'] == 5
+        assert child_node_def['remote_state'] == 6
+
+
+class TestIndexTree(object):
+    """Other IndexTree tests who doesn't fit in other classes."""
+
+    def test_get_remote_hash_of_empty_tree(self):
+        tree = IndexTree()
+        assert tree.get_remote_hashes() == {}
+
+    def test_get_remote_hash_of_tree_containing_only_folders(self):
+        tree = IndexTree()
+        tree._root = FolderNode('.')
+        node_folder = FolderNode('folder')
+        tree._root.add_child(node_folder)
+        node_folder.add_child(FolderNode('nested folder'))
+
+        assert tree.get_remote_hashes() == {}
+
+    def test_get_remote_hash_of_tree_with_files(self):
+        tree = IndexTree()
+        file_a1 = FileNode('A1')
+        file_a1.remote_state = 1234
+        file_b1 = FileNode('B1')
+        file_b1.remote_state = 5678
+
+        tree._root = FolderNode('.')
+        tree._root.add_child(FolderNode('A'))
+        tree._root.children['A'].add_child(file_a1)
+        tree._root.children['A'].add_child(FolderNode('A2'))
+        tree._root.add_child(FolderNode('B'))
+        tree._root.children['B'].add_child(file_b1)
+        tree._root.children['B'].add_child(FileNode('B2'))
+
+        data = tree.get_remote_hashes()
+        assert data == {
+            u'A/A1': 1234,
+            u'B/B1': 5678,
+            u'B/B2': None
+        }

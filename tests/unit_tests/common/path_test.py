@@ -68,6 +68,7 @@ class TestEnsure_dir_exists(object):
         out, err = capsys.readouterr()
         assert 'Permission denied' in out and err == ''
 
+
 frozen_back_up = None
 executable_back_up = None
 

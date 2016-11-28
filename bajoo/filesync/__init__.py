@@ -44,27 +44,22 @@ from .sync_task import SyncTask
 from .task_consumer import add_task
 
 
-def added_remote_files(container, local_container, filename, display_error_cb):
-    task = AddedRemoteFilesTask(container, (filename,), local_container,
-                                display_error_cb)
+def added_remote_files(container, local_container, filename):
+    task = AddedRemoteFilesTask(container, (filename,), local_container)
     return add_task(task)
 
 
-def changed_remote_files(container, local_container, filename,
-                         display_error_cb):
-    task = AddedRemoteFilesTask(container, (filename,), local_container,
-                                display_error_cb)
+def changed_remote_files(container, local_container, filename):
+    task = AddedRemoteFilesTask(container, (filename,), local_container)
     return add_task(task)
 
 
-def removed_remote_files(container, local_container, filename,
-                         display_error_cb):
-    task = RemovedRemoteFilesTask(container, (filename,), local_container,
-                                  display_error_cb)
+def removed_remote_files(container, local_container, filename):
+    task = RemovedRemoteFilesTask(container, (filename,), local_container)
     return add_task(task)
 
 
-def added_local_files(container, local_container, filename, display_error_cb):
+def added_local_files(container, local_container, filename):
     """Tells that a new file as been created and must be synced.
 
     Args:
@@ -75,12 +70,11 @@ def added_local_files(container, local_container, filename, display_error_cb):
         Promise<list of _Task>: List of failed tasks. Empty list if no error.
     """
     task = AddedLocalFilesTask(container, (filename,), local_container,
-                               display_error_cb, create_mode=True)
+                               create_mode=True)
     return add_task(task)
 
 
-def changed_local_files(container, local_container, filename,
-                        display_error_cb):
+def changed_local_files(container, local_container, filename):
     """Tells that a file has been modified and must be synced.
 
     Args:
@@ -91,12 +85,11 @@ def changed_local_files(container, local_container, filename,
         Promise<list of _Task>: List of failed tasks. Empty list if no error.
     """
     task = AddedLocalFilesTask(container, (filename,), local_container,
-                               display_error_cb, create_mode=False)
+                               create_mode=False)
     return add_task(task)
 
 
-def removed_local_files(container, local_container, filename,
-                        display_error_cb):
+def removed_local_files(container, local_container, filename):
     """Tells that a file has been deleted and must be synced.
 
     Args:
@@ -106,13 +99,11 @@ def removed_local_files(container, local_container, filename,
     Returns:
         Promise<list of _Task>: List of failed tasks. Empty list if no error.
     """
-    task = RemovedLocalFilesTask(container, (filename,), local_container,
-                                 display_error_cb)
+    task = RemovedLocalFilesTask(container, (filename,), local_container)
     return add_task(task)
 
 
-def moved_local_files(container, local_container, src_filename, dest_filename,
-                      display_error_cb):
+def moved_local_files(container, local_container, src_filename, dest_filename):
     """Tells that a file has been moved, and must be synced.
 
     Args:
@@ -127,11 +118,11 @@ def moved_local_files(container, local_container, src_filename, dest_filename,
     """
 
     task = MovedLocalFilesTask(container, (src_filename, dest_filename,),
-                               local_container, display_error_cb)
+                               local_container)
     return add_task(task)
 
 
-def sync_folder(container, local_container, folder_path, display_error_cb):
+def sync_folder(container, local_container, folder_path):
     """Sync a local folder
 
     Args:
@@ -141,6 +132,5 @@ def sync_folder(container, local_container, folder_path, display_error_cb):
     Returns:
         Promise<list of _Task>: List of failed tasks. Empty list if no error.
     """
-    task = SyncTask(container, (folder_path,), local_container,
-                    display_error_cb)
+    task = SyncTask(container, (folder_path,), local_container)
     return add_task(task)

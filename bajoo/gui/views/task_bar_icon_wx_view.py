@@ -4,15 +4,17 @@ from functools import partial
 import wx
 from ...app_status import AppStatus
 from ...common.i18n import _
-from .common_view_data import (app_status_to_icon_files,
-                               app_status_to_tooltips,
-                               container_status_to_icon_files,
-                               MenuEntry,
-                               TaskBarIconAction)
-from .base import WindowDestination, TaskBarIconBaseView
+
+from ..enums import WindowDestination
+from .task_bar_icon_base_view import (app_status_to_icon_files,
+                                      app_status_to_tooltips,
+                                      container_status_to_icon_files,
+                                      MenuEntry,
+                                      TaskBarIconAction,
+                                      TaskBarIconBaseView)
 
 
-class WxView(wx.TaskBarIcon, TaskBarIconBaseView):
+class TaskBarIconWxView(wx.TaskBarIcon, TaskBarIconBaseView):
     """WxPython implementation of taskBarIconView"""
 
     def __init__(self, ctrl):
@@ -114,7 +116,7 @@ class WxView(wx.TaskBarIcon, TaskBarIconBaseView):
 
 
 def main():
-    from .base import ContainerStatus
+    from ..enums import ContainerStatus
     app = wx.App()
 
     class Controller(object):
@@ -143,8 +145,9 @@ def main():
             self.dummy.Destroy()
             self.view.destroy()
 
-    Controller(WxView)
+    Controller(TaskBarIconWxView)
     app.MainLoop()
+
 
 if __name__ == '__main__':
     main()

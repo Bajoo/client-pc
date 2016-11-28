@@ -34,10 +34,12 @@ from .container_model import ContainerModel
 from .container_sync_pool import ContainerSyncPool
 from .dynamic_container_list import DynamicContainerList
 from .filesync import task_consumer
-from .gui.about_window import AboutBajooWindow
+from .gui import AboutWindow, TaskBarIcon
 from .gui.bug_report import BugReportWindow, EVT_BUG_REPORT
 from .gui.change_password_window import ChangePasswordWindow
 from .gui.common.language_box import LanguageBox
+from .gui.enums import WindowDestination
+from .gui.enums import ContainerStatus as ContainerStatusTBIcon
 from .gui.event_promise import ensure_gui_thread
 from .gui.form.members_share_form import MembersShareForm
 from .gui.home_window import HomeWindow
@@ -51,8 +53,6 @@ from .gui.tab.advanced_settings_tab import AdvancedSettingsTab
 from .gui.tab.creation_share_tab import CreationShareTab
 from .gui.tab.details_share_tab import DetailsShareTab
 from .gui.tab.list_shares_tab import ListSharesTab
-from .gui.task_bar_icon import make_task_bar_icon, WindowDestination
-from .gui.task_bar_icon import ContainerStatus as ContainerStatusTBIcon
 from .local_container import LocalContainer
 from .network import set_proxy
 from .network.errors import NetworkError
@@ -95,8 +95,11 @@ class BajooApp(wx.App):
 
     def __init__(self):
         self._checker = None
-        # TODO: Set real value for production.
-        self._updater = SoftwareUpdater(self, "http://dev.bajoo.fr/downloads/")
+        if sys.platform == 'darwin':
+            update_url = "https://www.bajoo.fr/downloads/osx/updates"
+        else:
+            update_url = "https://www.bajoo.fr/downloads/win32/updates"
+        self._updater = SoftwareUpdater(self, update_url)
         self._home_window = None
         self._main_window = None
         self._about_window = None
@@ -233,7 +236,7 @@ class BajooApp(wx.App):
         if getattr(self, attribute):
             return getattr(self, attribute)
 
-        _logger.debug('Creation of Window %s' % attribute)
+        _logger.debug('Creation of (wx) Window %s' % attribute)
         window = cls()
 
         # clean variable when destroyed.
@@ -243,6 +246,27 @@ class BajooApp(wx.App):
 
         self.Bind(wx.EVT_WINDOW_DESTROY, clean, source=window)
 
+        setattr(self, attribute, window)
+        return window
+
+    def _get_mvc_window(self, attribute, cls):
+        """Get a window, or create it if it's not instantiated yet.
+
+        the attribute used to store the Window is set to None
+        when the window is deleted.
+        Args:
+            attribute (str): attribute of this class, used to ref the window.
+            cls (Type[T]): Class of the Window.
+        Returns:
+            T: window
+        """
+        if getattr(self, attribute):
+            return getattr(self, attribute)
+
+        _logger.debug('Creation of (MVC) Window %s' % attribute)
+        window = cls()
+
+        window.destroyed.connect(lambda: setattr(self, attribute, None))
         setattr(self, attribute, window)
         return window
 
@@ -259,7 +283,7 @@ class BajooApp(wx.App):
             if not self._ensures_single_instance_running():
                 return False
 
-            self._task_bar_icon = make_task_bar_icon()
+            self._task_bar_icon = TaskBarIcon()
 
             self._notifier = MessageNotifier(self._task_bar_icon.view)
 
@@ -268,6 +292,8 @@ class BajooApp(wx.App):
 
             self.Bind(LanguageBox.EVT_LANG, self._on_lang_changed)
 
+            self.Bind(HomeWindow.EVT_RESEND_CONFIRM_EMAIL,
+                      self._resend_confirm_email)
             self.Bind(CreationShareTab.EVT_CREATE_SHARE_REQUEST,
                       self._on_request_create_share)
             self.Bind(ListSharesTab.EVT_DATA_REQUEST,
@@ -315,7 +341,7 @@ class BajooApp(wx.App):
         if destination == WindowDestination.HOME:
             self._show_home_window()
         elif destination == WindowDestination.ABOUT:
-            window = self.get_window('_about_window', AboutBajooWindow)
+            window = self._get_mvc_window('_about_window', AboutWindow)
         elif destination == WindowDestination.SUSPEND:
             pass  # TODO: open window
         elif destination == WindowDestination.INVITATION:
@@ -333,8 +359,11 @@ class BajooApp(wx.App):
                           destination)
 
         if window:
-            window.Show()
-            window.Raise()
+            try:
+                window.show()
+            except AttributeError:  # compatibility code for legacy wx GUI
+                window.Show()
+                window.Raise()
             macos_activate_app()
 
     def _show_home_window(self):
@@ -349,6 +378,12 @@ class BajooApp(wx.App):
             self._main_window.Show()
             self._main_window.Raise()
             macos_activate_app()
+
+    @promise.reduce_coroutine(safeguard=True)
+    def _resend_confirm_email(self, event):
+        session = yield Session.from_client_credentials()
+        yield session.send_api_request(
+            'POST', '/user/%s/resend_activation_email' % event.user_email)
 
     @promise.reduce_coroutine(safeguard=True)
     def _on_request_share_list(self, _event):
@@ -736,7 +771,7 @@ class BajooApp(wx.App):
             self._main_window.Destroy()
 
         if self._about_window:
-            self._about_window.Destroy()
+            self._about_window.destroy()
 
         if self._contact_dev_window:
             self._contact_dev_window.Destroy()
@@ -975,9 +1010,15 @@ class BajooApp(wx.App):
         if not _already_bound:
             _logger.info('Will restart Bajoo when all windows will be closed.')
         all_windows = (self._home_window, self._main_window,
-                       self._about_window, self._contact_dev_window)
+                       self._contact_dev_window)
 
-        if any(w and w is not _window_being_destroyed and w.IsShown()
+        def is_in_use(w):  # Compatibility code between Wx and MVC windows
+            try:
+                return w.is_in_use()
+            except AttributeError:
+                return w.IsShown()
+
+        if any(w and w is not _window_being_destroyed and is_in_use(w)
                for w in all_windows):
             if not _already_bound:
                 self.Bind(wx.EVT_SHOW, self._restart_if_idle)

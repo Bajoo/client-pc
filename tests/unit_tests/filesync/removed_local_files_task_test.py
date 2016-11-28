@@ -19,8 +19,7 @@ def teardown_module(module):
 
 def generate_task(tester, target):
     return RemovedLocalFilesTask(tester.container, (target,),
-                                 tester.local_container,
-                                 tester.error_append, None)
+                                 tester.local_container)
 
 
 class Test_Removed_local_files_task(TestTaskAbstract):

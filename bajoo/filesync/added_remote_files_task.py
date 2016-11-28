@@ -20,7 +20,6 @@ class AddedRemoteTaskMixin(object):
     def _create_added_remote_task(self, rel_path):
         return AddedRemoteFilesTask(self.container,
                                     (rel_path,), self.local_container,
-                                    self.display_error_cb,
                                     parent_path=self._parent_path)
 
 

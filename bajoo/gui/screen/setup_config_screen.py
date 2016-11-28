@@ -68,13 +68,16 @@ class SetupConfigScreen(BaseForm):
         root_folder_error_txt = self.FindWindow('root_folder_error')
         if root_folder_error:
             root_folder_error_txt.set_msg(root_folder_error)
-        self.FindWindow('encryption_section').Show(key_setting)
+        self.FindWindow('bajoo_folder_section').Show(folder_setting)
         self.apply_field_constraints()
 
         gpg_error_txt = self.FindWindow('gpg_error')
         if gpg_error:
             gpg_error_txt.set_msg(gpg_error)
-        self.FindWindow('bajoo_folder_section').Show(folder_setting)
+        self.FindWindow('encryption_form').Show(key_setting)
+        self.FindWindow('encryption_section').Show(
+            bool(key_setting or gpg_error))
+
         self.enable()
 
         self._reset_validators(key_setting, folder_setting)
@@ -105,22 +108,24 @@ class SetupConfigScreenView(BaseView):
                                           name='encryption_section')
         gpg_error = BaseValidator(encryption_section, hide_if_valid=True,
                                   name='gpg_error')
+        encryption_form = wx.Window(encryption_section,
+                                    name='encryption_form')
 
-        encryption_txt = wx.StaticText(encryption_section)
-        passphrase = wx.TextCtrl(encryption_section, name='passphrase',
+        encryption_txt = wx.StaticText(encryption_form)
+        passphrase = wx.TextCtrl(encryption_form, name='passphrase',
                                  style=wx.TE_PASSWORD)
         passphrase_validator = MinLengthValidator(
-            encryption_section, name='passphrase_validator',
+            encryption_form, name='passphrase_validator',
             target=passphrase, min_length=8)
-        confirmation = wx.TextCtrl(encryption_section, name='confirmation',
+        confirmation = wx.TextCtrl(encryption_form, name='confirmation',
                                    style=wx.TE_PASSWORD)
         confirmation_validator = ConfirmPasswordValidator(
-            encryption_section, name='confirmation_validator',
+            encryption_form, name='confirmation_validator',
             target=confirmation, ref=passphrase)
-        no_passphrase = wx.CheckBox(encryption_section, name='no_passphrase')
+        no_passphrase = wx.CheckBox(encryption_form, name='no_passphrase')
 
         allow_save_on_disk_checkbox = wx.CheckBox(
-            encryption_section, name='allow_save_on_disk')
+            encryption_form, name='allow_save_on_disk')
 
         bajoo_folder_section = wx.StaticBox(self.window,
                                             name='bajoo_folder_section')
@@ -162,10 +167,13 @@ class SetupConfigScreenView(BaseView):
         confirmation_sizer.GetItem(confirmation).Proportion = 2
 
         encryption_sizer = wx.StaticBoxSizer(encryption_section, wx.VERTICAL)
-        self.make_sizer(wx.VERTICAL, [
-            gpg_error, encryption_txt, passphrase_sizer, confirmation_sizer,
+        self.make_sizer(wx.VERTICAL, [gpg_error, encryption_form],
+                        sizer=encryption_sizer, flag=wx.EXPAND)
+        encryption_form_sizer = self.make_sizer(wx.VERTICAL, [
+            encryption_txt, passphrase_sizer, confirmation_sizer,
             allow_save_on_disk_checkbox, no_passphrase
-        ], sizer=encryption_sizer, flag=wx.EXPAND)
+        ], flag=wx.EXPAND, outside_border=False)
+        encryption_form.SetSizer(encryption_form_sizer)
 
         bajoo_folder_sizer = wx.StaticBoxSizer(bajoo_folder_section,
                                                wx.VERTICAL)

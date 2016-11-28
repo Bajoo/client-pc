@@ -4,14 +4,14 @@ from functools import partial
 from gi.repository import Gtk
 from ...app_status import AppStatus
 from ...common.i18n import _
-from .base import TaskBarIconBaseView
-from .common_view_data import (app_status_to_icon_files,
-                               app_status_to_tooltips,
-                               MenuEntry,
-                               TaskBarIconAction)
+from .task_bar_icon_base_view import (app_status_to_icon_files,
+                                      app_status_to_tooltips,
+                                      MenuEntry,
+                                      TaskBarIconAction,
+                                      TaskBarIconBaseView)
 
 
-class TaskBarIconView(Gtk.StatusIcon, TaskBarIconBaseView):
+class TaskBarIconGtkView(Gtk.StatusIcon, TaskBarIconBaseView):
 
     def __init__(self, ctrl):
         TaskBarIconBaseView.__init__(self, ctrl)

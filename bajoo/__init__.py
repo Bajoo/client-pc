@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from .__version__ import __version__  # noqa
+from .__version__ import __version__
 
 import logging
 import multiprocessing
@@ -37,18 +37,19 @@ def main():
 
         logger = logging.getLogger(__name__)
         cwd = to_unicode(os.getcwd(), in_enc=sys.getfilesystemencoding())
+        logger.debug('Start Bajoo version %s', __version__)
         logger.debug('Current working directory is : "%s"', cwd)
 
+        config.load()  # config must be loaded before network
+        log.set_debug_mode(config.get('debug_mode'))
+        log.set_logs_level(config.get('log_levels'))
+
+        # Set the lang from the config file if available
+        lang = config.get('lang')
+        if lang is not None:
+            set_lang(lang)
+
         with network.Context():
-            config.load()
-            log.set_debug_mode(config.get('debug_mode'))
-            log.set_logs_level(config.get('log_levels'))
-
-            # Set the lang from the config file if available
-            lang = config.get('lang')
-            if lang is not None:
-                set_lang(lang)
-
             with encryption.Context():
                 with GtkProcessHandler():
                     app = BajooApp()

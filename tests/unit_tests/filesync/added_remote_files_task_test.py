@@ -23,7 +23,6 @@ def generate_task(tester, target):
         (target,
          ),
         tester.local_container,
-        tester.error_append,
         None)
 
 

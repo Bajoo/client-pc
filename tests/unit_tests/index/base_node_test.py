@@ -166,3 +166,43 @@ class TestBaseNode(object):
         assert node.dirty
         child2.remove_itself()
         assert not node.dirty
+
+    def test_set_hierarchy_not_sync(self):
+        node = BaseNode('node')
+        child1 = BaseNode('child 1')
+        child2 = BaseNode('child 2')
+        node.add_child(child1)
+        node.add_child(child2)
+        node.sync = True
+        child1.sync = True
+        child2.sync = True
+
+        node.set_all_hierarchy_not_sync()
+        assert node.sync is False
+        assert child1.sync is False
+        assert child2.sync is False
+
+    def test_get_full_path_on_root_node(self):
+        node = BaseNode(u'root')
+        assert node.get_full_path() == u'.'
+
+    def test_get_full_path_on_first_level_node(self):
+        node = BaseNode(u'node')
+        child1 = BaseNode(u'child 1')
+        child2 = BaseNode(u'child 2')
+        node.add_child(child1)
+        node.add_child(child2)
+
+        assert child1.get_full_path() == 'child 1'
+        assert child2.get_full_path() == 'child 2'
+
+    def test_get_full_path_on_nested_nodes(self):
+        node = BaseNode(u'root')
+        node_a = BaseNode(u'A')
+        node_b = BaseNode(u'B')
+        node_c = BaseNode(u'C')
+        node.add_child(node_a)
+        node_a.add_child(node_b)
+        node_b.add_child(node_c)
+
+        assert node_c.get_full_path() == u'A/B/C'

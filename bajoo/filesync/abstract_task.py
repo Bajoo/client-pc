@@ -9,10 +9,7 @@ import shutil
 import sys
 import time
 
-from ..common.i18n import _
-from ..common.strings import ensure_unicode, err2unicode
-from ..network.errors import HTTPEntityTooLargeError
-from ..encryption.errors import PassphraseAbortError
+from ..common.strings import ensure_unicode
 from .exception import RedundantTaskInterruption
 
 _logger = logging.getLogger(__name__)
@@ -30,7 +27,7 @@ class _Task(object):
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, container, target, local_container,
-                 display_error_cb, parent_path=None, expected_target_count=1):
+                 parent_path=None, expected_target_count=1):
         """
         Args:
             container (Container): used to performs upload and download
@@ -39,7 +36,6 @@ class _Task(object):
                 the container.
             local_container (LocalContainer): local container. It will be used
                 only to acquire, update and release index fragments.
-            display_error_cb (callable)
             parent_path (str, optional): if set, target path of the parent
                 task. It indicates the parent task allow this one to "acquire"
                 fragments of folder owner by itself.
@@ -56,7 +52,6 @@ class _Task(object):
         self.target_list = []
         self.local_container = local_container
         self.local_path = local_container.model.path
-        self.display_error_cb = display_error_cb
         self._parent_path = parent_path
         self.nodes = []
 
@@ -175,29 +170,9 @@ class _Task(object):
         Some of theses errors are uncommon, but acceptable situations, and
         should be ignored.
         """
-
         _logger.exception('Exception on %s task:' % self.get_type())
-
         self._task_errors.append(self)
-
         self.error = error
-
-        if not isinstance(error, PassphraseAbortError) and \
-                not isinstance(error, HTTPEntityTooLargeError):
-            if self.container.error:
-                self.display_error_cb(
-                    _('Error during the sync of the "%(name)s" container:'
-                      '\n%(error)s')
-                    % {'name': self.container.name,
-                       'error': err2unicode(error)})
-                raise self.container.error
-            else:
-                target_string = ', '.join(self.target_list)
-                self.display_error_cb(
-                    _('Error during sync of the file(s) "%(filename)s" '
-                      'in the "%(name)s" container:\n%(error)s')
-                    % {'filename': target_string, 'name': self.container.name,
-                       'error': err2unicode(error)})
 
     @abc.abstractmethod
     def _apply_task(self):

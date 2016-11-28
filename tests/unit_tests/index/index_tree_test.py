@@ -59,8 +59,7 @@ class TestTriggering(object):
         self.lc = FakeLocalContainer()
         self.previous_task = AddedRemoteFilesTask(container=None,
                                                   target=("aaaa/bbb/ccc",),
-                                                  local_container=self.lc,
-                                                  display_error_cb=None)
+                                                  local_container=self.lc)
 
     def test_trigger_local_create_task(self):
         global task_added
@@ -302,8 +301,8 @@ class TestIndexTree(object):
 
             assert not child.is_locked()
 
-    def test_generate_dict(self):
-        dico = self.tree.generate_dict()
+    def test_export_data(self):
+        dico = self.tree.export_data()
         assert len(dico) == 5
         for key, (local, remote) in dico.items():
             assert key.endswith(remote[7:])
@@ -330,7 +329,6 @@ class TestMergeMisc(object):
         self.current_task = AddedLocalFilesTask(container=None,
                                                 target=("aaaa/bbb/ccc",),
                                                 local_container=self.lc,
-                                                display_error_cb=None,
                                                 create_mode=True)
         self.node.add_waiting_node(self)
         self.node.waiting_task = self.current_task
@@ -365,7 +363,6 @@ class TestMergeFromLocalCreateTask(object):
         self.current_task = AddedLocalFilesTask(container=None,
                                                 target=("aaaa/bbb/ccc",),
                                                 local_container=self.lc,
-                                                display_error_cb=None,
                                                 create_mode=True)
         self.node.add_waiting_node(self)
         self.node.waiting_task = self.current_task
@@ -376,7 +373,6 @@ class TestMergeFromLocalCreateTask(object):
         new_task = AddedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/ccc",),
                                        local_container=self.lc,
-                                       display_error_cb=None,
                                        create_mode=True)
 
         assert not self.tree._use_the_new_task(self.node, new_task)
@@ -387,7 +383,6 @@ class TestMergeFromLocalCreateTask(object):
         new_task = AddedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/ccc",),
                                        local_container=self.lc,
-                                       display_error_cb=None,
                                        create_mode=False)
 
         assert not self.tree._use_the_new_task(self.node, new_task)
@@ -397,8 +392,7 @@ class TestMergeFromLocalCreateTask(object):
     def test_replace_with_a_local_delete_task_and_valid_remote_hash(self):
         new_task = RemovedLocalFilesTask(container=None,
                                          target=("aaaa/bbb/ccc",),
-                                         local_container=self.lc,
-                                         display_error_cb=None)
+                                         local_container=self.lc)
 
         assert self.tree._use_the_new_task(self.node, new_task)
 
@@ -406,8 +400,7 @@ class TestMergeFromLocalCreateTask(object):
         self.node.set_hash(None, None)
         new_task = RemovedLocalFilesTask(container=None,
                                          target=("aaaa/bbb/ccc",),
-                                         local_container=self.lc,
-                                         display_error_cb=None)
+                                         local_container=self.lc)
 
         assert self.tree._use_the_new_task(self.node, new_task)
         assert self.node.is_invalidate_remote()
@@ -416,8 +409,7 @@ class TestMergeFromLocalCreateTask(object):
     def test_replace_with_a_remote_add_task(self):
         new_task = AddedRemoteFilesTask(container=None,
                                         target=("aaaa/bbb/ccc",),
-                                        local_container=self.lc,
-                                        display_error_cb=None)
+                                        local_container=self.lc)
 
         assert not self.tree._use_the_new_task(self.node, new_task)
         assert self.node.is_invalidate_remote()
@@ -426,8 +418,7 @@ class TestMergeFromLocalCreateTask(object):
     def test_replace_with_a_remote_remove_task(self):
         new_task = RemovedRemoteFilesTask(container=None,
                                           target=("aaaa/bbb/ccc",),
-                                          local_container=self.lc,
-                                          display_error_cb=None)
+                                          local_container=self.lc)
 
         assert not self.tree._use_the_new_task(self.node, new_task)
         assert self.node.is_invalidate_remote()
@@ -437,8 +428,7 @@ class TestMergeFromLocalCreateTask(object):
         new_task = MovedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/ccc",
                                                "aaaa/bbb/cccd"),
-                                       local_container=self.lc,
-                                       display_error_cb=None)
+                                       local_container=self.lc)
 
         assert self.tree._use_the_new_task(self.node, new_task)
         assert not self.node.is_invalidate_remote()
@@ -448,8 +438,7 @@ class TestMergeFromLocalCreateTask(object):
         new_task = MovedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/cccs",
                                                "aaaa/bbb/ccc"),
-                                       local_container=self.lc,
-                                       display_error_cb=None)
+                                       local_container=self.lc)
 
         assert self.tree._use_the_new_task(self.node, new_task)
         assert not self.node.is_invalidate_remote()
@@ -476,7 +465,6 @@ class TestMergeFromLocalUpdateTask(object):
         self.current_task = AddedLocalFilesTask(container=None,
                                                 target=("aaaa/bbb/ccc",),
                                                 local_container=self.lc,
-                                                display_error_cb=None,
                                                 create_mode=False)
         self.node.add_waiting_node(self)
         self.node.waiting_task = self.current_task
@@ -487,7 +475,6 @@ class TestMergeFromLocalUpdateTask(object):
         new_task = AddedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/ccc",),
                                        local_container=self.lc,
-                                       display_error_cb=None,
                                        create_mode=True)
 
         assert not self.tree._use_the_new_task(self.node, new_task)
@@ -499,7 +486,6 @@ class TestMergeFromLocalUpdateTask(object):
         new_task = AddedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/ccc",),
                                        local_container=self.lc,
-                                       display_error_cb=None,
                                        create_mode=False)
 
         assert not self.tree._use_the_new_task(self.node, new_task)
@@ -510,8 +496,7 @@ class TestMergeFromLocalUpdateTask(object):
     def test_replace_with_a_local_delete_task_and_valid_remote_hash(self):
         new_task = RemovedLocalFilesTask(container=None,
                                          target=("aaaa/bbb/ccc",),
-                                         local_container=self.lc,
-                                         display_error_cb=None)
+                                         local_container=self.lc)
 
         assert self.tree._use_the_new_task(self.node, new_task)
         assert not self.node.is_invalidate_remote()
@@ -521,8 +506,7 @@ class TestMergeFromLocalUpdateTask(object):
         self.node.set_hash(None, None)
         new_task = RemovedLocalFilesTask(container=None,
                                          target=("aaaa/bbb/ccc",),
-                                         local_container=self.lc,
-                                         display_error_cb=None)
+                                         local_container=self.lc)
 
         assert self.tree._use_the_new_task(self.node, new_task)
         assert self.node.is_invalidate_remote()
@@ -531,8 +515,7 @@ class TestMergeFromLocalUpdateTask(object):
     def test_replace_with_a_remote_add_task(self):
         new_task = AddedRemoteFilesTask(container=None,
                                         target=("aaaa/bbb/ccc",),
-                                        local_container=self.lc,
-                                        display_error_cb=None)
+                                        local_container=self.lc)
 
         assert not self.tree._use_the_new_task(self.node, new_task)
         assert not self.current_task.create_mode
@@ -542,8 +525,7 @@ class TestMergeFromLocalUpdateTask(object):
     def test_replace_with_a_remote_remove_task(self):
         new_task = RemovedRemoteFilesTask(container=None,
                                           target=("aaaa/bbb/ccc",),
-                                          local_container=self.lc,
-                                          display_error_cb=None)
+                                          local_container=self.lc)
 
         assert not self.tree._use_the_new_task(self.node, new_task)
         assert not self.current_task.create_mode
@@ -554,8 +536,7 @@ class TestMergeFromLocalUpdateTask(object):
         new_task = MovedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/ccc",
                                                "aaaa/bbb/cccd"),
-                                       local_container=self.lc,
-                                       display_error_cb=None)
+                                       local_container=self.lc)
 
         assert self.tree._use_the_new_task(self.node, new_task)
         assert not self.node.is_invalidate_remote()
@@ -565,8 +546,7 @@ class TestMergeFromLocalUpdateTask(object):
         new_task = MovedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/cccs",
                                                "aaaa/bbb/ccc"),
-                                       local_container=self.lc,
-                                       display_error_cb=None)
+                                       local_container=self.lc)
 
         assert self.tree._use_the_new_task(self.node, new_task)
         assert not self.node.is_invalidate_remote()
@@ -592,8 +572,7 @@ class TestMergeFromLocalRemoveTask(object):
 
         self.current_task = RemovedLocalFilesTask(container=None,
                                                   target=("aaaa/bbb/ccc",),
-                                                  local_container=self.lc,
-                                                  display_error_cb=None)
+                                                  local_container=self.lc)
         self.node.add_waiting_node(self)
         self.node.waiting_task = self.current_task
         self.node.waiting_task_callback = self.ft.callback
@@ -603,7 +582,6 @@ class TestMergeFromLocalRemoveTask(object):
         new_task = AddedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/ccc",),
                                        local_container=self.lc,
-                                       display_error_cb=None,
                                        create_mode=True)
 
         assert self.tree._use_the_new_task(self.node, new_task)
@@ -614,7 +592,6 @@ class TestMergeFromLocalRemoveTask(object):
         new_task = AddedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/ccc",),
                                        local_container=self.lc,
-                                       display_error_cb=None,
                                        create_mode=False)
 
         assert self.tree._use_the_new_task(self.node, new_task)
@@ -624,8 +601,7 @@ class TestMergeFromLocalRemoveTask(object):
     def test_replace_with_a_local_delete_task(self):
         new_task = RemovedLocalFilesTask(container=None,
                                          target=("aaaa/bbb/ccc",),
-                                         local_container=self.lc,
-                                         display_error_cb=None)
+                                         local_container=self.lc)
 
         assert not self.tree._use_the_new_task(self.node, new_task)
         assert not self.node.is_invalidate_remote()
@@ -634,8 +610,7 @@ class TestMergeFromLocalRemoveTask(object):
     def test_replace_with_a_remote_add_task(self):
         new_task = AddedRemoteFilesTask(container=None,
                                         target=("aaaa/bbb/ccc",),
-                                        local_container=self.lc,
-                                        display_error_cb=None)
+                                        local_container=self.lc)
 
         assert self.tree._use_the_new_task(self.node, new_task)
         assert not self.node.is_invalidate_remote()
@@ -644,8 +619,7 @@ class TestMergeFromLocalRemoveTask(object):
     def test_replace_with_a_remote_remove_task(self):
         new_task = RemovedRemoteFilesTask(container=None,
                                           target=("aaaa/bbb/ccc",),
-                                          local_container=self.lc,
-                                          display_error_cb=None)
+                                          local_container=self.lc)
 
         assert not self.tree._use_the_new_task(self.node, new_task)
         assert self.node.is_invalidate_remote()
@@ -655,8 +629,7 @@ class TestMergeFromLocalRemoveTask(object):
         new_task = MovedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/ccc",
                                                "aaaa/bbb/cccd"),
-                                       local_container=self.lc,
-                                       display_error_cb=None)
+                                       local_container=self.lc)
 
         assert self.tree._use_the_new_task(self.node, new_task)
         assert not self.node.is_invalidate_remote()
@@ -666,8 +639,7 @@ class TestMergeFromLocalRemoveTask(object):
         new_task = MovedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/cccs",
                                                "aaaa/bbb/ccc"),
-                                       local_container=self.lc,
-                                       display_error_cb=None)
+                                       local_container=self.lc)
 
         assert self.tree._use_the_new_task(self.node, new_task)
         assert not self.node.is_invalidate_remote()
@@ -693,8 +665,7 @@ class TestMergeFromRemoteAddTask(object):
 
         self.current_task = AddedRemoteFilesTask(container=None,
                                                  target=("aaaa/bbb/ccc",),
-                                                 local_container=self.lc,
-                                                 display_error_cb=None)
+                                                 local_container=self.lc)
         self.node.add_waiting_node(self)
         self.node.waiting_task = self.current_task
         self.node.waiting_task_callback = self.ft.callback
@@ -704,7 +675,6 @@ class TestMergeFromRemoteAddTask(object):
         new_task = AddedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/ccc",),
                                        local_container=self.lc,
-                                       display_error_cb=None,
                                        create_mode=True)
 
         assert not self.tree._use_the_new_task(self.node, new_task)
@@ -715,7 +685,6 @@ class TestMergeFromRemoteAddTask(object):
         new_task = AddedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/ccc",),
                                        local_container=self.lc,
-                                       display_error_cb=None,
                                        create_mode=False)
 
         assert not self.tree._use_the_new_task(self.node, new_task)
@@ -725,8 +694,7 @@ class TestMergeFromRemoteAddTask(object):
     def test_replace_with_a_local_delete_task(self):
         new_task = RemovedLocalFilesTask(container=None,
                                          target=("aaaa/bbb/ccc",),
-                                         local_container=self.lc,
-                                         display_error_cb=None)
+                                         local_container=self.lc)
 
         assert not self.tree._use_the_new_task(self.node, new_task)
         assert self.node.is_invalidate_local()
@@ -735,8 +703,7 @@ class TestMergeFromRemoteAddTask(object):
     def test_replace_with_a_remote_add_task(self):
         new_task = AddedRemoteFilesTask(container=None,
                                         target=("aaaa/bbb/ccc",),
-                                        local_container=self.lc,
-                                        display_error_cb=None)
+                                        local_container=self.lc)
 
         assert not self.tree._use_the_new_task(self.node, new_task)
         assert not self.node.is_invalidate_remote()
@@ -745,8 +712,7 @@ class TestMergeFromRemoteAddTask(object):
     def test_replace_with_a_remote_remove_task_and_valid_local_hash(self):
         new_task = RemovedRemoteFilesTask(container=None,
                                           target=("aaaa/bbb/ccc",),
-                                          local_container=self.lc,
-                                          display_error_cb=None)
+                                          local_container=self.lc)
 
         assert self.tree._use_the_new_task(self.node, new_task)
         assert not self.node.is_invalidate_remote()
@@ -755,8 +721,7 @@ class TestMergeFromRemoteAddTask(object):
     def test_replace_with_a_remote_remove_task_and_not_valid_local_hash(self):
         new_task = RemovedRemoteFilesTask(container=None,
                                           target=("aaaa/bbb/ccc",),
-                                          local_container=self.lc,
-                                          display_error_cb=None)
+                                          local_container=self.lc)
 
         self.node.set_hash(None, "remote")
         assert self.tree._use_the_new_task(self.node, new_task)
@@ -767,8 +732,7 @@ class TestMergeFromRemoteAddTask(object):
         new_task = MovedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/ccc",
                                                "aaaa/bbb/cccd"),
-                                       local_container=self.lc,
-                                       display_error_cb=None)
+                                       local_container=self.lc)
 
         assert self.tree._use_the_new_task(self.node, new_task)
         assert self.node.is_invalidate_remote()
@@ -778,8 +742,7 @@ class TestMergeFromRemoteAddTask(object):
         new_task = MovedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/cccs",
                                                "aaaa/bbb/ccc"),
-                                       local_container=self.lc,
-                                       display_error_cb=None)
+                                       local_container=self.lc)
 
         assert self.tree._use_the_new_task(self.node, new_task)
         assert self.node.is_invalidate_remote()
@@ -805,8 +768,7 @@ class TestMergeFromRemoteRemoveTask(object):
 
         self.current_task = RemovedRemoteFilesTask(container=None,
                                                    target=("aaaa/bbb/ccc",),
-                                                   local_container=self.lc,
-                                                   display_error_cb=None)
+                                                   local_container=self.lc)
         self.node.add_waiting_node(self)
         self.node.waiting_task = self.current_task
         self.node.waiting_task_callback = self.ft.callback
@@ -816,7 +778,6 @@ class TestMergeFromRemoteRemoveTask(object):
         new_task = AddedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/ccc",),
                                        local_container=self.lc,
-                                       display_error_cb=None,
                                        create_mode=True)
 
         assert self.tree._use_the_new_task(self.node, new_task)
@@ -827,7 +788,6 @@ class TestMergeFromRemoteRemoveTask(object):
         new_task = AddedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/ccc",),
                                        local_container=self.lc,
-                                       display_error_cb=None,
                                        create_mode=False)
 
         assert self.tree._use_the_new_task(self.node, new_task)
@@ -837,8 +797,7 @@ class TestMergeFromRemoteRemoveTask(object):
     def test_replace_with_a_local_delete_task(self):
         new_task = RemovedLocalFilesTask(container=None,
                                          target=("aaaa/bbb/ccc",),
-                                         local_container=self.lc,
-                                         display_error_cb=None)
+                                         local_container=self.lc)
 
         assert not self.tree._use_the_new_task(self.node, new_task)
         assert not self.node.is_invalidate_remote()
@@ -847,8 +806,7 @@ class TestMergeFromRemoteRemoveTask(object):
     def test_replace_with_a_remote_add_task(self):
         new_task = AddedRemoteFilesTask(container=None,
                                         target=("aaaa/bbb/ccc",),
-                                        local_container=self.lc,
-                                        display_error_cb=None)
+                                        local_container=self.lc)
 
         assert self.tree._use_the_new_task(self.node, new_task)
         assert not self.node.is_invalidate_remote()
@@ -857,8 +815,7 @@ class TestMergeFromRemoteRemoveTask(object):
     def test_replace_with_a_remote_remove_task(self):
         new_task = RemovedRemoteFilesTask(container=None,
                                           target=("aaaa/bbb/ccc",),
-                                          local_container=self.lc,
-                                          display_error_cb=None)
+                                          local_container=self.lc)
 
         assert not self.tree._use_the_new_task(self.node, new_task)
         assert not self.node.is_invalidate_remote()
@@ -868,8 +825,7 @@ class TestMergeFromRemoteRemoveTask(object):
         new_task = MovedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/ccc",
                                                "aaaa/bbb/cccd"),
-                                       local_container=self.lc,
-                                       display_error_cb=None)
+                                       local_container=self.lc)
 
         assert self.tree._use_the_new_task(self.node, new_task)
         assert self.node.is_invalidate_remote()
@@ -879,8 +835,7 @@ class TestMergeFromRemoteRemoveTask(object):
         new_task = MovedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/cccs",
                                                "aaaa/bbb/ccc"),
-                                       local_container=self.lc,
-                                       display_error_cb=None)
+                                       local_container=self.lc)
 
         assert self.tree._use_the_new_task(self.node, new_task)
         assert self.node.is_invalidate_remote()
@@ -909,8 +864,7 @@ class TestMergeFromLocalMoveTaskOnSrc(object):
         self.current_task = MovedLocalFilesTask(container=None,
                                                 target=("aaaa/bbb/ccc",
                                                         "aaaa/bbb/cccd"),
-                                                local_container=self.lc,
-                                                display_error_cb=None)
+                                                local_container=self.lc)
         self.node.add_waiting_node(self)
         self.node.waiting_task = self.current_task
         self.node.waiting_task_callback = self.ft.callback
@@ -922,7 +876,6 @@ class TestMergeFromLocalMoveTaskOnSrc(object):
         new_task = AddedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/ccc",),
                                        local_container=self.lc,
-                                       display_error_cb=None,
                                        create_mode=True)
 
         assert not self.tree._use_the_new_task(self.node, new_task)
@@ -933,7 +886,6 @@ class TestMergeFromLocalMoveTaskOnSrc(object):
         new_task = AddedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/ccc",),
                                        local_container=self.lc,
-                                       display_error_cb=None,
                                        create_mode=False)
 
         assert not self.tree._use_the_new_task(self.node, new_task)
@@ -943,8 +895,7 @@ class TestMergeFromLocalMoveTaskOnSrc(object):
     def test_replace_with_a_local_delete_task(self):
         new_task = RemovedLocalFilesTask(container=None,
                                          target=("aaaa/bbb/ccc",),
-                                         local_container=self.lc,
-                                         display_error_cb=None)
+                                         local_container=self.lc)
 
         assert not self.tree._use_the_new_task(self.node, new_task)
         assert self.node.is_invalidate_local()
@@ -953,8 +904,7 @@ class TestMergeFromLocalMoveTaskOnSrc(object):
     def test_replace_with_a_remote_add_task(self):
         new_task = AddedRemoteFilesTask(container=None,
                                         target=("aaaa/bbb/ccc",),
-                                        local_container=self.lc,
-                                        display_error_cb=None)
+                                        local_container=self.lc)
 
         assert not self.tree._use_the_new_task(self.node, new_task)
         assert self.node.is_invalidate_remote()
@@ -963,8 +913,7 @@ class TestMergeFromLocalMoveTaskOnSrc(object):
     def test_replace_with_a_remote_remove_task(self):
         new_task = RemovedRemoteFilesTask(container=None,
                                           target=("aaaa/bbb/ccc",),
-                                          local_container=self.lc,
-                                          display_error_cb=None)
+                                          local_container=self.lc)
 
         assert not self.tree._use_the_new_task(self.node, new_task)
         assert self.node.is_invalidate_remote()
@@ -974,9 +923,7 @@ class TestMergeFromLocalMoveTaskOnSrc(object):
         new_task = MovedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/ccc",
                                                "aaaa/bbb/cccd"),
-                                       local_container=self.lc,
-
-                                       display_error_cb=None)
+                                       local_container=self.lc)
         assert not self.tree._use_the_new_task(self.node, new_task)
         assert not self.node.is_invalidate_remote()
         assert not self.node.is_invalidate_local()
@@ -985,8 +932,7 @@ class TestMergeFromLocalMoveTaskOnSrc(object):
         new_task = MovedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/ccc",
                                                "aaaa/bbb/cccd2"),
-                                       local_container=self.lc,
-                                       display_error_cb=None)
+                                       local_container=self.lc)
 
         assert not self.tree._use_the_new_task(self.node, new_task)
         assert self.ft.cancel
@@ -1004,8 +950,7 @@ class TestMergeFromLocalMoveTaskOnSrc(object):
         new_task = MovedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/ccc",
                                                "aaaa/bbb/cccd2"),
-                                       local_container=self.lc,
-                                       display_error_cb=None)
+                                       local_container=self.lc)
 
         node_cccd = self.tree.root.get_or_insert_node("aaaa/bbb/cccd")
         node_cccd.set_hash("local", "remote", False)
@@ -1032,8 +977,7 @@ class TestMergeFromLocalMoveTaskOnSrc(object):
         new_task = MovedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/cccs",
                                                "aaaa/bbb/ccc"),
-                                       local_container=self.lc,
-                                       display_error_cb=None)
+                                       local_container=self.lc)
 
         old_dest = self.tree.root.get_or_insert_node(
             "aaaa/bbb/cccd",
@@ -1071,8 +1015,7 @@ class TestMergeFromLocalMoveTaskOnDst(object):
         self.current_task = MovedLocalFilesTask(container=None,
                                                 target=("aaaa/bbb/cccs",
                                                         "aaaa/bbb/ccc"),
-                                                local_container=self.lc,
-                                                display_error_cb=None)
+                                                local_container=self.lc)
         self.node.add_waiting_node(self)
         self.node.waiting_task = self.current_task
         self.node.waiting_task_callback = self.ft.callback
@@ -1084,7 +1027,6 @@ class TestMergeFromLocalMoveTaskOnDst(object):
         new_task = AddedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/ccc",),
                                        local_container=self.lc,
-                                       display_error_cb=None,
                                        create_mode=True)
 
         assert not self.tree._use_the_new_task(self.node, new_task)
@@ -1095,7 +1037,6 @@ class TestMergeFromLocalMoveTaskOnDst(object):
         new_task = AddedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/ccc",),
                                        local_container=self.lc,
-                                       display_error_cb=None,
                                        create_mode=False)
 
         assert not self.tree._use_the_new_task(self.node, new_task)
@@ -1105,8 +1046,7 @@ class TestMergeFromLocalMoveTaskOnDst(object):
     def test_replace_with_a_local_delete_task(self):
         new_task = RemovedLocalFilesTask(container=None,
                                          target=("aaaa/bbb/ccc",),
-                                         local_container=self.lc,
-                                         display_error_cb=None)
+                                         local_container=self.lc)
 
         assert not self.tree._use_the_new_task(self.node, new_task)
         assert self.node.is_invalidate_local()
@@ -1115,8 +1055,7 @@ class TestMergeFromLocalMoveTaskOnDst(object):
     def test_replace_with_a_remote_add_task(self):
         new_task = AddedRemoteFilesTask(container=None,
                                         target=("aaaa/bbb/ccc",),
-                                        local_container=self.lc,
-                                        display_error_cb=None)
+                                        local_container=self.lc)
 
         assert not self.tree._use_the_new_task(self.node, new_task)
         assert self.node.is_invalidate_remote()
@@ -1125,8 +1064,7 @@ class TestMergeFromLocalMoveTaskOnDst(object):
     def test_replace_with_a_remote_remove_task(self):
         new_task = RemovedRemoteFilesTask(container=None,
                                           target=("aaaa/bbb/ccc",),
-                                          local_container=self.lc,
-                                          display_error_cb=None)
+                                          local_container=self.lc)
 
         assert not self.tree._use_the_new_task(self.node, new_task)
         assert self.node.is_invalidate_remote()
@@ -1136,9 +1074,7 @@ class TestMergeFromLocalMoveTaskOnDst(object):
         new_task = MovedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/cccs",
                                                "aaaa/bbb/ccc"),
-                                       local_container=self.lc,
-
-                                       display_error_cb=None)
+                                       local_container=self.lc)
         assert not self.tree._use_the_new_task(self.node, new_task)
         assert not self.node.is_invalidate_remote()
         assert not self.node.is_invalidate_local()
@@ -1147,8 +1083,7 @@ class TestMergeFromLocalMoveTaskOnDst(object):
         new_task = MovedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/ccc",
                                                "aaaa/bbb/cccd"),
-                                       local_container=self.lc,
-                                       display_error_cb=None)
+                                       local_container=self.lc)
 
         node_cccs = self.tree.root.get_or_insert_node("aaaa/bbb/cccs")
         node_cccs.executing_task = self.current_task
@@ -1175,8 +1110,7 @@ class TestMergeFromLocalMoveTaskOnDst(object):
         new_task = MovedLocalFilesTask(container=None,
                                        target=("aaaa/bbb/cccs2",
                                                "aaaa/bbb/ccc"),
-                                       local_container=self.lc,
-                                       display_error_cb=None)
+                                       local_container=self.lc)
 
         assert self.tree._use_the_new_task(self.node, new_task)
         assert len(task_added) == 1
@@ -1207,8 +1141,7 @@ class TestReplaceTask(object):
 
         self.current_task = AddedRemoteFilesTask(container=None,
                                                  target=("aaaa/bbb/ccc",),
-                                                 local_container=self.lc,
-                                                 display_error_cb=None)
+                                                 local_container=self.lc)
         self.node.add_waiting_node(self)
         self.node.waiting_task = self.current_task
         self.node.waiting_task_callback = self.ft.callback
@@ -1268,7 +1201,6 @@ class TestAcquire(object):
         self.task = AddedLocalFilesTask(container=None,
                                         target=("aaaa/bbb/ccc",),
                                         local_container=self.lc,
-                                        display_error_cb=None,
                                         create_mode=True)
 
         del task_added[:]
@@ -1319,8 +1251,7 @@ class TestAcquire(object):
     def test_acquire_a_task_already_waits_and_merge(self):
         task = RemovedRemoteFilesTask(container=None,
                                       target=("aaaa/bbb/ccc",),
-                                      local_container=self.lc,
-                                      display_error_cb=None)
+                                      local_container=self.lc)
         task.prior = True
 
         fake_task = FakeTask()

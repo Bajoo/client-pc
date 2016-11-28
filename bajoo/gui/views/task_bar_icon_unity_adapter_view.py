@@ -6,14 +6,13 @@ import subprocess
 import sys
 from threading import Thread
 from ...common.i18n import get_lang
-from .base import TaskBarIconBaseView
-from .common_view_data import TaskBarIconAction
-from .unity_data_exchange import UnityDataExchange
+from .task_bar_icon_base_view import TaskBarIconAction, TaskBarIconBaseView
+from .task_bar_icon_unity_data_exchange import UnityDataExchange
 
 _logger = logging.getLogger(__name__)
 
 
-class UnityAdapterView(TaskBarIconBaseView):
+class TaskBarIconUnityAdapterView(TaskBarIconBaseView):
     """Adapter between the controller and the Unity process-separated view.
 
     It implements the Task Bar icon interface, and relay all messages to the
@@ -27,7 +26,7 @@ class UnityAdapterView(TaskBarIconBaseView):
         TaskBarIconBaseView.__init__(self, ctrl)
 
         args = (sys.executable, "-m",
-                "bajoo.gui.task_bar_icon.unity_task_bar_icon",)
+                "bajoo.gui.views.task_bar_icon_unity",)
 
         self.process = subprocess.Popen(args=args,
                                         bufsize=1,
@@ -104,7 +103,7 @@ class UnityAdapterView(TaskBarIconBaseView):
 def main():
     import logging
     from ...app_status import AppStatus
-    from .base import ContainerStatus
+    from ..enums import ContainerStatus
     logging.basicConfig()
 
     class Controller(object):
@@ -133,8 +132,9 @@ def main():
             print('Exit ...')
             self.view.destroy()
 
-    c = Controller(UnityAdapterView)
+    c = Controller(TaskBarIconUnityAdapterView)
     c.view.process.wait()
+
 
 if __name__ == '__main__':
     main()

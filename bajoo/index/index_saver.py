@@ -24,8 +24,16 @@ _logger = logging.getLogger(__name__)
 
 
 class IndexSaver(object):
-    def __init__(self, local_container, directory, model_id):
-        self.local_container = local_container
+    def __init__(self, index_tree, directory, model_id):
+        """IndexSaver constructor
+
+        Args:
+            index_tree (IndexTree): index to save. Must have two methods
+                `load()` and `export_data()`.
+            directory (Text): directory containing the index file.
+            model_id (Text): unique ID used in the filename.
+        """
+        self.index_tree = index_tree
 
         self.directory = directory
         self.model_id = model_id
@@ -143,13 +151,13 @@ class IndexSaver(object):
         # open write access on a hidden file (windows issue)
         _logger.debug('save index')
 
-        index = self.local_container.index.generate_dict()
+        index_data = self.index_tree.export_data()
 
         try:
             tmp_index_file = NamedTemporaryFile(mode='w+', dir=get_cache_dir(),
                                                 delete=False)
             with tmp_index_file:
-                json.dump(index, tmp_index_file)
+                json.dump(index_data, tmp_index_file)
             replace_file(tmp_index_file.name, self.index_path)
             self._hide_file_if_win(self.index_path)
         except:

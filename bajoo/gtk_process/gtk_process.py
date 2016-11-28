@@ -94,9 +94,15 @@ class GtkProcess(object):
     def _run(self):
         # The GTK 3.0 loading must be process-specific, as wxPython also uses
         # GTK, and two instances of GTK can't coexists without trouble.
-        import gi
-        gi.require_version('Gtk', '3.0')
-        from gi.repository import Gtk, GObject
+        try:
+            import gi
+            gi.require_version('Gtk', '3.0')
+            from gi.repository import Gtk, GObject
+        except (ImportError, ValueError):
+            _logger.info('Gtk library not present; Stop GTK process.')
+            self._pipe_in.close()
+            self._pipe_out.close()
+            return
 
         rpc_handler = RPCHandler(self._pipe_in, self._pipe_out,
                                  GObject.idle_add)

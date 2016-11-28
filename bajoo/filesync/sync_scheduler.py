@@ -57,7 +57,9 @@ class SyncScheduler(object):
         """Find the next node that should be sync.
 
         Returns:
-            Optional[Node]: the next node to sync, if there is one available.
+            Tuple(Optional [IndexTree], Optional[Node]): the next node to sync
+                and the IndexTree the node belongs to. If there is none
+                available, return (None, None)
         """
 
         for data_tree in self._generators[:]:
@@ -67,10 +69,10 @@ class SyncScheduler(object):
                 self._generators.remove(data_tree)
             else:
                 if node is not IndexTree.WAIT_FOR_TASK:
-                    return node
+                    return data_tree['tree'], node
 
         if not self._index_trees:
-            return None
+            return None, None
 
         # new generator needed;
         start_index = self._index_next_tree
@@ -89,8 +91,8 @@ class SyncScheduler(object):
             else:
                 self._generators.append({'tree': tree, 'gen': gen})
                 if node is not IndexTree.WAIT_FOR_TASK:
-                    return node
+                    return tree, node
 
             if self._index_next_tree == start_index:
                 # We've tested all trees.
-                return None
+                return None, None

@@ -20,7 +20,6 @@ class RemovedTaskMixin(object):
     def _create_a_remove_task(self, rel_path):
         return RemovedLocalFilesTask(self.container,
                                      (rel_path,), self.local_container,
-                                     self.display_error_cb,
                                      parent_path=self._parent_path)
 
 

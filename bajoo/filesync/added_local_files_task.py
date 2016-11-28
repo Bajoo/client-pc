@@ -20,7 +20,6 @@ class PushTaskMixin(object):
     def _create_push_task(self, rel_path, create_mode=False):
         return AddedLocalFilesTask(self.container,
                                    (rel_path,), self.local_container,
-                                   self.display_error_cb,
                                    parent_path=self._parent_path,
                                    create_mode=create_mode)
 
@@ -28,10 +27,9 @@ class PushTaskMixin(object):
 class AddedLocalFilesTask(_Task, PushTaskMixin):
 
     def __init__(self, container, target, local_container,
-                 display_error_cb, parent_path=None, create_mode=True):
+                 parent_path=None, create_mode=True):
 
-        _Task.__init__(self, container, target, local_container,
-                       display_error_cb, parent_path)
+        _Task.__init__(self, container, target, local_container, parent_path)
 
         self.create_mode = create_mode
 

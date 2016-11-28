@@ -24,6 +24,8 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
     The default screen is the HomeScreen, containing the connexion form.
     """
 
+    EVT_RESEND_CONFIRM_EMAIL = ActivationScreen.EVT_RESEND_CONFIRM_EMAIL
+
     def __init__(self, notify):
         wx.Frame.__init__(self, parent=None, title='Bajoo',
                           style=(wx.DEFAULT_FRAME_STYLE & ~wx.MAXIMIZE_BOX & ~
@@ -40,8 +42,9 @@ class HomeWindow(wx.Frame, UIHandlerOfConnection):
             self.Hide()
 
     @ensure_gui_thread()
-    def wait_activation(self):
+    def wait_activation(self, username):
         self._view.set_screen(ActivationScreen)
+        self._view.current_screen.user_email = username
         self._view.current_screen.reset_form()
         self.Show()
 
@@ -160,6 +163,7 @@ def main():
     win = HomeWindow(notify)
     win.Show(True)
     app.MainLoop()
+
 
 if __name__ == '__main__':
     main()
