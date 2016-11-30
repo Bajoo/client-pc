@@ -13,14 +13,18 @@ class HintBuilder(object):
     the nodes.
     It handles all specific cases when many events occurs on the same node, and
     it merges the hints to keep a coherent state.
+
+    Methods to "apply" a hint to a node can exist in two versions:
+    - The "node" version takes the node in argument. It should be used as a
+      helper when the caller performs it own actions on the tree. The caller is
+      in charge of the tree lock.
+    - The "path" version, when the caller doesn't have the node. It's an
+      independent action. In this case HintBuilder is in charge of the tree
+      lock.
     """
 
     # TODO: handle case when there is conflict between node of different types
     # (files and folders)
-
-    EVENT_MODIFIED = 'modified'
-    EVENT_DELETED = 'deleted'
-    EVENT_MOVE = 'move'
 
     SCOPE_LOCAL = 'local'
     SCOPE_REMOTE = 'remote'
@@ -52,7 +56,7 @@ class HintBuilder(object):
         In other cases, it act like a call to:
             `_set_hint(node, scope, DeletedHint())`.
         """
-        if not node.exists():
+        if not node.exists() and node.task is None:
             if scope == cls.SCOPE_REMOTE:
                 other_scope = cls.SCOPE_LOCAL
             else:
@@ -78,7 +82,38 @@ class HintBuilder(object):
         cls._set_hint(dest_node, scope, DestMoveHint(source_node))
 
     @classmethod
-    def apply_modified_event(cls, tree, scope, path, new_state, node_factory):
+    def apply_modified_event(cls, scope, node, new_state=None):
+        """Create or update hint from a MODIFIED or an ADDED event.
+
+        Note:
+            The tree owning the node must be locked.
+
+        Args:
+            scope (str): One of SCOPE_LOCAL or SCOPE_REMOTE.
+            node (BaseNode): target node.
+            new_state (Optional[Dict]): new information that could replace
+                (part of) the node state. state content is dependent of the
+                node type.
+        """
+        node.sync = False
+        previous_hint = cls._get_hint(node, scope)
+
+        if isinstance(previous_hint,
+                      (type(None), DeletedHint, ModifiedHint)):
+            cls._set_hint(node, scope, ModifiedHint(new_state))
+        elif isinstance(previous_hint, SourceMoveHint):
+            # If we've a 'MOVE' event, we're sure the source state is the
+            # new state of the destination node.
+            cls._set_hint(previous_hint.dest_node, scope,
+                          ModifiedHint(node.state))
+            cls._set_hint(node, scope, ModifiedHint(new_state))
+        elif isinstance(previous_hint, DestMoveHint):
+            cls._set_delete_hint(previous_hint.source_node, scope)
+            cls._set_hint(node, scope, ModifiedHint(new_state))
+
+    @classmethod
+    def apply_modified_event_from_path(cls, tree, scope, path, new_state,
+                                       node_factory):
         """Create or update hint from a MODIFIED or an ADDED event.
 
         Args:
@@ -92,27 +127,40 @@ class HintBuilder(object):
                 the node, if needed. It receives the node's name in argument
                 and must return a single node.
         """
-
         with tree.lock:
             node = tree.get_or_create_node_by_path(path, node_factory)
-            node.sync = False
-            previous_hint = cls._get_hint(node, scope)
-
-            if isinstance(previous_hint,
-                          (type(None), DeletedHint, ModifiedHint)):
-                cls._set_hint(node, scope, ModifiedHint(new_state))
-            elif isinstance(previous_hint, SourceMoveHint):
-                # If we've a 'MOVE' event, we're sure the source state is the
-                # new state of the destination node.
-                cls._set_hint(previous_hint.dest_node, scope,
-                              ModifiedHint(node.state))
-                cls._set_hint(node, scope, ModifiedHint(new_state))
-            elif isinstance(previous_hint, DestMoveHint):
-                cls._set_delete_hint(previous_hint.source_node, scope)
-                cls._set_hint(node, scope, ModifiedHint(new_state))
+            cls.apply_modified_event(scope, node, new_state)
 
     @classmethod
-    def apply_deleted_event(cls, tree, scope, path):
+    def apply_deleted_event(cls, scope, node):
+        """Create or update hint from a DELETED event.
+
+        Note:
+            The tree owning the node must be locked.
+
+        Args:
+            scope (str): One of SCOPE_LOCAL or SCOPE_REMOTE.
+            node (BaseNode): node that should be deleted.
+        """
+        node.sync = False
+        previous_hint = cls._get_hint(node, scope)
+
+        if isinstance(previous_hint, SourceMoveHint):
+            # This case shouldn't happens (deletion of an object that is
+            # not here). Anyway, the file is already gone
+            # (move elsewhere). Nothing to do.
+            _logger.warning('Weird deletion event for a moved node. '
+                            'Path is %s', node.get_full_path())
+            return
+
+        cls._set_delete_hint(node, scope)
+
+        if isinstance(previous_hint, DestMoveHint):
+            # Delete the source move. We've already deleted the destination
+            cls._set_delete_hint(previous_hint.source_node, scope)
+
+    @classmethod
+    def apply_deleted_event_from_path(cls, tree, scope, path):
         """Create or update hint from a DELETED event.
 
         Args:
@@ -124,26 +172,11 @@ class HintBuilder(object):
             node = tree.get_node_by_path(path)
             if node is None:
                 return  # Nothing to do: the node don't exists.
-
-            node.sync = False
-            previous_hint = cls._get_hint(node, scope)
-
-            if isinstance(previous_hint, SourceMoveHint):
-                # This case shouldn't happens (deletion of an object that is
-                # not here). Anyway, the file is already gone
-                # (move elsewhere). Nothing to do.
-                _logger.warning('Weird deletion event for a moved node. '
-                                'Path is %s', path)
-                return
-
-            cls._set_delete_hint(node, scope)
-
-            if isinstance(previous_hint, DestMoveHint):
-                # Delete the source move. We've already deleted the destination
-                cls._set_delete_hint(previous_hint.source_node, scope)
+            cls.apply_deleted_event(scope, node)
 
     @classmethod
-    def apply_move_event(cls, tree, scope, src_path, dst_path, node_factory):
+    def apply_move_event_from_path(cls, tree, scope, src_path, dst_path,
+                                   node_factory):
         """Create or update hint from a MOVE event.
 
         Notes:
