@@ -34,3 +34,13 @@ class PassphraseAbortError(EncryptionError):
     def __init__(self):
         EncryptionError.__init__(
             self, N_('The passphrase request has been rejected by the user.'))
+
+
+class ServiceStoppingError(EncryptionError):
+    """The encryption service is being stopped. Operation are canceled."""
+    pass
+
+
+class ServiceUnavailableError(EncryptionError):
+    """The encryption service is not working due to a critical error."""
+    pass

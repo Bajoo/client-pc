@@ -11,6 +11,7 @@ import time
 
 from ..common.strings import ensure_unicode
 from .exception import RedundantTaskInterruption
+from ..encryption.errors import ServiceStoppingError
 
 _logger = logging.getLogger(__name__)
 
@@ -170,7 +171,8 @@ class _Task(object):
         Some of theses errors are uncommon, but acceptable situations, and
         should be ignored.
         """
-        _logger.exception('Exception on %s task:' % self.get_type())
+        if not isinstance(error, ServiceStoppingError):
+            _logger.exception('Exception on %s task:' % self.get_type())
         self._task_errors.append(self)
         self.error = error
 
