@@ -61,6 +61,7 @@ class TestBrowseIndexTree(object):
         non_sync_nodes = []
         for node in tree.browse_all_non_sync_nodes():
             non_sync_nodes.append(node.name)
+            node.task = None
             node.sync = True
 
         expected_non_sync_node = sorted(['A1', 'B', 'B2', 'C1', 'C2'])
@@ -90,10 +91,27 @@ class TestBrowseIndexTree(object):
             if node is IndexTree.WAIT_FOR_TASK:
                 break
             non_sync_nodes.append(node.name)
-            node.sync = True
+            # node.task is automatically set to True
 
         expected_non_sync_node = sorted(['B', 'C1'])
         assert sorted(non_sync_nodes) == expected_non_sync_node
+
+    def test_browse_set_node_task_to_true(self):
+        tree = IndexTree()
+        tree._root = _make_tree(('root', [
+            ('A1', [])
+        ]))
+
+        nodes = []
+        for node in tree.browse_all_non_sync_nodes():
+            if node is IndexTree.WAIT_FOR_TASK:
+                break
+            nodes.append(node)
+            node.sync = True
+
+        assert nodes[0].task is True
+        assert nodes[1].task is True
+        assert len(nodes) is 2
 
     def test_browse_until_all_is_clean(self):
         """browse must loop over all nodes many times until they're clean.
@@ -113,7 +131,9 @@ class TestBrowseIndexTree(object):
         # return node B until it's sync.
         non_sync_nodes = []
         for i in range(3):
-            non_sync_nodes.append(next(gen))
+            node = next(gen)
+            node.task = None  # By default browse() set node.task to True
+            non_sync_nodes.append(node)
         assert non_sync_nodes == [node_b, node_b, node_b]
 
         node_a.sync = False
@@ -122,7 +142,9 @@ class TestBrowseIndexTree(object):
         # return node A until it's sync.
         non_sync_nodes = []
         for i in range(3):
-            non_sync_nodes.append(next(gen))
+            node = next(gen)
+            node.task = None
+            non_sync_nodes.append(node)
         assert non_sync_nodes == [node_a, node_a, node_a]
 
         node_b.sync = True
@@ -130,7 +152,9 @@ class TestBrowseIndexTree(object):
         # will yield until there is no remaining non-sync nodes.
         non_sync_nodes = []
         for i in range(15):
-            non_sync_nodes.append(next(gen))
+            node = next(gen)
+            node.task = None
+            non_sync_nodes.append(node)
         assert len(non_sync_nodes) is 15
 
         node_a.sync = True

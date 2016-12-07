@@ -64,6 +64,10 @@ class IndexTree(object):
             possibly the next one. The generator could yield indefinitely the
             same node.
 
+            The yielded node has `task` attribute assigned to True. It means
+            the node is "reserved" and should be assigned a task. If the caller
+            don't assign it a task, it should set `node.task` to None.
+
         Return:
             Iterator[Union[IndexNode,IndexTree.WAIT_FOR_TASK]]: generator that
                 will loop over all non-sync nodes.
@@ -79,6 +83,8 @@ class IndexTree(object):
                 last_iteration_was_empty = True
                 for node in self._browse_non_sync_nodes(self._root):
                     last_iteration_was_empty = False
+
+                    node.task = True  # Set node "reserved" for a future task.
                     with self._reverse_lock_context():
                         yield node
 
@@ -87,6 +93,10 @@ class IndexTree(object):
             if current_node.task is None:  # nodes with task are ignored.
                 yield current_node
         for node in filter(lambda n: n.dirty, current_node.children.values()):
+            if node.removed:
+                # Note: The tree might change during a 'yield'. Check that
+                # current_node is still part of the tree.
+                continue
             for n in self._browse_non_sync_nodes(node):
                 yield n
 
