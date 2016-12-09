@@ -4,11 +4,11 @@ import wx
 from wx.lib.agw.hyperlink import HyperLinkCtrl
 from wx.lib.newevent import NewCommandEvent
 
+from ...common import config
 from ...common.i18n import N_
 from ..base_view import BaseView
 from ..validator import BaseValidator, NotEmptyValidator, EmailValidator
 from . import BaseForm
-from ...api.session import IDENTITY_API_URL
 
 
 class ConnectionForm(BaseForm):
@@ -93,7 +93,7 @@ class ConnectionFormView(BaseView):
 
         # forgotten_password
         forgotten_password_url = '/'.join([
-            IDENTITY_API_URL, 'user', 'password-forgotten'])
+            config.get('identity_api_url'), 'user', 'password-forgotten'])
         forgotten_password_link = HyperLinkCtrl(
             self.window, URL=forgotten_password_url)
         self.register_i18n(forgotten_password_link,

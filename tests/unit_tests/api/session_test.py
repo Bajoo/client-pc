@@ -4,7 +4,8 @@ import collections
 import pytest
 
 from bajoo import network
-from bajoo.api.session import Session, IDENTITY_API_URL, STORAGE_API_URL
+from bajoo.common import config
+from bajoo.api.session import Session
 from bajoo.api.user import User
 from bajoo.network.errors import HTTPUnauthorizedError
 from bajoo.promise import Deferred, Promise, TimeoutError
@@ -79,11 +80,11 @@ class MockSessionFunctions(object):
         return df
 
     def _execute_storage_request(self, verb, url, *args, **kwargs):
-        path = url[len(STORAGE_API_URL):]
+        path = url[len(config.get('storage_api_url')):]
         return self._execute_request(verb, path)
 
     def _execute_identity_request(self, verb, url, *args, **kwargs):
-        path = url[len(IDENTITY_API_URL):]
+        path = url[len(config.get('identity_api_url')):]
         return self._execute_request(verb, path)
 
     def _execute_request(self, verb, path):
