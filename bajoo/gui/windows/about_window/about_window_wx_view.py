@@ -3,14 +3,14 @@
 import wx
 from wx.lib.agw.hyperlink import EVT_HYPERLINK_LEFT, HyperLinkCtrl
 
-from ...__version__ import __version__
-from ...common.i18n import N_
-from ..base_view import BaseView
-from ...common.path import resource_filename
-from ...gui.translator import Translator
+from ....__version__ import __version__
+from ....common.i18n import N_
+from ....common.path import resource_filename
+from ...base_view import BaseView
+from ...translator import Translator
 
-from ..controllers.about_window_controller import Page
 from .about_window_base_view import AboutWindowBaseView
+from .about_window_controller import Page
 
 
 class AboutWindowWxView(wx.Frame, AboutWindowBaseView, BaseView):

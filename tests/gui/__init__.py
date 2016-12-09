@@ -38,14 +38,21 @@ def gtk_context():
     Gtk.main()
 
 
+context_by_name = {
+    'wx': wx_context,
+    'gtk': gtk_context,
+    'appindicator': gtk_context
+}
+
+
 graphic_items = {
-    'about_window': (AboutWindowTestController, {
-        'wx': (wx_context, 'AboutWindowWxView'),
-        'gtk': (gtk_context, 'AboutWindowGtkView')
+    'about_window': (AboutWindowTestController, 'windows.about_window', {
+        'wx': 'AboutWindowWxView',
+        'gtk': 'AboutWindowGtkView'
     }),
-    'task_bar_icon': (TaskBarIconTestController, {
-        'wx': (wx_context, 'TaskBarIconWxView'),
-        'gtk': (gtk_context, 'TaskBarIconGtkView'),
-        'appindicator': (gtk_context, 'TaskBarIconAppIndicatorView'),
+    'task_bar_icon': (TaskBarIconTestController, 'task_bar_icon', {
+        'wx': 'TaskBarIconWxView',
+        'gtk': 'TaskBarIconGtkView',
+        'appindicator': 'TaskBarIconAppIndicatorView',
     })
 }

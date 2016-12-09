@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import webbrowser
-from ...common.signal import Signal
-from ..bug_report import BugReportWindow
+from ....common.signal import Signal
+from ...bug_report import BugReportWindow
 
 
 class Page(object):

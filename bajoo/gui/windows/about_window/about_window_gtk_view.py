@@ -3,10 +3,10 @@
 from functools import partial
 from gi.repository import Gdk, Gtk
 
-from ...__version__ import __version__
-from ...common.i18n import _
-from ...common.path import resource_filename
-from ..controllers.about_window_controller import Page
+from ....__version__ import __version__
+from ....common.i18n import _
+from ....common.path import resource_filename
+from .about_window_controller import Page
 from .about_window_base_view import AboutWindowBaseView
 
 
