@@ -8,8 +8,7 @@ import shutil
 from .api.team_share import TeamShare
 from .common.i18n import _, N_
 from .common.strings import err2unicode
-from .index.new_index_tree import IndexTree
-from .index.index_saver import IndexSaver
+from .index import IndexTree, IndexSaver
 
 
 _logger = logging.getLogger(__name__)

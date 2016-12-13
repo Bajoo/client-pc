@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from ..index.new_index_tree import IndexTree
+from ..index import IndexTree
 
 
 class SyncScheduler(object):

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from bajoo.filesync.sync_scheduler import SyncScheduler
-from bajoo.index.new_index_tree import IndexTree
+from bajoo.index import IndexTree
 
 
 class FakeNode(object):

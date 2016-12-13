@@ -1,747 +1,369 @@
 # -*- coding: utf-8 -*-
 
+from contextlib import contextmanager
 import logging
-from threading import RLock
-
-from ..promise import Deferred, Promise
-from ..filesync.added_local_files_task import AddedLocalFilesTask
-from ..filesync.added_remote_files_task import AddedRemoteFilesTask
-from ..filesync.exception import RedundantTaskInterruption
-from ..filesync.moved_local_files_task import MovedLocalFilesTask
-from ..filesync.removed_local_files_task import RemovedLocalFilesTask
-from ..filesync.removed_remote_files_task import RemovedRemoteFilesTask
-from ..filesync.sync_task import SyncTask
-from ..filesync.task_consumer import add_task
-from .index_node import DirectoryNode
-from .index_node import FileNode
+import os.path
+import threading
+from ..common.strings import ensure_unicode
+from .file_node import FileNode
+from .folder_node import FolderNode
 
 _logger = logging.getLogger(__name__)
 
 
-def trigger_local_create_task(filename, previous_task):
-    """ This function trigger an AddedLocalFilesTask
-
-    Args:
-        filename<String>: the target path of the task
-        previous_task<_Task>: a previous task working in the same local
-            container
-
-    Return
-        The new created AddedLocalFilesTask
-    """
-    create_task = AddedLocalFilesTask(previous_task.container,
-                                      (filename,),
-                                      previous_task.local_container,
-                                      create_mode=True)
-    add_task(create_task, priority=True)
-    return create_task
-
-
-def trigger_local_delete_task(filename, previous_task):
-    """ This function trigger a RemovedLocalFilesTask
-
-    Args:
-        filename<String>: the target path of the task
-        previous_task<_Task>: a previous task working in the same local
-            container
-
-    Return
-        The new created RemovedLocalFilesTask
-    """
-    delete_task = RemovedLocalFilesTask(previous_task.container,
-                                        (filename,),
-                                        previous_task.local_container)
-    add_task(delete_task, priority=True)
-    return delete_task
-
-
-def trigger_local_moved_task(src, dest, previous_task):
-    """ This function trigger a MovedLocalFilesTask
-
-    Args:
-        src<String>: the target source path of the task
-        dest<String>: the target destination path of the task
-        previous_task<_Task>: a previous task working in the same local
-            container
-
-    Return
-        The new created MovedLocalFilesTask
-    """
-    moved_task = MovedLocalFilesTask(previous_task.container,
-                                     (src, dest,),
-                                     previous_task.local_container)
-    add_task(moved_task, priority=True)
-    return moved_task
-
-
 class IndexTree(object):
+    """Index all files in a container and manages metadata needed for sync.
 
-    def __init__(self, index_saver, init_dict=None):
-        """ Constructor of the index tree
+    It contains either remote (server) information and local (filesystem) known
+    information, and keep metadata about difference between local and remote.
 
-        Args:
-            index_saver<IndexSaver>: an instance of the object to trigger if
-                a change is detected and must be saved in the index
+    The structure is a tree, each node representing either a file or a folder.
+    Nodes are named, each child is accessible by its filename.
 
-            init_dict<dict>: dictionary of pair to insert into the index.
-                The key is the file path and the value is a tuple of two
-                hashes, the first one is the local hash, and the second is
-                the remote hash.
-        """
 
-        self.root = DirectoryNode(path_part=u"")
-        self.locked_count = 0
-        self.lock = RLock()
-        self.promise_waiting_for_task = {}
-        self.index_saver = index_saver
+    The main method is `browse_dirty_nodes()`, a generator which returns all
+    nodes marked non-sync, until there is no more.
 
-        if init_dict is not None:
-            self.load(init_dict)
+    All access to nodes must be protected by using the `self.lock`, including
+    the read access to properties like hints.
+    """
 
-    def load(self, init_dict):
-        """ Load a dictionary into the index
+    # Special value, yielded by browse_all_non_sync_nodes()
+    WAIT_FOR_TASK = object()
 
-        ATTENTION: it does not remove the existing value
+    def __init__(self):
+        self.lock = threading.Lock()
+        self._root = None
 
-        Args:
-            init_dict<dict>: dictionary of pair to insert into the index.
-                The key is the file path and the value is a tuple of two
-                hashes, the first one is the local hash, and the second is
-                the remote hash.
+    def browse_all_non_sync_nodes(self):
+        """Browse through the tree and yields all the non-sync nodes.
 
-        """
-        for path, (local_hash, remote_md5,) in init_dict.items():
-            node = self.root.get_or_insert_node(path,
-                                                index_saver=self.index_saver)
-            node.set_hash(local_hash, remote_md5, trigger=False)
+        Yield one by one, all nodes that are marked as "non-sync", until there
+        is none. When the generator stops, the whole tree is in sync.
 
-    def acquire(self, target_list, task, prior_acquire=False):
-        """ This method tries to acquire the target paths in the index
+        The method must be used to "clean" the tree, meaning syncing all files
+        corresponding to the yielded nodes. To do that, the generator releases
+        the internal lock each time it yields, allowing the tree to be
+        modified by external tasks.
 
-        Args:
-            target_list<List<string>>: a list of path to lock
+        A node modified between two calls of the generator can provoke the
+        generator yielding many times the same node. If a node has been cleaned
+        and is marked dirty again, it will be yielded again in.
 
-            task<object>: the task object to use on this acquire
+        When a node has a task assigned to it, it is temporary ignored. When
+        all remaining non-sync nodes have a task assigned, the generator is
+        "blocked": it can't returns node, but is not over yet. In this case, it
+        yields a special value `WAIT_FOR_TASK`.
+        The caller should try latter, when at least one task has been
+        accomplished.
 
-            prior_acquire<bool>: if set to True and if the target is not
-                free, the task will be the first to get the lock
-                on the node as soon as it will be available again.
+        Notes:
+            The purpose of this method is to allow the caller to clean nodes
+            through the use of tasks. If a node remains non-sync and without
+            assigned task, it will be yielded again in another iteration,
+            possibly the next one. The generator could yield indefinitely the
+            same node.
 
-        Returns:
-            Promise (List<FileNode>): return a list of node in the same order
-                as the input target_list.  If the task has been cancelled
-                by the merge algorithm, the Promise will be rejected with
-                a RedundantTaskInterruption.
-        """
-        # the task was created during the merge algorithm and already has a
-        # assigned promise waiting for it.
-        if task in self.promise_waiting_for_task:
-            return self.promise_waiting_for_task.pop(task)
-
-        if len(target_list) == 0:
-            return Promise.resolve({})
-
-        # only moved task can ask two target
-        if ((len(target_list) == 2 and
-             not isinstance(task, MovedLocalFilesTask)) or
-                len(target_list) > 2):
-            raise Exception("try to acquire more path than needed for a task")
-
-        ordered_target_list = sorted(target_list)
-
-        # TODO
-        #   can't allow a sync task to have more than 1 target
-        #   because it will break the current stealing system
-
-        with self.lock:
-            node_dict = {}
-            for target_path in ordered_target_list:
-                node = self.root.get_or_insert_node(
-                    target_path,
-                    only_directory=isinstance(task, SyncTask),
-                    index_saver=self.index_saver)
-
-                # we already hold the lock on this node, nothing to do.
-                if node.is_locked() and node.executing_task is task:
-                    node_dict[target_path] = node
-                    continue
-
-                # a sync already exist on the current node or on an ancestor
-                if isinstance(node, DirectoryNode):
-                    parent_sync = node
-                    while parent_sync is not None:
-                        if parent_sync.waiting_task is not None:
-                            break
-
-                        parent_sync = parent_sync.parent
-
-                    if parent_sync is not None:
-                        self._inner_release(ordered_target_list, task)
-
-                        if prior_acquire:
-                            parent_sync.set_prior()
-
-                        node.self_remove_if_possible()
-                        return Promise.reject(RedundantTaskInterruption())
-
-                # a task is already waiting on the current node, try to merge
-                if node.waiting_task is not None:
-                    if self._use_the_new_task(node, task):
-                        # cancel the previous task
-                        node.cancel_waiting_task(
-                            remove_from_waiting_list=False)
-
-                        # replace with the new one
-                        return self._generate_waiting_promise(
-                            node,
-                            ordered_target_list,
-                            task,
-                            prior_acquire)
-                    else:
-                        if prior_acquire:
-                            node.set_prior()
-
-                        self._inner_release(ordered_target_list, task)
-                        return Promise.reject(RedundantTaskInterruption())
-
-                # node is locked but without task on it
-                if node.is_locked():
-                    promise = self._generate_waiting_promise(
-                        node,
-                        ordered_target_list,
-                        task,
-                        prior_acquire)
-
-                    node.lock_owner.add_waiting_node(node, prior_acquire)
-                    return promise
-
-                # search for a locked parent
-                locked_parent = node.parent
-                while locked_parent is not None:
-                    if locked_parent.is_locked():
-                        break
-                    locked_parent = locked_parent.parent
-
-                if locked_parent is not None:
-                    # if a parent is locked, need to lock every node
-                    # between this parent and the target node
-                    # this case occurs when a new path is inserted in
-                    # a locked part of the tree
-                    current_node = node
-                    while current_node is not locked_parent:
-                        current_node.lock(locked_parent.lock_owner)
-                        current_node.parent.increment_children_locked_count()
-                        current_node = current_node.parent
-
-                    promise = self._generate_waiting_promise(
-                        node,
-                        ordered_target_list,
-                        task,
-                        prior_acquire)
-
-                    locked_parent.add_waiting_node(node, prior_acquire)
-                    return promise
-
-                # if directory node, need to lock every children
-                if isinstance(node, DirectoryNode):
-                    self._steal_sync_task_on_children(node)
-
-                    blocking_node = self._lock_children(node)
-                    if blocking_node is not None:
-                        promise = self._generate_waiting_promise(
-                            node,
-                            ordered_target_list,
-                            task,
-                            prior_acquire)
-
-                        blocking_node.add_waiting_node(node, prior_acquire)
-                        return promise
-
-                # lock the node
-                node.lock(executing_task=task)
-                self.locked_count += 1
-                node_dict[target_path] = node
-
-            result_list = []
-            for target_path in target_list:
-                result_list.append(node_dict[target_path])
-
-            return Promise.resolve(result_list)
-
-    def release(self, target_list, task):
-        """ Release every path locked by the task
-
-        Args:
-            target_list<List<string>>: a list of path to unlock
-            task<object>: the task used to lock the list of path
-        """
-        with self.lock:
-            self._inner_release(target_list, task)
-
-    def is_locked(self):
-        """ Check if a task has locked a part of the tree
-
-        Returns:
-            boolean: True if at least one task is locked in the tree,
-                     False otherwise
-        """
-
-        return self.locked_count != 0
-
-    def export_data(self):
-        """ Generate a dictionary with the correct format to be stored in
-            a json file.
-
-        Returns:
-            Dict: The key is the file path and the value is a tuple of two
-                hashes, the first one is the local hash, and the second is
-                the remote hash.
-        """
-        output = {}
-        with self.lock:
-            for child in self.root.traverse_only_file_node():
-                output[child.get_complete_path()] = (child.local_md5,
-                                                     child.remote_md5)
-
-        return output
-
-    def generate_dict_with_remote_hash_only(self):
-        """ Generate a dict with file path as key and remote hash as value.
-            It will be used to check if the remote hash has been modified
-            on the server.
-
-        Returns:
-            Dict: The key is the file path and the value is the remote hash.
-        """
-        output = {}
-        with self.lock:
-            for child in self.root.traverse_only_file_node():
-                output[child.get_complete_path()] = child.remote_md5
-
-        return output
-
-    def get_node(self, path):
-        """ This method is used to extract a specific node from the tree
-
-        Arg:
-            path<string>: the path of the target node
+            The yielded node has `task` attribute assigned to True. It means
+            the node is "reserved" and should be assigned a task. If the caller
+            don't assign it a task, it should set `node.task` to None.
 
         Return:
-            A node if the path exists in the tree, None otherwise
+            Iterator[Union[IndexNode,IndexTree.WAIT_FOR_TASK]]: generator that
+                will loop over all non-sync nodes.
         """
+        last_iteration_was_empty = False
         with self.lock:
-            return self.root.get_or_insert_node(path, create=False)
+            while self._root and self._root.dirty:
+                if last_iteration_was_empty:
+                    # All non-sync nodes are blocked by tasks
+                    with self._reverse_lock_context():
+                        yield self.WAIT_FOR_TASK
 
-    def _inner_release(self, target_list, task):
-        """ Release every path locked by the task
+                last_iteration_was_empty = True
+                for node in self._browse_non_sync_nodes(self._root):
+                    last_iteration_was_empty = False
 
-        ATTENTION: self.lock has to be acquired before to execute this method
+                    node.task = True  # Set node "reserved" for a future task.
+                    with self._reverse_lock_context():
+                        yield node
 
-        Args:
-            target_list<List<string>>: a list of path to unlock
-            task<object>: the task used to lock the list of path
-
-        """
-
-        for target_path in target_list:
-            node = self.root.get_or_insert_node(target_path, create=False)
-
-            # TODO improvment, allow to free a partialy locked directory tree
-
-            if (node is None or
-                    not node.is_locked() or
-                    not node.is_lock_owner() or
-                    node.executing_task is not task):
+    def _browse_non_sync_nodes(self, current_node):
+        if not current_node.sync:
+            if current_node.task is None:  # nodes with task are ignored.
+                yield current_node
+        for node in filter(lambda n: n.dirty, current_node.children.values()):
+            if node.removed:
+                # Note: The tree might change during a 'yield'. Check that
+                # current_node is still part of the tree.
                 continue
+            for n in self._browse_non_sync_nodes(node):
+                yield n
 
-            node.unlock()
-            self.locked_count -= 1
-            node.self_remove_if_possible()
-
+    @contextmanager
+    def _reverse_lock_context(self):
+        """Do the reverse of `with self.lock:`"""
+        try:
             self.lock.release()
-            node.trigger_waiting_nodes()
+            yield
+        finally:
             self.lock.acquire()
 
-    def _generate_waiting_promise(self,
-                                  node,
-                                  target_list,
-                                  task,
-                                  prior_acquire=False):
-        """ This method generates a Promise and assigns a callback to
-            the waiting node.
+    def get_node_by_path(self, node_path):
+        """Search and return a node from its file path.
+
+        Notes:
+            The lock must be acquired by the caller, to avoid race condition.
+        Args:
+            node_path (Text): path of the node, relative to the root folder.
+        Returns:
+            Optional[BaseNode]: if exists, the node referenced by this path.
+        """
+        node_path = ensure_unicode(node_path)
+        node_names = os.path.normpath(node_path).split(os.path.sep)
+
+        if node_names == ['.']:
+            return self._root
+
+        node = self._root
+        for name in node_names:
+            if node is None:
+                return None
+            node = node.children.get(name)
+        return node
+
+    def get_or_create_node_by_path(self, node_path, node_factory):
+        """Search and return a node from its file path. Create it if needed.
+
+        If the node don't exists, it will be created using a constructor
+        provided by the caller. All missing nodes between the selected node and
+        the root will be created as instances of FolderNode.
 
         Args:
-            node: the node where to assign the callback
-            target_list<list<string>>:  if the callback is called, a new call
-                to the method acquire will occur, the method need to know
-                the list of target
-            task<_Task>: the waiting task
-            prior_acquire<bool>: same as target_list
-
+            node_path (Text): path of the node, relative to the root folder.
+            node_factory (Callable[[Text], BaseNode]): constructor of the leaf
+                node.
         Return:
-            the generated Promise
+            BaseNode: node referenced by the path.
         """
-        df = Deferred()
+        node_path = ensure_unicode(node_path)
+        node_names = os.path.normpath(node_path).split(os.path.sep)
 
-        def callback(cancel=False, release_aquired_lock=True):
-            if cancel:
-                if release_aquired_lock:
-                    self.release(target_list, task)
-                df.reject(RedundantTaskInterruption())
-            else:
-                p = self.acquire(target_list, task, prior_acquire)
-                p.then(df.resolve, df.reject)
+        if not self._root:
+            self._root = FolderNode(u'.')
 
-        node.set_waiting_task(task, callback)
+        if node_names == ['.']:
+            return self._root
 
-        return df.promise
-
-    def _steal_sync_task_on_children(self, node):
-        """ This method steals every child node locked by every
-            waiting sync_task.
-            The sub sync_task will also be canceled
-
-        Args:
-            node: the node where will be set the new sync_task.
-
-        """
-
-        # iterate only on sub directory node
-        for child_dir_node in node.traverse_only_directory_node():
-            # no sync_task on this node
-            if child_dir_node.waiting_task is None:
-                continue
-
-            # cancel sync_task on this node
-            child_dir_node.cancel_waiting_task()
-
-            # the node is running, can't steal its lock
-            if child_dir_node.is_lock_owner():
-                continue
-
-            # collect waiting nodes
-            node.waiting_nodes.extend(child_dir_node.waiting_nodes)
-            del node.waiting_nodes[:]
-
-            # collect locked nodes
-            for sub_child_dir_node in child_dir_node.traverse():
-                if sub_child_dir_node.lock_owner == child_dir_node:
-                    sub_child_dir_node.lock_owner = node
-
-    def _lock_children(self, starting_node):
-        """ This method tries to lock every child nodes, internal or
-            external node.
-
-            The starting_node won't be locked by this method.
-
-        Arg:
-            starting_node: the method will start to search nodes to lock
-                in the children of this node.
-
-        Return:
-            If the algorithm meets a node locked by another process, it stops
-            the traversal an returns this node.  If every nodes have been
-            locked, the algorithm returns None.
-        """
-
-        def explore(node):
-            return node.has_children_unlocked()
-
-        def collect(node):
-            return isinstance(node, FileNode)
-
-        for file_node in starting_node.traverse(explore, collect):
-            if file_node.is_locked():
-                if file_node.lock_owner is starting_node:
-                    continue
+        node = self._root
+        for idx, name in enumerate(node_names):
+            parent = node
+            node = parent.children.get(name)
+            if node is None:
+                if idx + 1 == len(node_names):
+                    # leaf
+                    node = node_factory(name)
                 else:
-                    return file_node
+                    node = FolderNode(name)
+                parent.add_child(node)
+        return node
 
-            file_node.lock(owner=starting_node)
+    def set_tree_not_sync(self):
+        """Set all tree nodes as not sync."""
+        with self.lock:
+            if self._root:
+                self._root.set_all_hierarchy_not_sync()
 
-            parent_node = file_node
-            while parent_node.parent != starting_node:
-                parent_node = parent_node.parent
-                parent_node.increment_children_locked_count()
+    def load(self, data):
+        """Load the tree from JSON data.
 
-                if parent_node.has_children_unlocked():
-                    break
+        There is two format used to store data. The "legacy" format (version
+        prior to 0.4.0) and the actual one. If the legacy format is detected,
+        `load()` will call `_legacy_load()`.
 
-                parent_node.lock(owner=starting_node)
+        The `data` dict contains two members:
+        - 'version' contains the version format, and should be "2"
+        - 'root': root node representing the top-level folder. If there is no
+            information, "root" can be None.
 
-            # TODO what about empty sub directory ?
-            #   no supposed to exist in the tree
+        Each node has the following attributes:
+        - "type": one of "FILE" or "FOLDER".
+        - "children" (Optional[Dict]): list of children, under the form
+        {u'name': node_def}.
+        - "state" (Optional[Dict]): None, or dict representing the content of
+            the node. Each Node subclass has its own values.
+            FileNode have always two attributes `local_hash` and `remote_hash`.
 
-        return None
+        If an attribute is not present, it's considered equal as a None value.
 
-    def _use_the_new_task(self, node, new_task):
-        """ This method is the brain of the merge task algorithm.
-            It will decide if a new task on a path must be discarded or
-            be kept.
-
-            It is not only a decision algorithm, it will sometime make a part
-            of the merging process, depending the case.
-
-            NOTE: the merge part for the sync_task occur in the aquire process
+        Examples:
+            >>> data={
+            ...     'version': 2,
+            ...     'root': {
+            ...         'type': 'FOLDER',
+            ...         'state': None,
+            ...         'children': {
+            ...             'file.txt': {
+            ...                 'type': 'FILE',
+            ...                 'state': {
+            ...                     'local_hash':
+            ...                         '3f4855158eb3266a74cf3a5d78b361cc',
+            ...                     'remote_hash':
+            ...                         'd32239bcb673463ab874e80d47fae504'
+            ...                 }
+            ...             }
+            ...         }
+            ...     }
+            ... }
+            >>> tree = indexTree()
+            >>> tree.load(data)
 
         Args:
-            node: the node where a task is already waiting
-            new_task<_Task>: the new task that would like to lock this node
+            data (Dict): index tree data, crated by an `export_data()` call.
+        """
+        # Legacy format don't have a 'version' attribute, but it could have a
+        # "version" file.
+        try:
+            format_version = int(data.get('version', 1))
+        except TypeError:
+            format_version = 1
 
-        Return:
-            False if the new_task should be discarded
-            True if the old_task is replaced by the new_task
+        if format_version is 1:
+            self._legacy_load(data)
+            return
+
+        # TODO: assert version is 2 ?
+
+        root_def = data.get('root')
+        if root_def:
+            with self.lock:
+                self._root = self._load_node(u'.', root_def)
+
+    def _load_node(self, name, node_def):
+        """Create a node instance from a node definition.
+
+        Args:
+            name (Text): name of the node.
+            node_def (Dict): node definition. See `load(data)`.
+        Returns:
+            baseNode: Node created from definition.
         """
 
-        task = node.waiting_task
-
-        if isinstance(task, AddedLocalFilesTask):
-            if isinstance(new_task, MovedLocalFilesTask):
-                node.invalidate_local()
-                return True
-
-            if isinstance(new_task, RemovedLocalFilesTask):
-                return True
-
-            if isinstance(new_task, AddedLocalFilesTask):
-                if new_task.create_mode:
-                    task.create_mode = True
-
-                return False
-
-            elif (isinstance(new_task, AddedRemoteFilesTask) or
-                    isinstance(new_task, RemovedRemoteFilesTask)):
-                node.invalidate_remote()
-                return False
-
-        elif isinstance(task, RemovedLocalFilesTask):
-            if isinstance(new_task, MovedLocalFilesTask):
-                node.invalidate_local()
-                return True
-
-            if isinstance(new_task, AddedLocalFilesTask):
-                return True
-
-            if isinstance(new_task, AddedRemoteFilesTask):
-                node.invalidate_local()
-                return True
-
-            if isinstance(new_task, RemovedRemoteFilesTask):
-                node.invalidate_remote()
-                return False
-
-        elif isinstance(task, AddedRemoteFilesTask):
-            if isinstance(new_task, MovedLocalFilesTask):
-                node.invalidate_remote()
-                return True
-
-            if isinstance(new_task, RemovedRemoteFilesTask):
-                return True
-
-            if (isinstance(new_task, AddedLocalFilesTask) or
-                    isinstance(new_task, RemovedLocalFilesTask)):
-                node.invalidate_local()
-                return False
-
-        elif isinstance(task, RemovedRemoteFilesTask):
-            if isinstance(new_task, MovedLocalFilesTask):
-                node.invalidate_remote()
-                return True
-
-            if isinstance(new_task, AddedRemoteFilesTask):
-                return True
-
-            if isinstance(new_task, AddedLocalFilesTask):
-                node.invalidate_remote()
-                return True
-
-            if isinstance(new_task, RemovedLocalFilesTask):
-                node.invalidate_local()
-                return False
-
-        elif isinstance(task, MovedLocalFilesTask):
-            if isinstance(new_task, MovedLocalFilesTask):
-                node_path = node.get_complete_path()
-
-                task_src = task.target_list[0]
-                task_dest = task.target_list[1]
-
-                new_task_src = new_task.target_list[0]
-                new_task_dest = new_task.target_list[1]
-
-                # copy of the same move, discard!
-                if task_src == new_task_src and task_dest == new_task_dest:
-                    return False
-
-                if node_path == task_src:
-                    if node_path == new_task_src:
-                        # nothing is locked yet
-                        # a moved_task.src is waiting on the node
-                        # a new moved_task.src is trying to aquire the node
-
-                        self._replace_task_with_create_task(node, task)
-                        node.invalidate_remote()
-
-                        trigger_local_create_task(task_dest, task)
-                        dest_node = self.root.get_or_insert_node(task_dest,
-                                                                 create=False)
-                        if dest_node is not None:
-                            # invalide the remote hash ensure a check of the
-                            # server state in the local create task
-                            dest_node.invalidate_remote()
-
-                        trigger_local_create_task(new_task_dest, new_task)
-                        dest_node = self.root.get_or_insert_node(
-                            new_task_dest,
-                            create=False)
-                        if dest_node is not None:
-                            # invalide the remote hash ensure a check of the
-                            # server state in the local create task
-                            dest_node.invalidate_remote()
-
-                        return False
-                    else:
-                        # new_task_src is locked
-                        # a moved_task.src is waiting on the node
-                        # a new moved_task.dst is trying to aquire the node
-
-                        create_task = trigger_local_create_task(task_dest,
-                                                                task)
-                        dest_node = self.root.get_or_insert_node(task_dest,
-                                                                 create=False)
-
-                        if dest_node is not None:
-                            # invalide the remote hash ensure a check of the
-                            # server state in the local create task
-                            dest_node.invalidate_remote()
-                            if dest_node.is_invalidate_local():
-                                create_task.create_task = False
-
-                        return True
-                else:
-                    if node_path == new_task_src:
-                        # task_src is locked
-                        # a moved_task.dst is waiting on the node
-                        # a new moved_task.src is trying to aquire the node
-
-                        # execute the cancel task outside the replace task
-                        # to keep the lock on the aquired source node
-                        node.cancel_waiting_task(
-                            remove_from_waiting_list=False,
-                            release_aquired_lock=False)
-
-                        self._replace_task_with_delete_task(node,
-                                                            task,
-                                                            cancel_task=False)
-
-                        moved_task = trigger_local_moved_task(task_src,
-                                                              new_task_dest,
-                                                              task)
-
-                        src_node = self.root.get_or_insert_node(task_src,
-                                                                create=False)
-                        if (src_node is not None and
-                                isinstance(src_node, FileNode)):
-                            if src_node.executing_task is task:
-                                src_node.executing_task = moved_task
-
-                        return False
-                    else:
-                        # task_src is locked
-                        # new_task_src is locked
-                        # a moved_task.dst is waiting on the node
-                        # a new moved_task.dst is trying to aquire the node
-
-                        trigger_local_delete_task(task_src, task)
-                        return True
-
-            elif (isinstance(new_task, AddedRemoteFilesTask) or
-                  isinstance(new_task, RemovedRemoteFilesTask)):
-                node.invalidate_remote()
-            elif (isinstance(new_task, AddedLocalFilesTask) or
-                  isinstance(new_task, RemovedLocalFilesTask)):
-                node.invalidate_local()
+        if node_def.get('type') == "FOLDER":
+            node = FolderNode(name)
         else:
-            _logger.error("Unkown task type %s, don't know if it must kept"
-                          " or discarded." % type(task))
+            node = FileNode(name)
 
-        return False
+        node.set_state(node_def.get('state'))
+        for (name, node_def) in node_def.get('children', {}).items():
+            node.add_child(self._load_node(name, node_def))
+        return node
 
-    def _replace_task(self,
-                      node,
-                      filename,
-                      new_task,
-                      cancel_task=True):
-        """ This method replace a waiting task with another one.
+    def _legacy_load(self, data):
+        """Load index tree from legacy JSON file format.
 
-        Args:
-            node: the node where the new task has to be set
-            filename<string>: the access path to the node, it will be used
-                to generate the new callback
-            new_task<_Task>: the new waiting task
-            cancel_task<bool>: if set to true, the previous waiting task will
-                be cancelled. If set to False, the previous task has to be
-                cencelled outside of this method.
-        """
+        data is a flatten Dict. Each entry represent a file.
+        There is no representation of folder. The presence of folder is
+        determined from the presence of separator '/' in file paths.
 
-        if cancel_task:
-            node.cancel_waiting_task(remove_from_waiting_list=False)
+        Examples:
 
-        promise = self._generate_waiting_promise(node,
-                                                 (filename,),
-                                                 new_task)
-
-        self.promise_waiting_for_task[new_task] = promise
-        add_task(new_task, priority=True)
-
-    def _replace_task_with_create_task(self,
-                                       node,
-                                       previous_task,
-                                       cancel_task=True):
-        """ This method replace a waiting task with an AddedLocalFilesTask.
+            >>> data = {
+            ...     u'file.txt': ('3f4855158eb3266a74cf3a5d78b361cc',
+            ...                   'd32239bcb673463ab874e80d47fae504')
+            ...     u'folder/file.txt': ('fcd56b5ada439b96cd1f3809df533f00',
+            ...                          None)
+            ... }
+            >>> tree = IndexTree()
+            >>> tree.load(data)
 
         Args:
-            node: the node where the new task has to be set
-            previous_task<_Task>: a previous waiting task working in the same
-                local container.
-            cancel_task<bool>: if set to true, the previous waiting task will
-                be cancelled. If set to False, the previous task has to be
-                cencelled outside of this method.
-
-        Return:
-            the new AddedLocalFilesTask
+            data (Dict[Text, Tuple[Optional[str], Optional[str]]]): dictionary
+                of pair to insert into the index. The key is the file path and
+                the value is a tuple of two hashes, the first one is the local
+                hash, and the second is the remote hash.
         """
+        with self.lock:
+            self._root = None
+            for path, (local_hash, remote_hash,) in data.items():
+                node = self.get_or_create_node_by_path(path, FileNode)
+                node.set_state({'local_hash': local_hash,
+                                'remote_hash': remote_hash})
 
-        filename = node.get_complete_path()
-        create_task = AddedLocalFilesTask(previous_task.container,
-                                          (filename,),
-                                          previous_task.local_container,
-                                          create_mode=True)
-        self._replace_task(node, filename, create_task, cancel_task)
-        return create_task
+    def export_data(self):
+        """Export all persistent data of the tree.
 
-    def _replace_task_with_delete_task(self,
-                                       node,
-                                       previous_task,
-                                       cancel_task=True):
-        """ This method replace a waiting task with a RemovedLocalFilesTask.
+        Exported can be used to reload an index tree later (by calling the
+        `load()` method).
+
+        Returns:
+            Dict: index data, under the form of Dict and List directly
+                convertible to JSON format.
+        """
+        with self.lock:
+            root = None
+            if self._root:
+                root = self._export_node(self._root)
+
+            return {
+                'version': 2,
+                'root': root
+            }
+
+    def _export_node(self, node):
+        """Export node in a serialized format convertible to JSON.
 
         Args:
-            node: the node where the new task has to be set
-            previous_task<_Task>: a previous waiting task working in the same
-                local container.
-            cancel_task<bool>: if set to true, the previous waiting task will
-                be cancelled. If set to False, the previous task has to be
-                cencelled outside of this method.
+            node (BaseNode): node to export.
+        Returns:
+            Dict: serialized node
+        """
+        if isinstance(node, FileNode):
+            node_type = "FILE"
+        else:
+            node_type = "FOLDER"
 
-        Return:
-            the new RemovedLocalFilesTask
+        result = {
+            'type': node_type
+        }
+        if node.state is not None:
+            result['state'] = node.state
+        if node.children:
+            result['children'] = {name: self._export_node(child)
+                                  for name, child in node.children.items()}
+        return result
+
+    def get_remote_hashes(self):
+        """Get the flatten list of remote hashes of all file nodes.
+
+        Note:
+            Nodes that are not instance of FileNode are ignored.
+
+        Returns:
+            Dict[Text, str]: dict of all files, with file path as key and
+                remote hash as value.
         """
 
-        filename = node.get_complete_path()
-        delete_task = RemovedLocalFilesTask(previous_task.container,
-                                            (filename,),
-                                            previous_task.local_container)
+        with self.lock:
+            if not self._root:
+                return {}
+            return self._get_remote_hashes(self._root, {})
 
-        self._replace_task(node, filename, delete_task, cancel_task)
-        return delete_task
+    def _get_remote_hashes(self, node, acc):
+        if isinstance(node, FileNode) and node.state:
+            if 'remote_hash' in node.state:
+                acc[node.get_full_path()] = node.state['remote_hash']
+        for child in node.children.values():
+            self._get_remote_hashes(child, acc)
+        return acc
+
+    def is_dirty(self):
+        """Determine if the tree is dirty or sync.
+
+        An empty tree is always sync.
+
+        Returns:
+            bool: True if the tree is dirty; otherwise False.
+        """
+        with self.lock:
+            return bool(self._root and self._root.dirty)

@@ -19,14 +19,6 @@ from .filesync.utils import FakeFile
 
 # backup module before mock
 OLD_FILEWATCHER = csp.FileWatcher
-OLD_ADDED_LOCAL_FILES = csp.filesync.added_local_files
-OLD_ADDED_REMOTE_FILES = csp.filesync.added_remote_files
-OLD_CHANGED_LOCAL_FILES = csp.filesync.changed_local_files
-OLD_CHANGED_REMOTE_FILES = csp.filesync.changed_remote_files
-OLD_MOVED_LOCAL_FILES = csp.filesync.moved_local_files
-OLD_REMOVED_LOCAL_FILES = csp.filesync.removed_local_files
-OLD_REMOVED_REMOTE_FILES = csp.filesync.removed_remote_files
-OLD_SYNC_FOLDER = csp.filesync.sync_folder
 OLD_QUOTA_TIMEOUT = csp.ContainerSyncPool.QUOTA_TIMEOUT
 
 OLD_LOGGER_HANDLERS = None
@@ -195,14 +187,6 @@ class TestContainerSyncPool(object):
     @classmethod
     def teardown_class(cls):
         csp.FileWatcher = OLD_FILEWATCHER
-        csp.filesync.added_local_files = OLD_ADDED_LOCAL_FILES
-        csp.filesync.added_remote_files = OLD_ADDED_REMOTE_FILES
-        csp.filesync.changed_local_files = OLD_CHANGED_LOCAL_FILES
-        csp.filesync.changed_remote_files = OLD_CHANGED_REMOTE_FILES
-        csp.filesync.moved_local_files = OLD_MOVED_LOCAL_FILES
-        csp.filesync.removed_local_files = OLD_REMOVED_LOCAL_FILES
-        csp.filesync.removed_remote_files = OLD_REMOVED_REMOTE_FILES
-        csp.filesync.sync_folder = OLD_SYNC_FOLDER
         csp.ContainerSyncPool.QUOTA_TIMEOUT = OLD_QUOTA_TIMEOUT
 
     def setup_method(self, method):

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import tempfile
+from bajoo.index import IndexTree
 from bajoo.index.file_node import FileNode
-from bajoo.index.new_index_tree import IndexTree
 from bajoo.local_container import LocalContainer
 
 

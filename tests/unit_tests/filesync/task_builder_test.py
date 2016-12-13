@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from bajoo.filesync import MovedLocalFilesTask
+from bajoo.filesync.moved_local_files_task import MovedLocalFilesTask
 from bajoo.filesync.task_builder import TaskBuilder
 from bajoo.index.hints import (DeletedHint, DestMoveHint, ModifiedHint,
                                SourceMoveHint)

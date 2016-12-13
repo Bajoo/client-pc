@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import unicode_literals
+from bajoo.index import IndexTree
 from bajoo.index.base_node import BaseNode
-from bajoo.index.new_index_tree import IndexTree
 from bajoo.index.file_node import FileNode
 from bajoo.index.folder_node import FolderNode
 
