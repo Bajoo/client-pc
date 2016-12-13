@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from .abstract_task import _Task
-from .added_local_files_task import PushTaskMixin
-from .task_consumer import add_task
 
 import errno
 import logging
@@ -14,7 +12,7 @@ TASK_NAME = 'remote_deletion'
 _logger = logging.getLogger(__name__)
 
 
-class RemovedRemoteFilesTask(_Task, PushTaskMixin):
+class RemovedRemoteFilesTask(_Task):
     @staticmethod
     def get_type():
         return TASK_NAME
@@ -36,11 +34,7 @@ class RemovedRemoteFilesTask(_Task, PushTaskMixin):
             _logger.debug('No local information available, recreate on server')
 
             # send back the file
-            task = self._create_push_task(target.rel_path)
-            self._release_index()  # do not update the index
-            result = yield add_task(task)
-            self._task_errors.extend(result)
-
+            self._create_push_task(target.rel_path)
             return
 
         with open(src_path, 'rb') as file_content:
@@ -51,11 +45,7 @@ class RemovedRemoteFilesTask(_Task, PushTaskMixin):
                           'recreate on server')
 
             # send back the file
-            task = self._create_push_task(target.rel_path)
-            self._release_index()  # do not update the index
-            result = yield add_task(task)
-            self._task_errors.extend(result)
-
+            self._create_push_task(target.rel_path)
             return
 
         try:
@@ -69,3 +59,4 @@ class RemovedRemoteFilesTask(_Task, PushTaskMixin):
 
         target.set_hash(None, None)
         return
+        yield  # make it a generator

@@ -18,6 +18,7 @@ def teardown_module(module):
 
 
 def generate_task(tester, target):
+    tester.local_container.inject_empty_node(target)
     return AddedRemoteFilesTask(
         tester.container,
         (target,
@@ -115,17 +116,14 @@ class Test_Remote_and_Local_File_exist(TestTaskAbstract):
         self.assert_conflict(count=1)
         conflict_filename = self.conflict_list[0]
 
-        downloaded = (self.local_file.filename, conflict_filename, )
-        uploaded = (conflict_filename, )
-        self.check_action(downloaded=downloaded, uploaded=uploaded)
+        downloaded = (self.local_file.filename, )
+        self.check_action(downloaded=downloaded)
 
         self.assert_hash_in_index(self.local_file.filename,
                                   self.remote_file.local_hash,
                                   self.remote_file.remote_hash)
 
-        self.assert_hash_in_index(conflict_filename,
-                                  self.local_file.local_hash,
-                                  conflict_filename + "HASH_UPLOADED")
+        self.assert_node_exists_and_file_exists(conflict_filename)
 
         assert_content(self.local_file.descr.name, self.remote_file.local_hash)
         conflict_path = os.path.join(tempfile.gettempdir(), conflict_filename)
@@ -155,17 +153,14 @@ class Test_Remote_and_Local_File_exist(TestTaskAbstract):
         self.assert_conflict(count=1)
         conflict_filename = self.conflict_list[0]
 
-        downloaded = (self.local_file.filename, conflict_filename, )
-        uploaded = (conflict_filename, )
-        self.check_action(downloaded=downloaded, uploaded=uploaded)
+        downloaded = (self.local_file.filename, )
+        self.check_action(downloaded=downloaded)
 
         self.assert_hash_in_index(self.local_file.filename,
                                   self.remote_file.local_hash,
                                   self.remote_file.remote_hash)
 
-        self.assert_hash_in_index(conflict_filename,
-                                  self.local_file.local_hash,
-                                  conflict_filename + "HASH_UPLOADED")
+        self.assert_node_exists_and_file_exists(conflict_filename)
 
         assert_content(self.local_file.descr.name, self.remote_file.local_hash)
         conflict_path = os.path.join(tempfile.gettempdir(), conflict_filename)

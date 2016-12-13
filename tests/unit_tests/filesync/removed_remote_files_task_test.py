@@ -4,6 +4,7 @@
 
 from bajoo.filesync.removed_remote_files_task import RemovedRemoteFilesTask
 from bajoo.filesync.task_consumer import start, stop
+from bajoo.index.hints import ModifiedHint
 from .utils import FakeFile, TestTaskAbstract
 
 import os
@@ -18,6 +19,7 @@ def teardown_module(module):
 
 
 def generate_task(tester, target):
+    tester.local_container.inject_empty_node(target)
     return RemovedRemoteFilesTask(tester.container, (target,),
                                   tester.local_container)
 
@@ -55,19 +57,16 @@ class Test_file_exists(TestTaskAbstract):
 
         self.assert_not_in_index(self.file.filename)
 
-    def test_no_local_hash(self):
+    def test_no_hash(self):
         self.local_container.inject_hash(self.file.filename,
                                          local_hash=None,
-                                         remote_hash=self.file.remote_hash)
+                                         remote_hash=None)
 
         self.execute_task(generate_task(self, self.file.filename))
         self.assert_no_error_on_task()
-        flist = (self.file.filename, )
-        self.check_action(uploaded=flist, getinfo=flist)
+        self.check_action()
 
-        self.assert_hash_in_index(self.file.filename,
-                                  self.file.local_hash,
-                                  self.file.filename + "HASH_UPLOADED")
+        self.assert_node_has_hint(self.file.filename, local_hint=ModifiedHint)
 
     def test_local_file_has_been_updated(self):
         self.local_container.inject_hash(self.file.filename,
@@ -76,9 +75,6 @@ class Test_file_exists(TestTaskAbstract):
 
         self.execute_task(generate_task(self, self.file.filename))
         self.assert_no_error_on_task()
-        flist = (self.file.filename, )
-        self.check_action(uploaded=flist, getinfo=flist)
+        self.check_action()
 
-        self.assert_hash_in_index(self.file.filename,
-                                  self.file.local_hash,
-                                  self.file.filename + "HASH_UPLOADED")
+        self.assert_node_has_hint(self.file.filename, local_hint=ModifiedHint)

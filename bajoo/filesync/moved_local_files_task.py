@@ -3,16 +3,11 @@
 
 # TODO: optimization: move the file server-side.
 
-import itertools
 import logging
 import os
 
 from .abstract_task import _Task
-from .added_local_files_task import PushTaskMixin
 from ..network.errors import HTTPNotFoundError
-from ..promise import Promise
-from .removed_local_files_task import RemovedTaskMixin
-from .task_consumer import add_task
 
 TASK_NAME = 'local_move'
 
@@ -36,17 +31,10 @@ class MovedStateMachineStatus(object):
         self.task = task
         self.source_target = source_target
         self.destination_target = destination_target
-        self.task_list = None
         self.remote_src_file_content = None
         self.remote_src_file_cyphered_md5 = None
         self.current_local_dest_md5 = None
         self.skip_remote_source_remove = False
-
-    def add_task(self, task):
-        if self.task_list is None:
-            self.task_list = []
-
-        self.task_list.append(add_task(task, priority=True))
 
     def get_current_local_dest_md5(self):
         if self.current_local_dest_md5 is not None:
@@ -62,7 +50,7 @@ class MovedStateMachineStatus(object):
         return self.current_local_dest_md5
 
 
-class MovedLocalFilesTask(_Task, PushTaskMixin, RemovedTaskMixin):
+class MovedLocalFilesTask(_Task):
 
     def __init__(self, container, target, local_container, parent_path=None):
 
@@ -191,12 +179,6 @@ class MovedLocalFilesTask(_Task, PushTaskMixin, RemovedTaskMixin):
                 _logger.error('Unknown next_action <%s>' % str(next_action))
                 next_action = ACTION_EXIT
 
-        if state.task_list is not None and len(state.task_list) > 0:
-            self._release_index()
-            results = yield Promise.all(state.task_list)
-            failed_tasks = itertools.chain(*results)
-            self._task_errors.extend(failed_tasks)
-
         return
 
     def check_local_source_file(self, state):
@@ -206,21 +188,15 @@ class MovedLocalFilesTask(_Task, PushTaskMixin, RemovedTaskMixin):
 
         _logger.debug('Local source file exists. Abort!')
 
-        new_file = state.source_target.local_md5 is None
-        state.add_task(self._create_push_task(state.source_target.rel_path,
-                                              new_file))
+        self._create_push_task(state.source_target.rel_path)
 
         dest_path = os.path.join(self.local_path,
                                  state.destination_target.rel_path)
         if os.path.exists(dest_path):
-            new_file = state.destination_target.local_md5 is None
-            state.add_task(self._create_push_task(
-                state.destination_target.rel_path,
-                new_file))
+            self._create_push_task(state.destination_target.rel_path)
 
         else:
-            state.add_task(self._create_a_remove_task(
-                state.destination_target.rel_path))
+            self._create_a_remove_task(state.destination_target)
 
         return ACTION_EXIT
 
@@ -232,12 +208,10 @@ class MovedLocalFilesTask(_Task, PushTaskMixin, RemovedTaskMixin):
 
         _logger.debug('Local destination file does not exist. Abort!')
 
-        state.add_task(self._create_a_remove_task(
-            state.destination_target.rel_path))
+        self._create_a_remove_task(state.destination_target)
 
         # at this point, local_src_file has been localy deleted
-        state.add_task(self._create_a_remove_task(
-            state.source_target.rel_path))
+        self._create_a_remove_task(state.source_target)
 
         return ACTION_EXIT
 
@@ -359,7 +333,7 @@ class MovedLocalFilesTask(_Task, PushTaskMixin, RemovedTaskMixin):
             self._write_downloaded_file(remote_dest_file_content,
                                         state.destination_target)
 
-            state.add_task(self._create_push_task(conflict_name, True))
+            self._create_push_task(conflict_name)
 
         else:
             _logger.debug('Remote dest file is equal to local file. (2)')

@@ -2,9 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from .abstract_task import _Task
-from .added_local_files_task import PushTaskMixin
-from .added_remote_files_task import AddedRemoteTaskMixin
-from .task_consumer import add_task
 from ..network.errors import HTTPNotFoundError
 
 import logging
@@ -15,15 +12,7 @@ TASK_NAME = 'local_deletion'
 _logger = logging.getLogger(__name__)
 
 
-class RemovedTaskMixin(object):
-
-    def _create_a_remove_task(self, rel_path):
-        return RemovedLocalFilesTask(self.container,
-                                     (rel_path,), self.local_container,
-                                     parent_path=self._parent_path)
-
-
-class RemovedLocalFilesTask(_Task, PushTaskMixin, AddedRemoteTaskMixin):
+class RemovedLocalFilesTask(_Task):
 
     @staticmethod
     def get_type():
@@ -41,11 +30,10 @@ class RemovedLocalFilesTask(_Task, PushTaskMixin, AddedRemoteTaskMixin):
             _logger.debug('deleted target is a directory. Nothing to do.')
             return
 
-        task = None
         if os.path.exists(os.path.join(self.local_path, target.rel_path)):
             _logger.debug('File still exists, abort deletion!')
 
-            task = self._create_push_task(target.rel_path, create_mode=True)
+            self._create_push_task(target.rel_path)
         elif target.remote_md5 is not None:
             try:
                 metadata = yield self.container.get_info_file(target.rel_path)
@@ -56,7 +44,7 @@ class RemovedLocalFilesTask(_Task, PushTaskMixin, AddedRemoteTaskMixin):
                     yield self.container.remove_file(target.rel_path)
                     target.set_hash(None, None)
                 else:
-                    task = self._create_added_remote_task(target.rel_path)
+                    self._create_added_remote_task(target)
                     _logger.debug('File on server is different, '
                                   'do not remove the distant file')
 
@@ -65,14 +53,9 @@ class RemovedLocalFilesTask(_Task, PushTaskMixin, AddedRemoteTaskMixin):
                 _logger.debug('The file to delete is already gone:'
                               'nothing to do.')
         else:
-            task = self._create_added_remote_task(target.rel_path)
+            self._create_added_remote_task(target)
             _logger.debug('No local information about the distant file.  '
                           'File will be downloaded again if stil exists on'
                           ' server')
-
-        if task is not None:
-            self._release_index()
-            result = yield add_task(task)
-            self._task_errors.extend(result)
 
         return

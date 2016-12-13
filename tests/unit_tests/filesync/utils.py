@@ -139,16 +139,32 @@ class TestTaskAbstract(object):
         assert len(self.conflict_list) == count
 
     def assert_hash_in_index(self, path, local_hash, remote_hash):
-        node = self.local_container.index.get_node(path)
+        node = self.local_container.index_tree.get_node_by_path(path)
         assert node is not None
-        assert hasattr(node, 'local_md5')
-        assert hasattr(node, 'remote_md5')
-
-        assert node.local_md5 == local_hash
-        assert node.remote_md5 == remote_hash
+        local_md5, remote_md5 = node.get_hashes()
+        assert local_md5 == local_hash
+        assert remote_md5 == remote_hash
 
     def assert_not_in_index(self, path):
-        assert self.local_container.index.get_node(path) is None
+        node = self.local_container.index_tree.get_node_by_path(path)
+        assert node is None or node.get_hashes() == (None, None)
+
+    def assert_node_exists_and_file_exists(self, path):
+        node = self.local_container.index_tree.get_node_by_path(path)
+        assert node is not None
+        assert (node.exists() or
+                node.local_hint is not None or
+                node.remote_hint is not None)
+        abs_path = os.path.join(self.local_container.model.path, path)
+        assert os.path.exists(abs_path)
+
+    def assert_node_has_hint(self, path, remote_hint=None, local_hint=None):
+        node = self.local_container.index_tree.get_node_by_path(path)
+        assert node is not None
+        if remote_hint:
+            assert isinstance(node.remote_hint, remote_hint)
+        if local_hint:
+            assert isinstance(node.local_hint, local_hint)
 
 
 def assert_content(path, hash):

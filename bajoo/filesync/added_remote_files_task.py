@@ -7,23 +7,13 @@ import os
 
 from .abstract_task import _Task
 from ..network.errors import HTTPNotFoundError
-from .task_consumer import add_task
-from .added_local_files_task import PushTaskMixin
 
 TASK_NAME = 'remote_add'
 
 _logger = logging.getLogger(__name__)
 
 
-class AddedRemoteTaskMixin(object):
-
-    def _create_added_remote_task(self, rel_path):
-        return AddedRemoteFilesTask(self.container,
-                                    (rel_path,), self.local_container,
-                                    parent_path=self._parent_path)
-
-
-class AddedRemoteFilesTask(_Task, PushTaskMixin):
+class AddedRemoteFilesTask(_Task):
 
     @staticmethod
     def get_type():
@@ -98,10 +88,6 @@ class AddedRemoteFilesTask(_Task, PushTaskMixin):
             self._write_downloaded_file(remote_file, target)
 
         # push the conflict file
-        task = self._create_push_task(conflicting_name)
+        self._create_push_task(conflicting_name)
         target.set_hash(remote_uncyphered_md5, metadata['hash'])
-        self._release_index()
-        result = yield add_task(task)
-        self._task_errors.extend(result)
-
         return

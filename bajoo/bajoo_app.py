@@ -112,6 +112,7 @@ class BajooApp(wx.App):
         self.app_status = AppStatus(AppStatus.NOT_CONNECTED)
         self._container_sync_pool = ContainerSyncPool(
             self.app_status, self._on_sync_error)
+        self._container_sync_pool.start()
         self._passphrase_manager = None
         self._exit_flag = False  # When True, the app is exiting.
 
@@ -881,6 +882,7 @@ class BajooApp(wx.App):
         self.app_status.value = AppStatus.NOT_CONNECTED
         self._container_sync_pool = ContainerSyncPool(
             self.app_status, self._on_sync_error)
+        self._container_sync_pool.start()
         self._container_list.stop()
         self._container_list = None
 

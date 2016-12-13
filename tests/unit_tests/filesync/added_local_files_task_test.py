@@ -19,6 +19,7 @@ def teardown_module(module):
 
 
 def generate_task(tester, target, create_mode=False):
+    tester.local_container.inject_empty_node(target)
     return AddedLocalFilesTask(
         tester.container,
         (target,
@@ -126,9 +127,9 @@ class Test_Local_file_exists(TestTaskAbstract):
                                   self.local_file.local_hash,
                                   "plop")
 
-    def test_RemoteHashNotAvailableAndFileDoesNotExistOnServer(self):
+    def test_NoHashAvailableAndFileDoesNotExistOnServer(self):
         self.local_container.inject_hash(path=self.local_file.filename,
-                                         local_hash="toto",
+                                         local_hash=None,
                                          remote_hash=None)
 
         self.execute_task(generate_task(self, target=self.local_file.filename))
@@ -144,9 +145,9 @@ class Test_Local_file_exists(TestTaskAbstract):
             self.local_file.filename +
             "HASH_UPLOADED")
 
-    def test_RemoteHashNotAvailableAndFileExistsOnServerAndEqual(self):
+    def test_NoHashAvailableAndFileExistsOnServerAndEqual(self):
         self.local_container.inject_hash(path=self.local_file.filename,
-                                         local_hash="toto",
+                                         local_hash=None,
                                          remote_hash=None)
 
         self.container.inject_remote(path=self.local_file.filename,
@@ -191,28 +192,23 @@ class Test_Conflict(TestTaskAbstract):
         self.assert_conflict(count=1)
         conflict_filename = self.conflict_list[0]
 
-        downloaded = (self.local_file.filename, conflict_filename,)
-        uploaded = (conflict_filename, )
+        downloaded = (self.local_file.filename,)
         getinfo = (self.local_file.filename, )
         self.check_action(downloaded=downloaded,
-                          uploaded=uploaded,
                           getinfo=getinfo)
+        self.assert_node_exists_and_file_exists(conflict_filename)
 
         self.assert_hash_in_index(self.local_file.filename,
                                   remote_file.local_hash,
                                   remote_file.remote_hash)
 
-        self.assert_hash_in_index(conflict_filename,
-                                  self.local_file.local_hash,
-                                  conflict_filename + "HASH_UPLOADED")
-
         conflict_path = os.path.join(tempfile.gettempdir(), conflict_filename)
         assert_content(conflict_path, self.local_file.local_hash)
         assert_content(self.local_file.descr.name, remote_file.local_hash)
 
-    def test_RemoteHashNotAvailableAndFileExistsOnServerAndNotEqual(self):
+    def test_NoHashAvailableAndFileExistsOnServerAndNotEqual(self):
         self.local_container.inject_hash(path=self.local_file.filename,
-                                         local_hash="toto",
+                                         local_hash=None,
                                          remote_hash=None)
 
         remote_file = FakeFile()
@@ -228,18 +224,14 @@ class Test_Conflict(TestTaskAbstract):
         self.assert_conflict(count=1)
         conflict_filename = self.conflict_list[0]
 
-        downloaded = (self.local_file.filename, conflict_filename,)
-        uploaded = (conflict_filename, )
-        self.check_action(downloaded=downloaded,
-                          uploaded=uploaded)
+        downloaded = (self.local_file.filename,)
+        self.check_action(downloaded=downloaded)
+
+        self.assert_node_exists_and_file_exists(conflict_filename)
 
         self.assert_hash_in_index(self.local_file.filename,
                                   remote_file.local_hash,
                                   remote_file.remote_hash)
-
-        self.assert_hash_in_index(conflict_filename,
-                                  self.local_file.local_hash,
-                                  conflict_filename + "HASH_UPLOADED")
 
         conflict_path = os.path.join(tempfile.gettempdir(), conflict_filename)
         assert_content(conflict_path, self.local_file.local_hash)

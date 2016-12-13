@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import abc
+import errno
 import hashlib
 import logging
 import os
@@ -10,10 +11,39 @@ import sys
 import time
 
 from ..common.strings import ensure_unicode
-from .exception import RedundantTaskInterruption
 from ..encryption.errors import ServiceStoppingError
 
 _logger = logging.getLogger(__name__)
+
+
+class Target(object):
+    """Compatibility class between new node format and old Task classes."""
+    def __init__(self, index_tree, node):
+        """
+
+        Args:
+            index_tree (IndexTree): index tree of the container.
+            node (FileNode): file node member of the index tree. It's the
+                target.
+        """
+        self._index_tree = index_tree
+        self.node = node
+
+        self.rel_path = node.get_full_path()
+        self.local_md5, self.remote_md5 = node.get_hashes()
+
+    def set_hash(self, local_hash, remote_hash):
+        """Set hashes values of a FileNode."""
+        with self._index_tree.lock:
+            self.node.set_hashes(local_hash, remote_hash)
+
+    def release(self):
+        """Release the node.
+
+        Note:
+            The index tree lock must be acquired by the caller.
+        """
+        self.node.release()
 
 
 class _Task(object):
@@ -37,9 +67,7 @@ class _Task(object):
                 the container.
             local_container (LocalContainer): local container. It will be used
                 only to acquire, update and release index fragments.
-            parent_path (str, optional): if set, target path of the parent
-                task. It indicates the parent task allow this one to "acquire"
-                fragments of folder owner by itself.
+            parent_path (str, optional): Deprecated
             expected_target_count: define the minimal number of needed target
                 in the target list.
         """
@@ -53,8 +81,11 @@ class _Task(object):
         self.target_list = []
         self.local_container = local_container
         self.local_path = local_container.model.path
-        self._parent_path = parent_path
         self.nodes = []
+
+        for t in target:
+            node = self.local_container.index_tree.get_node_by_path(t)
+            self.nodes.append(Target(self.local_container.index_tree, node))
 
         if sys.platform in ['win32', 'cygwin', 'win64']:
             for t in target:
@@ -102,14 +133,6 @@ class _Task(object):
         """
 
         _logger.debug('Prepare task %s' % self)
-
-        try:
-            self.nodes = yield self.local_container.index.acquire(
-                self.target_list,
-                self)
-        except RedundantTaskInterruption:
-            yield self._task_errors
-            return
 
         self._index_acquired = True
 
@@ -162,7 +185,10 @@ class _Task(object):
 
     def _release_index(self):
         if self._index_acquired:
-            self.local_container.index.release(self.target_list, self)
+            tree = self.local_container.index_tree
+            with tree.lock:
+                for target in self.nodes:
+                    target.release()
             self._index_acquired = False
 
     def _manage_error(self, error):
@@ -207,6 +233,11 @@ class _Task(object):
         abs_path = os.path.join(self.local_path, target.rel_path)
         md5_hash = self._compute_md5_hash(file_content)
         file_content.seek(0)
+        try:
+            os.makedirs(os.path.dirname(abs_path))
+        except (IOError, OSError) as e:
+            if e.errno != errno.EEXIST:
+                raise
         with open(abs_path, 'wb') as dest_file, file_content:
             shutil.copyfileobj(file_content, dest_file)
 
@@ -237,3 +268,27 @@ class _Task(object):
             counter += 1
 
         return new_name
+
+    def _create_push_task(self, rel_path):
+        from ..index.file_node import FileNode
+        from ..index.hint_builder import HintBuilder
+        tree = self.local_container.index_tree
+
+        # create the node.
+        HintBuilder.apply_modified_event_from_path(tree,
+                                                   HintBuilder.SCOPE_LOCAL,
+                                                   rel_path, None, FileNode)
+
+    def _create_a_remove_task(self, target):
+        from ..index.hint_builder import HintBuilder
+
+        with self.local_container.index_tree.lock:
+            HintBuilder.apply_deleted_event(HintBuilder.SCOPE_REMOTE,
+                                            target.node)
+
+    def _create_added_remote_task(self, target):
+        from ..index.hint_builder import HintBuilder
+
+        with self.local_container.index_tree.lock:
+            HintBuilder.apply_modified_event(HintBuilder.SCOPE_REMOTE,
+                                             target.node)

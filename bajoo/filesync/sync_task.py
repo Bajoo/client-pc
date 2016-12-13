@@ -7,11 +7,9 @@ import os
 import sys
 
 from .abstract_task import _Task
-from .added_local_files_task import PushTaskMixin
 from ..common import config
 from .filepath import is_path_allowed, is_hidden
 from ..promise import Promise
-from .removed_local_files_task import RemovedTaskMixin
 from .task_consumer import add_task
 
 TASK_NAME = 'sync'
@@ -19,7 +17,7 @@ TASK_NAME = 'sync'
 _logger = logging.getLogger(__name__)
 
 
-class SyncTask(_Task, PushTaskMixin, RemovedTaskMixin):
+class SyncTask(_Task):
 
     @staticmethod
     def get_type():

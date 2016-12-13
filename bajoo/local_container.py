@@ -8,7 +8,7 @@ import shutil
 from .api.team_share import TeamShare
 from .common.i18n import _, N_
 from .common.strings import err2unicode
-from .index.index_tree import IndexTree
+from .index.new_index_tree import IndexTree
 from .index.index_saver import IndexSaver
 
 
@@ -63,10 +63,9 @@ class LocalContainer(object):
         self.container = container
         self.model = model
         self.is_moving = False
-        # TODO: remove cross-dependency (IndexSaver and Index) at creation.
-        self.index_saver = IndexSaver(None, self.model.path, self.model.id)
-        self.index = IndexTree(self.index_saver)
-        self.index_saver.index_tree = self.index
+        self.index_tree = IndexTree()
+        self.index_saver = IndexSaver(self.index_tree, self.model.path,
+                                      self.model.id)
 
     def check_path(self):
         """Check that the path is the folder corresponding to the container.
@@ -79,7 +78,7 @@ class LocalContainer(object):
         """
 
         try:
-            self.index.load(self.index_saver.load())
+            self.index_tree.load(self.index_saver.load())
         except (OSError, IOError) as e:
             _logger.warn('Check path of container %s failed: %s',
                          self.container.id, err2unicode(e))
@@ -180,7 +179,7 @@ class LocalContainer(object):
                 the md5 hash of the remote file.
         """
 
-        return self.index.generate_dict_with_remote_hash_only()
+        return self.index_tree.get_remote_hashes()
 
     def is_up_to_date(self):
         """
@@ -191,7 +190,7 @@ class LocalContainer(object):
         if self.status != self.STATUS_STARTED:
             return False
 
-        return not self.index.is_locked()
+        return not self.index_tree.is_dirty()
 
     def get_stats(self):
         """
