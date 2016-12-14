@@ -94,6 +94,11 @@ class _Task(object):
                 t = ensure_unicode(t)
                 self.target_list.append(t)
 
+    def _log(self, logger, msg, *args, **kwargs):
+        """Log a message with Task ID."""
+        level = kwargs.pop('level', 5)
+        logger.log(level, 'Task %s: ' + msg, hex(id(self)), *args, **kwargs)
+
     def __repr__(self):
         encoded_string = []
 
@@ -126,7 +131,7 @@ class _Task(object):
                 error occurs.
         """
 
-        _logger.debug('Prepare task %s' % self)
+        self._log(_logger, 'Prepare task %s', self)
 
         self._index_acquired = True
 
@@ -159,6 +164,7 @@ class _Task(object):
         finally:
             gen.close()
             self._release_index()
+            self._log(_logger, 'Task %s Done.', self, level=logging.DEBUG)
 
         yield None  # return
 
@@ -192,7 +198,7 @@ class _Task(object):
         should be ignored.
         """
         if not isinstance(error, ServiceStoppingError):
-            _logger.exception('Exception on %s task:' % self.get_type())
+            self._log(_logger, 'Exception', level=logging.ERROR, exc_info=True)
         raise error
 
     @abc.abstractmethod

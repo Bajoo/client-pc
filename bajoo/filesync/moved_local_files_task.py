@@ -62,7 +62,7 @@ class MovedLocalFilesTask(_Task):
         return TASK_NAME
 
     def _apply_task(self):
-        _logger.debug('Execute task %s' % self)
+        self._log(_logger, 'Execute task')
 
         state = MovedStateMachineStatus(self,
                                         self.nodes[0],
@@ -140,8 +140,8 @@ class MovedLocalFilesTask(_Task):
                     remote_dest_cyphered_md5)
 
             elif next_action == ACTION_UPLOAD_DEST_FILE:
-                _logger.debug('upload destination file: \'%s\'' %
-                              state.destination_target.rel_path)
+                self._log(_logger, 'upload destination file: \'%s\'',
+                          state.destination_target.rel_path)
 
                 dest_path = os.path.join(self.local_path,
                                          state.destination_target.rel_path)
@@ -160,13 +160,14 @@ class MovedLocalFilesTask(_Task):
 
             elif next_action == ACTION_REMOVE_REMOTE_SRC_FILE:
                 if state.skip_remote_source_remove:
-                    _logger.debug('Remote source file must be kept or does '
-                                  'not exist. Do not try to remove it.')
+                    self._log(_logger, 'Remote source file must be kept or '
+                                       'does not exist. Do not try to remove '
+                                       'it.')
 
                     next_action = ACTION_EXIT
                     continue
 
-                _logger.debug('Try to remove remote source file')
+                self._log(_logger, 'Try to remove remote source file')
 
                 try:
                     yield self.container.remove_file(
@@ -176,7 +177,8 @@ class MovedLocalFilesTask(_Task):
 
                 next_action = ACTION_EXIT
             else:
-                _logger.error('Unknown next_action <%s>' % str(next_action))
+                self._log(_logger, 'Unknown next_action <%s>',
+                          str(next_action), level=logging.ERROR)
                 next_action = ACTION_EXIT
 
         return
@@ -186,7 +188,7 @@ class MovedLocalFilesTask(_Task):
         if not os.path.exists(src_path):
             return ACTION_CHECK_LOCAL_DEST_FILE
 
-        _logger.debug('Local source file exists. Abort!')
+        self._log(_logger, 'Local source file exists. Abort!')
 
         self._create_push_task(state.source_target.rel_path)
 
@@ -206,7 +208,7 @@ class MovedLocalFilesTask(_Task):
         if os.path.exists(dest_path):
             return ACTION_CHECK_REMOTE_SRC_FILE
 
-        _logger.debug('Local destination file does not exist. Abort!')
+        self._log(_logger, 'Local destination file does not exist. Abort!')
 
         self._create_a_remove_task(state.destination_target)
 
@@ -217,12 +219,12 @@ class MovedLocalFilesTask(_Task):
 
     def check_remote_src_file(self, state, remote_md5):
         if remote_md5 is None or \
-           state.source_target.remote_md5 == remote_md5:
+                        state.source_target.remote_md5 == remote_md5:
             state.source_target.set_hash(None, None)
             return ACTION_CHECK_REMOTE_DEST_FILE
 
-        _logger.debug('Don\'t know if remote source is the same or if remote'
-                      ' hash is different, download it and check.')
+        self._log(_logger, 'Don\'t know if remote source is the same or if '
+                           'remote hash is different, download it and check.')
 
         return ACTION_RISK_OF_CONFLICT_REMOTE_SRC_FILE
 
@@ -251,27 +253,28 @@ class MovedLocalFilesTask(_Task):
             state.source_target.set_hash(None, None)
             return ACTION_CHECK_REMOTE_DEST_FILE
 
-        _logger.debug('Conflict with the remote source file!')
+        self._log(_logger, 'Conflict with the remote source file!')
         return ACTION_TRY_TO_OVERWRITE_LOCAL_DEST
 
     def try_to_overwrite_local_dest_file(self, state):
         if state.remote_src_file_content is None:
-            _logger.debug('No conflict anymore.')
+            self._log(_logger, 'No conflict anymore.')
             state.source_target.set_hash(None, None)
             return ACTION_CHECK_REMOTE_DEST_FILE
 
         current_local_dest_md5 = state.get_current_local_dest_md5()
 
         if state.source_target.local_md5 == current_local_dest_md5:
-            _logger.debug('Move remote source file to the new destination.')
+            self._log(_logger, 'Move remote source file to the new '
+                               'destination.')
 
             state.current_local_dest_md5 = self._write_downloaded_file(
                 state.remote_src_file_content,
                 state.destination_target)
             state.source_target.set_hash(None, None)
         else:
-            _logger.debug('Conflict with the file at the new destination!  '
-                          'Recreate at source.  ')
+            self._log(_logger, 'Conflict with the file at the new destination!'
+                               ' Recreate at source.')
 
             local_src_md5 = self._write_downloaded_file(
                 state.remote_src_file_content,
@@ -295,15 +298,16 @@ class MovedLocalFilesTask(_Task):
                 state.destination_target.set_hash(current_local_dest_md5,
                                                   remote_dest_cyphered_md5)
 
-                _logger.debug('Remote dest file is equal to local file. (1)')
+                self._log(_logger, 'Remote dest file is equal to local file. '
+                                   '(1)')
 
                 # no need to upload, go to the next step
                 return ACTION_REMOVE_REMOTE_SRC_FILE
 
             return ACTION_UPLOAD_DEST_FILE
 
-        _logger.debug('Don\t know if remote dest file is the same or if remote'
-                      ' hash is different, download it and check.')
+        self._log(_logger, 'Don\t know if remote dest file is the same or if '
+                           'remote hash is different, download it and check.')
 
         return ACTION_RISK_OF_CONFLICT_REMOTE_DEST_FILE
 
@@ -320,8 +324,8 @@ class MovedLocalFilesTask(_Task):
         current_local_dest_md5 = state.get_current_local_dest_md5()
 
         if current_local_dest_md5 != remote_uncyphered_md5:
-            _logger.debug('Remote dest file is different from local. '
-                          'Conflict!')
+            self._log(_logger, 'Remote dest file is different from local. '
+                               'Conflict!')
 
             conflict_name = self._generate_conflicting_file_name(
                 state.destination_target)
@@ -336,7 +340,7 @@ class MovedLocalFilesTask(_Task):
             self._create_push_task(conflict_name)
 
         else:
-            _logger.debug('Remote dest file is equal to local file. (2)')
+            self._log(_logger, 'Remote dest file is equal to local file. (2)')
             remote_dest_file_content.close()
 
         state.destination_target.set_hash(remote_uncyphered_md5,

@@ -20,7 +20,7 @@ class AddedRemoteFilesTask(_Task):
         return TASK_NAME
 
     def _apply_task(self):
-        _logger.debug('Execute task %s' % self)
+        self._log(_logger, 'Execute task')
         target = self.nodes[0]
 
         src_path = os.path.join(self.local_path, target.rel_path)
@@ -30,9 +30,9 @@ class AddedRemoteFilesTask(_Task):
             metadata, remote_file = result
             remote_md5 = metadata['hash']
         except HTTPNotFoundError:
-            _logger.debug('File disappear from the server.')
+            self._log(_logger, 'File disappear from the server.')
             if target.local_md5 is None and os.path.exists(src_path):
-                _logger.debug('A new file exists, upload it!')
+                self._log(_logger, 'A new file exists, upload it!')
                 with open(src_path, 'rb') as file_content:
                     local_md5 = self._compute_md5_hash(file_content)
                     file_content.seek(0)
@@ -47,7 +47,7 @@ class AddedRemoteFilesTask(_Task):
 
         with remote_file:
             if not os.path.exists(src_path):
-                _logger.debug('File does not exist, create it.')
+                self._log(_logger, 'File does not exist, create it.')
 
                 # Make folder
                 try:
@@ -65,7 +65,7 @@ class AddedRemoteFilesTask(_Task):
                 md5 = self._compute_md5_hash(file_content)
 
             if md5 == target.local_md5:
-                _logger.debug('Local file didn\'t change, overwite.')
+                self._log(_logger, 'Local file didn\'t change, overwite.')
                 local_md5 = self._write_downloaded_file(remote_file, target)
                 target.set_hash(local_md5, remote_md5)
                 return
@@ -74,12 +74,13 @@ class AddedRemoteFilesTask(_Task):
             remote_uncyphered_md5 = self._compute_md5_hash(remote_file)
 
             if md5 == remote_uncyphered_md5:
-                _logger.debug('Local and remote files are equals, do nothing.')
+                self._log(_logger, 'Local and remote files are equals, do '
+                                   'nothing.')
                 target.set_hash(md5, remote_md5)
                 return
 
             # duplicate
-            _logger.debug('Conflict detected, splitting file.')
+            self._log(_logger, 'Conflict detected, splitting file.')
 
             conflicting_name = self._generate_conflicting_file_name(target)
             conflicting_path = os.path.join(self.local_path, conflicting_name)
