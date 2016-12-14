@@ -52,13 +52,12 @@ class _Task(object):
     A task is executed in a separated thread (by the task_consumer service).
     The method `__call__()` will be called that in a I/O-bound thread and
     returns a Promise. In practice, the task can be executed in several steps
-    (network and encryption parts), and can be split in many subtasks (for
-    SYNC tasks).
+    (network and encryption parts).
     """
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, container, target, local_container,
-                 parent_path=None, expected_target_count=1):
+                 expected_target_count=1):
         """
         Args:
             container (Container): used to performs upload and download
@@ -67,7 +66,6 @@ class _Task(object):
                 the container.
             local_container (LocalContainer): local container. It will be used
                 only to acquire, update and release index fragments.
-            parent_path (str, optional): Deprecated
             expected_target_count: define the minimal number of needed target
                 in the target list.
         """
@@ -96,11 +94,6 @@ class _Task(object):
                 t = ensure_unicode(t)
                 self.target_list.append(t)
 
-        # list of tasks who've failed.
-        # If there is no error, it's an empty list.
-        self._task_errors = []
-        self.error = None
-
     def __repr__(self):
         encoded_string = []
 
@@ -127,9 +120,10 @@ class _Task(object):
 
         The task will be added to the ref task index during the initialization
         phase.
+
         Returns:
-            Promise<list>: List of task in error. If there is no error, returns
-                an empty list.
+            Promise<None>: Succeed when the task is done. Can fails if an
+                error occurs.
         """
 
         _logger.debug('Prepare task %s' % self)
@@ -164,9 +158,9 @@ class _Task(object):
             self._manage_error(error)
         finally:
             gen.close()
+            self._release_index()
 
-        self._release_index()
-        yield self._task_errors  # return
+        yield None  # return
 
     @staticmethod
     def get_type():
@@ -199,8 +193,7 @@ class _Task(object):
         """
         if not isinstance(error, ServiceStoppingError):
             _logger.exception('Exception on %s task:' % self.get_type())
-        self._task_errors.append(self)
-        self.error = error
+        raise error
 
     @abc.abstractmethod
     def _apply_task(self):

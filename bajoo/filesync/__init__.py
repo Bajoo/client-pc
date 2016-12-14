@@ -19,10 +19,11 @@ the dict is empty (or if some items are missing), the original hash values are
 removed. When an error occurs, the new index fragment is not generated. In this
 case, the original hash values are not modified.
 
-The promise returns a list of failed tasks. If the operation is successful,
-the list will be empty. If the task is a simple task and fails, the list will
-contains the task itself.
-The failed tasks should be executed again latter.
+The promise returns None when the task target has been synced. If an error
+occurs, the Promise fails with this error.
+The failed tasks should be executed again latter (an error can be temporary).
+Anyway, the node acquired by the task is released before the Promise fail or
+succeed.
 """
 
 from .task_consumer import add_task

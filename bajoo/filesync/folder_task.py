@@ -58,7 +58,7 @@ class FolderTask(object):
                                             file_child_list,
                                             folder_child_list)
             self.node.release()
-        yield []
+        yield None
 
     @classmethod
     def execute(cls, container_path, node, local_hint):

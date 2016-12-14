@@ -37,7 +37,6 @@ class FakeMovedLocalFilesTask(MovedLocalFilesTask):
         return AddedLocalFilesTask(self.container,
                                    (generate_random_string(),),
                                    self.local_container,
-                                   parent_path=None,
                                    create_mode=create_mode)
 
 
@@ -49,7 +48,6 @@ def generate_fake_task(tester, src_target, dst_target):
         (src_target,
          dst_target,
          ),
-        tester.local_container,
         tester.error_append)
 
 

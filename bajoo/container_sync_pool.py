@@ -448,7 +448,7 @@ class ContainerSyncPool(object):
         self._increment()
         TaskBuilder.acquire_from_task(node, task)
         f = filesync.add_task(task)
-        f = f.then(self._on_task_success, self._on_task_failed, exc_info=True)
+        f = f.then(self._on_task_success, partial(self._on_task_failed, task))
         f.then(self._save_index(local_container)).safeguard()
 
     def _save_index(self, local_container):
@@ -498,87 +498,50 @@ class ContainerSyncPool(object):
                             [local_container]) \
                 .start()
 
-    def _on_task_success(self, errors):
-        """This method can be called in three different cases:
-        A) the task and its subtasks are successful
-        B) the task is successful but a subtask failed
-        C) the task failed but it is not a "container related" error
-
-        So if the root task is in the list, the kind or error to manage here is
-        normal or local behaviour.
-        But if there is a subtask in the list, it could be a
-        "container related" error or not...
-
-        In cas B) or C), the argument _arg will be populated with the
-        failing tasks
-
-        Args:
-            errors (list(_Task)): the list of failing taks. Empty list if no
-                error occurred.
-        """
-
-        # TODO: If the task factory returns a list of failed tasks, the tasks
-        # should be retried and the concerned files should be excluded of
-        # the sync for a period of 24h if they keep failing.
-
-        upload_limit_reached = False
-        passphrase_not_set = False
-
-        for task in errors:
-            if isinstance(task.error, HTTPEntityTooLargeError):
-                upload_limit_reached = True
-            elif isinstance(task.error, PassphraseAbortError):
-                passphrase_not_set = True
-            else:
-                if task.container.error:
-                    # The task error is probably provoked by the (more
-                    # important) container error.
-                    # NOTE: A container key problem is a container error.
-                    self._manage_container_error(task.local_container,
-                                                 task.container.error)
-
-                    self._on_sync_error(
-                        _('Error during the sync of the "%(name)s" container:'
-                          '\n%(error)s')
-                        % {'name': task.container.name,
-                           'error': err2unicode(task.error)})
-                else:
-                    target_string = ', '.join(task.target_list)
-                    self._on_sync_error(
-                        _('Error during sync of the file(s) "%(filename)s" '
-                          'in the "%(name)s" container:\n%(error)s')
-                        % {'filename': target_string,
-                           'name': task.container.name,
-                           'error': err2unicode(task.error)})
-
-        if upload_limit_reached:
-            local_container = task.local_container
-            self.delay_upload(local_container)
-
-        if passphrase_not_set:
-            self._pause_if_need_the_passphrase()
-
+    def _on_task_success(self, _result):
+        """This method is called when a task succeed."""
         with self._condition:
             self._condition.notify()
         self._decrement()
 
-    def _on_task_failed(self, error, a=None, b=None):
-        """A task has raised a "container related" error.
-
-        If this happens, it means the container itself is in an error state:
-        the container key is unusable. It can be either a network error or an
-        encryption error (bad .key, missing or wrong passphrase, ...).
+    def _on_task_failed(self, task, error):
+        """A task has raised an error.
 
         Args:
-            error (Exception): the exception raised during the task execution
-
+            task (_Task): failed task
+            error (Exception): the exception raised during the task execution.
         """
-        # "Normal" errors are returned by the task as a successful promise.
-        # This case should never happen.
-        _logger.error('Unexpected error during the task execution: %s',
-                      err2unicode(error))
-        if a and b:
-            _logger.exception('!', exc_info=(error, a, b))
+
+        # TODO: The tasks should be retried and the concerned files should be
+        # excluded of the sync for a period of 24h if they keep failing.
+
+        if isinstance(error, HTTPEntityTooLargeError):
+            local_container = task.local_container
+            self.delay_upload(local_container)
+        elif isinstance(error, PassphraseAbortError):
+            self._pause_if_need_the_passphrase()
+        else:
+            if task.container.error:
+                # The task error is probably provoked by the (more
+                # important) container error.
+                # NOTE: A container key problem is a container error.
+                self._manage_container_error(task.local_container,
+                                             task.container.error)
+
+                self._on_sync_error(
+                    _('Error during the sync of the "%(name)s" container:'
+                      '\n%(error)s')
+                    % {'name': task.container.name,
+                       'error': err2unicode(error)})
+            else:
+                target_string = ', '.join(task.target_list)
+                self._on_sync_error(
+                    _('Error during sync of the file(s) "%(filename)s" '
+                      'in the "%(name)s" container:\n%(error)s')
+                    % {'filename': target_string,
+                       'name': task.container.name,
+                       'error': err2unicode(error)})
+
         with self._condition:
             self._condition.notify()
         self._decrement()

@@ -52,10 +52,10 @@ class MovedStateMachineStatus(object):
 
 class MovedLocalFilesTask(_Task):
 
-    def __init__(self, container, target, local_container, parent_path=None):
+    def __init__(self, container, target, local_container):
 
         _Task.__init__(self, container, target, local_container,
-                       parent_path, expected_target_count=2)
+                       expected_target_count=2)
 
     @staticmethod
     def get_type():

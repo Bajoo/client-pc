@@ -17,9 +17,9 @@ _logger = logging.getLogger(__name__)
 class AddedLocalFilesTask(_Task):
 
     def __init__(self, container, target, local_container,
-                 parent_path=None, create_mode=True):
+                 create_mode=True):
 
-        _Task.__init__(self, container, target, local_container, parent_path)
+        _Task.__init__(self, container, target, local_container)
 
         self.create_mode = create_mode
 

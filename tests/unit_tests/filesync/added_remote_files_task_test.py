@@ -21,10 +21,8 @@ def generate_task(tester, target):
     tester.local_container.inject_empty_node(target)
     return AddedRemoteFilesTask(
         tester.container,
-        (target,
-         ),
-        tester.local_container,
-        None)
+        (target,),
+        tester.local_container)
 
 
 class Test_Remote_File_does_not_exist(TestTaskAbstract):

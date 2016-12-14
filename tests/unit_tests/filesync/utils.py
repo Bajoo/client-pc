@@ -20,11 +20,11 @@ class TestTaskAbstract(object):
         self.error_string = ""
         self.container = Fake_container()
         self.local_container = FakeLocalContainer(None, None)
-        self.result = None
         self.conflict_seed = []
         self.conflict_list = None
         self.file_to_close = []
         self.path_to_remove = []
+        self.error = None
 
     def teardown_method(self, method):
         if self.conflict_list is None:
@@ -79,10 +79,13 @@ class TestTaskAbstract(object):
 
                 result = gen.send(result)
             except StopIteration:
-                self.result = result
                 break
             except Exception as ex:
-                result = gen.throw(ex)
+                try:
+                    result = gen.throw(ex)
+                except Exception as err:
+                    self.error = err
+                    break
 
         return task
 
@@ -108,13 +111,7 @@ class TestTaskAbstract(object):
 
     def assert_no_error_on_task(self):
         assert self.error_string == ""
-        assert self.result == []
-
-    def assert_error_on_task(self, task):
-        assert isinstance(self.result, list)
-        assert len(self.result) == 1
-        assert isinstance(self.result[0], type(task))
-        assert self.result[0] is task
+        assert self.error is None
 
     def check_action(self, removed=(), downloaded=(), uploaded=(), getinfo=()):
         assert len(self.container.removed_list) == len(removed)
