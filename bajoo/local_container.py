@@ -167,7 +167,7 @@ class LocalContainer(object):
                 return None
 
         _logger.info('Creation of folder "%s" for container %s',
-                     self.model.path, self.container.id)
+                     folder_path, self.container.id)
         self.model.path = folder_path
         self.status = self.STATUS_STOPPED
         return self.model.path
