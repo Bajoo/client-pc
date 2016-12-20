@@ -89,14 +89,13 @@ class IndexTree(object):
                         yield node
 
     def _browse_non_sync_nodes(self, current_node):
-        if not current_node.sync:
-            if current_node.task is None:  # nodes with task are ignored.
-                yield current_node
-        for node in filter(lambda n: n.dirty, current_node.children.values()):
-            if node.removed:
-                # Note: The tree might change during a 'yield'. Check that
-                # current_node is still part of the tree.
-                continue
+        if not current_node.sync and current_node.task is None:
+            yield current_node
+
+        for node in (node for node in current_node.children.values()
+                     if node.dirty and not node.removed):
+            # Note: The tree might change during a `yield`. `self._is_in_tree`
+            # check that current_node is still part of the tree.
             for n in self._browse_non_sync_nodes(node):
                 yield n
 

@@ -71,27 +71,28 @@ class SyncScheduler(object):
                 if node is not IndexTree.WAIT_FOR_TASK:
                     return data_tree['tree'], node
 
-        if not self._index_trees:
+        if len(self._generators) >= len(self._index_trees):
+            # All trees have a generator
             return None, None
 
         # new generator needed;
         start_index = self._index_next_tree
         while True:
             tree = self._index_trees[self._index_next_tree]
-            gen = tree.browse_all_non_sync_nodes()
-
             self._index_next_tree += 1
-            if self._index_next_tree >= len(self._index_trees):
-                self._index_next_tree = 0
+            self._index_next_tree %= len(self._index_trees)
 
-            try:
-                node = next(gen)
-            except StopIteration:
-                pass  # clean tree
-            else:
-                self._generators.append({'tree': tree, 'gen': gen})
-                if node is not IndexTree.WAIT_FOR_TASK:
-                    return tree, node
+            if tree not in (gen.get('tree') for gen in self._generators):
+                gen = tree.browse_all_non_sync_nodes()
+
+                try:
+                    node = next(gen)
+                except StopIteration:
+                    pass  # clean tree
+                else:
+                    self._generators.append({'tree': tree, 'gen': gen})
+                    if node is not IndexTree.WAIT_FOR_TASK:
+                        return tree, node
 
             if self._index_next_tree == start_index:
                 # We've tested all trees.
