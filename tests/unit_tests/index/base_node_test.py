@@ -12,6 +12,9 @@ class TestBaseNode(object):
     def test_node_parent_is_none_by_default(self):
         assert BaseNode('root').parent is None
 
+    def test_node_are_not_removed_by_default(self):
+        assert BaseNode('root').removed is False
+
     def test_add_child_on_empty_node(self):
         root = BaseNode('root')
         child = BaseNode('child')
@@ -126,6 +129,7 @@ class TestBaseNode(object):
 
         root.rm_child(child_a)
         assert child_a.parent is None
+        assert child_a.removed is True
         assert child_a not in root.children
 
     def test_rm_dirty_child_updates_parent_flag(self):
@@ -142,6 +146,22 @@ class TestBaseNode(object):
         node.rm_child(child2)
         assert not node.dirty
 
+    def test_rm_child_propagate_removed_flag_to_all_children(self):
+        root = BaseNode('root')
+        node = BaseNode('node')
+        child1 = BaseNode('child 1')
+        child2 = BaseNode('child 2')
+        root.add_child(node)
+        node.add_child(child1)
+        node.add_child(child2)
+
+        for n in (root, node, child1, child2):
+            assert n.removed is False
+        root.rm_child(node)
+        assert root.removed is False
+        for n in (node, child1, child2):
+            assert n.removed is True
+
     def test_node_remove_itself(self):
         root = BaseNode('root')
         child_a = BaseNode('A')
@@ -151,6 +171,7 @@ class TestBaseNode(object):
 
         child_a.remove_itself()
         assert child_a.parent is None
+        assert child_a.removed is True
         assert child_a not in root.children
 
     def test_dirty_node_removing_itself_updates_parent_flag(self):
@@ -166,6 +187,22 @@ class TestBaseNode(object):
         assert node.dirty
         child2.remove_itself()
         assert not node.dirty
+
+    def test_remove_itself_propagate_removed_flag_to_all_children(self):
+        root = BaseNode('root')
+        node = BaseNode('node')
+        child1 = BaseNode('child 1')
+        child2 = BaseNode('child 2')
+        root.add_child(node)
+        node.add_child(child1)
+        node.add_child(child2)
+
+        for n in (root, node, child1, child2):
+            assert n.removed is False
+        node.remove_itself()
+        assert root.removed is False
+        for n in (node, child1, child2):
+            assert n.removed is True
 
     def test_set_hierarchy_not_sync(self):
         node = BaseNode('node')

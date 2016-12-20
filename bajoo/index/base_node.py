@@ -39,6 +39,8 @@ class BaseNode(object):
         dirty (bool, read-only): Flag set to True when the node or one of its
             descendants is not sync. Its value is updated over the hierarchy
             when `sync` changes.
+        removed (bool): Flag set when the node or one of its ancestors has been
+            removed from the tree. Default to False.
         task (Any): if not None, there is an ongoing operation to sync this
             node. This task object means the node is "in use" and another task
             should not work on the same node.
@@ -64,6 +66,7 @@ class BaseNode(object):
         self.children = {}
         self._sync = False
         self._dirty = True
+        self.removed = False
 
         self.state = None
 
@@ -85,6 +88,8 @@ class BaseNode(object):
     def rm_child(self, node):
         """Remove a child from this node."""
         del self.children[node.name]
+        if not node.removed:
+            node._propagate_removed_flag()
         if node.dirty:
             # will recalculate the dirty flag.
             self._clean_dirty_flags()
@@ -139,6 +144,11 @@ class BaseNode(object):
         """Remove itself from the tree."""
         if self.parent:
             self.parent.rm_child(self)
+
+    def _propagate_removed_flag(self):
+        self.removed = True
+        for n in self.children.values():
+            n._propagate_removed_flag()
 
     def exists(self):
         """Check if the node physically existed the last time it was sync.
