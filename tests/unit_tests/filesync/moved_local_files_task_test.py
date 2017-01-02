@@ -32,12 +32,11 @@ def generate_task(tester, src_target, dst_target):
 
 class FakeMovedLocalFilesTask(MovedLocalFilesTask):
 
-    def _create_push_task(self, rel_path, create_mode=False):
+    def _create_push_task(self, rel_path):
         self.local_container.inject_empty_node(rel_path)
         return AddedLocalFilesTask(self.container,
                                    (generate_random_string(),),
-                                   self.local_container,
-                                   create_mode=create_mode)
+                                   self.local_container)
 
 
 def generate_fake_task(tester, src_target, dst_target):

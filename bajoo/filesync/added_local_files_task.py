@@ -16,13 +16,6 @@ _logger = logging.getLogger(__name__)
 
 class AddedLocalFilesTask(_Task):
 
-    def __init__(self, container, target, local_container,
-                 create_mode=True):
-
-        _Task.__init__(self, container, target, local_container)
-
-        self.create_mode = create_mode
-
     @staticmethod
     def get_type():
         return TASK_NAME
@@ -50,17 +43,11 @@ class AddedLocalFilesTask(_Task):
                 except HTTPNotFoundError:
                     pass
 
-            if self.create_mode:
-                self._log(_logger, "The file is gone before we've done"
-                                   " anything.")
+            self._log(_logger, "The file is gone before we've done"
+                               " anything.")
 
-                target.set_hash(None, None)
-                return
-
-            # the goal is to raise the exception of the first try/catch
-            # that's why it uses specificaly a variable to store the
-            # exception.
-            raise err
+            target.set_hash(None, None)
+            return
 
         with file_content:
             md5 = self._compute_md5_hash(file_content)
@@ -83,7 +70,7 @@ class AddedLocalFilesTask(_Task):
                     remote_cyphered_md5 = None
 
                 if remote_cyphered_md5 is None or \
-                                remote_cyphered_md5 == target.remote_md5:
+                   remote_cyphered_md5 == target.remote_md5:
                     self._log(_logger, 'No remote file, or remote file is'
                                        ' still the same. So upload!')
 

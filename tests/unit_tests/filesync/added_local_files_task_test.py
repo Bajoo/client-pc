@@ -18,14 +18,12 @@ def teardown_module(module):
     stop()
 
 
-def generate_task(tester, target, create_mode=False):
+def generate_task(tester, target):
     tester.local_container.inject_empty_node(target)
     return AddedLocalFilesTask(
         tester.container,
-        (target,
-         ),
-        tester.local_container,
-        create_mode)
+        (target,),
+        tester.local_container)
 
 
 class Test_Local_file_does_not_exist(TestTaskAbstract):
@@ -36,20 +34,14 @@ class Test_Local_file_does_not_exist(TestTaskAbstract):
         self.add_conflict_seed(self.path)
 
     def test_CreationMode(self):
-        self.execute_task(generate_task(self, self.path,
-                                        create_mode=True))
+        self.execute_task(generate_task(self, self.path))
         self.assert_no_error_on_task()
         self.check_action(downloaded=(self.path,))  # no action
         self.assert_conflict(count=0)
         self.assert_not_in_index(self.path)
 
     def test_UpdateMode(self):
-        self.execute_task(generate_task(self, target=self.path,
-                                        create_mode=False))
-
-        # task on error
-        assert self.error is not None
-        assert "No such file or directory" in str(self.error)
+        self.execute_task(generate_task(self, target=self.path))
 
         self.check_action(downloaded=(self.path,))  # no action
         self.assert_conflict(count=0)

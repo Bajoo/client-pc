@@ -125,8 +125,7 @@ class FakeFileSyncModule(object):
 
     def added_local_files(self, container, local_container, filename):
 
-        task = AddedLocalFilesTask(container, (filename,), local_container,
-                                   create_mode=True)
+        task = AddedLocalFilesTask(container, (filename,), local_container)
         self.increment("added_locally_count")
         return add_task(task)
 
