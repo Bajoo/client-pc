@@ -301,96 +301,82 @@ class ContainerSyncPool(object):
                 else:
                     self._app_status.value = AppStatus.SYNC_IN_PROGRESS
 
-    def _added_remote_files(self, container, files):
-        with self._condition:
-            if self._status != self.STATUS_STARTED:
-                return
-            for f in files:
-                if is_path_allowed(f['name']):
-                    HintBuilder.apply_modified_event_from_path(
-                        container.index_tree,
-                        HintBuilder.SCOPE_REMOTE,
-                        f['name'], f['hash'],
-                        FileNode)
+    def _apply_event_then_notify(func):
+        def wrap(self, *args, **kwargs):
+            with self._condition:
+                if self._status != self.STATUS_STARTED:
+                    return
+                func(self, *args, **kwargs)
                 self._condition.notify()
+        return wrap
+
+    @_apply_event_then_notify
+    def _added_remote_files(self, container, files):
+        for f in files:
+            if is_path_allowed(f['name']):
+                HintBuilder.apply_modified_event_from_path(
+                    container.index_tree,
+                    HintBuilder.SCOPE_REMOTE,
+                    f['name'], f['hash'],
+                    FileNode)
         _logger.log(5, 'Added %s remote files in %s', len(files), container)
 
+    @_apply_event_then_notify
     def _removed_remote_files(self, container, files):
-        with self._condition:
-            if self._status != self.STATUS_STARTED:
-                return
-            for f in files:
-                if is_path_allowed(f['name']):
-                    HintBuilder.apply_deleted_event_from_path(
-                        container.index_tree,
-                        HintBuilder.SCOPE_REMOTE,
-                        f['name'])
-                self._condition.notify()
+        for f in files:
+            if is_path_allowed(f['name']):
+                HintBuilder.apply_deleted_event_from_path(
+                    container.index_tree,
+                    HintBuilder.SCOPE_REMOTE,
+                    f['name'])
         _logger.log(5, 'Removed %s remote files from %s', len(files),
                     container)
 
+    @_apply_event_then_notify
     def _modified_remote_files(self, container, files):
-        with self._condition:
-            if self._status != self.STATUS_STARTED:
-                return
-            for f in files:
-                if is_path_allowed(f['name']):
-                    HintBuilder.apply_modified_event_from_path(
-                        container.index_tree,
-                        HintBuilder.SCOPE_REMOTE,
-                        f['name'], f['hash'],
-                        FileNode)
-                self._condition.notify()
+        for f in files:
+            if is_path_allowed(f['name']):
+                HintBuilder.apply_modified_event_from_path(
+                    container.index_tree,
+                    HintBuilder.SCOPE_REMOTE,
+                    f['name'], f['hash'],
+                    FileNode)
         _logger.log(5, 'Modified %s remote files in %s', len(files), container)
 
+    @_apply_event_then_notify
     def _added_local_file(self, container, file_path):
         filename = os.path.relpath(file_path, container.model.path)
-        with self._condition:
-            if self._status != self.STATUS_STARTED:
-                return
-            HintBuilder.apply_modified_event_from_path(
-                container.index_tree,
-                HintBuilder.SCOPE_LOCAL, filename,
-                None, FileNode)
-            self._condition.notify()
+        HintBuilder.apply_modified_event_from_path(
+            container.index_tree,
+            HintBuilder.SCOPE_LOCAL, filename,
+            None, FileNode)
         _logger.log(5, 'Added local file "%s" in %s', filename, container)
 
+    @_apply_event_then_notify
     def _removed_local_files(self, container, file_path):
         filename = os.path.relpath(file_path, container.model.path)
-        with self._condition:
-            if self._status != self.STATUS_STARTED:
-                return
-
-            HintBuilder.apply_deleted_event_from_path(container.index_tree,
-                                                      HintBuilder.SCOPE_LOCAL,
-                                                      filename)
-            self._condition.notify()
+        HintBuilder.apply_deleted_event_from_path(container.index_tree,
+                                                  HintBuilder.SCOPE_LOCAL,
+                                                  filename)
         _logger.log(5, 'Removed local file "%s" from %s', filename, container)
 
+    @_apply_event_then_notify
     def _modified_local_files(self, container, file_path):
         filename = os.path.relpath(file_path, container.model.path)
-
-        with self._condition:
-            if self._status != self.STATUS_STARTED:
-                return
-            HintBuilder.apply_modified_event_from_path(container.index_tree,
-                                                       HintBuilder.SCOPE_LOCAL,
-                                                       filename,
-                                                       None, FileNode)
-            self._condition.notify()
+        HintBuilder.apply_modified_event_from_path(container.index_tree,
+                                                   HintBuilder.SCOPE_LOCAL,
+                                                   filename,
+                                                   None, FileNode)
         _logger.log(5, 'Modified local file "%s" in %s', filename, container)
 
+    @_apply_event_then_notify
     def _moved_local_files(self, container, src_path, dest_path):
         src_filename = os.path.relpath(src_path, container.model.path)
         dest_filename = os.path.relpath(dest_path, container.model.path)
-        with self._condition:
-            if self._status != self.STATUS_STARTED:
-                return
-            HintBuilder.apply_move_event_from_path(container.index_tree,
-                                                   HintBuilder.SCOPE_LOCAL,
-                                                   src_filename,
-                                                   dest_filename, FileNode)
-            self._condition.notify()
+        HintBuilder.apply_move_event_from_path(container.index_tree,
+                                               HintBuilder.SCOPE_LOCAL,
+                                               src_filename,
+                                               dest_filename, FileNode)
         _logger.log(5, 'Moved local file from "%s" to "%s" in %s',
                     src_filename, dest_filename, container)
 
