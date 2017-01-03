@@ -402,7 +402,6 @@ class ContainerSyncPool(object):
                 running = True
                 index_tree, node = self._scheduler.get_node()
 
-            # TODO: limit the number of concurrent task.
             while running:
                 while node:
                     # Find the local container from the IndexTree.
@@ -414,7 +413,10 @@ class ContainerSyncPool(object):
                     with index_tree.lock:
                         self._create_task(local_container.container.id, node)
 
-                    index_tree, node = self._scheduler.get_node()
+                    if len(self._ongoing_tasks) < 30:
+                        index_tree, node = self._scheduler.get_node()
+                    else:
+                        node = None
 
                 # wait for events which will produce new nodes to sync.
                 self._condition.wait()
