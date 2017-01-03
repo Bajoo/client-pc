@@ -20,6 +20,7 @@ from .file_watcher import FileWatcher
 from .index.file_node import FileNode
 from .index.hint_builder import HintBuilder
 from .network.errors import HTTPEntityTooLargeError
+from .promise import reduce_coroutine
 
 _logger = logging.getLogger(__name__)
 
@@ -74,9 +75,10 @@ class ContainerSyncPool(object):
         self._thread = None
         self._scheduler = SyncScheduler()
 
+        self._ongoing_tasks = []
+
         self._app_status = app_status
         self._status = self.STATUS_STOPPED
-        self._counter = 0
         self._passphrase_needed = False
 
     def start(self):
@@ -284,17 +286,17 @@ class ContainerSyncPool(object):
         if thread and join:
             thread.join()
 
-    def _increment(self):
+    def _increment(self, task):
         with self._condition:
-            self._counter += 1
+            self._ongoing_tasks.append(task)
             if self._app_status.value == AppStatus.SYNC_DONE:
                 self._app_status.value = AppStatus.SYNC_IN_PROGRESS
 
-    def _decrement(self):
+    def _decrement(self, task):
         with self._condition:
-            self._counter -= 1
+            self._ongoing_tasks.remove(task)
             if self._app_status.value != AppStatus.SYNC_PAUSED:
-                if self._counter == 0:
+                if not self._ongoing_tasks:
                     self._app_status.value = AppStatus.SYNC_DONE
                 else:
                     self._app_status.value = AppStatus.SYNC_IN_PROGRESS
@@ -424,6 +426,7 @@ class ContainerSyncPool(object):
             _logger.info('Stop sync thread')
             self._status = self.STATUS_STOPPED
 
+    @reduce_coroutine(safeguard=True)
     def _create_task(self, container_id, node):
         """Create the task using the factory, then manages counter and errors.
 
@@ -445,24 +448,20 @@ class ContainerSyncPool(object):
                 isinstance(task, (AddedLocalFilesTask, MovedLocalFilesTask))):
             _logger.debug('Quota exceeded, abort task.')
             return
-        self._increment()
+
+        self._increment(task)
         TaskBuilder.acquire_from_task(node, task)
-        f = filesync.add_task(task)
-        f = f.then(self._on_task_success, partial(self._on_task_failed, task))
-        f.then(self._save_index(local_container)).safeguard()
 
-    def _save_index(self, local_container):
-        """Create a function (closure) to save the LocalContainer index.
+        try:
+            yield filesync.add_task(task)
+        except Exception as err:
+            self._on_task_failed(task, err)
+        finally:
+            with self._condition:
+                self._condition.notify()
+            self._decrement(task)
 
-        Args:
-            local_container (LocalContainer): owner of the index to save.
-        Returns:
-            Callable[[Any], None]: function who trigger a save of the index.
-        """
-        def f(_result):
-            local_container.index_saver.trigger_save()
-
-        return f
+        local_container.index_saver.trigger_save()
 
     def _turn_delay_upload_off(self, local_container):
         with self._condition:
@@ -497,12 +496,6 @@ class ContainerSyncPool(object):
             threading.Timer(self.QUOTA_TIMEOUT, self._turn_delay_upload_off,
                             [local_container]) \
                 .start()
-
-    def _on_task_success(self, _result):
-        """This method is called when a task succeed."""
-        with self._condition:
-            self._condition.notify()
-        self._decrement()
 
     def _on_task_failed(self, task, error):
         """A task has raised an error.
@@ -541,10 +534,6 @@ class ContainerSyncPool(object):
                     % {'filename': target_string,
                        'name': task.container.name,
                        'error': err2unicode(error)})
-
-        with self._condition:
-            self._condition.notify()
-        self._decrement()
 
     def _manage_container_error(self, local_container, error):
         # TODO only a failed download of the encryption key
