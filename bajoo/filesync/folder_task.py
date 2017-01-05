@@ -95,7 +95,7 @@ class FolderTask(object):
                     return cls.list_dir(container_path, src_path, local_hint)
                 else:
                     raise
-            _logger.log(5, 'Empty folder "%s" removed.')
+            _logger.log(5, 'Empty folder "%s" removed.', src_path)
             return [], []
         return cls.list_dir(container_path, src_path, local_hint)
 
