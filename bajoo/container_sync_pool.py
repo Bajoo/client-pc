@@ -79,7 +79,6 @@ class ContainerSyncPool(object):
 
         self._app_status = app_status
         self._status = self.STATUS_STOPPED
-        self._passphrase_needed = False
 
     def start(self):
         with self._condition:
@@ -94,34 +93,45 @@ class ContainerSyncPool(object):
                     self._condition.acquire()
 
             for container, _updater, _watcher in self._local_containers:
-                is_encrypted = container.container.is_encrypted
-                if self._passphrase_needed and is_encrypted:
-                    container.status = container.STATUS_WAIT_PASSPHRASE
-                    container.error_msg = _('No passphrase set. '
-                                            'Syncing is disabled')
-                else:
-                    container.index_tree.set_tree_not_sync()
-                    self._scheduler.add_index_tree(container.index_tree)
-                    container.status = container.STATUS_STARTED
-                    container.error_msg = None
-                    _updater.start()
-                    _watcher.start()
+                container.index_tree.set_tree_not_sync()
+                self._scheduler.add_index_tree(container.index_tree)
+                container.status = container.STATUS_STARTED
+                container.error_msg = None
+                _updater.start()
+                _watcher.start()
 
             self._thread = threading.Thread(target=self._sync_thread,
                                             name="Sync Pool Thread")
             self._status = self.STATUS_STARTED
             self._thread.start()
 
+    @reduce_coroutine()
     def add(self, local_container):
         """Add a container to sync.
 
         Either the container has been fetched at start of the dynamic container
         list, or it's a newly-added container.
 
+        All containers are unlocked at add. When the unlock fails (ie: error
+        network, no passphrase), the container is not added and the method
+        raise an Exception.
+
         Args:
             local_container (LocalContainer)
         """
         container = local_container.container
+        try:
+            yield local_container.unlock()
+        except Exception as err:
+            msg = _('Container %s not started: %s') % (
+                local_container.id, local_container.error_msg)
+            if isinstance(err, PassphraseAbortError):
+                _logger.info(msg)
+            else:
+                _logger.exception(msg)
+            self._on_sync_error(msg)
+            raise
+
         _logger.debug('Add container %s to sync list', container)
 
         last_remote_index = local_container.get_remote_index()
@@ -148,12 +158,6 @@ class ContainerSyncPool(object):
 
             if self._status != self.STATUS_STARTED:
                 local_container.status = local_container.STATUS_PAUSED
-                return
-
-            if self._passphrase_needed and container.is_encrypted:
-                local_container.status = local_container.STATUS_WAIT_PASSPHRASE
-                local_container.error_msg = _(
-                    'No passphrase set.  Syncing is disabled')
                 return
 
             local_container.status = local_container.STATUS_STARTED
@@ -211,51 +215,6 @@ class ContainerSyncPool(object):
         local_container.index_saver.stop()
 
         del self._local_containers[container_id]
-
-    def _pause_if_need_the_passphrase(self):
-        with self._condition:
-            if self._passphrase_needed:
-                _logger.debug('Local containers are already waiting for' +
-                              ' the passphrase')
-                return
-
-            self._passphrase_needed = True
-
-            self._on_sync_error(_('No passphrase set.  Cyphered containers' +
-                                  ' will be paused'))
-
-            if self._status != self.STATUS_STARTED:
-                return
-
-            for lc, updater, watcher in self._local_containers.values():
-                if lc.status == lc.STATUS_PAUSED:
-                    continue
-
-                if not lc.container.is_encrypted:
-                    continue
-
-                lc.status = lc.STATUS_WAIT_PASSPHRASE
-                self._scheduler.remove_index_tree(lc.index_tree)
-                updater.stop()
-                watcher.stop()
-                lc.error_msg = _('No passphrase set.  Syncing is disabled')
-
-    def resume_if_wait_for_the_passphrase(self):
-        with self._condition:
-            if not self._passphrase_needed:
-                _logger.debug('Local containers are already unpaused')
-                return
-
-            self._passphrase_needed = False
-
-            if self._status != self.STATUS_STARTED:
-                return
-
-            for lc, updater, watcher in self._local_containers.values():
-                if lc.status != lc.STATUS_WAIT_PASSPHRASE:
-                    continue
-
-                self._start_container(lc.container.id)
 
     def pause(self):
         """Set all sync operations in pause."""
@@ -499,38 +458,11 @@ class ContainerSyncPool(object):
         if isinstance(error, HTTPEntityTooLargeError):
             local_container = task.local_container
             self.delay_upload(local_container)
-        elif isinstance(error, PassphraseAbortError):
-            self._pause_if_need_the_passphrase()
         else:
-            if task.container.error:
-                # The task error is probably provoked by the (more
-                # important) container error.
-                # NOTE: A container key problem is a container error.
-                self._manage_container_error(task.local_container,
-                                             task.container.error)
-
-                self._on_sync_error(
-                    _('Error during the sync of the "%(name)s" container:'
-                      '\n%(error)s')
-                    % {'name': task.container.name,
-                       'error': err2unicode(error)})
-            else:
-                target_string = ', '.join(task.target_list)
-                self._on_sync_error(
-                    _('Error during sync of the file(s) "%(filename)s" '
-                      'in the "%(name)s" container:\n%(error)s')
-                    % {'filename': target_string,
-                       'name': task.container.name,
-                       'error': err2unicode(error)})
-
-    def _manage_container_error(self, local_container, error):
-        # TODO only a failed download of the encryption key
-        # will trigger this statement, is it normal ?
-        # should it manage other container error ?
-
-        # TODO and once the local container is in error state
-        # what is it supposed to do ?
-
-        self.remove(local_container)
-        local_container.status = local_container.STATUS_ERROR
-        local_container.error_msg = str(error)
+            target_string = ', '.join(task.target_list)
+            self._on_sync_error(
+                _('Error during sync of the file(s) "%(filename)s" '
+                  'in the "%(name)s" container:\n%(error)s')
+                % {'filename': target_string,
+                   'name': task.container.name,
+                   'error': err2unicode(error)})

@@ -46,9 +46,9 @@ class DynamicContainerList(object):
             notify (callable): Notify the user about an event. take three
                 parameters: the summary, the text body, and a boolean to
                 specify if it's an error.
-            start_container (callable): callback called when the LocalContainer
-                is ready. Receive a fully loaded LocalContainer in
-                parameters.
+            start_container (Callable[[LocalContainer], Promise]): async
+                callback called when the LocalContainer is ready. Receive a
+                fully loaded LocalContainer in parameters.
             stop_container (callable): callback called when a container is
                 removed. Receive LocalContainer in parameters.
         """

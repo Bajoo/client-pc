@@ -8,7 +8,9 @@ import shutil
 from .api.team_share import TeamShare
 from .common.i18n import _, N_
 from .common.strings import err2unicode
+from .encryption.errors import PassphraseAbortError
 from .index import IndexTree, IndexSaver
+from .promise import reduce_coroutine
 
 
 _logger = logging.getLogger(__name__)
@@ -231,6 +233,26 @@ class LocalContainer(object):
         """Remove the folder synchronised and its content."""
         _logger.info('Remove container of the disk: rm %s', self.model.path)
         shutil.rmtree(self.model.path, ignore_errors=True)
+
+    @reduce_coroutine()
+    def unlock(self):
+        """Unlock the container key and ensure the passphrase is available."""
+        try:
+            yield self.container._get_encryption_key()
+        except PassphraseAbortError:
+            self.status = self.STATUS_WAIT_PASSPHRASE
+            self.error_msg = _('No passphrase set.  Syncing is disabled')
+            raise
+        except Exception as error:
+            self.status = self.STATUS_ERROR
+            self.error_msg = err2unicode(error)
+            raise
+
+        if self.status in (self.STATUS_ERROR, self.STATUS_WAIT_PASSPHRASE):
+            self.status = self.STATUS_STOPPED
+        self.error_msg = None
+
+        yield None
 
     @property
     def path(self):
