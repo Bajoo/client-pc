@@ -438,7 +438,7 @@ class BajooApp(wx.App):
                     status = ContainerStatusTBIcon.SYNC_PROGRESS
             else:
                 status = mapping[container.status]
-            row = (container.model.name, container.model.path, status)
+            row = (container.name, container.path, status)
             containers_status.append(row)
 
         self._task_bar_icon.set_container_status_list(containers_status)
@@ -502,7 +502,7 @@ class BajooApp(wx.App):
                     share, email, permission,
                     N_("%(email)s has been given access to team "
                        "share \'%(name)s\'")
-                    % {"email": email, "name": share.model.name})
+                    % {"email": email, "name": share.name})
         else:
             if self._main_window:
                 self._main_window.on_share_member_added(
@@ -531,7 +531,7 @@ class BajooApp(wx.App):
                     share, email,
                     N_('%(email)s\'s access to team share \'%(name)s\' '
                        'has been removed.')
-                    % {"email": email, "name": share.model.name})
+                    % {"email": email, "name": share.name})
         else:
             if self._main_window:
                 self._main_window.on_share_member_removed(
@@ -601,7 +601,7 @@ class BajooApp(wx.App):
         yield self._container_list.refresh()
 
         for container in self._container_list.get_list():
-            if container.model.id == share.id:
+            if container.id == share.id:
                 yield container.container.list_members()
                 break
 
@@ -620,14 +620,14 @@ class BajooApp(wx.App):
 
             # Check if selected folder exists
             new_path = container.get_not_existing_folder(new_path)
-            shutil.copytree(container.model.path, new_path)
-            shutil.rmtree(container.model.path)
+            shutil.copytree(container.path, new_path)
+            shutil.rmtree(container.path)
 
             container.model.path = new_path
         except (IOError, OSError):
             _logger.critical(
                 'Cannot move folder from %s to %s' % (
-                    container.model.path, new_path),
+                    container.path, new_path),
                 exc_info=True)
         finally:
             container.is_moving = False
@@ -667,7 +667,7 @@ class BajooApp(wx.App):
             self._notifier.send_message(
                 _('Error'),
                 _('An error occured when trying to quit team share %s.')
-                % share.model.name,
+                % share.name,
                 is_error=True
             )
             if self._main_window:
@@ -679,13 +679,13 @@ class BajooApp(wx.App):
         self._notifier.send_message(
             _('Quit team share'),
             _('You have no longer access to team share %s.'
-              % share.model.name))
+              % share.name))
 
         if self._main_window:
             self._main_window.load_shares(
                 self._container_list.get_list(),
                 _('You have no longer access to team share %s.'
-                  % share.model.name))
+                  % share.name))
             self._main_window.on_quit_or_delete_share(share)
 
     @promise.reduce_coroutine(safeguard=True)
@@ -700,15 +700,15 @@ class BajooApp(wx.App):
         error_msg = None
         try:
             # TODO: should we also delete the folder ?
-            self._container_list.remove_container(share.model.id)
+            self._container_list.remove_container(share.id)
             yield share.container.delete()
             success_msg = _('A team share has been successfully deleted '
                             'from server.')
         except:
             _logger.exception('Unable to delete teamshare %s' %
-                              share.model.name)
+                              share.name)
             error_msg = _('Team share %s cannot be '
-                          'deleted from server.') % share.model.name
+                          'deleted from server.') % share.name
 
         yield self._container_list.refresh()
         if self._main_window:

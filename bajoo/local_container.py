@@ -232,10 +232,22 @@ class LocalContainer(object):
         _logger.info('Remove container of the disk: rm %s', self.model.path)
         shutil.rmtree(self.model.path, ignore_errors=True)
 
-    def get_path(self):
-        """Get the absolute path of the container's root folder.
-
-        Returns:
-            Text: path of root folder
-        """
+    @property
+    def path(self):
         return self.model.path
+
+    @property
+    def id(self):
+        return self.model.id
+
+    @property
+    def name(self):
+        return self.model.name
+
+    @property
+    def type(self):
+        return self.model.type
+
+    @property
+    def do_not_sync(self):
+        return self.model.do_not_sync

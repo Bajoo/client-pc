@@ -166,7 +166,7 @@ class MainWindow(wx.Frame, Translator):
 
             if current_container:
                 # If user hasn't switch to another tab yet
-                if current_container.model.id == container.model.id:
+                if current_container.id == container.id:
                     self._view.details_share_tab.set_data(
                         container, success_msg, error_msg)
                     self._view.details_share_tab.enable()

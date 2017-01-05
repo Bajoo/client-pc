@@ -127,13 +127,13 @@ class ContainerSyncPool(object):
         last_remote_index = local_container.get_remote_index()
 
         updater = files_list_updater(
-            container, local_container.model.path,
+            container, local_container.path,
             partial(self._added_remote_files, local_container),
             partial(self._modified_remote_files, local_container),
             partial(self._removed_remote_files, local_container),
             None, last_remote_index)
 
-        watcher = FileWatcher(local_container.model,
+        watcher = FileWatcher(local_container,
                               partial(self._added_local_file, local_container),
                               partial(self._modified_local_files,
                                       local_container),
@@ -345,7 +345,7 @@ class ContainerSyncPool(object):
 
     @_apply_event_then_notify
     def _added_local_file(self, container, file_path):
-        filename = os.path.relpath(file_path, container.model.path)
+        filename = os.path.relpath(file_path, container.path)
         HintBuilder.apply_modified_event_from_path(
             container.index_tree,
             HintBuilder.SCOPE_LOCAL, filename,
@@ -354,7 +354,7 @@ class ContainerSyncPool(object):
 
     @_apply_event_then_notify
     def _removed_local_files(self, container, file_path):
-        filename = os.path.relpath(file_path, container.model.path)
+        filename = os.path.relpath(file_path, container.path)
         HintBuilder.apply_deleted_event_from_path(container.index_tree,
                                                   HintBuilder.SCOPE_LOCAL,
                                                   filename)
@@ -362,7 +362,7 @@ class ContainerSyncPool(object):
 
     @_apply_event_then_notify
     def _modified_local_files(self, container, file_path):
-        filename = os.path.relpath(file_path, container.model.path)
+        filename = os.path.relpath(file_path, container.path)
         HintBuilder.apply_modified_event_from_path(container.index_tree,
                                                    HintBuilder.SCOPE_LOCAL,
                                                    filename,
@@ -371,8 +371,8 @@ class ContainerSyncPool(object):
 
     @_apply_event_then_notify
     def _moved_local_files(self, container, src_path, dest_path):
-        src_filename = os.path.relpath(src_path, container.model.path)
-        dest_filename = os.path.relpath(dest_path, container.model.path)
+        src_filename = os.path.relpath(src_path, container.path)
+        dest_filename = os.path.relpath(dest_path, container.path)
         HintBuilder.apply_move_event_from_path(container.index_tree,
                                                HintBuilder.SCOPE_LOCAL,
                                                src_filename,

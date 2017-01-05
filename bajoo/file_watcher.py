@@ -17,16 +17,16 @@ class FileWatcher(FileSystemEventHandler):
         directory events are ignored.
     """
 
-    def __init__(self, container_model, on_new_files, on_changed_files,
+    def __init__(self, local_container, on_new_files, on_changed_files,
                  on_moved_files, on_deleted_files):
         """
         Args:
-            local_container (ContainerModel): it's used to get the path to
+            local_container (LocalContainer): it's used to get the path to
                 listen, and the directories to exclude.
         """
-        self._container = container_model
+        self._container = local_container
         self._observer = Observer()
-        self._observer.schedule(self, path=container_model.path,
+        self._observer.schedule(self, path=local_container.path,
                                 recursive=True)
 
         self._on_new_files = on_new_files

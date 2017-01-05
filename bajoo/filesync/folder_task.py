@@ -45,7 +45,7 @@ class FolderTask(object):
 
     def __call__(self):
         try:
-            container_path = self.container.get_path()
+            container_path = self.container.path
             file_child_list, folder_child_list = self.execute(container_path,
                                                               self.node,
                                                               self.local_hint)

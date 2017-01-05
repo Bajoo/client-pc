@@ -102,7 +102,7 @@ class ListSharesTab(wx.Panel, Translator):
         """
         if self._shares:
             for share in self._shares:
-                if share.model.id == id:
+                if share.id == id:
                     return share
 
         return None
@@ -143,11 +143,11 @@ class ListSharesTab(wx.Panel, Translator):
         container = self.get_container_from_button(
             event, 'btn_open_local_dir_')
 
-        if container and container.model.path:
+        if container and container.path:
             from ...common.util import open_folder
 
-            open_folder(container.model.path)
-            _logger.debug("Open directory %s", container.model.path)
+            open_folder(container.path)
+            _logger.debug("Open directory %s", container.path)
         else:
             _logger.debug("Unknown container or directory to open")
 
@@ -281,26 +281,24 @@ class ListSharesView(BaseView):
         Args:
             container: <LocalContainer>
         """
-        model = local_container.model
-
         share_box = wx.StaticBox(self.shares_window,
-                                 name='share_box_' + model.id)
+                                 name='share_box_' + local_container.id)
 
         # By default, set it as a team share icon
         # to prevent unknown container type or, particularly, None.
         img_share = self.window.IMG_TEAM_SHARE
 
         lbl_share_name = wx.StaticText(
-            share_box, label=model.name,
-            name='lbl_share_name_' + model.id)
+            share_box, label=local_container.name,
+            name='lbl_share_name_' + local_container.id)
         lbl_share_status_desc = wx.StaticText(share_box)
         img_share_status = wx.StaticBitmap(
-            share_box, name='img_share_status_' + model.id)
+            share_box, name='img_share_status_' + local_container.id)
         lbl_share_status = wx.StaticText(
-            share_box, name='lbl_share_status_' + model.id)
+            share_box, name='lbl_share_status_' + local_container.id)
 
         lbl_error_msg = wx.StaticText(
-            share_box, name='lbl_error_msg_' + model.id)
+            share_box, name='lbl_error_msg_' + local_container.id)
         lbl_error_msg.SetForegroundColour(wx.RED)
         lbl_error_msg.SetLabel(local_container.error_msg or '')
 
@@ -310,17 +308,17 @@ class ListSharesView(BaseView):
                 lbl_share_status, lbl_error_msg
             ], outside_border=False)
         img_share_encryption = wx.StaticBitmap(
-            share_box, name='img_share_encryption_' + model.id)
+            share_box, name='img_share_encryption_' + local_container.id)
         lbl_share_description = wx.StaticText(
-            share_box, name='lbl_share_desc_' + model.id)
+            share_box, name='lbl_share_desc_' + local_container.id)
         img_share_members = wx.StaticBitmap(
-            share_box, name='img_share_members_' + model.id,
+            share_box, name='img_share_members_' + local_container.id,
             label=self.window.IMG_MEMBERS)
         lbl_share_members = wx.StaticText(
-            share_box, name='lbl_share_members_' + model.id)
+            share_box, name='lbl_share_members_' + local_container.id)
 
         btn_share_details = wx.Button(
-            share_box, name='btn_share_details_' + model.id,
+            share_box, name='btn_share_details_' + local_container.id,
             label=N_('Details'))
         btn_share_details.SetBitmap(self.window.IMG_CONTAINER_DETAILS)
         self.window.Bind(wx.EVT_BUTTON, self.window.btn_share_details_clicked,
@@ -329,14 +327,14 @@ class ListSharesView(BaseView):
         action_box = self.make_sizer(
             wx.HORIZONTAL, [btn_share_details], outside_border=False)
 
-        if model.type == 'my_bajoo':
+        if local_container.type == 'my_bajoo':
             img_share = self.window.IMG_MY_BAJOO
 
         btn_open_local_dir = wx.BitmapButton(
             share_box, bitmap=img_share,
-            name='btn_open_local_dir_' + model.id)
-        btn_open_local_dir.Enable(model.path is not None and
-                                  path.exists(model.path))
+            name='btn_open_local_dir_' + local_container.id)
+        btn_open_local_dir.Enable(local_container.path is not None and
+                                  path.exists(local_container.path))
         self.window.Bind(wx.EVT_BUTTON, self.window.btn_open_dir_clicked,
                          btn_open_local_dir)
 
@@ -388,7 +386,7 @@ class ListSharesView(BaseView):
         img_share_status.SetBitmap(
             self.window.IMG_CONTAINER_STATUS[local_container.get_status()])
 
-        if model.type == 'teamshare':
+        if local_container.type == 'teamshare':
             share = local_container.container
 
             if hasattr(share, 'members') and share.members:

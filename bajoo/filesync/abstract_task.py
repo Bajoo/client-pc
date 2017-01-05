@@ -78,7 +78,7 @@ class _Task(object):
         self.container = container
         self.target_list = []
         self.local_container = local_container
-        self.local_path = local_container.model.path
+        self.local_path = local_container.path
         self.nodes = []
 
         for t in target:
