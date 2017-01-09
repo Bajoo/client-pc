@@ -3,7 +3,6 @@
 import wx
 from wx.lib.agw.hyperlink import EVT_HYPERLINK_LEFT, HyperLinkCtrl
 
-from ....__version__ import __version__
 from ....common.i18n import N_
 from ....common.path import resource_filename
 from ...base_view import BaseView
@@ -18,9 +17,8 @@ class AboutWindowWxView(wx.Frame, AboutWindowBaseView, BaseView):
     FACEBOOK_ICON = None
     TWITTER_ICON = None
 
-    def __init__(self, ctrl):
-        AboutWindowBaseView.__init__(self, ctrl)
-        self.controller = ctrl
+    def __init__(self, ctrl, app_version):
+        AboutWindowBaseView.__init__(self, ctrl, app_version)
 
         window_style = \
             wx.DEFAULT_FRAME_STYLE & ~wx.MAXIMIZE_BOX & ~wx.RESIZE_BORDER
@@ -68,7 +66,7 @@ class AboutWindowWxView(wx.Frame, AboutWindowBaseView, BaseView):
 
         lbl_version = wx.StaticText(
             about_panel, name='lbl_version',
-            label=__version__)
+            label=self.app_version)
 
         lbl_version_font = wx.Font(10, wx.FONTFAMILY_DEFAULT,
                                    wx.FONTSTYLE_NORMAL, wx.BOLD)

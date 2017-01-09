@@ -9,6 +9,7 @@ import wx
 from . import encryption
 from . import gtk_process
 from . import promise
+from .__version__ import __version__
 from .api import Container, Session, TeamShare
 from .app_status import AppStatus
 from .common import autorun, config
@@ -128,6 +129,11 @@ class BajooApp(wx.App):
         autorun.set_autorun(config.get('autorun'))
 
         task_consumer.start()
+
+    @property
+    def version(self):
+        """getter of application version"""
+        return __version__
 
     def _ensures_single_instance_running(self):
         """Check that only one instance of Bajoo is running per user.

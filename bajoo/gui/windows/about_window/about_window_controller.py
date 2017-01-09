@@ -24,7 +24,7 @@ class AboutWindowController(object):
     """
 
     def __init__(self, view_factory, app):
-        self.view = view_factory(self)
+        self.view = view_factory(self, app.version)
         self.app = app
 
         self.destroyed = Signal()

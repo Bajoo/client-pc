@@ -16,7 +16,6 @@ try:
 except ImportError:
     from io import StringIO
 
-from ....__version__ import __version__
 from ....api.session import Session
 from ....common import path as bajoo_path
 from ....common.i18n import _
@@ -124,7 +123,7 @@ class BugReportWindowController(object):
         configfile = StringIO()
         configfile.write("## Bajoo bug report ##\n\n")
         configfile.write("Creation date: %s\n" % str(datetime.now()))
-        configfile.write("Bajoo version: %s\n" % __version__)
+        configfile.write("Bajoo version: %s\n" % self.app.version)
         configfile.write("Python version: %s\n" % sys.version)
         configfile.write("OS type: %s\n" % os.name)
         configfile.write("Platform type: %s\n" % sys.platform)

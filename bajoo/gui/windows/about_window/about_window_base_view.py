@@ -3,8 +3,9 @@
 
 class AboutWindowBaseView(object):
 
-    def __init__(self, ctrl):
+    def __init__(self, ctrl, app_version):
         self.controller = ctrl
+        self.app_version = app_version
 
     def show(self):
         """Show the window and set it in foreground."""

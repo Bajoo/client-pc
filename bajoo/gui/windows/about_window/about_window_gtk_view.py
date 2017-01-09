@@ -3,7 +3,6 @@
 from functools import partial
 from gi.repository import Gdk, Gtk
 
-from ....__version__ import __version__
 from ....common.i18n import _
 from ....common.path import resource_filename
 from .about_window_controller import Page
@@ -12,8 +11,8 @@ from .about_window_base_view import AboutWindowBaseView
 
 class AboutWindowGtkView(Gtk.Window, AboutWindowBaseView):
 
-    def __init__(self, ctrl):
-        AboutWindowBaseView.__init__(self, ctrl)
+    def __init__(self, ctrl, app_version):
+        AboutWindowBaseView.__init__(self, ctrl, app_version)
         Gtk.Window.__init__(self)
 
         icon = resource_filename('assets/window_icon.png')
@@ -137,7 +136,8 @@ class AboutWindowGtkView(Gtk.Window, AboutWindowBaseView):
             self._subtitle_label:
                 _('<i>Official software for Bajoo online storage service</i>'),
             self._version_label:
-                _('Version: <span font="10"><b>%s</b></span>' % __version__),
+                _('Version: <span font="10"><b>%s</b></span>' %
+                  self.app_version),
             self._description_label:
                 _('This software is distributed under the terms of the MIT'
                   ' License.\n It is freely redistributable, the source code '
