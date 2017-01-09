@@ -2,7 +2,7 @@
 
 import webbrowser
 from ....common.signal import Signal
-from ...bug_report import BugReportWindow
+from ..bug_report_window import BugReportWindow
 
 
 class Page(object):
@@ -23,8 +23,9 @@ class AboutWindowController(object):
         destroyed (Signal): fired when the window is about to be destroyed.
     """
 
-    def __init__(self, view_factory):
+    def __init__(self, view_factory, app):
         self.view = view_factory(self)
+        self.app = app
 
         self.destroyed = Signal()
 
@@ -65,7 +66,7 @@ class AboutWindowController(object):
 
     def bug_report_action(self):
         """Open the bug report window."""
-        bug_dialog = BugReportWindow(None)
+        bug_dialog = BugReportWindow(self.app)
         bug_dialog.ShowModal()
 
     def close_action(self):

@@ -2,6 +2,7 @@
 import re
 import sys
 from .about_window import AboutWindowTestController
+from .bug_report_window import BugReportWindowTestController
 from .task_bar_icon import TaskBarIconTestController
 
 
@@ -50,6 +51,10 @@ graphic_items = {
         'wx': 'AboutWindowWxView',
         'gtk': 'AboutWindowGtkView'
     }),
+    'bug_report_window': (BugReportWindowTestController,
+                          'windows.bug_report_window', {
+                              'wx': 'BugReportWindowWxView'
+                          }),
     'task_bar_icon': (TaskBarIconTestController, 'task_bar_icon', {
         'wx': 'TaskBarIconWxView',
         'gtk': 'TaskBarIconGtkView',

@@ -1,25 +1,11 @@
 # -*- coding: utf-8 -*-
 
-
-import glob
-import locale
 import logging
-import os
-import platform
 import shutil
 import sys
-import tempfile
-import zipfile
-from datetime import datetime
-
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
 
 import wx
 
-from . import __version__
 from . import encryption
 from . import gtk_process
 from . import promise
@@ -35,7 +21,7 @@ from .container_sync_pool import ContainerSyncPool
 from .dynamic_container_list import DynamicContainerList
 from .filesync import task_consumer
 from .gui import AboutWindow, TaskBarIcon
-from .gui.bug_report import BugReportWindow, EVT_BUG_REPORT
+from .gui.windows import BugReportWindow
 from .gui.change_password_window import ChangePasswordWindow
 from .gui.common.language_box import LanguageBox
 from .gui.enums import WindowDestination
@@ -265,7 +251,7 @@ class BajooApp(wx.App):
             return getattr(self, attribute)
 
         _logger.debug('Creation of (MVC) Window %s' % attribute)
-        window = cls()
+        window = cls(self)
 
         window.destroyed.connect(lambda: setattr(self, attribute, None))
         setattr(self, attribute, window)
@@ -325,7 +311,6 @@ class BajooApp(wx.App):
             self.Bind(ChangePasswordWindow.EVT_CHANGE_PASSWORD_SUBMIT,
                       self._on_request_change_password)
             self.Bind(AccountTab.EVT_DISCONNECT_REQUEST, self.disconnect)
-            self.Bind(EVT_BUG_REPORT, self.send_bug_report)
         except:
             # wxPython hides OnInit's exceptions without any message.
             # Bug always reproducible on Linux with wxPython Gtk2 (classic)
@@ -354,7 +339,8 @@ class BajooApp(wx.App):
             window = self.get_window('_main_window', MainWindow)
             window.show_list_shares_tab()
         elif destination == WindowDestination.DEV_CONTACT:
-            window = self.get_window('_contact_dev_window', BugReportWindow)
+            window = self._get_mvc_window('_contact_dev_window',
+                                          BugReportWindow)
         else:
             _logger.error('Unexpected "Navigation" destination: %s' %
                           destination)
@@ -775,7 +761,7 @@ class BajooApp(wx.App):
             self._about_window.destroy()
 
         if self._contact_dev_window:
-            self._contact_dev_window.Destroy()
+            self._contact_dev_window.destroy()
 
         self._task_bar_icon.destroy()
         # TODO: this manual deletion is required because cross-process
@@ -896,102 +882,6 @@ class BajooApp(wx.App):
         session_and_user = yield connect_or_register(self.create_home_window)
         yield self._on_connection(session_and_user)
 
-    @promise.reduce_coroutine(safeguard=True)
-    def send_bug_report(self, _evt):
-        _logger.debug("bug report creation")
-        tmpdir = tempfile.mkdtemp()
-
-        # identify where are last log files
-        glob_path = os.path.join(bajoo_path.get_log_dir(), '*.log')
-        newest = sorted(glob.iglob(glob_path),
-                        key=os.path.getmtime,
-                        reverse=True)
-
-        zip_path = os.path.join(tmpdir, "report.zip")
-
-        try:
-            with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
-                # grab the 5 last log files if exist
-                for index in range(0, min(5, len(newest))):
-                    zf.write(newest[index], os.path.basename(newest[index]))
-
-                # collect config file
-                config_path = os.path.join(bajoo_path.get_config_dir(),
-                                           'bajoo.ini')
-                try:
-                    zf.write(config_path, 'bajoo.ini')
-                except (IOError, OSError):
-                    pass
-
-                username = self._generate_report_file(zf, _evt.report,
-                                                      _evt.email)
-
-            server_path = "/logs/%s/bugreport%s.zip" % \
-                          (username,
-                           datetime.now().strftime("%Y%m%d-%H%M%S"))
-
-            if self._session:
-                log_session = self._session
-            else:
-                log_session = yield Session.from_client_credentials()
-
-            with open(zip_path, 'rb') as file_content:
-                yield log_session.upload_storage_file(
-                    'PUT', server_path, file_content)
-        except Exception as e:
-            if self._contact_dev_window:
-                try:
-                    message = str(e)
-                except:
-                    pass
-                if not message:
-                    message = _('An error happened! Consult the logs for more'
-                                ' details')
-                self._contact_dev_window.set_error_message(message)
-            raise e
-        else:
-            if self._contact_dev_window:
-                self._contact_dev_window.display_confirmation()
-        finally:
-            shutil.rmtree(tmpdir)
-
-    def _generate_report_file(self, zip_object, message, reply_email):
-        configfile = StringIO()
-        configfile.write("## Bajoo bug report ##\n\n")
-        configfile.write("Creation date: %s\n" % str(datetime.now()))
-        configfile.write("Bajoo version: %s\n" % __version__)
-        configfile.write("Python version: %s\n" % sys.version)
-        configfile.write("OS type: %s\n" % os.name)
-        configfile.write("Platform type: %s\n" % sys.platform)
-        configfile.write(
-            "Platform details: %s\n" % platform.platform())
-        configfile.write(
-            "System default encoding: %s\n" % sys.getdefaultencoding())
-        configfile.write(
-            "Filesystem encoding: %s\n" % sys.getfilesystemencoding())
-        configfile.write("Reply email: %s\n" % reply_email)
-
-        if self.user_profile is None:
-            username = "Unknown_user"
-            configfile.write("Connected: No\n")
-        else:
-            username = self.user_profile.email
-            configfile.write("Connected: Yes\n")
-            configfile.write(
-                "User account: %s\n" % self.user_profile.email)
-            configfile.write(
-                "User root directory: %s\n" %
-                self.user_profile._root_folder_path)
-
-        locales = ", ".join(locale.getdefaultlocale())
-        configfile.write("Default locales: %s\n" % locales)
-        configfile.write("Message: \n\n%s" % message)
-
-        zip_object.writestr("MESSAGE", configfile.getvalue().encode('utf-8'))
-        configfile.close()
-
-        return username
-
     def _restart_if_idle(self, evt):
         evt.Skip()
         if not evt.GetEventObject().IsTopLevel():
@@ -1012,7 +902,7 @@ class BajooApp(wx.App):
         if not _already_bound:
             _logger.info('Will restart Bajoo when all windows will be closed.')
         all_windows = (self._home_window, self._main_window,
-                       self._contact_dev_window)
+                       self._about_window, self._contact_dev_window)
 
         def is_in_use(w):  # Compatibility code between Wx and MVC windows
             try:
@@ -1037,3 +927,6 @@ class BajooApp(wx.App):
         _logger.info('Restart Bajoo now.')
         self._updater.register_restart_on_exit()
         return self._exit()
+
+    def get_session(self):
+        return self._session
