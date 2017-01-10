@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import webbrowser
-from ....common.signal import Signal
+from ..base_window_controller import BaseWindowController
 from ..bug_report_window import BugReportWindow
 
 
@@ -12,43 +12,17 @@ class Page(object):
     FACEBOOK = 'FACEBOOK'
 
 
-class AboutWindowController(object):
+class AboutWindowController(BaseWindowController):
     """Controller of "About Bajoo" Window.
 
     The window displays a description of Bajoo, list the dependencies, and
     contains web links. It also have an option to "report a bug" (by opening
     the Bug Report window)
-
-    Attributes:
-        destroyed (Signal): fired when the window is about to be destroyed.
     """
 
     def __init__(self, view_factory, app):
-        self.view = view_factory(self, app.version)
-        self.app = app
-
-        self.destroyed = Signal()
-
-    def show(self):
-        """Make the window visible and set in in foreground."""
-        self.view.show()
-
-    def destroy(self):
-        """Close the Window."""
-        self.destroyed.fire()
-        self.view.destroy()
-
-    def notify_lang_change(self):
-        self.view.notify_lang_change()
-
-    def is_in_use(self):
-        """Determine if the window is in use.
-
-        The Window is considered in use if it's visible.
-        Returns:
-            bool: True if visible; false if not.
-        """
-        return self.view.is_in_use()
+        BaseWindowController.__init__(self, view_factory, app)
+        self.view.app_version = app.version
 
     def open_webpage_action(self, target_page):
         """Open one of the social network pages of Bajoo

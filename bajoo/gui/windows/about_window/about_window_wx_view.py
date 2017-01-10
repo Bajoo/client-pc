@@ -17,8 +17,8 @@ class AboutWindowWxView(wx.Frame, AboutWindowBaseView, BaseView):
     FACEBOOK_ICON = None
     TWITTER_ICON = None
 
-    def __init__(self, ctrl, app_version):
-        AboutWindowBaseView.__init__(self, ctrl, app_version)
+    def __init__(self, ctrl):
+        AboutWindowBaseView.__init__(self, ctrl)
 
         window_style = \
             wx.DEFAULT_FRAME_STYLE & ~wx.MAXIMIZE_BOX & ~wx.RESIZE_BORDER

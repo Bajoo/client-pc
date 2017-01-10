@@ -19,38 +19,19 @@ except ImportError:
 from ....api.session import Session
 from ....common import path as bajoo_path
 from ....common.i18n import _
-from ....common.signal import Signal
 from ....common.strings import err2unicode
 from ....promise import reduce_coroutine
 from ...event_promise import ensure_gui_thread
+from ..base_window_controller import BaseWindowController
 
 _logger = logging.getLogger(__name__)
 
 
-class BugReportWindowController(object):
-    """
+class BugReportWindowController(BaseWindowController):
+    """Top-level Window used to contact developers."""
 
-    Attributes:
-        destroyed (Signal): fired when the window is about to be destroyed.
-    """
     def __init__(self, view_factory, app):
-        self.view = view_factory(self)
-
-        self.app = app
-        self.destroyed = Signal()
-
-    def show(self):
-        self.view.show()
-
-    def destroy(self):
-        self.destroyed.fire()
-        self.view.destroy()
-
-    def notify_lang_change(self):
-        self.view.notify_lang_change()
-
-    def is_in_use(self):
-        return self.view.is_in_use()
+        BaseWindowController.__init__(self, view_factory, app)
 
     def send_report_action(self, email, description):
         if not description:
