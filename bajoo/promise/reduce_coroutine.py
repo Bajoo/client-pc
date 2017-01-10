@@ -31,12 +31,8 @@ def reduce_coroutine(safeguard=False):
             if safeguard:
                 df.promise.safeguard()
 
-            try:
-                # Create generator; Initialization phase
-                gen = func(*args, **kwargs)
-            except:
-                df.reject(*sys.exc_info())
-                return df.promise
+            # Create generator
+            gen = func(*args, **kwargs)
 
             def _call_next_or_set_result(value):
                 if is_thenable(value):
@@ -58,16 +54,20 @@ def reduce_coroutine(safeguard=False):
                 try:
                     next_value = gen.throw(*raised_error)
                 except StopIteration:
-                    return df.reject(*raised_error)
+                    return df.resolve(None)
                 except:
                     return df.reject(*sys.exc_info())
                 _call_next_or_set_result(next_value)
 
             # Start and resolve loop.
             try:
+                # Initialization phase
                 f = next(gen)
             except StopIteration:
                 df.resolve(None)
+                return df.promise
+            except:
+                df.reject(*sys.exc_info())
                 return df.promise
             _call_next_or_set_result(f)
 
