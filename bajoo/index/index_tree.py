@@ -93,7 +93,7 @@ class IndexTree(object):
             yield current_node
 
         for node in (node for node in current_node.children.values()
-                     if node.dirty and not node.removed):
+                     if node.dirty and not node.removed and not node.error):
             # Note: The tree might change during a `yield`. `self._is_in_tree`
             # check that current_node is still part of the tree.
             for n in self._browse_non_sync_nodes(node):

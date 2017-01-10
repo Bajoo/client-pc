@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
+import datetime
 from functools import partial
+import heapq
 import logging
 import os
 import threading
@@ -76,6 +78,12 @@ class ContainerSyncPool(object):
         self._scheduler = SyncScheduler()
 
         self._ongoing_tasks = []
+
+        # _failed_node is a heap (it must be manipulated by heapq functions)
+        # Each tuple contains: (date of next try, nb of try already done,
+        # index_tree, node)
+        # type: List[Tuple[datetime.datetime, int, IndexTree, BaseNode]]
+        self._failed_node = []
 
         self._app_status = app_status
         self._status = self.STATUS_STOPPED
@@ -191,6 +199,7 @@ class ContainerSyncPool(object):
         Args:
             local_container (LocalContainer): container to remove
         """
+        # TODO: remove node in error
         container_id = local_container.container.id
         with self._condition:
             if container_id in list(self._local_containers):
@@ -339,15 +348,37 @@ class ContainerSyncPool(object):
         _logger.log(5, 'Moved local file from "%s" to "%s" in %s',
                     src_filename, dest_filename, container)
 
+    def _is_failed_node_available(self):
+        """Returns True when one (or more) failed node(s) can be retried."""
+        return bool(self._failed_node and
+                    self._failed_node[0][0] < datetime.datetime.now())
+
+    def _get_next_node(self):
+        """Get the next node to sync
+
+        Returns:
+            Tuple[int, IndexTree, baseNode]: nb of previous try, index_tree
+                and node to sync. If none, returns (0, None, None).
+        """
+        # error nodes can have been removed from tree.
+        while self._is_failed_node_available():
+            __, nb_try, index_tree, node = heapq.heappop(
+                self._failed_node)
+            if not node.removed:
+                return nb_try, index_tree, node
+
+        if len(self._ongoing_tasks) < 30:
+            index_tree, node = self._scheduler.get_node()
+        else:
+            index_tree, node = None, None
+        return 0, index_tree, node
+
     def _sync_thread(self):
         with self._condition:
-            if self._status != self.STATUS_STARTED:
-                running = False
-            else:
-                running = True
-                index_tree, node = self._scheduler.get_node()
+            while self._status == self.STATUS_STARTED:
 
-            while running:
+                nb_try, index_tree, node = self._get_next_node()
+
                 while node:
                     # Find the local container from the IndexTree.
                     # TODO: remove need of LocalContainer from task_factory.
@@ -356,25 +387,25 @@ class ContainerSyncPool(object):
                         if lc.index_tree is index_tree)
 
                     with index_tree.lock:
-                        self._create_task(local_container.container.id, node)
+                        self._create_task(local_container.container.id, node,
+                                          index_tree, nb_try)
 
-                    if len(self._ongoing_tasks) < 30:
-                        index_tree, node = self._scheduler.get_node()
-                    else:
-                        node = None
+                    nb_try, index_tree, node = self._get_next_node()
+
+                if self._failed_node:
+                    time_to_wait = (self._failed_node[0][0] -
+                                    datetime.datetime.now()).total_seconds()
+                else:
+                    time_to_wait = None  # wait until explicit notify()
 
                 # wait for events which will produce new nodes to sync.
-                self._condition.wait()
-                if self._status != self.STATUS_STARTED:
-                    running = False
-                else:
-                    index_tree, node = self._scheduler.get_node()
+                self._condition.wait(time_to_wait)
 
             _logger.info('Stop sync thread')
             self._status = self.STATUS_STOPPED
 
     @reduce_coroutine(safeguard=True)
-    def _create_task(self, container_id, node):
+    def _create_task(self, container_id, node, index_tree, nb_try):
         """Create the task using the factory, then manages counter and errors.
 
         Args:
@@ -385,9 +416,8 @@ class ContainerSyncPool(object):
         local_container, u, w = self._local_containers[container_id]
 
         if local_container.status in \
-            (local_container.STATUS_STOPPED,
-             local_container.STATUS_PAUSED,
-             local_container.STATUS_WAIT_PASSPHRASE,):
+                (local_container.STATUS_STOPPED,
+                 local_container.STATUS_PAUSED):
             _logger.debug('Local container is not running, abort task.')
             return
         task = TaskBuilder.build_from_node(local_container, node)
@@ -400,9 +430,10 @@ class ContainerSyncPool(object):
         TaskBuilder.acquire_from_task(node, task)
 
         try:
+            # Note: due to async index_tree.lock is released during the yield.
             yield filesync.add_task(task)
         except Exception as err:
-            self._on_task_failed(task, err)
+            self._on_task_failed(node, task, err, index_tree, nb_try)
         finally:
             with self._condition:
                 self._condition.notify()
@@ -444,16 +475,34 @@ class ContainerSyncPool(object):
                             [local_container]) \
                 .start()
 
-    def _on_task_failed(self, task, error):
+    def _on_task_failed(self, node, task, error, index_tree, nb_try):
         """A task has raised an error.
 
         Args:
             task (_Task): failed task
             error (Exception): the exception raised during the task execution.
         """
+        nb_try2delta = {
+            0: 30,  # 30s
+            1: 5 * 60,  # 5m
+            2: 3600,  # 1h
+            3: 6 * 3600  # 6h
+        }
 
-        # TODO: The tasks should be retried and the concerned files should be
-        # excluded of the sync for a period of 24h if they keep failing.
+        delay = nb_try2delta.get(nb_try, 24 * 36 * 3600)  # default: 1 day
+        next_try = datetime.datetime.now() + datetime.timedelta(seconds=delay)
+        nb_try += 1
+        heapq.heappush(self._failed_node, (next_try, nb_try, index_tree, node))
+
+        with index_tree.lock:
+            node.error = error
+            # A node in error is marked "sync" to prevent other sync attempt.
+            node.sync = True
+
+        # TODO: error messages should be grouped (over a period of 3-4 seconds)
+        # to avoid spamming the user.
+        # After 1st message, identical errors should not send new messages for
+        # at least 1 minute.
 
         if isinstance(error, HTTPEntityTooLargeError):
             local_container = task.local_container

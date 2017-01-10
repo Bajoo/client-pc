@@ -50,6 +50,8 @@ class BaseNode(object):
             local modifications of the content pointed by this node.
         remote_hint (Optional[Hint]): if set, hint representing the presumed
             remote modifications of the content pointed by this node.
+        error (Exception): if set, an error occurred during the last sync
+            attempt. sync status should be 'True'.
     Notes:
         `sync` refers to the node only; `dirty` refers the hierarchy. A
         non-sync node is always dirty.
@@ -68,6 +70,7 @@ class BaseNode(object):
         self._dirty = True
         self.removed = False
 
+        self.error = None
         self.state = None
 
         self.task = None
