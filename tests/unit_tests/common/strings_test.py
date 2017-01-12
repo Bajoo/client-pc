@@ -122,3 +122,9 @@ class TestStrings(object):
 
     def test_err2unicode_with_unicode(self):
         assert strings.err2unicode(u'é') == u'é'
+
+    def test_err2unicode_on_exception_with_unicode_message(self):
+        assert strings.err2unicode(Exception(u'é')) == u'é'
+
+    def test_err2unicode_on_exception_with_non_ascii_bytes_message(self):
+        assert strings.err2unicode(Exception('é')) == u'é'

@@ -64,7 +64,10 @@ def err2unicode(err):
     if isinstance(err, bytes):
         msg = err
     else:
-        msg = str(err)
+        try:
+            return unicode(err)
+        except (NameError, UnicodeError):
+            msg = str(err)
 
     if isinstance(msg, _unicode_type):
         return msg
