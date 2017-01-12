@@ -95,7 +95,10 @@ class Container(object):
                 yield self._encryption_key
                 return
 
-            enc_key_content = result.get('content')
+            enc_key_content = io.BytesIO()
+            shutil.copyfileobj(result.get('content'), enc_key_content)
+            enc_key_content.seek(0)
+
             _logger.debug('Key of container #%s downloaded' % self.id)
             key_content = yield encryption.decrypt(
                 enc_key_content,
