@@ -42,7 +42,7 @@ class BugReportWindowController(BaseWindowController):
             self.view.set_error(_('The email field is required'))
             return
 
-        if not re.match('.{2,}@.{2,}', email):
+        if not re.match('.+@.+', email):
             self.view.set_error(_('The email must be valid.'))
             return
 
