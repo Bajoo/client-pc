@@ -21,7 +21,8 @@ import os.path
 from ...app_status import AppStatus
 from ...common.i18n import N_, _
 from ...common.path import resource_filename
-from ..enums import ContainerStatus, WindowDestination
+from ...local_container import ContainerStatus
+from ..enums import WindowDestination
 
 
 class TaskBarIconAction(object):
@@ -56,7 +57,9 @@ container_status_to_icon_files = {
         ContainerStatus.SYNC_PROGRESS: 'progress',
         ContainerStatus.SYNC_PAUSE: 'paused',
         ContainerStatus.SYNC_STOP: 'stopped',
-        ContainerStatus.SYNC_ERROR: 'error'
+        ContainerStatus.STATUS_ERROR: 'error',
+        ContainerStatus.QUOTA_EXCEEDED: 'error',
+        ContainerStatus.WAIT_PASSPHRASE: 'error'
     }.items()
     }
 

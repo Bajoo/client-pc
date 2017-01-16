@@ -3,7 +3,7 @@
 import tempfile
 from bajoo.index import IndexTree
 from bajoo.index.file_node import FileNode
-from bajoo.local_container import LocalContainer
+from bajoo.local_container import ContainerStatus, LocalContainer
 
 
 class FakeModel(object):
@@ -23,7 +23,7 @@ class FakeLocalContainer(LocalContainer):
 
         self.container = container
         self.status_stack = []
-        self.status = LocalContainer.STATUS_STARTED
+        self.status = ContainerStatus.SYNC_DONE
 
         self.index_tree = IndexTree()
 

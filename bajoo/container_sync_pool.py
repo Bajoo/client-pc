@@ -21,6 +21,7 @@ from .filesync.task_builder import TaskBuilder
 from .file_watcher import FileWatcher
 from .index.file_node import FileNode
 from .index.hint_builder import HintBuilder
+from .local_container import ContainerStatus
 from .network.errors import HTTPEntityTooLargeError
 from .promise import reduce_coroutine
 
@@ -103,7 +104,7 @@ class ContainerSyncPool(object):
             for container, _updater, _watcher in self._local_containers:
                 container.index_tree.set_tree_not_sync()
                 self._scheduler.add_index_tree(container.index_tree)
-                container.status = container.STATUS_STARTED
+                self._update_container_status(container)
                 container.error_msg = None
                 _updater.start()
                 _watcher.start()
@@ -165,10 +166,9 @@ class ContainerSyncPool(object):
                 (local_container, updater, watcher,)
 
             if self._status != self.STATUS_STARTED:
-                local_container.status = local_container.STATUS_PAUSED
+                local_container.status = ContainerStatus.SYNC_PAUSE
                 return
 
-            local_container.status = local_container.STATUS_STARTED
             if self._status == self.STATUS_STARTED:
                 self._start_container(container.id)
 
@@ -182,8 +182,8 @@ class ContainerSyncPool(object):
         """
         lc, updater, watcher = self._local_containers[container_id]
         lc.index_tree.set_tree_not_sync()
-        lc.status = lc.STATUS_STARTED
         lc.error_msg = None
+        self._update_container_status(lc)
         self._scheduler.add_index_tree(lc.index_tree)
         updater.start()
         watcher.start()
@@ -219,7 +219,7 @@ class ContainerSyncPool(object):
         self._scheduler.remove_index_tree(local_container.index_tree)
         updater.stop()
         watcher.stop()
-        local_container.status = local_container.STATUS_STOPPED
+        local_container.status = ContainerStatus.SYNC_STOP
         local_container.error_msg = None
         local_container.index_saver.stop()
 
@@ -228,7 +228,7 @@ class ContainerSyncPool(object):
     def pause(self):
         """Set all sync operations in pause."""
         _logger.debug('Pause sync')
-        self.stop()
+        self.stop()  # TODO: we should not remove containers from the pool
         with self._condition:
             self._app_status.value = AppStatus.SYNC_PAUSED
 
@@ -254,13 +254,26 @@ class ContainerSyncPool(object):
         if thread and join:
             thread.join()
 
+    def _update_container_status(self, local_container):
+        """Update a started container status to DONE or PROGRESS.
+
+        Args:
+            local_container (LocalContainer)
+        """
+        if local_container.status == ContainerStatus.QUOTA_EXCEEDED:
+            return  # QUOTA_EXCEEDED status is more important
+        if local_container.is_up_to_date():
+            local_container.status = ContainerStatus.SYNC_DONE
+        else:
+            local_container.status = ContainerStatus.SYNC_PROGRESS
+
     def _increment(self, task):
         with self._condition:
             self._ongoing_tasks.append(task)
             if self._app_status.value == AppStatus.SYNC_DONE:
                 self._app_status.value = AppStatus.SYNC_IN_PROGRESS
 
-    def _decrement(self, task):
+    def _decrement(self, task, local_container):
         with self._condition:
             self._ongoing_tasks.remove(task)
             if self._app_status.value != AppStatus.SYNC_PAUSED:
@@ -268,13 +281,15 @@ class ContainerSyncPool(object):
                     self._app_status.value = AppStatus.SYNC_DONE
                 else:
                     self._app_status.value = AppStatus.SYNC_IN_PROGRESS
+                self._update_container_status(local_container)
 
     def _apply_event_then_notify(func):
-        def wrap(self, *args, **kwargs):
+        def wrap(self, container, *args, **kwargs):
             with self._condition:
                 if self._status != self.STATUS_STARTED:
                     return
-                func(self, *args, **kwargs)
+                func(self, container, *args, **kwargs)
+                self._update_container_status(container)
                 self._condition.notify()
         return wrap
 
@@ -415,13 +430,8 @@ class ContainerSyncPool(object):
 
         local_container, u, w = self._local_containers[container_id]
 
-        if local_container.status in \
-                (local_container.STATUS_STOPPED,
-                 local_container.STATUS_PAUSED):
-            _logger.debug('Local container is not running, abort task.')
-            return
         task = TaskBuilder.build_from_node(local_container, node)
-        if (local_container.status == local_container.STATUS_QUOTA_EXCEEDED and
+        if (local_container.status == ContainerStatus.QUOTA_EXCEEDED and
                 isinstance(task, (AddedLocalFilesTask, MovedLocalFilesTask))):
             _logger.debug('Quota exceeded, abort task.')
             return
@@ -437,13 +447,13 @@ class ContainerSyncPool(object):
         finally:
             with self._condition:
                 self._condition.notify()
-            self._decrement(task)
+            self._decrement(task, local_container)
 
         local_container.index_saver.trigger_save()
 
     def _turn_delay_upload_off(self, local_container):
         with self._condition:
-            if local_container.status != local_container.STATUS_QUOTA_EXCEEDED:
+            if local_container.status != ContainerStatus.QUOTA_EXCEEDED:
                 _logger.debug('Fail to resume upload, local container' +
                               ' is not in quota exceeded status')
                 return
@@ -452,13 +462,13 @@ class ContainerSyncPool(object):
                           local_container.container.name)
 
             # Restart local container
-            local_container.status = local_container.STATUS_STARTED
             local_container.error_msg = None
             local_container.index_tree.set_tree_not_sync()
+            self._update_container_status(local_container)
 
     def delay_upload(self, local_container):
         with self._condition:
-            if local_container.status == local_container.STATUS_QUOTA_EXCEEDED:
+            if local_container.status == ContainerStatus.QUOTA_EXCEEDED:
                 _logger.debug('Quota limit has already been detected')
                 return
 
@@ -467,7 +477,7 @@ class ContainerSyncPool(object):
 
             self._on_sync_error(_("Quota limit reached"))
 
-            local_container.status = local_container.STATUS_QUOTA_EXCEEDED
+            local_container.status = ContainerStatus.QUOTA_EXCEEDED
             local_container.error_msg = _(
                 'Your quota has exceeded.' +
                 ' All upload operations are delayed in the next 5 minutes.')

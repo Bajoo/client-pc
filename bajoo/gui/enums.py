@@ -17,12 +17,3 @@ class WindowDestination(object):
     CLIENT_SPACE = 'CLIENT_SPACE'
     ONLINE_HELP = 'ONLINE_HELP'
     BAJOO_DROP = 'BAJOO_DROP'
-
-
-class ContainerStatus(object):
-    """Different states possible for a container."""
-    SYNC_DONE = 3
-    SYNC_PROGRESS = 4
-    SYNC_PAUSE = 5
-    SYNC_STOP = 6
-    SYNC_ERROR = 7

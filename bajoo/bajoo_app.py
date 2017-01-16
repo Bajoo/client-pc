@@ -26,7 +26,6 @@ from .gui.windows import BugReportWindow
 from .gui.change_password_window import ChangePasswordWindow
 from .gui.common.language_box import LanguageBox
 from .gui.enums import WindowDestination
-from .gui.enums import ContainerStatus as ContainerStatusTBIcon
 from .gui.event_promise import ensure_gui_thread
 from .gui.form.members_share_form import MembersShareForm
 from .gui.home_window import HomeWindow
@@ -40,7 +39,6 @@ from .gui.tab.advanced_settings_tab import AdvancedSettingsTab
 from .gui.tab.creation_share_tab import CreationShareTab
 from .gui.tab.details_share_tab import DetailsShareTab
 from .gui.tab.list_shares_tab import ListSharesTab
-from .local_container import LocalContainer
 from .network import set_proxy
 from .network.errors import NetworkError
 from .passphrase_manager import PassphraseManager
@@ -411,26 +409,9 @@ class BajooApp(wx.App):
                             'but the dynamic list is None')
             return
 
-        mapping = {
-            LocalContainer.STATUS_ERROR: ContainerStatusTBIcon.SYNC_ERROR,
-            LocalContainer.STATUS_PAUSED: ContainerStatusTBIcon.SYNC_PAUSE,
-            LocalContainer.STATUS_QUOTA_EXCEEDED:
-                ContainerStatusTBIcon.SYNC_ERROR,
-            LocalContainer.STATUS_WAIT_PASSPHRASE:
-                ContainerStatusTBIcon.SYNC_ERROR,
-            LocalContainer.STATUS_STOPPED: ContainerStatusTBIcon.SYNC_STOP,
-            LocalContainer.STATUS_UNKNOWN: ContainerStatusTBIcon.SYNC_PROGRESS
-        }
         containers_status = []
         for container in self._container_list.get_list():
-            if container.status == LocalContainer.STATUS_STARTED:
-                if container.is_up_to_date():
-                    status = ContainerStatusTBIcon.SYNC_DONE
-                else:
-                    status = ContainerStatusTBIcon.SYNC_PROGRESS
-            else:
-                status = mapping[container.status]
-            row = (container.name, container.path, status)
+            row = (container.name, container.path, container.status)
             containers_status.append(row)
 
         self._task_bar_icon.set_container_status_list(containers_status)

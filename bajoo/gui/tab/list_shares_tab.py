@@ -6,7 +6,7 @@ from os import path
 import wx
 from wx.lib.newevent import NewCommandEvent
 
-from ...local_container import LocalContainer
+from ...local_container import ContainerStatus
 from ...common.i18n import N_
 from ..common.pictos import get_bitmap
 from ..event_promise import ensure_gui_thread
@@ -71,19 +71,19 @@ class ListSharesTab(wx.Panel, Translator):
         self.IMG_REFRESH = get_bitmap('refresh.png', False)
 
         self.IMG_CONTAINER_STATUS = {
-            LocalContainer.STATUS_ERROR:
+            ContainerStatus.STATUS_ERROR:
                 get_bitmap('container_status/error.png'),
-            LocalContainer.STATUS_PAUSED:
+            ContainerStatus.SYNC_PAUSE:
                 get_bitmap('container_status/paused.png'),
-            LocalContainer.STATUS_STARTED:
+            ContainerStatus.SYNC_PROGRESS:
+                get_bitmap('container_status/progress.png'),
+            ContainerStatus.SYNC_DONE:
                 get_bitmap('container_status/synced.png'),
-            LocalContainer.STATUS_STOPPED:
+            ContainerStatus.SYNC_STOP:
                 get_bitmap('container_status/stopped.png'),
-            LocalContainer.STATUS_QUOTA_EXCEEDED:
+            ContainerStatus.QUOTA_EXCEEDED:
                 get_bitmap('container_status/error.png'),
-            LocalContainer.STATUS_WAIT_PASSPHRASE:
-                get_bitmap('container_status/error.png'),
-            LocalContainer.STATUS_UNKNOWN:
+            ContainerStatus.WAIT_PASSPHRASE:
                 get_bitmap('container_status/error.png')
         }
 
