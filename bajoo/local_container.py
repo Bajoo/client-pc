@@ -7,6 +7,7 @@ import shutil
 
 from .api.team_share import TeamShare
 from .common.i18n import _, N_
+from .common.signal import Signal
 from .common.strings import err2unicode
 from .encryption.errors import PassphraseAbortError
 from .index import IndexTree, IndexSaver
@@ -40,7 +41,9 @@ class LocalContainer(object):
     constraint, an index part can be reserved.
 
     Attributes:
-        status: One of the 4 status possible. See below.
+        status (ContainerStatus): actual status of the container.
+        status_changed (Signal[ContainerStatus]): signal fired when the status
+            changes.
         container (Container): the corresponding API Container object. If the
             container is not yet loaded, it may be None.
         model (ContainerModel): the local representation of the same container.
@@ -70,6 +73,7 @@ class LocalContainer(object):
         self.index_tree = IndexTree()
         self.index_saver = IndexSaver(self.index_tree, self.model.path,
                                       self.model.id)
+        self.status_changed = Signal()
 
     @property
     def status(self):
@@ -77,7 +81,10 @@ class LocalContainer(object):
 
     @status.setter
     def status(self, value):
+        has_changed = self._status != value
         self._status = value
+        if has_changed:
+            self.status_changed.fire(value)
 
     def check_path(self):
         """Check that the path is the folder corresponding to the container.
