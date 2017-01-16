@@ -384,7 +384,7 @@ class ListSharesView(BaseView):
         })
 
         img_share_status.SetBitmap(
-            self.window.IMG_CONTAINER_STATUS[local_container.get_status()])
+            self.window.IMG_CONTAINER_STATUS[local_container.status])
 
         if local_container.type == 'teamshare':
             share = local_container.container
