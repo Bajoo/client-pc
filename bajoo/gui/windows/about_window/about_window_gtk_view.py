@@ -11,8 +11,8 @@ from .about_window_base_view import AboutWindowBaseView
 
 class AboutWindowGtkView(Gtk.Window, AboutWindowBaseView):
 
-    def __init__(self, ctrl):
-        AboutWindowBaseView.__init__(self, ctrl)
+    def __init__(self, ctrl, app_version):
+        AboutWindowBaseView.__init__(self, ctrl, app_version)
         Gtk.Window.__init__(self)
 
         icon = resource_filename('assets/window_icon.png')

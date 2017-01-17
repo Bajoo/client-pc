@@ -8,9 +8,15 @@ class AboutWindowBaseView(object):
         app_version (Text): app version displayed.
     """
 
-    def __init__(self, ctrl):
+    def __init__(self, ctrl, app_version):
+        """
+
+        Args:
+            ctrl (AboutWindowController)
+            app_version (Text)
+        """
         self.controller = ctrl
-        self.app_version = None
+        self.app_version = app_version
 
     def show(self):
         """Show the window and set it in foreground."""

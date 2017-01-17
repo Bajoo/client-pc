@@ -21,8 +21,7 @@ class AboutWindowController(BaseWindowController):
     """
 
     def __init__(self, view_factory, app):
-        BaseWindowController.__init__(self, view_factory, app)
-        self.view.app_version = app.version
+        BaseWindowController.__init__(self, view_factory, app, app.version)
 
     def open_webpage_action(self, target_page):
         """Open one of the social network pages of Bajoo

@@ -2,8 +2,7 @@
 
 class AboutWindowTestController(object):
     def __init__(self, factory, exit):
-        self.view = factory(self)
-        self.view.app_version = '0.42.999-test'
+        self.view = factory(self, '0.42.999-test')
         self.view.show()
         self._exit = exit
 
