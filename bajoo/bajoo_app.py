@@ -23,7 +23,6 @@ from .dynamic_container_list import DynamicContainerList
 from .filesync import task_consumer
 from .gui import AboutWindow, TaskBarIcon
 from .gui.windows import BugReportWindow
-from .gui.change_password_window import ChangePasswordWindow
 from .gui.common.language_box import LanguageBox
 from .gui.enums import WindowDestination
 from .gui.event_promise import ensure_gui_thread
@@ -312,8 +311,6 @@ class BajooApp(wx.App):
                       self._move_synced_container)
             self.Bind(AccountTab.EVT_DATA_REQUEST,
                       self._on_request_account_info)
-            self.Bind(ChangePasswordWindow.EVT_CHANGE_PASSWORD_SUBMIT,
-                      self._on_request_change_password)
             self.Bind(AccountTab.EVT_DISCONNECT_REQUEST, self.disconnect)
         except:
             # wxPython hides OnInit's exceptions without any message.
@@ -706,29 +703,6 @@ class BajooApp(wx.App):
                 'quota': allowed_quota,  # 2GB
                 'quota_used': used_quota  # 500MB
             })
-
-    @promise.reduce_coroutine(safeguard=True)
-    def _on_request_change_password(self, event):
-        _logger.debug('Change password request received %s:', event.data)
-
-        old_password = event.data[u'old_password']
-        new_password = event.data[u'new_password']
-
-        try:
-            yield self._user.change_password(old_password, new_password)
-        except:
-            _logger.warning('Change password failed', exc_info=True)
-            if self._main_window:
-                self._main_window.on_password_change_error(
-                    N_('Failure when attempting to change password.'))
-        else:
-            new_session = yield Session.from_user_credentials(self._user.name,
-                                                              new_password)
-            self._session.update(new_session.access_token,
-                                 new_password.refresh_token)
-
-            if self._main_window:
-                self._main_window.on_password_changed()
 
     @ensure_gui_thread(safeguard=True)
     def _exit(self):

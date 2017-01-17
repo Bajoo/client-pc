@@ -3,6 +3,7 @@ import re
 import sys
 from .about_window import AboutWindowTestController
 from .bug_report_window import BugReportWindowTestController
+from .change_password_window import ChangePasswordWindowTestController
 from .task_bar_icon import TaskBarIconTestController
 
 
@@ -55,6 +56,10 @@ graphic_items = {
                           'windows.bug_report_window', {
                               'wx': 'BugReportWindowWxView'
                           }),
+    'change_password_window': (ChangePasswordWindowTestController,
+                               'windows.change_password_window', {
+                                   'wx': 'ChangePasswordWindowWxView'
+                               }),
     'task_bar_icon': (TaskBarIconTestController, 'task_bar_icon', {
         'wx': 'TaskBarIconWxView',
         'gtk': 'TaskBarIconGtkView',

@@ -247,16 +247,6 @@ class MainWindow(wx.Frame, Translator):
         if share:
             self.show_list_shares_tab()
 
-    @ensure_gui_thread()
-    def on_password_changed(self):
-        if self._view.account_tab:
-            self._view.account_tab.on_password_change_success()
-
-    @ensure_gui_thread()
-    def on_password_change_error(self, message):
-        if self._view.account_tab:
-            self._view.account_tab.show_password_change_error(message)
-
     def _on_request_show_list_shares(self, _event):
         self.show_list_shares_tab()
 

@@ -11,14 +11,16 @@ class BaseWindowController(object):
         destroyed (Signal): fired when the window is about to be destroyed.
     """
 
-    def __init__(self, view_factory, app):
+    def __init__(self, view_factory, app, *args, **kwargs):
         """Constructor
 
         Args:
             view_factory (Callable[[BaseWindowController], BaseWindowView])
             app (BajooApp)
+            *args (List): optional argument passed to view_factory
+            **kwargs (Dict): optional named argument passed to view_factory
         """
-        self.view = view_factory(self)
+        self.view = view_factory(self, *args, **kwargs)
 
         self.app = app
         self.destroyed = Signal()
