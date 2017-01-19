@@ -1,3 +1,10 @@
+bajoo (0.4.1-1) xenial; urgency=low
+
+  * Fix a crash in the About window.
+  * Fix incorrect checks in the change password form.
+
+ -- Bajoo <support@bajoo.fr>  Thu, 19 Jan 2017 10:57:23 +0100
+
 bajoo (0.4.0-1) xenial; urgency=low
 
   * Rewrite of the sync module: The status of each file is now accessible far
