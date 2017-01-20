@@ -128,7 +128,7 @@ class BugReportWindowController(BaseWindowController):
                 "User root directory: %s\n" %
                 self.app.user_profile._root_folder_path)
 
-        locales = ", ".join(locale.getdefaultlocale())
+        locales = ", ".join(str(l) for l in locale.getdefaultlocale())
         configfile.write("Default locales: %s\n" % locales)
         configfile.write("Message: \n\n%s" % message)
 
