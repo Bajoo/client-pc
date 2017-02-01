@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import tempfile
-from bajoo.index.index_tree import IndexTree
-from bajoo.local_container import LocalContainer
+from bajoo.index import IndexTree
+from bajoo.index.file_node import FileNode
+from bajoo.local_container import ContainerStatus, LocalContainer
 
 
 class FakeModel(object):
@@ -22,9 +23,9 @@ class FakeLocalContainer(LocalContainer):
 
         self.container = container
         self.status_stack = []
-        self.status = LocalContainer.STATUS_STARTED
+        self.status = ContainerStatus.SYNC_DONE
 
-        self.index = IndexTree(None)
+        self.index_tree = IndexTree()
 
     def __setattr__(self, name, value):
         self.__dict__[name] = value
@@ -70,5 +71,8 @@ class FakeLocalContainer(LocalContainer):
         raise Exception("Not supposed to be used in task testing")
 
     def inject_hash(self, path, local_hash, remote_hash):
-        node = self.index.root.get_or_insert_node(path)
-        node.set_hash(local_hash, remote_hash)
+        node = self.index_tree.get_or_create_node_by_path(path, FileNode)
+        node.set_hashes(local_hash, remote_hash)
+
+    def inject_empty_node(self, path):
+        self.index_tree.get_or_create_node_by_path(path, FileNode)

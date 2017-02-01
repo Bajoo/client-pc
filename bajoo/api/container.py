@@ -50,7 +50,6 @@ class Container(object):
         self.id = container_id
         self.name = name
         self.is_encrypted = encrypted
-        self.error = None
 
         self._encryption_key = None
 
@@ -95,12 +94,11 @@ class Container(object):
                 yield self._generate_key(lock_previously_acquired=True)
                 yield self._encryption_key
                 return
-            except Exception as error:
-                error.container_id = self.id
-                self.error = error
-                raise error
 
-            enc_key_content = result.get('content')
+            enc_key_content = io.BytesIO()
+            shutil.copyfileobj(result.get('content'), enc_key_content)
+            enc_key_content.seek(0)
+
             _logger.debug('Key of container #%s downloaded' % self.id)
             key_content = yield encryption.decrypt(
                 enc_key_content,

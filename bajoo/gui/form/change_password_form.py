@@ -7,7 +7,8 @@ from wx.lib.newevent import NewCommandEvent
 from ...common.i18n import N_
 from ..base_view import BaseView
 from ..form.base_form import BaseForm
-from ..validator import NotEmptyValidator
+from ..validator import (ConfirmPasswordValidator, MinLengthValidator,
+                         NotEmptyValidator)
 
 _logger = logging.getLogger(__name__)
 
@@ -71,16 +72,18 @@ class ChangePasswordView(BaseView):
             style=wx.TE_PASSWORD,
             name='new_password')
         self._txt_new_password.SetMinSize(text_min_size)
-        self._new_password_error = NotEmptyValidator(
-            change_password_form, self._txt_new_password)
+        self._new_password_error = MinLengthValidator(
+            change_password_form, target=self._txt_new_password,
+            min_length=8, inform_message=N_('8 characters minimum'))
 
         self._txt_confirm_new_password = wx.TextCtrl(
             change_password_form, wx.ID_ANY,
             style=wx.TE_PASSWORD,
             name='confirm_new_password')
         self._txt_confirm_new_password.SetMinSize(text_min_size)
-        self._confirm_new_password_error = NotEmptyValidator(
-            change_password_form, self._txt_confirm_new_password)
+        self._confirm_new_password_error = ConfirmPasswordValidator(
+            change_password_form, target=self._txt_confirm_new_password,
+            ref=self._txt_new_password, hide_if_valid=True)
 
         self._btn_ok = wx.Button(change_password_form, wx.ID_APPLY,
                                  name='submit')

@@ -9,6 +9,7 @@ except ImportError:
 
 from .. import network
 from .. import promise
+from ..common import config
 from ..common.i18n import N_
 from ..common.strings import to_str
 from ..network.errors import NetworkError
@@ -16,21 +17,7 @@ from ..network.errors import HTTPUnauthorizedError
 from ..promise import Deferred, Promise
 from .user import User
 
-
 _logger = logging.getLogger(__name__)
-
-IDENTITY_API_URL = 'https://beta.bajoo.fr'
-STORAGE_API_URL = 'https://storage.bajoo.fr/v1'
-
-# These credentials are valid, but are intended for test purpose only.
-# They can be revoked at any moment. If you want to develop your own client,
-# either for distributing it or for your personal use, please contact us at
-# <support-en@bajoo.fr> and we will be happy to provide you some credentials.
-CLIENT_ID = '24e1aba5d72046dd8db4410176613698'
-CLIENT_SECRET = '4f2c73941fda45eaa5e72a0ade8e7b80'
-
-TOKEN_URL = '/'.join([IDENTITY_API_URL, 'token'])
-REVOKE_TOKEN_URL = '/'.join([IDENTITY_API_URL, 'token', 'revoke'])
 
 
 class InvalidDataError(NetworkError):
@@ -111,13 +98,14 @@ class OAuth2Session(object):
     @promise.reduce_coroutine()
     def _send_auth_request(session, request_data):
         """Generic method to send authentication request."""
-        auth = (CLIENT_ID, CLIENT_SECRET)
+        auth = config.get('client_id'), config.get('client_secret')
         headers = {
             'Accept': 'application/json',
             'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
         }
 
-        response = yield network.json_request('POST', TOKEN_URL, auth=auth,
+        token_url = '/'.join([config.get('identity_api_url'), 'token'])
+        response = yield network.json_request('POST', token_url, auth=auth,
                                               headers=headers,
                                               data=request_data)
         content = response['content']
@@ -143,7 +131,7 @@ class OAuth2Session(object):
         Returns:
             Future<None>: Resolve when the revocation is done.
         """
-        auth = (CLIENT_ID, CLIENT_SECRET)
+        auth = config.get('client_id'), config.get('client_secret')
         headers = {
             'Accept': 'application/json',
             'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
@@ -152,9 +140,11 @@ class OAuth2Session(object):
             u'token': self.refresh_token
         }
 
+        revoke_token_url = '/'.join([config.get('identity_api_url'),
+                                     'token', 'revoke'])
         self.refresh_token = None
         self.access_token = None
-        yield network.json_request('POST', REVOKE_TOKEN_URL,
+        yield network.json_request('POST', revoke_token_url,
                                    auth=auth, headers=headers, data=data)
         yield None
 
@@ -326,8 +316,9 @@ class Session(OAuth2Session):
 
         Returns (Future<dict>): the future returned by json_request
         """
-        return self._send_bajoo_request(IDENTITY_API_URL, verb, url_path,
-                                        network.json_request, **params)
+        return self._send_bajoo_request(config.get('identity_api_url'), verb,
+                                        url_path, network.json_request,
+                                        **params)
 
     def send_storage_request(self, verb, url_path, **params):
         """
@@ -340,8 +331,9 @@ class Session(OAuth2Session):
 
         Returns (Future<dict>): the future returned by json_request
         """
-        return self._send_bajoo_request(STORAGE_API_URL, verb, url_path,
-                                        network.json_request, **params)
+        return self._send_bajoo_request(config.get('storage_api_url'), verb,
+                                        url_path, network.json_request,
+                                        **params)
 
     def download_storage_file(self, verb, url_path, **params):
         """
@@ -356,8 +348,8 @@ class Session(OAuth2Session):
             the future returned by network.download
         """
 
-        return self._send_bajoo_request(STORAGE_API_URL, verb, url_path,
-                                        network.download, **params)
+        return self._send_bajoo_request(config.get('storage_api_url'), verb,
+                                        url_path, network.download, **params)
 
     def upload_storage_file(self, verb, url_path, source, **params):
         """Upload a file into the storage
@@ -373,8 +365,8 @@ class Session(OAuth2Session):
             **params (dict): additional parameters passed to `network.upload`.
         """
         params['source'] = source
-        return self._send_bajoo_request(STORAGE_API_URL, verb, url_path,
-                                        network.upload, **params)
+        return self._send_bajoo_request(config.get('storage_api_url'), verb,
+                                        url_path, network.upload, **params)
 
 
 if __name__ == '__main__':

@@ -103,6 +103,7 @@ class TestReduceCoroutine(object):
         @promise.reduce_coroutine()
         def generator():
             raise Err()
+            yield None
 
         p = generator()
         err = p.exception(0.01)
@@ -181,7 +182,8 @@ class TestReduceCoroutine(object):
 
         @promise.reduce_coroutine(safeguard=True)
         def generator():
-                raise Err()
+            raise Err()
+            yield None
 
         p = generator()
         assert isinstance(p.exception(0.001), Err)

@@ -8,12 +8,12 @@ from ...app_status import AppStatus
 from ...common.i18n import _
 from ...common.signal import Signal
 from ...common.util import open_folder
-from .base import WindowDestination, TaskBarIconBaseController
+from ..enums import WindowDestination
 
 _logger = logging.getLogger(__name__)
 
 
-class Controller(TaskBarIconBaseController):
+class TaskBarIconController(object):
     """Task Bar Icon Controller.
 
     The general status and the list of containers must be updated, by using
@@ -29,14 +29,16 @@ class Controller(TaskBarIconBaseController):
             to quit Bajoo.
     """
 
-    def __init__(self, View):
+    def __init__(self, view_factory):
         """TaskBarIcon Controller constructor
 
         Args:
-            View (type): View class. Will be instantiated at start.
+            view_factory (type): View class. Will be instantiated at start.
+
+        Attributes:
+            view (TaskBarIconBaseView): TaskBarIcon view
         """
-        view = View(self)
-        TaskBarIconBaseController.__init__(self, view)
+        self.view = view_factory(self)
 
         self._is_connected = False
 
@@ -70,6 +72,10 @@ class Controller(TaskBarIconBaseController):
         self.view.notify_lang_change()
 
     def primary_action(self):
+        """Apply the icon's primary action.
+
+        It's usually triggered by a left click on the task bar icon.
+        """
         _logger.debug('Execute TaskBarIcon main action')
 
         # TODO: remove this ugly dependency to BajooApp
@@ -81,6 +87,14 @@ class Controller(TaskBarIconBaseController):
             self.navigate.fire(WindowDestination.HOME)
 
     def navigate_action(self, destination):
+        """Open a window or a particular panel.
+
+        This is called when the user enter in a menu and select an entry to
+        navigate through the app.
+
+        Args:
+            destination (WindowDestination): target destination requested.
+        """
         _logger.debug('Navigate action to %s', destination)
 
         web_navigation_mapping = {
@@ -96,6 +110,11 @@ class Controller(TaskBarIconBaseController):
             self.navigate.fire(destination)
 
     def open_container_action(self, folder_path):
+        """Open the folder of a container.
+
+        Args:
+            folder_path (unicode): absolute path of the container.
+        """
         _logger.debug(u'Open container with path "%s"', folder_path)
 
         # TODO: We should receive a container (or its ID) instead of the path.
@@ -103,10 +122,12 @@ class Controller(TaskBarIconBaseController):
             open_folder(folder_path)
 
     def exit_action(self):
+        """Properly exit the app."""
         _logger.debug('Exit action')
         self.exit_app.fire()
 
     def destroy(self):
-        TaskBarIconBaseController.destroy(self)
+        """Clean up all resources before deletion."""
+        self.view.destroy()
         self.navigate.disconnect_all()
         self.exit_app.disconnect_all()

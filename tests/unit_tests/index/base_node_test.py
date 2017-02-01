@@ -12,6 +12,9 @@ class TestBaseNode(object):
     def test_node_parent_is_none_by_default(self):
         assert BaseNode('root').parent is None
 
+    def test_node_are_not_removed_by_default(self):
+        assert BaseNode('root').removed is False
+
     def test_add_child_on_empty_node(self):
         root = BaseNode('root')
         child = BaseNode('child')
@@ -126,6 +129,7 @@ class TestBaseNode(object):
 
         root.rm_child(child_a)
         assert child_a.parent is None
+        assert child_a.removed is True
         assert child_a not in root.children
 
     def test_rm_dirty_child_updates_parent_flag(self):
@@ -142,6 +146,22 @@ class TestBaseNode(object):
         node.rm_child(child2)
         assert not node.dirty
 
+    def test_rm_child_propagate_removed_flag_to_all_children(self):
+        root = BaseNode('root')
+        node = BaseNode('node')
+        child1 = BaseNode('child 1')
+        child2 = BaseNode('child 2')
+        root.add_child(node)
+        node.add_child(child1)
+        node.add_child(child2)
+
+        for n in (root, node, child1, child2):
+            assert n.removed is False
+        root.rm_child(node)
+        assert root.removed is False
+        for n in (node, child1, child2):
+            assert n.removed is True
+
     def test_node_remove_itself(self):
         root = BaseNode('root')
         child_a = BaseNode('A')
@@ -151,6 +171,7 @@ class TestBaseNode(object):
 
         child_a.remove_itself()
         assert child_a.parent is None
+        assert child_a.removed is True
         assert child_a not in root.children
 
     def test_dirty_node_removing_itself_updates_parent_flag(self):
@@ -166,3 +187,139 @@ class TestBaseNode(object):
         assert node.dirty
         child2.remove_itself()
         assert not node.dirty
+
+    def test_remove_itself_propagate_removed_flag_to_all_children(self):
+        root = BaseNode('root')
+        node = BaseNode('node')
+        child1 = BaseNode('child 1')
+        child2 = BaseNode('child 2')
+        root.add_child(node)
+        node.add_child(child1)
+        node.add_child(child2)
+
+        for n in (root, node, child1, child2):
+            assert n.removed is False
+        node.remove_itself()
+        assert root.removed is False
+        for n in (node, child1, child2):
+            assert n.removed is True
+
+    def test_set_hierarchy_not_sync(self):
+        node = BaseNode('node')
+        child1 = BaseNode('child 1')
+        child2 = BaseNode('child 2')
+        node.add_child(child1)
+        node.add_child(child2)
+        node.sync = True
+        child1.sync = True
+        child2.sync = True
+
+        node.set_all_hierarchy_not_sync()
+        assert node.sync is False
+        assert child1.sync is False
+        assert child2.sync is False
+
+    def test_get_full_path_on_root_node(self):
+        node = BaseNode(u'root')
+        assert node.get_full_path() == u'.'
+
+    def test_get_full_path_on_first_level_node(self):
+        node = BaseNode(u'node')
+        child1 = BaseNode(u'child 1')
+        child2 = BaseNode(u'child 2')
+        node.add_child(child1)
+        node.add_child(child2)
+
+        assert child1.get_full_path() == 'child 1'
+        assert child2.get_full_path() == 'child 2'
+
+    def test_get_full_path_on_nested_nodes(self):
+        node = BaseNode(u'root')
+        node_a = BaseNode(u'A')
+        node_b = BaseNode(u'B')
+        node_c = BaseNode(u'C')
+        node.add_child(node_a)
+        node_a.add_child(node_b)
+        node_b.add_child(node_c)
+
+        assert node_c.get_full_path() == u'A/B/C'
+
+    def test_release_method_set_task_to_none(self):
+        node = BaseNode(u'root')
+        node.task = 'X'
+        node.release()
+        assert node.task is None
+
+    def test_release_method_set_node_as_sync_if_node_has_no_hint(self):
+        node = BaseNode(u'root')
+        node.state = {'exists': True}
+        node.task = 'X'
+        node.release()
+        assert node.sync is True
+
+    def test_release_method_let_node_non_sync_if_node_has_hint(self):
+        node = BaseNode(u'root')
+        node.state = {'exists': True}
+        node.task = 'X'
+        node.local_hint = "HINT"
+        node.release()
+        assert node.sync is False
+
+    def test_release_method_remove_node_from_tree_when_state_is_none(self):
+        root = BaseNode(u'root')
+        folder = BaseNode(u'folder')
+        child = BaseNode(u'child')
+        child.task = 'X'
+        root.add_child(folder)
+        folder.add_child(child)
+
+        child.release()
+        assert child.parent is None
+        assert len(folder.children) is 0
+
+    def test_release_method_dont_remove_node_when_children_exists(self):
+        root = BaseNode(u'root')
+        child = BaseNode(u'child')
+        child.task = 'X'
+        child.add_child(BaseNode(u'X'))
+        root.add_child(child)
+
+        child.release()
+        assert child.parent is root
+
+    def test_release_method_dont_remove_node_if_hint_exists(self):
+        root = BaseNode(u'root')
+        folder = BaseNode(u'folder')
+        child = BaseNode(u'child')
+        child.task = 'X'
+        child.local_hint = "HINT"
+        root.add_child(folder)
+        folder.add_child(child)
+
+        child.release()
+        assert child.parent is folder
+
+    def test_release_method_set_empty_parent_dirty_after_removal(self):
+        root = BaseNode(u'root')
+        folder = BaseNode(u'folder')
+        folder.sync = True
+        child = BaseNode(u'child')
+        child.task = 'X'
+        root.add_child(folder)
+        folder.add_child(child)
+
+        child.release()
+        assert folder.sync is False
+
+    def test_release_method_leave_non_empty_parent_intact_after_removal(self):
+        root = BaseNode(u'root')
+        folder = BaseNode(u'folder')
+        folder.sync = True
+        child = BaseNode(u'child')
+        child.task = 'X'
+        root.add_child(folder)
+        folder.add_child(child)
+        folder.add_child(BaseNode(u'other child'))
+
+        child.release()
+        assert folder.sync is True

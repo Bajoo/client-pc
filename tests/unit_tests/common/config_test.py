@@ -86,6 +86,7 @@ class catchLogging(logging.NullHandler):
     def handle(self, record):
         self.lastLogRecord = record
 
+
 catcher = catchLogging()
 
 

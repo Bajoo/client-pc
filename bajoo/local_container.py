@@ -7,12 +7,25 @@ import shutil
 
 from .api.team_share import TeamShare
 from .common.i18n import _, N_
+from .common.signal import Signal
 from .common.strings import err2unicode
-from .index.index_tree import IndexTree
-from .index.index_saver import IndexSaver
+from .encryption.errors import PassphraseAbortError
+from .index import IndexTree, IndexSaver
+from .promise import reduce_coroutine
 
 
 _logger = logging.getLogger(__name__)
+
+
+class ContainerStatus(object):
+    """Different states possible for a container."""
+    SYNC_DONE = 'SYNC_DONE'
+    SYNC_PROGRESS = 'SYNC_PROGRESS'
+    SYNC_PAUSE = 'SYNC_PAUSE'
+    SYNC_STOP = 'SYNC_STOP'
+    STATUS_ERROR = 'STATUS_ERROR'
+    QUOTA_EXCEEDED = 'QUOTA_EXCEEDED'
+    WAIT_PASSPHRASE = 'WAIT_PASSPHRASE'
 
 
 class LocalContainer(object):
@@ -28,7 +41,9 @@ class LocalContainer(object):
     constraint, an index part can be reserved.
 
     Attributes:
-        status: One of the 4 status possible. See below.
+        status (ContainerStatus): actual status of the container.
+        status_changed (Signal[ContainerStatus]): signal fired when the status
+            changes.
         container (Container): the corresponding API Container object. If the
             container is not yet loaded, it may be None.
         model (ContainerModel): the local representation of the same container.
@@ -39,32 +54,37 @@ class LocalContainer(object):
             must be blocked.
     """
 
-    STATUS_UNKNOWN = 1
-    STATUS_ERROR = 2
-    STATUS_STOPPED = 3
-    STATUS_PAUSED = 4
-    STATUS_STARTED = 5
-    STATUS_QUOTA_EXCEEDED = 6
-    STATUS_WAIT_PASSPHRASE = 7
-
-    _status_textes = {
-        STATUS_UNKNOWN: N_('Unknown'),
-        STATUS_ERROR: N_('Error'),
-        STATUS_STOPPED: N_('Stopped'),
-        STATUS_PAUSED: N_('Paused'),
-        STATUS_STARTED: N_('Started'),
-        STATUS_QUOTA_EXCEEDED: N_('Quota exceeded'),
-        STATUS_WAIT_PASSPHRASE: N_('Passphrase needed')
+    _status_texts = {
+        ContainerStatus.STATUS_ERROR: N_('Error'),
+        ContainerStatus.SYNC_STOP: N_('Stopped'),
+        ContainerStatus.SYNC_PAUSE: N_('Paused'),
+        ContainerStatus.SYNC_PROGRESS: N_('Sync in progress'),
+        ContainerStatus.SYNC_DONE: N_('Up to date'),
+        ContainerStatus.QUOTA_EXCEEDED: N_('Quota exceeded'),
+        ContainerStatus.WAIT_PASSPHRASE: N_('Passphrase needed')
     }
 
     def __init__(self, model, container):
-        self.status = self.STATUS_UNKNOWN
+        self._status = ContainerStatus.SYNC_STOP
         self.error_msg = None
         self.container = container
         self.model = model
         self.is_moving = False
-        self.index_saver = IndexSaver(self, self.model.path, self.model.id)
-        self.index = IndexTree(self.index_saver)
+        self.index_tree = IndexTree()
+        self.index_saver = IndexSaver(self.index_tree, self.model.path,
+                                      self.model.id)
+        self.status_changed = Signal()
+
+    @property
+    def status(self):
+        return self._status
+
+    @status.setter
+    def status(self, value):
+        has_changed = self._status != value
+        self._status = value
+        if has_changed:
+            self.status_changed.fire(value)
 
     def check_path(self):
         """Check that the path is the folder corresponding to the container.
@@ -77,11 +97,11 @@ class LocalContainer(object):
         """
 
         try:
-            self.index.load(self.index_saver.load())
+            self.index_tree.load(self.index_saver.load())
         except (OSError, IOError) as e:
             _logger.warn('Check path of container %s failed: %s',
                          self.container.id, err2unicode(e))
-            self.status = self.STATUS_ERROR
+            self.status = ContainerStatus.STATUS_ERROR
 
             if e.errno == errno.ENOENT:
                 # TODO: Add a specific message if the folder is empty (or not)
@@ -100,7 +120,7 @@ class LocalContainer(object):
                          exc_info=True)
             self.index_saver.create_empty_file()
 
-        self.status = self.STATUS_STOPPED
+        self.status = ContainerStatus.SYNC_STOP
         return True
 
     def get_not_existing_folder(self, dest_folder):
@@ -157,7 +177,7 @@ class LocalContainer(object):
                         else:
                             raise
             else:
-                self.status = self.STATUS_ERROR
+                self.status = ContainerStatus.STATUS_ERROR
                 self.error_msg = (_('Folder creation failed: %s') %
                                   err2unicode(e.strerror))
                 _logger.warn('Folder creation failed (for container %s): %s',
@@ -165,9 +185,9 @@ class LocalContainer(object):
                 return None
 
         _logger.info('Creation of folder "%s" for container %s',
-                     self.model.path, self.container.id)
+                     folder_path, self.container.id)
         self.model.path = folder_path
-        self.status = self.STATUS_STOPPED
+        self.status = ContainerStatus.SYNC_STOP
         return self.model.path
 
     def get_remote_index(self):
@@ -178,18 +198,17 @@ class LocalContainer(object):
                 the md5 hash of the remote file.
         """
 
-        return self.index.generate_dict_with_remote_hash_only()
+        return self.index_tree.get_remote_hashes()
 
     def is_up_to_date(self):
-        """
-        Returns:
-            boolean: True if the sync is started and no operation are ongoing;
-                False otherwise.
-        """
-        if self.status != self.STATUS_STARTED:
-            return False
+        """Detect if the index tree is up to date.
 
-        return not self.index.is_locked()
+        Note: errors and container status are ignored.
+
+        Returns:
+            boolean: True if the index_tree is sync; False otherwise.
+        """
+        return not self.index_tree.is_dirty()
 
     def get_stats(self):
         """
@@ -217,17 +236,51 @@ class LocalContainer(object):
 
         return 0, 0, 0
 
-    def get_status(self):
-        if self.model.do_not_sync:
-            return self.STATUS_STOPPED
-
-        return self.status
-
     def get_status_text(self):
-        return LocalContainer._status_textes.get(
-            self.get_status(), _('Unknown'))
+        return LocalContainer._status_texts.get(self._status, _('Unknown'))
 
     def remove_on_disk(self):
         """Remove the folder synchronised and its content."""
         _logger.info('Remove container of the disk: rm %s', self.model.path)
         shutil.rmtree(self.model.path, ignore_errors=True)
+
+    @reduce_coroutine()
+    def unlock(self):
+        """Unlock the container key and ensure the passphrase is available."""
+        try:
+            yield self.container._get_encryption_key()
+        except PassphraseAbortError:
+            self.status = ContainerStatus.WAIT_PASSPHRASE
+            self.error_msg = _('No passphrase set.  Syncing is disabled')
+            raise
+        except Exception as error:
+            self.status = ContainerStatus.STATUS_ERROR
+            self.error_msg = err2unicode(error)
+            raise
+
+        if self.status in (ContainerStatus.STATUS_ERROR,
+                           ContainerStatus.WAIT_PASSPHRASE):
+            self.status = ContainerStatus.SYNC_STOP
+        self.error_msg = None
+
+        yield None
+
+    @property
+    def path(self):
+        return self.model.path
+
+    @property
+    def id(self):
+        return self.model.id
+
+    @property
+    def name(self):
+        return self.model.name
+
+    @property
+    def type(self):
+        return self.model.type
+
+    @property
+    def do_not_sync(self):
+        return self.model.do_not_sync

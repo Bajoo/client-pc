@@ -4,15 +4,17 @@ from functools import partial
 import wx
 from ...app_status import AppStatus
 from ...common.i18n import _
-from .common_view_data import (app_status_to_icon_files,
-                               app_status_to_tooltips,
-                               container_status_to_icon_files,
-                               MenuEntry,
-                               TaskBarIconAction)
-from .base import WindowDestination, TaskBarIconBaseView
+
+from ..enums import WindowDestination
+from .task_bar_icon_base_view import (app_status_to_icon_files,
+                                      app_status_to_tooltips,
+                                      container_status_to_icon_files,
+                                      MenuEntry,
+                                      TaskBarIconAction,
+                                      TaskBarIconBaseView)
 
 
-class WxView(wx.TaskBarIcon, TaskBarIconBaseView):
+class TaskBarIconWxView(wx.TaskBarIcon, TaskBarIconBaseView):
     """WxPython implementation of taskBarIconView"""
 
     def __init__(self, ctrl):
@@ -111,40 +113,3 @@ class WxView(wx.TaskBarIcon, TaskBarIconBaseView):
 
     def set_container_status_list(self, status_list):
         self._container_status_list = status_list
-
-
-def main():
-    from .base import ContainerStatus
-    app = wx.App()
-
-    class Controller(object):
-        def __init__(self, View):
-            self.dummy = wx.Frame(None)
-            self.view = View(self)
-            self.view.set_app_status(AppStatus.NOT_CONNECTED)
-            self.view.set_container_status_list([
-                ('MyBajoo', '.', ContainerStatus.SYNC_DONE),
-                ('Container tests', './tests', ContainerStatus.SYNC_PROGRESS),
-                ('Container #2', '/container-2', ContainerStatus.SYNC_STOP)
-            ])
-
-        def primary_action(self):
-            print('Execute primary action')
-
-        def navigate_action(self, destination):
-            print('Navigate to "%s"' % destination)
-            self.view.set_app_status(AppStatus.SYNC_DONE)
-
-        def open_container_action(self, container_path):
-            print('Open container at "%s"' % container_path)
-
-        def exit_action(self):
-            print('Exit ...')
-            self.dummy.Destroy()
-            self.view.destroy()
-
-    Controller(WxView)
-    app.MainLoop()
-
-if __name__ == '__main__':
-    main()

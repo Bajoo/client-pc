@@ -462,5 +462,6 @@ def main():
         set_debug_mode(True)
         logger.info('The "exit" log entry will be displayed after this line:')
 
+
 if __name__ == "__main__":
     main()

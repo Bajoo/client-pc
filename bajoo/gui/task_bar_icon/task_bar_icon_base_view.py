@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Raw data, common to all TaskBarIcon views.
+"""Code common to all TaskBarIcon views.
 
 It includes mapping between enumerations and view-related data: path of icons
 files, context messages for status, etc.
@@ -21,7 +21,8 @@ import os.path
 from ...app_status import AppStatus
 from ...common.i18n import N_, _
 from ...common.path import resource_filename
-from .base import ContainerStatus, WindowDestination
+from ...local_container import ContainerStatus
+from ..enums import WindowDestination
 
 
 class TaskBarIconAction(object):
@@ -56,7 +57,9 @@ container_status_to_icon_files = {
         ContainerStatus.SYNC_PROGRESS: 'progress',
         ContainerStatus.SYNC_PAUSE: 'paused',
         ContainerStatus.SYNC_STOP: 'stopped',
-        ContainerStatus.SYNC_ERROR: 'error'
+        ContainerStatus.STATUS_ERROR: 'error',
+        ContainerStatus.QUOTA_EXCEEDED: 'error',
+        ContainerStatus.WAIT_PASSPHRASE: 'error'
     }.items()
     }
 
@@ -221,3 +224,46 @@ class MenuEntry(object):
             cls.Separator,
             cls(_('Quit'), action=TaskBarIconAction.EXIT)
         ]
+
+
+class TaskBarIconBaseView(object):
+    """Abstract class for TaskBarIcon's view.
+
+    Attributes:
+        controller (TaskBarIconController): TaskBarIcon controller.
+    """
+    def __init__(self, ctrl):
+        self.controller = ctrl
+
+    def set_app_status(self, app_status):
+        """Set the general application status to display.
+
+        Args:
+            app_status (AppStatus): new status
+        """
+        raise NotImplementedError()
+
+    def destroy(self):
+        """Clean up all resources (Window, files, etc.) before deletion."""
+        pass
+
+    def notify_lang_change(self):
+        """Update the view after a change of language setting."""
+        raise NotImplementedError()
+
+    # TODO: Use an observer pattern instead of updating the controller
+    # Calling this method depends on the caller to have up-to-date information
+    # each time the list changes. Beside that, the task bar icon must keep a
+    # copy of the list.
+    # The situation could be improved by giving a direct access to the
+    # container list.
+    def set_container_status_list(self, status_list):
+        """Update the list of containers (and theirs status).
+
+        Args:
+            status_list (List[Tuple[unicode, unicode, ContainerStatus]]): list
+                of containers. Each container is represented by a tuple of 3
+                elements: its name, the absolute path of its local folder, and
+                its status.
+        """
+        raise NotImplementedError()

@@ -1,28 +1,36 @@
 # -*- coding: utf-8 -*-
 
+import functools
 import os
 import sys
+from ...gtk_process import is_gtk3_process, proxy_factory
+from .task_bar_icon_controller import TaskBarIconController
+from .task_bar_icon_wx_view import TaskBarIconWxView
 
-from .base import WindowDestination, ContainerStatus
-from .controller import Controller
-from .wx_view import WxView
-from .unity_adapter_view import UnityAdapterView
-
-
-def make_task_bar_icon():
-    """Create the best suited task bar icon for the window manager.
-
-    Returns:
-        Controller: task bar icon controller.
-    """
-    if sys.platform not in ["win32", "cygwin", "darwin"]:
-        desktop_session = os.environ.get("DESKTOP_SESSION")
-
-        if desktop_session and desktop_session.startswith("ubuntu"):
-            # special case for Unity desktop
-            return Controller(UnityAdapterView)
-
-    return Controller(WxView)
+if is_gtk3_process():
+    from .task_bar_icon_gtk_view import TaskBarIconGtkView
+    from .task_bar_icon_appindicator_view import TaskBarIconAppIndicatorView
+else:
+    TaskBarIconGtkView = proxy_factory('TaskBarIconGtkView', __name__)
+    TaskBarIconAppIndicatorView = proxy_factory('TaskBarIconAppIndicatorView',
+                                                __name__)
 
 
-__all__ = [make_task_bar_icon, WindowDestination, ContainerStatus]
+def _get_task_bar_icon_view():
+    # Special case for unity desktop
+    if (sys.platform not in ["win32", "cygwin", "darwin"] and
+            os.environ.get('DESKTOP_SESSION', '').startswith("ubuntu")):
+        return TaskBarIconAppIndicatorView
+    else:
+        return TaskBarIconWxView
+
+# Choices of view implementation
+TaskBarIconView = _get_task_bar_icon_view()
+
+
+TaskBarIcon = functools.partial(TaskBarIconController, TaskBarIconView)
+
+
+__all__ = [
+    TaskBarIcon
+]

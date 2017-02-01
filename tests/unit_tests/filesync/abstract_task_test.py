@@ -18,9 +18,9 @@ class FakeTask(_Task):
 
 
 def generate_task(tester, target):
+    tester.local_container.inject_empty_node(target)
     return FakeTask(tester.container, (target,),
-                    tester.local_container,
-                    tester.error_append, None)
+                    tester.local_container)
 
 
 class TestAbstractTaskTargetEncoding(TestTaskAbstract):

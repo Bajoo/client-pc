@@ -62,5 +62,6 @@ def main():
     message_box_quit_share("SHARE_NAME_EXAMPLE", win)
     message_box_members_changed(win)
 
+
 if __name__ == '__main__':
     main()

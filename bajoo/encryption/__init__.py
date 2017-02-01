@@ -240,6 +240,11 @@ def decrypt(source, key=None, passphrase_callback=None, _retry=0):
     it will be closed. It's up to the caller to close it when the file is no
     more necessary.
 
+    Note:
+        If a passphrase is needed, the source should not be a "real" files:
+        file descriptors can only be transferred once to encryption process,
+        and all next tentatives (_retry > 0) will fails.
+
     Args:
         source (str|file): The source file to encrypt. If it's a str, it must
             be a valid file path. If it's a file-like object, it's expected to

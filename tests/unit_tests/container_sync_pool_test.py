@@ -19,14 +19,6 @@ from .filesync.utils import FakeFile
 
 # backup module before mock
 OLD_FILEWATCHER = csp.FileWatcher
-OLD_ADDED_LOCAL_FILES = csp.filesync.added_local_files
-OLD_ADDED_REMOTE_FILES = csp.filesync.added_remote_files
-OLD_CHANGED_LOCAL_FILES = csp.filesync.changed_local_files
-OLD_CHANGED_REMOTE_FILES = csp.filesync.changed_remote_files
-OLD_MOVED_LOCAL_FILES = csp.filesync.moved_local_files
-OLD_REMOVED_LOCAL_FILES = csp.filesync.removed_local_files
-OLD_REMOVED_REMOTE_FILES = csp.filesync.removed_remote_files
-OLD_SYNC_FOLDER = csp.filesync.sync_folder
 OLD_QUOTA_TIMEOUT = csp.ContainerSyncPool.QUOTA_TIMEOUT
 
 OLD_LOGGER_HANDLERS = None
@@ -131,11 +123,9 @@ class FakeFileSyncModule(object):
         self.increment("removed_remotly_count")
         return add_task(FakeTask)
 
-    def added_local_files(self, container, local_container, filename,
-                          display_error_cb):
+    def added_local_files(self, container, local_container, filename):
 
-        task = AddedLocalFilesTask(container, (filename,), local_container,
-                                   display_error_cb, create_mode=True)
+        task = AddedLocalFilesTask(container, (filename,), local_container)
         self.increment("added_locally_count")
         return add_task(task)
 
@@ -196,14 +186,6 @@ class TestContainerSyncPool(object):
     @classmethod
     def teardown_class(cls):
         csp.FileWatcher = OLD_FILEWATCHER
-        csp.filesync.added_local_files = OLD_ADDED_LOCAL_FILES
-        csp.filesync.added_remote_files = OLD_ADDED_REMOTE_FILES
-        csp.filesync.changed_local_files = OLD_CHANGED_LOCAL_FILES
-        csp.filesync.changed_remote_files = OLD_CHANGED_REMOTE_FILES
-        csp.filesync.moved_local_files = OLD_MOVED_LOCAL_FILES
-        csp.filesync.removed_local_files = OLD_REMOVED_LOCAL_FILES
-        csp.filesync.removed_remote_files = OLD_REMOVED_REMOTE_FILES
-        csp.filesync.sync_folder = OLD_SYNC_FOLDER
         csp.ContainerSyncPool.QUOTA_TIMEOUT = OLD_QUOTA_TIMEOUT
 
     def setup_method(self, method):

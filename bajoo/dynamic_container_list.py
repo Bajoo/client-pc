@@ -46,9 +46,9 @@ class DynamicContainerList(object):
             notify (callable): Notify the user about an event. take three
                 parameters: the summary, the text body, and a boolean to
                 specify if it's an error.
-            start_container (callable): callback called when the LocalContainer
-                is ready. Receive a fully loaded LocalContainer in
-                parameters.
+            start_container (Callable[[LocalContainer], Promise]): async
+                callback called when the LocalContainer is ready. Receive a
+                fully loaded LocalContainer in parameters.
             stop_container (callable): callback called when a container is
                 removed. Receive LocalContainer in parameters.
         """
@@ -114,7 +114,7 @@ class DynamicContainerList(object):
 
         with self._list_lock:
             self.user_profile.set_container(model.id, model)
-            self._stop_container(local_container.model.id)
+            self._stop_container(local_container)
 
     def start_sync_container(self, local_container):
         model = local_container.model
@@ -131,7 +131,7 @@ class DynamicContainerList(object):
 
             lc = next((c for c in self._local_list if c.model.id == id), None)
             if lc:
-                self._stop_container(lc.model.id)
+                self._stop_container(lc)
                 self._local_list.remove(lc)
                 if remove_on_disk:
                     lc.remove_on_disk()
@@ -252,7 +252,7 @@ class DynamicContainerList(object):
                 to_remove = [c for c in self._local_list
                              if c.model.id == container_id]
                 for local_container in to_remove:
-                    self._stop_container(local_container.model.id)
+                    self._stop_container(local_container)
                     self._local_list.remove(local_container)
 
         if removed_nb == 1:

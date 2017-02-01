@@ -1,1358 +1,500 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import pytest
-
-import bajoo.index.index_tree
-
-from bajoo.index.index_node import DirectoryNode
-from bajoo.index.index_tree import IndexTree
-from bajoo.index.index_tree import trigger_local_create_task
-from bajoo.index.index_tree import trigger_local_delete_task
-from bajoo.index.index_tree import trigger_local_moved_task
-from bajoo.filesync.added_local_files_task import AddedLocalFilesTask
-from bajoo.filesync.added_remote_files_task import AddedRemoteFilesTask
-from bajoo.filesync.exception import RedundantTaskInterruption
-from bajoo.filesync.moved_local_files_task import MovedLocalFilesTask
-from bajoo.filesync.removed_local_files_task import RemovedLocalFilesTask
-from bajoo.filesync.removed_remote_files_task import RemovedRemoteFilesTask
-from bajoo.promise import Promise
-
-from ..filesync.fake_local_container import FakeLocalContainer
-from .fake_index_saver import FakeIndexSaver
-from .fake_task import FakeTask
-from .fake_directory_node import FakeDirectoryNode
-
-task_added = []
-old_add_task = None
+from __future__ import unicode_literals
+from bajoo.index import IndexTree
+from bajoo.index.base_node import BaseNode
+from bajoo.index.file_node import FileNode
+from bajoo.index.folder_node import FolderNode
 
 
-def add_task(task, priority=False):
-    global task_added
-    task_added.append((task, priority,))
+class MyNode(BaseNode):
+    pass
 
 
-def setup_module(module):
-    global old_add_task
-    old_add_task = bajoo.index.index_tree.add_task
-    bajoo.index.index_tree.add_task = add_task
+def _make_tree(node_def, default_sync=False):
+    """Quick helper to generate a BaseNode hierarchy.
+
+    Args:
+        Tuple[str, List[Tuple], bool]: node definition, of the form:
+            ('node name', [children definitions], sync). Both part 2 and 3
+            of the tuple are optional.
+        default_sync (bool, optional): default value to set the 'sync' flag
+    Returns:
+        BaseNode: node built from the definition.
+    """
+    name = node_def[0]
+    children = node_def[1] if len(node_def) > 1 else []
+    sync_flag = node_def[2] if len(node_def) > 2 else default_sync
+    node = BaseNode(name)
+    node.sync = sync_flag
+    for child_def in children:
+        node.add_child(_make_tree(child_def, default_sync))
+    return node
 
 
-def teardown_module(module):
-    global old_add_task
-    bajoo.index.index_tree.add_task = old_add_task
+class TestBrowseIndexTree(object):
+    """Test of the IndexTree.browse_all_non_sync_nodes() method."""
+
+    def test_browse_empty_tree_will_return_empty_generator(self):
+        tree = IndexTree()
+        gen = tree.browse_all_non_sync_nodes()
+        assert list(gen) == []
+
+    def test_browse_clean_tree_returns_empty_generator(self):
+        tree = IndexTree()
+        tree._root = _make_tree(('root', [
+            ('A', [('1',), ('2',)]),
+            ('B', [('1',), ('2',)]),
+        ]), default_sync=True)
+
+        gen = tree.browse_all_non_sync_nodes()
+        assert list(gen) == []
+
+    def test_browse_dirty_tree_returns_only_non_sync_nodes(self):
+        tree = IndexTree()
+        tree._root = _make_tree(('root', [
+            ('A', [('A1', [], False), ('A2',)]),
+            ('B', [('B1',), ('B2', [], False)], False),
+            ('C', [('C1', [], False), ('C2', [], False)]),
+        ]), default_sync=True)
+
+        non_sync_nodes = []
+        for node in tree.browse_all_non_sync_nodes():
+            non_sync_nodes.append(node.name)
+            node.task = None
+            node.sync = True
+
+        expected_non_sync_node = sorted(['A1', 'B', 'B2', 'C1', 'C2'])
+        assert sorted(non_sync_nodes) == expected_non_sync_node
+
+    def test_browse_skip_nodes_with_task(self):
+        """Ensures browse_all_non_sync_nodes() never returns a node with task.
+
+        When a node has a task associated, it must not be yielded by
+        browse_all_non_sync_nodes(). Such a node must be skipped until there is
+        no longer a task on it.
+        """
+        tree = IndexTree()
+        tree._root = _make_tree(('root', [
+            ('A', [('A1', [], False), ('A2',)]),
+            ('B', [('B1',), ('B2', [], False)], False),
+            ('C', [('C1', [], False), ('C2', [], False)]),
+        ]), default_sync=True)
+
+        tree._root.children['A'].children['A1'].task = True
+        tree._root.children['B'].children['B1'].task = True
+        tree._root.children['B'].children['B2'].task = True
+        tree._root.children['C'].children['C2'].task = True
+
+        non_sync_nodes = []
+        for node in tree.browse_all_non_sync_nodes():
+            if node is IndexTree.WAIT_FOR_TASK:
+                break
+            non_sync_nodes.append(node.name)
+            # node.task is automatically set to True
+
+        expected_non_sync_node = sorted(['B', 'C1'])
+        assert sorted(non_sync_nodes) == expected_non_sync_node
+
+    def test_browse_set_node_task_to_true(self):
+        tree = IndexTree()
+        tree._root = _make_tree(('root', [
+            ('A1', [])
+        ]))
+
+        nodes = []
+        for node in tree.browse_all_non_sync_nodes():
+            if node is IndexTree.WAIT_FOR_TASK:
+                break
+            nodes.append(node)
+            node.sync = True
+
+        assert nodes[0].task is True
+        assert nodes[1].task is True
+        assert len(nodes) is 2
+
+    def test_browse_until_all_is_clean(self):
+        """browse must loop over all nodes many times until they're clean.
+
+        A node non-sync can be yielded over and over again until it's synced.
+        Then generator must stop only when all nodes are fully sync (when the
+        whole tree is marked not dirty).
+        """
+        tree = IndexTree()
+        tree._root = _make_tree(('node A', [('node B',)], True))
+        node_a = tree._root
+        node_b = tree._root.children['node B']
+        # At start: A is sync, but not B
+
+        gen = tree.browse_all_non_sync_nodes()
+
+        # return node B until it's sync.
+        non_sync_nodes = []
+        for i in range(3):
+            node = next(gen)
+            node.task = None  # By default browse() set node.task to True
+            non_sync_nodes.append(node)
+        assert non_sync_nodes == [node_b, node_b, node_b]
+
+        node_a.sync = False
+        node_b.sync = True
+
+        # return node A until it's sync.
+        non_sync_nodes = []
+        for i in range(3):
+            node = next(gen)
+            node.task = None
+            non_sync_nodes.append(node)
+        assert non_sync_nodes == [node_a, node_a, node_a]
+
+        node_b.sync = True
+
+        # will yield until there is no remaining non-sync nodes.
+        non_sync_nodes = []
+        for i in range(15):
+            node = next(gen)
+            node.task = None
+            non_sync_nodes.append(node)
+        assert len(non_sync_nodes) is 15
+
+        node_a.sync = True
+        node_b.sync = True
+
+        # Tree is clean: Nothing to yield.
+        assert len(list(gen)) is 0
+
+    def test_browse_pauses_when_all_non_sync_nodes_have_task(self):
+        """Check browse_all_non_sync_nodes() handles when all nodes have task.
+
+        When all remaining nodes (meaning: non sync nodes) have a task
+        associated, the generator has no node to return, but the iteration is
+        not over.
+        In this situation, it must return the special value
+        `BROWSE_WAIT_FOR_TASK`.
+        """
+        tree = IndexTree()
+        tree._root = _make_tree(('root', [('A',), ('B',)], True),
+                                default_sync=False)
+        tree._root.children['A'].task = True
+        tree._root.children['B'].task = True
+
+        gen = tree.browse_all_non_sync_nodes()
+
+        # All nodes are reserved by tasks.
+        assert next(gen) is IndexTree.WAIT_FOR_TASK
+        assert next(gen) is IndexTree.WAIT_FOR_TASK
+
+        tree._root.children['A'].task = None
+        assert next(gen) is tree._root.children['A']
+        tree._root.children['A'].sync = True
+        assert next(gen) is IndexTree.WAIT_FOR_TASK
+
+        tree._root.children['B'].sync = True
+        # Although B is still reserved by a task, it's no longer dirty.
+        assert next(gen, None) is None  # Iterator is empty
 
 
-class TestException(object):
+class TestGetNodeFromIndexTree(object):
+    """Tests about node access methods of IndexTree."""
 
-    def test_raise(self):
-        with pytest.raises(RedundantTaskInterruption):
-            raise RedundantTaskInterruption()
+    def test_get_node_by_path(self):
+        tree = IndexTree()
+        tree._root = _make_tree(('root', [('A', [('A1',)]),
+                                          ('B', [('B1',), ('B2',)])]))
+        node_a1 = tree.get_node_by_path('A/A1')
+        node_b = tree.get_node_by_path('B')
+        assert node_a1 and node_a1.name == 'A1'
+        assert node_b and node_b.name == 'B'
+
+    def test_get_root_node_by_path(self):
+        tree = IndexTree()
+        tree._root = _make_tree(('root', [('A',), ('B',)]))
+        assert tree.get_node_by_path('.') is tree._root
+
+    def test_get_missing_node_by_path(self):
+        tree = IndexTree()
+        tree._root = _make_tree(('root', [('A',), ('B',)]))
+        assert tree.get_node_by_path('A/ghost') is None
+
+    def test_get_missing_root_node_by_path(self):
+        tree = IndexTree()
+        assert tree.get_node_by_path('.') is None
+
+    def test_get_node_by_path_with_missing_folder(self):
+        tree = IndexTree()
+        tree._root = _make_tree(('root', [('A',), ('B',)]))
+        assert tree.get_node_by_path('A/B/C/ghost') is None
+
+    def test_get_or_create_node_by_path(self):
+        tree = IndexTree()
+        tree._root = _make_tree(('root', [('A', [('A1',)]),
+                                          ('B', [('B1',), ('B2',)])]))
+        node_a1 = tree.get_or_create_node_by_path('A/A1', None)
+        node_b = tree.get_or_create_node_by_path('B', None)
+        assert node_a1 and node_a1.name == 'A1'
+        assert node_b and node_b.name == 'B'
+
+    def test_get_or_create_root_node_by_path(self):
+        tree = IndexTree()
+        tree._root = _make_tree(('root', [('A',), ('B',)]))
+        assert tree.get_or_create_node_by_path('.', None) is tree._root
+
+    def test_get_or_create_missing_node_by_path(self):
+        tree = IndexTree()
+        tree._root = _make_tree(('root', [('A',), ('B',)]))
+        node = tree.get_or_create_node_by_path('A/ghost', MyNode)
+        assert isinstance(node, MyNode)
+
+    def test_get_or_create_node_by_path_without_root(self):
+        tree = IndexTree()
+        node = tree.get_or_create_node_by_path('A/b/c', MyNode)
+        assert isinstance(node, MyNode)
+
+    def test_get_or_create_node_by_path_with_missing_folder(self):
+        tree = IndexTree()
+        tree._root = _make_tree(('root', [('A',), ('B',)]))
+        node = tree.get_or_create_node_by_path('A/B/C/ghost', MyNode)
+        assert isinstance(node, MyNode)
+
+    def test_set_tree_node_sync(self):
+        tree = IndexTree()
+        tree._root = _make_tree(('root', [('A', [('A1',)]),
+                                          ('B', [('B1',), ('B2',)])]))
+        tree.set_tree_not_sync()
+        assert tree._root.sync is False
+        assert tree._root.children['A'].sync is False
+        assert tree._root.children['B'].sync is False
+        assert tree._root.children['A'].children['A1'].sync is False
+        assert tree._root.children['B'].children['B1'].sync is False
+        assert tree._root.children['B'].children['B2'].sync is False
+
+    def test_set_empty_tree_node_not_sync(self):
+        tree = IndexTree()
+        # should do nothing
+        tree.set_tree_not_sync()
 
 
-class TestTriggering(object):
+class TestSaveAndLoadIndexTree(object):
 
-    def setup_method(self, method):
-        global task_added
-        del task_added[:]
+    def test_load_from_legacy_empty_tree(self):
+        tree = IndexTree()
+        tree.load({})
+        assert tree._root is None
 
-        self.lc = FakeLocalContainer()
-        self.previous_task = AddedRemoteFilesTask(container=None,
-                                                  target=("aaaa/bbb/ccc",),
-                                                  local_container=self.lc,
-                                                  display_error_cb=None)
+    def test_load_from_legacy_flat_tree(self):
+        tree = IndexTree()
+        tree.load({
+            u'file1': ('hash1', 'hash2'),
+            u'file2': ('hash3', None),
+            u'file3': ('hash4', None),
+            u'file4': (None, None)
+        })
+        assert tree._root is not None
+        for path in ('file1', 'file2', 'file3', 'file4'):
+            assert isinstance(tree.get_node_by_path(path), FileNode)
+        assert tree.get_node_by_path('file5') is None
 
-    def test_trigger_local_create_task(self):
-        global task_added
+    def test_load_from_legacy_nested_tree(self):
+        tree = IndexTree()
+        tree.load({
+            u'deep/nested/file': ('123546', 'abcdef')
+        })
+        assert tree._root is not None
+        assert isinstance(tree.get_node_by_path('deep/nested'), FolderNode)
+        assert isinstance(tree.get_node_by_path('deep/nested/file'), FileNode)
 
-        trigger_local_create_task("aaaa/bbb/ccc", self.previous_task)
-        assert len(task_added) == 1
-        new_task, priority = task_added[0]
-        assert priority
-        assert isinstance(new_task, AddedLocalFilesTask)
-        assert new_task.target_list[0] == "aaaa/bbb/ccc"
+    def test_load_from_legacy_should_correctly_set_hashes(self):
+        tree = IndexTree()
+        tree.load({
+            u'root_file': ('3f4855158eb3266a74cf3a5d78b361cc',
+                           '1e4c2746ef98ebb5fe703723ecc3b8fd'),
+            u'nested/file': ('148fff4717a87b8ddacb8a4b1fd18531',
+                             '02d70d1f6d522c454883d6114c7f315f')
+        })
+        assert tree._root is not None
+        root_file = tree.get_node_by_path('root_file')
+        assert root_file.state == {
+            'local_hash': '3f4855158eb3266a74cf3a5d78b361cc',
+            'remote_hash': '1e4c2746ef98ebb5fe703723ecc3b8fd'}
+        nested_file = tree.get_node_by_path('nested/file')
+        assert nested_file.state == {
+            'local_hash': '148fff4717a87b8ddacb8a4b1fd18531',
+            'remote_hash': '02d70d1f6d522c454883d6114c7f315f'}
 
-    def test_trigger_local_delete_task(self):
-        global task_added
+    def test_root_node_should_be_named_dot_after_load(self):
+        tree = IndexTree()
+        tree.load({
+            'version': 2,
+            'root': {
+                'type': 'FOLDER',
+                'state': None,
+            }
+        })
+        assert tree._root is not None
+        assert tree._root.name == u'.'
 
-        trigger_local_delete_task("aaaa/bbb/ccc", self.previous_task)
-        assert len(task_added) == 1
-        new_task, priority = task_added[0]
-        assert priority
-        assert isinstance(new_task, RemovedLocalFilesTask)
-        assert new_task.target_list[0] == "aaaa/bbb/ccc"
+    def test_root_node_should_be_named_dot_after_legacy_load(self):
+        tree = IndexTree()
+        tree.load({u'x': (None, None)})
+        assert tree._root is not None
+        assert tree._root.name == u'.'
 
-    def test_trigger_local_moved_task(self):
-        global task_added
+    def test_load_tree_should_set_default_state_to_none(self):
+        tree = IndexTree()
+        tree.load({
+            'version': 2,
+            'root': {
+                'type': 'FOLDER',
+            }
+        })
+        assert tree._root.state is None
 
-        trigger_local_moved_task(
-            "aaaa/bbb/ccc",
-            "aaaa/bbb/cccd",
-            self.previous_task)
-        assert len(task_added) == 1
-        new_task, priority = task_added[0]
-        assert priority
-        assert isinstance(new_task, MovedLocalFilesTask)
-        assert new_task.target_list[0] == "aaaa/bbb/ccc"
-        assert new_task.target_list[1] == "aaaa/bbb/cccd"
+    def test_load_tree_should_set_all_node_names(self):
+        tree = IndexTree()
+        tree.load({
+            'version': 2,
+            'root': {
+                'type': "FOLDER",
+                'children': {
+                    u'file1': {
+                        'type': "FILE",
+                        'state': {'local_hash': 'hash1',
+                                  'remote_hash': 'hash2'}
+                    },
+                    u'file2': {
+                        'type': "FILE",
+                        'state': {'local_hash': 'hash3',
+                                  'remote_hash': 'hash4'},
+                    },
+                    u'file3': {
+                        'type': "FILE",
+                        'state': {'local_hash': 'hash5',
+                                  'remote_hash': 'hash6'}
+                    },
+                    u'file4': {'type': "FILE"},
+                    u'nested': {
+                        'type': "FOLDER",
+                        'children': {
+                            u'child.txt': {
+                                'type': "FILE",
+                            }
+                        }
+                    }
+                }
+            }
+        })
+        assert tree._root is not None
+        for path in ('file1', 'file2', 'file3', 'file4'):
+            node = tree.get_node_by_path(path)
+            assert node.name == path
+        node = tree.get_node_by_path('nested/child.txt')
+        assert node.name == 'child.txt'
 
+    def test_export_index_should_be_informat_version_2(self):
+        tree = IndexTree()
+        data = tree.export_data()
+        assert data.get('version') == 2
 
-def fake_aquire(target_list, task, prior_acquire=False):
-    return Promise.resolve({})
+    def test_export_index_tree_without_root_node(self):
+        tree = IndexTree()
+        data = tree.export_data()
+        assert data.get('version') == 2
+
+    def test_export_index_tree_with_only_root_node(self):
+        tree = IndexTree()
+        tree._root = FolderNode('.')
+        data = tree.export_data()
+        root_def = data.get('root')
+        assert root_def['type'] == "FOLDER"
+        assert len(root_def.get('children', {})) == 0
+
+    def test_export_index_tree_with_nested_nodes(self):
+        tree = IndexTree()
+        tree._root = FolderNode('.')
+        tree._root.add_child(FolderNode('A'))
+        tree._root.children['A'].add_child(FileNode('A1'))
+        tree._root.children['A'].add_child(FolderNode('A2'))
+        tree._root.add_child(FolderNode('B'))
+        tree._root.children['B'].add_child(FileNode('B1'))
+
+        data = tree.export_data()
+        assert data['root']['type'] == "FOLDER"
+        node_a_def = data['root']['children']['A']
+        node_b_def = data['root']['children']['B']
+        assert node_a_def['type'] == "FOLDER"
+        assert node_b_def['type'] == "FOLDER"
+        assert node_a_def['children']['A1']['type'] == "FILE"
+        assert node_a_def['children']['A2']['type'] == "FOLDER"
+        assert node_b_def['children']['B1']['type'] == "FILE"
+
+    def test_export_index_tree_returns_states(self):
+        tree = IndexTree()
+        tree._root = FolderNode('.')
+        node_folder = FolderNode('folder')
+        node_child = FileNode('child')
+        tree._root.add_child(node_folder)
+        node_folder.add_child(node_child)
+
+        tree._root.state = {'local_hash': 1, 'remote_hash': 2}
+        node_folder.state = {'local_hash': 3, 'remote_hash': 4}
+        node_child.state = {'local_hash': 5, 'remote_hash': 6}
+
+        data = tree.export_data()
+        root_node_def = data['root']
+        assert root_node_def['state'] == {'local_hash': 1, 'remote_hash': 2}
+        folder_node_def = root_node_def['children']['folder']
+        assert folder_node_def['state'] == {'local_hash': 3, 'remote_hash': 4}
+        child_node_def = folder_node_def['children']['child']
+        assert child_node_def['state'] == {'local_hash': 5, 'remote_hash': 6}
 
 
 class TestIndexTree(object):
-
-    def setup_method(self, method):
-        self.fake_saver = FakeIndexSaver()
-
-        self.input_idx = {"aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
-                          "aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
-                          "aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
-                          "fff/eee": ["local_eee", "remote_eee"],
-                          "ggg": ["local_ggg", "remote_ggg"]}
-
-        self.tree = IndexTree(self.fake_saver, self.input_idx)
-
-    def test_init_with_empty_dict(self):
-        tree = IndexTree("saver")
-        assert isinstance(tree.root, DirectoryNode)
-        assert tree.locked_count == 0
-        assert tree.index_saver == "saver"
-
-    def test_init_with_dict(self):
-        node = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
-                                                 create=False)
-        assert node is not None
-
-        node = self.tree.root.get_or_insert_node("aaaa/bbb/ddd",
-                                                 create=False)
-        assert node is not None
-
-        node = self.tree.root.get_or_insert_node("aaaa/bbb/hhh",
-                                                 create=False)
-        assert node is not None
-
-        node = self.tree.root.get_or_insert_node("fff/eee", create=False)
-        assert node is not None
-
-        node = self.tree.root.get_or_insert_node("ggg", create=False)
-        assert node is not None
-
-    def test_inner_release_file_locked(self):
-        task = "task"
-        node1 = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
-                                                  create=False)
-        node1.lock(executing_task=task)
-
-        node2 = self.tree.root.get_or_insert_node("aaaa/bbb/ddd",
-                                                  create=False)
-        node2.lock(executing_task=task)
-
-        self.tree.release(("aaaa/bbb/ccc", "aaaa/bbb/ddd"), task)
-
-        assert not node1.is_locked()
-        assert not node2.is_locked()
-
-    def test_inner_release_file_locked_not_owner(self):
-        task = "task"
-        node1 = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
-                                                  create=False)
-        node1.lock(executing_task=task)
-
-        node2 = self.tree.root.get_or_insert_node("aaaa/bbb/ddd",
-                                                  create=False)
-        node2.lock("owner", executing_task=task)
-
-        self.tree.release(("aaaa/bbb/ccc", "aaaa/bbb/ddd"), task)
-
-        assert not node1.is_locked()
-        assert node2.is_locked()
-
-    def test_inner_release_dir_completly_locked(self):
-        task = "task"
-        node0 = self.tree.root.get_or_insert_node("aaaa/bbb",
-                                                  create=False)
-        node0.lock(executing_task=task)
-
-        node0.lock
-
-        node1 = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
-                                                  create=False)
-        node1.lock(owner=node0)
-
-        node2 = self.tree.root.get_or_insert_node("aaaa/bbb/ddd",
-                                                  create=False)
-        node2.lock(owner=node0)
-
-        self.tree.release(("aaaa/bbb/",), task)
-
-        assert not node0.is_locked()
-        assert not node1.is_locked()
-        assert not node2.is_locked()
-
-    # TODO not implemented yet
-    # def test_inner_release_dir_partialy_locked(self):
-    #     pass
-
-    def test_generate_waiting_promise(self):
-        task = "task"
-        node = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
-                                                 create=False)
-
-        self.tree.acquire = fake_aquire
-        p = self.tree._generate_waiting_promise(
-            node, ("aaaa/bbb/ccc", ), task)
-
-        assert node.waiting_task is task
-        assert node.waiting_task_callback is not None
-
-        node.waiting_task_callback()
-
-        assert p.result() == {}
-
-    def test_generate_waiting_promise_with_cancel(self):
-        task = "task"
-        node = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
-                                                 create=False)
-
-        self.tree.acquire = fake_aquire
-        p = self.tree._generate_waiting_promise(
-            node, ("aaaa/bbb/ccc", ), task)
-
-        assert node.waiting_task is task
-        assert node.waiting_task_callback is not None
-
-        node.waiting_task_callback(cancel=True)
-
-        with pytest.raises(RedundantTaskInterruption):
-            p.result()
-
-    def test_steal_sync_task_on_children(self):
-        node_bbb = self.tree.root.get_or_insert_node("aaaa/bbb",
-                                                     create=False)
-
-        node_ccc = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
-                                                     create=False)
-
-        node_ddd = self.tree.root.get_or_insert_node("aaaa/bbb/ddd",
-                                                     create=False)
-
-        node_fff = self.tree.root.get_or_insert_node("fff",
-                                                     create=False)
-
-        node_ccc.lock(owner=node_bbb)
-        node_ddd.lock(owner=node_bbb)
-
-        fake_directory_node = FakeDirectoryNode()
-
-        fff_fake_task = FakeTask()
-        node_fff.lock(owner=node_fff, executing_task="task")
-        node_fff.waiting_task = fff_fake_task
-        node_fff.waiting_task_callback = fff_fake_task.callback
-        node_fff.waiting_for_node = fake_directory_node
-
-        fake_task = FakeTask()
-        node_bbb.waiting_task = fake_task
-        node_bbb.waiting_task_callback = fake_task.callback
-        node_bbb.waiting_for_node = fake_directory_node
-
-        # put a task waitin on bbb but not locked
-        # steal locks
-
-        node = self.tree.root.get_or_insert_node(".", create=False)
-        self.tree._steal_sync_task_on_children(node)
-
-        assert fake_task.cancel
-        assert node_bbb.waiting_task is None
-        assert node_bbb.waiting_task_callback is None
-        assert node_bbb.waiting_for_node is None
-        assert node_bbb in fake_directory_node.removed_nodes
-        assert node_ccc.lock_owner is node
-        assert node_ddd.lock_owner is node
-        assert node_fff.is_locked()
-        assert node_fff.waiting_task is None
-        assert node_fff in fake_directory_node.removed_nodes
-
-    def test_lock_children_no_children_locked(self):
-        node = self.tree.root.get_or_insert_node(".", create=False)
-        assert self.tree._lock_children(node) is None
-
-        for child in node.traverse():
-            if child is node:
-                continue
-
-            assert child.lock_owner is node
-
-    def test_lock_children_one_locked_children(self):
-        node_ccc = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
-                                                     create=False)
-        node_ccc.lock(self.tree.root)
-
-        node_ddd = self.tree.root.get_or_insert_node("aaaa/bbb/ddd",
-                                                     create=False)
-
-        node_ddd.lock(node_ddd, "task")
-
-        assert self.tree._lock_children(self.tree.root) is node_ddd
-
-        for child in self.tree.root.traverse():
-            if child is node_ddd or child is node_ccc:
-                continue
-
-            assert not child.is_locked()
-
-    def test_generate_dict(self):
-        dico = self.tree.generate_dict()
-        assert len(dico) == 5
-        for key, (local, remote) in dico.items():
-            assert key.endswith(remote[7:])
-            assert key.endswith(local[6:])
-
-
-class TestMergeMisc(object):
-
-    def setup_method(self, method):
-        self.fake_saver = FakeIndexSaver()
-
-        self.input_idx = {"aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
-                          "aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
-                          "aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
-                          "fff/eee": ["local_eee", "remote_eee"],
-                          "ggg": ["local_ggg", "remote_ggg"]}
-
-        self.tree = IndexTree(self.fake_saver, self.input_idx)
-        self.node = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
-                                                      create=False)
-        self.lc = FakeLocalContainer()
-        self.ft = FakeTask()
-
-        self.current_task = AddedLocalFilesTask(container=None,
-                                                target=("aaaa/bbb/ccc",),
-                                                local_container=self.lc,
-                                                display_error_cb=None,
-                                                create_mode=True)
-        self.node.add_waiting_node(self)
-        self.node.waiting_task = self.current_task
-        self.node.waiting_task_callback = self.ft.callback
-        self.node.set_hash("local", "remote")
-
-    def test_invalid_new_task(self):
-        assert not self.tree._use_the_new_task(self.node, "new task")
-
-    def test_invalid_task(self):
-        self.node.waiting_task = "task"
-        assert not self.tree._use_the_new_task(self.node, "new task")
-
-
-class TestMergeFromLocalCreateTask(object):
-
-    def setup_method(self, method):
-        self.fake_saver = FakeIndexSaver()
-
-        self.input_idx = {"aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
-                          "aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
-                          "aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
-                          "fff/eee": ["local_eee", "remote_eee"],
-                          "ggg": ["local_ggg", "remote_ggg"]}
-
-        self.tree = IndexTree(self.fake_saver, self.input_idx)
-        self.node = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
-                                                      create=False)
-        self.lc = FakeLocalContainer()
-        self.ft = FakeTask()
-
-        self.current_task = AddedLocalFilesTask(container=None,
-                                                target=("aaaa/bbb/ccc",),
-                                                local_container=self.lc,
-                                                display_error_cb=None,
-                                                create_mode=True)
-        self.node.add_waiting_node(self)
-        self.node.waiting_task = self.current_task
-        self.node.waiting_task_callback = self.ft.callback
-        self.node.set_hash("local", "remote")
-
-    def test_replace_with_a_local_create_task(self):
-        new_task = AddedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/ccc",),
-                                       local_container=self.lc,
-                                       display_error_cb=None,
-                                       create_mode=True)
-
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert not self.node.is_invalidate_remote()
-        assert not self.node.is_invalidate_local()
-
-    def test_replace_with_a_local_update_task(self):
-        new_task = AddedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/ccc",),
-                                       local_container=self.lc,
-                                       display_error_cb=None,
-                                       create_mode=False)
-
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert not self.node.is_invalidate_remote()
-        assert not self.node.is_invalidate_local()
-
-    def test_replace_with_a_local_delete_task_and_valid_remote_hash(self):
-        new_task = RemovedLocalFilesTask(container=None,
-                                         target=("aaaa/bbb/ccc",),
-                                         local_container=self.lc,
-                                         display_error_cb=None)
-
-        assert self.tree._use_the_new_task(self.node, new_task)
-
-    def test_replace_with_a_local_delete_task_and_not_valid_remote_hash(self):
-        self.node.set_hash(None, None)
-        new_task = RemovedLocalFilesTask(container=None,
-                                         target=("aaaa/bbb/ccc",),
-                                         local_container=self.lc,
-                                         display_error_cb=None)
-
-        assert self.tree._use_the_new_task(self.node, new_task)
-        assert self.node.is_invalidate_remote()
-        assert self.node.is_invalidate_local()
-
-    def test_replace_with_a_remote_add_task(self):
-        new_task = AddedRemoteFilesTask(container=None,
-                                        target=("aaaa/bbb/ccc",),
-                                        local_container=self.lc,
-                                        display_error_cb=None)
-
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert self.node.is_invalidate_remote()
-        assert not self.node.is_invalidate_local()
-
-    def test_replace_with_a_remote_remove_task(self):
-        new_task = RemovedRemoteFilesTask(container=None,
-                                          target=("aaaa/bbb/ccc",),
-                                          local_container=self.lc,
-                                          display_error_cb=None)
-
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert self.node.is_invalidate_remote()
-        assert not self.node.is_invalidate_local()
-
-    def test_replace_with_a_move_as_src_task(self):
-        new_task = MovedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/ccc",
-                                               "aaaa/bbb/cccd"),
-                                       local_container=self.lc,
-                                       display_error_cb=None)
-
-        assert self.tree._use_the_new_task(self.node, new_task)
-        assert not self.node.is_invalidate_remote()
-        assert self.node.is_invalidate_local()
-
-    def test_replace_with_a_move_as_dst_task(self):
-        new_task = MovedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/cccs",
-                                               "aaaa/bbb/ccc"),
-                                       local_container=self.lc,
-                                       display_error_cb=None)
-
-        assert self.tree._use_the_new_task(self.node, new_task)
-        assert not self.node.is_invalidate_remote()
-        assert self.node.is_invalidate_local()
-
-
-class TestMergeFromLocalUpdateTask(object):
-
-    def setup_method(self, method):
-        self.fake_saver = FakeIndexSaver()
-
-        self.input_idx = {"aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
-                          "aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
-                          "aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
-                          "fff/eee": ["local_eee", "remote_eee"],
-                          "ggg": ["local_ggg", "remote_ggg"]}
-
-        self.tree = IndexTree(self.fake_saver, self.input_idx)
-        self.node = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
-                                                      create=False)
-        self.lc = FakeLocalContainer()
-        self.ft = FakeTask()
-
-        self.current_task = AddedLocalFilesTask(container=None,
-                                                target=("aaaa/bbb/ccc",),
-                                                local_container=self.lc,
-                                                display_error_cb=None,
-                                                create_mode=False)
-        self.node.add_waiting_node(self)
-        self.node.waiting_task = self.current_task
-        self.node.waiting_task_callback = self.ft.callback
-        self.node.set_hash("local", "remote")
-
-    def test_replace_with_a_local_create_task(self):
-        new_task = AddedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/ccc",),
-                                       local_container=self.lc,
-                                       display_error_cb=None,
-                                       create_mode=True)
-
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert self.current_task.create_mode
-        assert not self.node.is_invalidate_remote()
-        assert not self.node.is_invalidate_local()
-
-    def test_replace_with_a_local_update_task(self):
-        new_task = AddedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/ccc",),
-                                       local_container=self.lc,
-                                       display_error_cb=None,
-                                       create_mode=False)
-
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert not self.current_task.create_mode
-        assert not self.node.is_invalidate_remote()
-        assert not self.node.is_invalidate_local()
-
-    def test_replace_with_a_local_delete_task_and_valid_remote_hash(self):
-        new_task = RemovedLocalFilesTask(container=None,
-                                         target=("aaaa/bbb/ccc",),
-                                         local_container=self.lc,
-                                         display_error_cb=None)
-
-        assert self.tree._use_the_new_task(self.node, new_task)
-        assert not self.node.is_invalidate_remote()
-        assert not self.node.is_invalidate_local()
-
-    def test_replace_with_a_local_delete_task_and_not_valid_remote_hash(self):
-        self.node.set_hash(None, None)
-        new_task = RemovedLocalFilesTask(container=None,
-                                         target=("aaaa/bbb/ccc",),
-                                         local_container=self.lc,
-                                         display_error_cb=None)
-
-        assert self.tree._use_the_new_task(self.node, new_task)
-        assert self.node.is_invalidate_remote()
-        assert self.node.is_invalidate_local()
-
-    def test_replace_with_a_remote_add_task(self):
-        new_task = AddedRemoteFilesTask(container=None,
-                                        target=("aaaa/bbb/ccc",),
-                                        local_container=self.lc,
-                                        display_error_cb=None)
-
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert not self.current_task.create_mode
-        assert self.node.is_invalidate_remote()
-        assert not self.node.is_invalidate_local()
-
-    def test_replace_with_a_remote_remove_task(self):
-        new_task = RemovedRemoteFilesTask(container=None,
-                                          target=("aaaa/bbb/ccc",),
-                                          local_container=self.lc,
-                                          display_error_cb=None)
-
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert not self.current_task.create_mode
-        assert self.node.is_invalidate_remote()
-        assert not self.node.is_invalidate_local()
-
-    def test_replace_with_a_move_as_src_task(self):
-        new_task = MovedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/ccc",
-                                               "aaaa/bbb/cccd"),
-                                       local_container=self.lc,
-                                       display_error_cb=None)
-
-        assert self.tree._use_the_new_task(self.node, new_task)
-        assert not self.node.is_invalidate_remote()
-        assert self.node.is_invalidate_local()
-
-    def test_replace_with_a_move_as_dst_task(self):
-        new_task = MovedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/cccs",
-                                               "aaaa/bbb/ccc"),
-                                       local_container=self.lc,
-                                       display_error_cb=None)
-
-        assert self.tree._use_the_new_task(self.node, new_task)
-        assert not self.node.is_invalidate_remote()
-        assert self.node.is_invalidate_local()
-
-
-class TestMergeFromLocalRemoveTask(object):
-
-    def setup_method(self, method):
-        self.fake_saver = FakeIndexSaver()
-
-        self.input_idx = {"aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
-                          "aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
-                          "aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
-                          "fff/eee": ["local_eee", "remote_eee"],
-                          "ggg": ["local_ggg", "remote_ggg"]}
-
-        self.tree = IndexTree(self.fake_saver, self.input_idx)
-        self.node = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
-                                                      create=False)
-        self.lc = FakeLocalContainer()
-        self.ft = FakeTask()
-
-        self.current_task = RemovedLocalFilesTask(container=None,
-                                                  target=("aaaa/bbb/ccc",),
-                                                  local_container=self.lc,
-                                                  display_error_cb=None)
-        self.node.add_waiting_node(self)
-        self.node.waiting_task = self.current_task
-        self.node.waiting_task_callback = self.ft.callback
-        self.node.set_hash("local", "remote")
-
-    def test_replace_with_a_local_create_task(self):
-        new_task = AddedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/ccc",),
-                                       local_container=self.lc,
-                                       display_error_cb=None,
-                                       create_mode=True)
-
-        assert self.tree._use_the_new_task(self.node, new_task)
-        assert not self.node.is_invalidate_remote()
-        assert not self.node.is_invalidate_local()
-
-    def test_replace_with_a_local_update_task(self):
-        new_task = AddedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/ccc",),
-                                       local_container=self.lc,
-                                       display_error_cb=None,
-                                       create_mode=False)
-
-        assert self.tree._use_the_new_task(self.node, new_task)
-        assert not self.node.is_invalidate_remote()
-        assert not self.node.is_invalidate_local()
-
-    def test_replace_with_a_local_delete_task(self):
-        new_task = RemovedLocalFilesTask(container=None,
-                                         target=("aaaa/bbb/ccc",),
-                                         local_container=self.lc,
-                                         display_error_cb=None)
-
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert not self.node.is_invalidate_remote()
-        assert not self.node.is_invalidate_local()
-
-    def test_replace_with_a_remote_add_task(self):
-        new_task = AddedRemoteFilesTask(container=None,
-                                        target=("aaaa/bbb/ccc",),
-                                        local_container=self.lc,
-                                        display_error_cb=None)
-
-        assert self.tree._use_the_new_task(self.node, new_task)
-        assert not self.node.is_invalidate_remote()
-        assert self.node.is_invalidate_local()
-
-    def test_replace_with_a_remote_remove_task(self):
-        new_task = RemovedRemoteFilesTask(container=None,
-                                          target=("aaaa/bbb/ccc",),
-                                          local_container=self.lc,
-                                          display_error_cb=None)
-
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert self.node.is_invalidate_remote()
-        assert not self.node.is_invalidate_local()
-
-    def test_replace_with_a_move_as_src_task(self):
-        new_task = MovedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/ccc",
-                                               "aaaa/bbb/cccd"),
-                                       local_container=self.lc,
-                                       display_error_cb=None)
-
-        assert self.tree._use_the_new_task(self.node, new_task)
-        assert not self.node.is_invalidate_remote()
-        assert self.node.is_invalidate_local()
-
-    def test_replace_with_a_move_as_dst_task(self):
-        new_task = MovedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/cccs",
-                                               "aaaa/bbb/ccc"),
-                                       local_container=self.lc,
-                                       display_error_cb=None)
-
-        assert self.tree._use_the_new_task(self.node, new_task)
-        assert not self.node.is_invalidate_remote()
-        assert self.node.is_invalidate_local()
-
-
-class TestMergeFromRemoteAddTask(object):
-
-    def setup_method(self, method):
-        self.fake_saver = FakeIndexSaver()
-
-        self.input_idx = {"aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
-                          "aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
-                          "aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
-                          "fff/eee": ["local_eee", "remote_eee"],
-                          "ggg": ["local_ggg", "remote_ggg"]}
-
-        self.tree = IndexTree(self.fake_saver, self.input_idx)
-        self.node = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
-                                                      create=False)
-        self.lc = FakeLocalContainer()
-        self.ft = FakeTask()
-
-        self.current_task = AddedRemoteFilesTask(container=None,
-                                                 target=("aaaa/bbb/ccc",),
-                                                 local_container=self.lc,
-                                                 display_error_cb=None)
-        self.node.add_waiting_node(self)
-        self.node.waiting_task = self.current_task
-        self.node.waiting_task_callback = self.ft.callback
-        self.node.set_hash("local", "remote")
-
-    def test_replace_with_a_local_create_task(self):
-        new_task = AddedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/ccc",),
-                                       local_container=self.lc,
-                                       display_error_cb=None,
-                                       create_mode=True)
-
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert self.node.is_invalidate_local()
-        assert not self.node.is_invalidate_remote()
-
-    def test_replace_with_a_local_update_task(self):
-        new_task = AddedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/ccc",),
-                                       local_container=self.lc,
-                                       display_error_cb=None,
-                                       create_mode=False)
-
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert self.node.is_invalidate_local()
-        assert not self.node.is_invalidate_remote()
-
-    def test_replace_with_a_local_delete_task(self):
-        new_task = RemovedLocalFilesTask(container=None,
-                                         target=("aaaa/bbb/ccc",),
-                                         local_container=self.lc,
-                                         display_error_cb=None)
-
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert self.node.is_invalidate_local()
-        assert not self.node.is_invalidate_remote()
-
-    def test_replace_with_a_remote_add_task(self):
-        new_task = AddedRemoteFilesTask(container=None,
-                                        target=("aaaa/bbb/ccc",),
-                                        local_container=self.lc,
-                                        display_error_cb=None)
-
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert not self.node.is_invalidate_remote()
-        assert not self.node.is_invalidate_local()
-
-    def test_replace_with_a_remote_remove_task_and_valid_local_hash(self):
-        new_task = RemovedRemoteFilesTask(container=None,
-                                          target=("aaaa/bbb/ccc",),
-                                          local_container=self.lc,
-                                          display_error_cb=None)
-
-        assert self.tree._use_the_new_task(self.node, new_task)
-        assert not self.node.is_invalidate_remote()
-        assert not self.node.is_invalidate_local()
-
-    def test_replace_with_a_remote_remove_task_and_not_valid_local_hash(self):
-        new_task = RemovedRemoteFilesTask(container=None,
-                                          target=("aaaa/bbb/ccc",),
-                                          local_container=self.lc,
-                                          display_error_cb=None)
-
-        self.node.set_hash(None, "remote")
-        assert self.tree._use_the_new_task(self.node, new_task)
-        assert not self.node.is_invalidate_remote()
-        assert self.node.is_invalidate_local()
-
-    def test_replace_with_a_move_as_src_task(self):
-        new_task = MovedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/ccc",
-                                               "aaaa/bbb/cccd"),
-                                       local_container=self.lc,
-                                       display_error_cb=None)
-
-        assert self.tree._use_the_new_task(self.node, new_task)
-        assert self.node.is_invalidate_remote()
-        assert not self.node.is_invalidate_local()
-
-    def test_replace_with_a_move_as_dst_task(self):
-        new_task = MovedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/cccs",
-                                               "aaaa/bbb/ccc"),
-                                       local_container=self.lc,
-                                       display_error_cb=None)
-
-        assert self.tree._use_the_new_task(self.node, new_task)
-        assert self.node.is_invalidate_remote()
-        assert not self.node.is_invalidate_local()
-
-
-class TestMergeFromRemoteRemoveTask(object):
-
-    def setup_method(self, method):
-        self.fake_saver = FakeIndexSaver()
-
-        self.input_idx = {"aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
-                          "aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
-                          "aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
-                          "fff/eee": ["local_eee", "remote_eee"],
-                          "ggg": ["local_ggg", "remote_ggg"]}
-
-        self.tree = IndexTree(self.fake_saver, self.input_idx)
-        self.node = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
-                                                      create=False)
-        self.lc = FakeLocalContainer()
-        self.ft = FakeTask()
-
-        self.current_task = RemovedRemoteFilesTask(container=None,
-                                                   target=("aaaa/bbb/ccc",),
-                                                   local_container=self.lc,
-                                                   display_error_cb=None)
-        self.node.add_waiting_node(self)
-        self.node.waiting_task = self.current_task
-        self.node.waiting_task_callback = self.ft.callback
-        self.node.set_hash("local", "remote")
-
-    def test_replace_with_a_local_create_task(self):
-        new_task = AddedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/ccc",),
-                                       local_container=self.lc,
-                                       display_error_cb=None,
-                                       create_mode=True)
-
-        assert self.tree._use_the_new_task(self.node, new_task)
-        assert self.node.is_invalidate_remote()
-        assert not self.node.is_invalidate_local()
-
-    def test_replace_with_a_local_update_task(self):
-        new_task = AddedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/ccc",),
-                                       local_container=self.lc,
-                                       display_error_cb=None,
-                                       create_mode=False)
-
-        assert self.tree._use_the_new_task(self.node, new_task)
-        assert self.node.is_invalidate_remote()
-        assert not self.node.is_invalidate_local()
-
-    def test_replace_with_a_local_delete_task(self):
-        new_task = RemovedLocalFilesTask(container=None,
-                                         target=("aaaa/bbb/ccc",),
-                                         local_container=self.lc,
-                                         display_error_cb=None)
-
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert not self.node.is_invalidate_remote()
-        assert self.node.is_invalidate_local()
-
-    def test_replace_with_a_remote_add_task(self):
-        new_task = AddedRemoteFilesTask(container=None,
-                                        target=("aaaa/bbb/ccc",),
-                                        local_container=self.lc,
-                                        display_error_cb=None)
-
-        assert self.tree._use_the_new_task(self.node, new_task)
-        assert not self.node.is_invalidate_remote()
-        assert not self.node.is_invalidate_local()
-
-    def test_replace_with_a_remote_remove_task(self):
-        new_task = RemovedRemoteFilesTask(container=None,
-                                          target=("aaaa/bbb/ccc",),
-                                          local_container=self.lc,
-                                          display_error_cb=None)
-
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert not self.node.is_invalidate_remote()
-        assert not self.node.is_invalidate_local()
-
-    def test_replace_with_a_move_as_src_task(self):
-        new_task = MovedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/ccc",
-                                               "aaaa/bbb/cccd"),
-                                       local_container=self.lc,
-                                       display_error_cb=None)
-
-        assert self.tree._use_the_new_task(self.node, new_task)
-        assert self.node.is_invalidate_remote()
-        assert not self.node.is_invalidate_local()
-
-    def test_replace_with_a_move_as_dst_task(self):
-        new_task = MovedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/cccs",
-                                               "aaaa/bbb/ccc"),
-                                       local_container=self.lc,
-                                       display_error_cb=None)
-
-        assert self.tree._use_the_new_task(self.node, new_task)
-        assert self.node.is_invalidate_remote()
-        assert not self.node.is_invalidate_local()
-
-
-class TestMergeFromLocalMoveTaskOnSrc(object):
-
-    def setup_method(self, method):
-        global task_added
-
-        self.fake_saver = FakeIndexSaver()
-
-        self.input_idx = {"aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
-                          "aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
-                          "aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
-                          "fff/eee": ["local_eee", "remote_eee"],
-                          "ggg": ["local_ggg", "remote_ggg"]}
-
-        self.tree = IndexTree(self.fake_saver, self.input_idx)
-        self.node = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
-                                                      create=False)
-        self.lc = FakeLocalContainer()
-        self.ft = FakeTask()
-
-        self.current_task = MovedLocalFilesTask(container=None,
-                                                target=("aaaa/bbb/ccc",
-                                                        "aaaa/bbb/cccd"),
-                                                local_container=self.lc,
-                                                display_error_cb=None)
-        self.node.add_waiting_node(self)
-        self.node.waiting_task = self.current_task
-        self.node.waiting_task_callback = self.ft.callback
-        self.node.set_hash("local", "remote")
-
-        del task_added[:]
-
-    def test_replace_with_a_local_create_task(self):
-        new_task = AddedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/ccc",),
-                                       local_container=self.lc,
-                                       display_error_cb=None,
-                                       create_mode=True)
-
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert self.node.is_invalidate_local()
-        assert not self.node.is_invalidate_remote()
-
-    def test_replace_with_a_local_update_task(self):
-        new_task = AddedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/ccc",),
-                                       local_container=self.lc,
-                                       display_error_cb=None,
-                                       create_mode=False)
-
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert self.node.is_invalidate_local()
-        assert not self.node.is_invalidate_remote()
-
-    def test_replace_with_a_local_delete_task(self):
-        new_task = RemovedLocalFilesTask(container=None,
-                                         target=("aaaa/bbb/ccc",),
-                                         local_container=self.lc,
-                                         display_error_cb=None)
-
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert self.node.is_invalidate_local()
-        assert not self.node.is_invalidate_remote()
-
-    def test_replace_with_a_remote_add_task(self):
-        new_task = AddedRemoteFilesTask(container=None,
-                                        target=("aaaa/bbb/ccc",),
-                                        local_container=self.lc,
-                                        display_error_cb=None)
-
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert self.node.is_invalidate_remote()
-        assert not self.node.is_invalidate_local()
-
-    def test_replace_with_a_remote_remove_task(self):
-        new_task = RemovedRemoteFilesTask(container=None,
-                                          target=("aaaa/bbb/ccc",),
-                                          local_container=self.lc,
-                                          display_error_cb=None)
-
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert self.node.is_invalidate_remote()
-        assert not self.node.is_invalidate_local()
-
-    def test_replace_with_the_same_move(self):
-        new_task = MovedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/ccc",
-                                               "aaaa/bbb/cccd"),
-                                       local_container=self.lc,
-
-                                       display_error_cb=None)
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert not self.node.is_invalidate_remote()
-        assert not self.node.is_invalidate_local()
-
-    def test_replace_with_a_move_as_src_task(self):
-        new_task = MovedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/ccc",
-                                               "aaaa/bbb/cccd2"),
-                                       local_container=self.lc,
-                                       display_error_cb=None)
-
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert self.ft.cancel
-        assert len(task_added) == 3
-
-        targets = ["aaaa/bbb/ccc", "aaaa/bbb/cccd", "aaaa/bbb/cccd2"]
-        for new_task, priority in task_added:
-            assert priority
-            assert isinstance(new_task, AddedLocalFilesTask)
-            rel_path = new_task.target_list[0]
-            assert rel_path in targets
-            targets.remove(rel_path)
-
-    def test_replace_with_a_move_as_src_task_with_dests_exist(self):
-        new_task = MovedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/ccc",
-                                               "aaaa/bbb/cccd2"),
-                                       local_container=self.lc,
-                                       display_error_cb=None)
-
-        node_cccd = self.tree.root.get_or_insert_node("aaaa/bbb/cccd")
-        node_cccd.set_hash("local", "remote", False)
-        node_cccd2 = self.tree.root.get_or_insert_node("aaaa/bbb/cccd2")
-        node_cccd2.set_hash("local", "remote", False)
-
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert self.ft.cancel
-        assert len(task_added) == 3
-        assert node_cccd.is_invalidate_remote()
-        assert node_cccd2.is_invalidate_remote()
-
-        targets = ["aaaa/bbb/ccc", "aaaa/bbb/cccd", "aaaa/bbb/cccd2"]
-        for new_task, priority in task_added:
-            assert priority
-            assert isinstance(new_task, AddedLocalFilesTask)
-            rel_path = new_task.target_list[0]
-            assert rel_path in targets
-            targets.remove(rel_path)
-
-    def test_replace_with_a_move_as_dst_task(self):
-        global task_added
-
-        new_task = MovedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/cccs",
-                                               "aaaa/bbb/ccc"),
-                                       local_container=self.lc,
-                                       display_error_cb=None)
-
-        old_dest = self.tree.root.get_or_insert_node(
-            "aaaa/bbb/cccd",
-            index_saver=self.fake_saver)
-        old_dest.set_hash(None, "remote")
-
-        assert self.tree._use_the_new_task(self.node, new_task)
-        assert old_dest.is_invalidate_remote()
-        assert len(task_added) == 1
-        new_task, priority = task_added[0]
-        assert priority
-        assert isinstance(new_task, AddedLocalFilesTask)
-        assert new_task.target_list[0] == "aaaa/bbb/cccd"
-
-
-class TestMergeFromLocalMoveTaskOnDst(object):
-
-    def setup_method(self, method):
-        global task_added
-
-        self.fake_saver = FakeIndexSaver()
-
-        self.input_idx = {"aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
-                          "aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
-                          "aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
-                          "fff/eee": ["local_eee", "remote_eee"],
-                          "ggg": ["local_ggg", "remote_ggg"]}
-
-        self.tree = IndexTree(self.fake_saver, self.input_idx)
-        self.node = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
-                                                      create=False)
-        self.lc = FakeLocalContainer()
-        self.ft = FakeTask()
-
-        self.current_task = MovedLocalFilesTask(container=None,
-                                                target=("aaaa/bbb/cccs",
-                                                        "aaaa/bbb/ccc"),
-                                                local_container=self.lc,
-                                                display_error_cb=None)
-        self.node.add_waiting_node(self)
-        self.node.waiting_task = self.current_task
-        self.node.waiting_task_callback = self.ft.callback
-        self.node.set_hash("local", "remote")
-
-        del task_added[:]
-
-    def test_replace_with_a_local_create_task(self):
-        new_task = AddedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/ccc",),
-                                       local_container=self.lc,
-                                       display_error_cb=None,
-                                       create_mode=True)
-
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert self.node.is_invalidate_local()
-        assert not self.node.is_invalidate_remote()
-
-    def test_replace_with_a_local_update_task(self):
-        new_task = AddedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/ccc",),
-                                       local_container=self.lc,
-                                       display_error_cb=None,
-                                       create_mode=False)
-
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert self.node.is_invalidate_local()
-        assert not self.node.is_invalidate_remote()
-
-    def test_replace_with_a_local_delete_task(self):
-        new_task = RemovedLocalFilesTask(container=None,
-                                         target=("aaaa/bbb/ccc",),
-                                         local_container=self.lc,
-                                         display_error_cb=None)
-
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert self.node.is_invalidate_local()
-        assert not self.node.is_invalidate_remote()
-
-    def test_replace_with_a_remote_add_task(self):
-        new_task = AddedRemoteFilesTask(container=None,
-                                        target=("aaaa/bbb/ccc",),
-                                        local_container=self.lc,
-                                        display_error_cb=None)
-
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert self.node.is_invalidate_remote()
-        assert not self.node.is_invalidate_local()
-
-    def test_replace_with_a_remote_remove_task(self):
-        new_task = RemovedRemoteFilesTask(container=None,
-                                          target=("aaaa/bbb/ccc",),
-                                          local_container=self.lc,
-                                          display_error_cb=None)
-
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert self.node.is_invalidate_remote()
-        assert not self.node.is_invalidate_local()
-
-    def test_replace_with_the_same_move(self):
-        new_task = MovedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/cccs",
-                                               "aaaa/bbb/ccc"),
-                                       local_container=self.lc,
-
-                                       display_error_cb=None)
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert not self.node.is_invalidate_remote()
-        assert not self.node.is_invalidate_local()
-
-    def test_replace_with_a_move_as_src_task(self):
-        new_task = MovedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/ccc",
-                                               "aaaa/bbb/cccd"),
-                                       local_container=self.lc,
-                                       display_error_cb=None)
-
-        node_cccs = self.tree.root.get_or_insert_node("aaaa/bbb/cccs")
-        node_cccs.executing_task = self.current_task
-
-        assert not self.tree._use_the_new_task(self.node, new_task)
-        assert isinstance(self.node.waiting_task, RemovedLocalFilesTask)
-        assert self.ft.cancel
-        assert len(task_added) == 2
-
-        new_task, priority = task_added[0]
-        assert priority
-        assert isinstance(new_task, RemovedLocalFilesTask)
-        assert new_task.target_list[0] == "aaaa/bbb/ccc"
-
-        new_task, priority = task_added[1]
-        assert priority
-        assert isinstance(new_task, MovedLocalFilesTask)
-        assert new_task.target_list[0] == "aaaa/bbb/cccs"
-        assert new_task.target_list[1] == "aaaa/bbb/cccd"
-
-        assert node_cccs.executing_task is not None
-
-    def test_replace_with_a_move_as_dst_task(self):
-        new_task = MovedLocalFilesTask(container=None,
-                                       target=("aaaa/bbb/cccs2",
-                                               "aaaa/bbb/ccc"),
-                                       local_container=self.lc,
-                                       display_error_cb=None)
-
-        assert self.tree._use_the_new_task(self.node, new_task)
-        assert len(task_added) == 1
-        new_task, priority = task_added[0]
-        assert priority
-        assert isinstance(new_task, RemovedLocalFilesTask)
-        assert new_task.target_list[0] == "aaaa/bbb/cccs"
-
-
-class TestReplaceTask(object):
-
-    def setup_method(self, method):
-        global task_added
-
-        self.fake_saver = FakeIndexSaver()
-
-        self.input_idx = {"aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
-                          "aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
-                          "aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
-                          "fff/eee": ["local_eee", "remote_eee"],
-                          "ggg": ["local_ggg", "remote_ggg"]}
-
-        self.tree = IndexTree(self.fake_saver, self.input_idx)
-        self.node = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
-                                                      create=False)
-        self.lc = FakeLocalContainer()
-        self.ft = FakeTask()
-
-        self.current_task = AddedRemoteFilesTask(container=None,
-                                                 target=("aaaa/bbb/ccc",),
-                                                 local_container=self.lc,
-                                                 display_error_cb=None)
-        self.node.add_waiting_node(self)
-        self.node.waiting_task = self.current_task
-        self.node.waiting_task_callback = self.ft.callback
-        self.node.set_hash("local", "remote")
-
-        del task_added[:]
-
-    def test_replace_task_with_create_task_and_cancel(self):
-        self.tree._replace_task_with_create_task(self.node,
-                                                 self.node.waiting_task,
-                                                 True)
-        assert self.ft.cancel
-        assert isinstance(self.node.waiting_task, AddedLocalFilesTask)
-
-    def test_replace_task_with_create_task_without_cancel(self):
-        self.tree._replace_task_with_create_task(self.node,
-                                                 self.node.waiting_task,
-                                                 False)
-
-        assert not self.ft.cancel
-        assert isinstance(self.node.waiting_task, AddedLocalFilesTask)
-
-    def test_replace_task_with_delete_task_and_cancel(self):
-        self.tree._replace_task_with_delete_task(self.node,
-                                                 self.node.waiting_task,
-                                                 True)
-
-        assert self.ft.cancel
-        assert isinstance(self.node.waiting_task, RemovedLocalFilesTask)
-
-    def test_replace_task_with_delete_task_without_cancel(self):
-        self.tree._replace_task_with_delete_task(self.node,
-                                                 self.node.waiting_task,
-                                                 False)
-        assert not self.ft.cancel
-        assert isinstance(self.node.waiting_task, RemovedLocalFilesTask)
-
-
-class TestAcquire(object):
-
-    def setup_method(self, method):
-        global task_added
-
-        self.fake_saver = FakeIndexSaver()
-
-        self.input_idx = {"aaaa/bbb/ccc": ["local_ccc", "remote_ccc"],
-                          "aaaa/bbb/ddd": ["local_ddd", "remote_ddd"],
-                          "aaaa/bbb/hhh": ["local_hhh", "remote_hhh"],
-                          "fff/eee": ["local_eee", "remote_eee"],
-                          "ggg": ["local_ggg", "remote_ggg"]}
-
-        self.tree = IndexTree(self.fake_saver, self.input_idx)
-        self.node = self.tree.root.get_or_insert_node("aaaa/bbb/ccc",
-                                                      create=False)
-
-        self.lc = FakeLocalContainer()
-        self.task = AddedLocalFilesTask(container=None,
-                                        target=("aaaa/bbb/ccc",),
-                                        local_container=self.lc,
-                                        display_error_cb=None,
-                                        create_mode=True)
-
-        del task_added[:]
-
-    def test_empty_aquire(self):
-        p = self.tree.acquire((), "task")
-        assert p.result() == {}
-        for node in self.tree.root.traverse():
-            assert not node.is_locked()
-
-    def test_simple_aquire(self):
-        self.tree.acquire(("aaaa/bbb/ccc",), "task")
-        assert self.node.is_locked()
-        assert self.tree.is_locked()
-
-    def test_aquire_with_too_many_path(self):
-        with pytest.raises(Exception):
-            self.tree.acquire(("aaaa/bbb/ccc",
-                               "aaaa/bbb/ccc1",
-                               "aaaa/bbb/ccc2",
-                               "aaaa/bbb/ccc3"), "task")
-
-    def test_aquire_lock_already_acquired(self):
-        self.node.lock(self.node, self.task)
-
-        p = self.tree.acquire(("aaaa/bbb/ccc", ), self.task)
-        r = p.result()
-        assert isinstance(r, list)
-        assert len(r) == 1
-
-    def test_aquire_sync_task_on_parent(self):
-        node_aaa = self.tree.root.get_or_insert_node("aaaa", create=False)
-        node_aaa.waiting_task = "task"
-        p = self.tree.acquire(("aaaa/bbb",), "task", prior_acquire=True)
-
-        with pytest.raises(RedundantTaskInterruption):
-            p.result()
-
-    def test_acquire_a_task_already_waits_and_no_merge(self):
-        self.node.waiting_task = self.task
-
-        p = self.tree.acquire(
-            ("aaaa/bbb/ccc",), self.task, prior_acquire=True)
-
-        with pytest.raises(RedundantTaskInterruption):
-            p.result()
-
-    def test_acquire_a_task_already_waits_and_merge(self):
-        task = RemovedRemoteFilesTask(container=None,
-                                      target=("aaaa/bbb/ccc",),
-                                      local_container=self.lc,
-                                      display_error_cb=None)
-        task.prior = True
-
-        fake_task = FakeTask()
-        self.node.waiting_task = task
-        self.node.waiting_task_callback = fake_task.callback
-        self.tree.acquire(("aaaa/bbb/ccc",), self.task, prior_acquire=True)
-
-        assert fake_task.cancel
-        assert self.node.waiting_task is self.task
-
-    def test_acquire_nodes_is_locked_but_no_waiting_task(self):
-        node_ccc = self.tree.root.get_or_insert_node("aaaa/bbb/ccc")
-        owner = FakeDirectoryNode()
-        node_ccc.lock(owner)
-        p = self.tree.acquire(("aaaa/bbb/ccc",), self.task)
-        node_ccc.unlock(owner)
-        node_ccc.trigger_waiting_task()
-        assert isinstance(p.result(), list)
-
-    def test_acquire_a_parent_is_locked(self):
-        node_aaa = self.tree.root.get_or_insert_node("aaaa", create=False)
-        node_aaa.lock()
-        p = self.tree.acquire(("aaaa/1234",), self.task)
-        node_aaa.unlock()
-
-        node_aaa.trigger_waiting_nodes()
-        assert isinstance(p.result(), list)
-
-    def test_acquire_a_child_is_locked(self):
-        node_ccc = self.tree.root.get_or_insert_node("aaaa/bbb/ccc")
-        node_ccc.lock()
-        p = self.tree.acquire((".",), "task")
-        node_ccc.unlock()
-        node_ccc.trigger_waiting_nodes()
-        assert isinstance(p.result(), list)
+    """Other IndexTree tests who doesn't fit in other classes."""
+
+    def test_get_remote_hash_of_empty_tree(self):
+        tree = IndexTree()
+        assert tree.get_remote_hashes() == {}
+
+    def test_get_remote_hash_of_tree_containing_only_folders(self):
+        tree = IndexTree()
+        tree._root = FolderNode('.')
+        node_folder = FolderNode('folder')
+        tree._root.add_child(node_folder)
+        node_folder.add_child(FolderNode('nested folder'))
+
+        assert tree.get_remote_hashes() == {}
+
+    def test_get_remote_hash_of_tree_with_files(self):
+        tree = IndexTree()
+        file_a1 = FileNode('A1')
+        file_a1.state = {'local_hash': 'abcd', 'remote_hash': 1234}
+        file_b1 = FileNode('B1')
+        file_b1.state = {'local_hash': 'ef01', 'remote_hash': 5678}
+
+        tree._root = FolderNode('.')
+        tree._root.add_child(FolderNode('A'))
+        tree._root.children['A'].add_child(file_a1)
+        tree._root.children['A'].add_child(FolderNode('A2'))
+        tree._root.add_child(FolderNode('B'))
+        tree._root.children['B'].add_child(file_b1)
+
+        data = tree.get_remote_hashes()
+        assert data == {
+            u'A/A1': 1234,
+            u'B/B1': 5678,
+        }
+
+    def test_empty_tree_is_not_dirty(self):
+        tree = IndexTree()
+        assert tree.is_dirty() is False
+
+    def test_tree_is_dirty_if_root_node_is_dirty(self):
+        tree = IndexTree()
+        tree._root = MyNode('.')
+        assert tree.is_dirty() is True
+
+    def test_tree_is_not_dirty_if_root_node_is_not_dirty(self):
+        tree = IndexTree()
+        tree._root = MyNode('.')
+        tree._root.sync = True
+        assert tree.is_dirty() is False

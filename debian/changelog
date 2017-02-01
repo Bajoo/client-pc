@@ -1,3 +1,32 @@
+bajoo (0.4.1-1) xenial; urgency=low
+
+  * Fix a crash in the About window.
+  * Fix incorrect checks in the change password form.
+
+ -- Bajoo <support@bajoo.fr>  Thu, 19 Jan 2017 10:57:23 +0100
+
+bajoo (0.4.0-1) xenial; urgency=low
+
+  * Rewrite of the sync module: The status of each file is now accessible far
+    more easily. It was a prerequisite for a lot of future features and
+    improvements.
+  * The passphrase is always asked at Bajoo start (if needed).
+  * Limit the number of concurrent tasks to 35.
+  * Retry to sync files after an error (after a delay).
+  * Fix deadlock when encryption service stop.
+  * Fix a bug when handling unicode Exception messages.
+  * Fix a bug preventing use of passphrase in Container.
+  * Improves logs: display version at startup, logs are less verbose by default
+    and logs in sync module are displayed with the task ID associated.
+  * Dev server URLs can be specified in the config file.
+  * Set update url dependent of the OS.
+  * Start decoupling general GUI code and specific WxPython code into view and containers.
+  * Add manual test for GUI views.
+  * Add implementations of a few GUI elements in Gtk3.
+  * Replace custom IPC protocol in TaskBarIcon's Unity version.
+
+ -- Bajoo <support@bajoo.fr>  Thu, 12 Jan 2017 15:27:44 +0100
+
 bajoo (0.3.25-1) xenial; urgency=low
 
   * Fix critical bug introduced in previous version.

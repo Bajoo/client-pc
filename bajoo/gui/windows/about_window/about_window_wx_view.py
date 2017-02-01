@@ -1,24 +1,25 @@
 # -*- coding: utf-8 -*-
-from . import wx_compat  # noqa
-
-import webbrowser
 
 import wx
 from wx.lib.agw.hyperlink import EVT_HYPERLINK_LEFT, HyperLinkCtrl
 
-from ..common.i18n import N_
-from .base_view import BaseView
-from .bug_report import BugReportWindow
-from ..common.path import resource_filename
-from ..gui.translator import Translator
+from ....common.i18n import N_
+from ....common.path import resource_filename
+from ...base_view import BaseView
+from ...translator import Translator
+
+from .about_window_base_view import AboutWindowBaseView
+from .about_window_controller import Page
 
 
-class AboutBajooWindow(wx.Frame):
+class AboutWindowWxView(wx.Frame, AboutWindowBaseView, BaseView):
     GOOGLE_ICON = None
     FACEBOOK_ICON = None
     TWITTER_ICON = None
 
-    def __init__(self):
+    def __init__(self, ctrl, app_version):
+        AboutWindowBaseView.__init__(self, ctrl, app_version)
+
         window_style = \
             wx.DEFAULT_FRAME_STYLE & ~wx.MAXIMIZE_BOX & ~wx.RESIZE_BORDER
         wx.Frame.__init__(self, parent=None, style=window_style)
@@ -28,65 +29,20 @@ class AboutBajooWindow(wx.Frame):
         self.SetIcon(icon)
 
         self._init_icons()
-        about_panel = wx.Panel(self)
-        self._view = AboutBajooView(about_panel)
+        self.about_panel = wx.Panel(self)
+        BaseView.__init__(self, self.about_panel)
+        self._create_content(self.about_panel)
 
         self.Bind(wx.EVT_BUTTON, self._on_click_link)
 
         win = self.FindWindow('contact_dev')
         win.Bind(EVT_HYPERLINK_LEFT, self._bug_report)
+        self.Bind(wx.EVT_CLOSE, lambda _evt: self.controller.close_action())
         win.AutoBrowse(False)
 
-    def Show(self, show=True):
-        wx.Frame.Show(self, show)
+    def _create_content(self, about_panel):
 
-        if show:
-            self.Layout()
-            self._view.contact_sizer.Layout()
-            self._view.source_code_sizer.Layout()
-            self._view.bajoo_trademark_sizer.Layout()
-
-    def _init_icons(self):
-        if not AboutBajooWindow.GOOGLE_ICON:
-            AboutBajooWindow.GOOGLE_ICON = wx.Image(
-                resource_filename('assets/images/google-plus.png')) \
-                .ConvertToBitmap()
-        if not AboutBajooWindow.FACEBOOK_ICON:
-            AboutBajooWindow.FACEBOOK_ICON = wx.Image(
-                resource_filename('assets/images/facebook.png')) \
-                .ConvertToBitmap()
-        if not AboutBajooWindow.TWITTER_ICON:
-            AboutBajooWindow.TWITTER_ICON = wx.Image(
-                resource_filename('assets/images/twitter.png')) \
-                .ConvertToBitmap()
-
-    def notify_lang_change(self):
-        self._view.notify_lang_change()
-
-    def _on_click_link(self, event):
-        print(event.GetEventObject())
-        if event.GetEventObject() == self.FindWindow('btn_google'):
-            webbrowser.open(
-                'https://plus.google.com/100830559069902551396/about')
-        elif event.GetEventObject() == self.FindWindow('btn_twitter'):
-            webbrowser.open('https://twitter.com/mybajoo')
-        elif event.GetEventObject() == self.FindWindow('btn_facebook'):
-            webbrowser.open(
-                'https://www.facebook.com/pages/Bajoo/382879575063022')
-        else:
-            event.Skip()
-
-    def _bug_report(self, event):
-        bug_dialog = BugReportWindow(self)
-        bug_dialog.ShowModal()
-
-
-class AboutBajooView(BaseView):
-    def __init__(self, about_panel):
-        BaseView.__init__(self, about_panel)
-        from ..__version__ import __version__
-
-        self.window.SetBackgroundColour(wx.Colour(255, 255, 255))
+        about_panel.SetBackgroundColour(wx.Colour(255, 255, 255))
         bg_color = about_panel.GetBackgroundColour()
 
         title_font = wx.Font(
@@ -110,7 +66,7 @@ class AboutBajooView(BaseView):
 
         lbl_version = wx.StaticText(
             about_panel, name='lbl_version',
-            label=__version__)
+            label=self.app_version)
 
         lbl_version_font = wx.Font(10, wx.FONTFAMILY_DEFAULT,
                                    wx.FONTSTYLE_NORMAL, wx.BOLD)
@@ -211,17 +167,17 @@ class AboutBajooView(BaseView):
         lbl_pypiwin32.SetBackgroundColour(bg_color)
 
         btn_google = wx.BitmapButton(
-            about_panel, bitmap=AboutBajooWindow.GOOGLE_ICON,
+            about_panel, bitmap=self.GOOGLE_ICON,
             style=wx.NO_BORDER, name='btn_google')
         btn_google.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
 
         btn_facebook = wx.BitmapButton(
-            about_panel, bitmap=AboutBajooWindow.FACEBOOK_ICON,
+            about_panel, bitmap=self.FACEBOOK_ICON,
             style=wx.NO_BORDER, name='btn_facebook')
         btn_facebook.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
 
         btn_twitter = wx.BitmapButton(
-            about_panel, bitmap=AboutBajooWindow.TWITTER_ICON,
+            about_panel, bitmap=self.TWITTER_ICON,
             style=wx.NO_BORDER, name='btn_twitter')
         btn_twitter.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
 
@@ -235,32 +191,32 @@ class AboutBajooView(BaseView):
                                (lbl_notify2, 0, wx.LEFT, 6),
                                (lbl_pypiwin32, 0, wx.LEFT, 6)])
 
-        self.source_code_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.source_code_sizer.AddMany(
+        about_panel.source_code_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        about_panel.source_code_sizer.AddMany(
             [lbl_source_code, (lbl_source_code_link, 0, wx.LEFT, 3)])
 
-        self.bajoo_trademark_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.bajoo_trademark_sizer.AddMany([
+        about_panel.bajoo_trademark_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        about_panel.bajoo_trademark_sizer.AddMany([
             lbl_trademarks, (lbl_home_page_link, 0, wx.LEFT, 6)])
 
         version_sizer = wx.BoxSizer(wx.HORIZONTAL)
         version_sizer.AddMany([lbl_version_title, (lbl_version, 0,
                                                    wx.LEFT, 3,)])
 
-        self.contact_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.contact_sizer.AddMany([lbl_contact_us,
-                                    (lbl_contact_us_url, 0, wx.LEFT, 3),
-                                    lbl_contact_or_url,
-                                    lbl_contact_dev_url])
+        about_panel.contact_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        about_panel.contact_sizer.AddMany([lbl_contact_us,
+                                           (lbl_contact_us_url, 0, wx.LEFT, 3),
+                                           lbl_contact_or_url,
+                                           lbl_contact_dev_url])
 
         # Add all left-aligned elements
         text_sizer = self.make_sizer(
             wx.VERTICAL, [
                 None, lbl_description, version_sizer, None,
-                lbl_frequently_asked_url, self.contact_sizer, None,
-                lbl_license, self.source_code_sizer, None,
+                lbl_frequently_asked_url, about_panel.contact_sizer, None,
+                lbl_license, about_panel.source_code_sizer, None,
                 lbl_libraries, libraries_box, None,
-                self.bajoo_trademark_sizer, None
+                about_panel.bajoo_trademark_sizer, None
             ], outside_border=False, border=5)
 
         # Insert the title at the top of the page
@@ -280,7 +236,7 @@ class AboutBajooView(BaseView):
         main_sizer.SetSizeHints(about_panel.GetTopLevelParent())
 
         self.register_i18n(about_panel,
-                           about_panel.GetTopLevelParent().SetTitle,
+                           self.SetTitle,
                            N_('About Bajoo'))
 
         self.register_many_i18n('SetLabel', {
@@ -303,6 +259,32 @@ class AboutBajooView(BaseView):
             lbl_libraries: N_('Bajoo uses the following libraries:')
         })
 
+    def show(self):
+        self.about_panel.Layout()
+        self.about_panel.contact_sizer.Layout()
+        self.about_panel.source_code_sizer.Layout()
+        self.about_panel.bajoo_trademark_sizer.Layout()
+        self.Show()
+        self.Raise()
+
+    def is_in_use(self):
+        return self.IsShown()
+
+    @classmethod
+    def _init_icons(cls):
+        if not AboutWindowWxView.GOOGLE_ICON:
+            cls.GOOGLE_ICON = wx.Image(
+                resource_filename('assets/images/google-plus.png')) \
+                .ConvertToBitmap()
+        if not cls.FACEBOOK_ICON:
+            cls.FACEBOOK_ICON = wx.Image(
+                resource_filename('assets/images/facebook.png')) \
+                .ConvertToBitmap()
+        if not cls.TWITTER_ICON:
+            cls.TWITTER_ICON = wx.Image(
+                resource_filename('assets/images/twitter.png')) \
+                .ConvertToBitmap()
+
     def notify_lang_change(self):
         Translator.notify_lang_change(self)
 
@@ -310,13 +292,18 @@ class AboutBajooView(BaseView):
         self.source_code_sizer.Layout()
         self.bajoo_trademark_sizer.Layout()
 
+    def _on_click_link(self, event):
+        if event.GetEventObject() == self.FindWindow('btn_google'):
+            self.controller.open_webpage_action(Page.GPLUS)
+        elif event.GetEventObject() == self.FindWindow('btn_twitter'):
+            self.controller.open_webpage_action(Page.TWITTER)
+        elif event.GetEventObject() == self.FindWindow('btn_facebook'):
+            self.controller.open_webpage_action(Page.FACEBOOK)
+        else:
+            event.Skip()
 
-def main():
-    app = wx.App()
-    win = AboutBajooWindow()
-    win.Show(True)
-    app.MainLoop()
+    def _bug_report(self, event):
+        self.controller.bug_report_action()
 
-
-if __name__ == '__main__':
-    main()
+    def destroy(self):
+        self.Destroy()

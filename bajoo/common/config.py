@@ -45,7 +45,18 @@ _default_config = {
     'contextual_icon': {'type': bool, 'default': True},
     'notifications': {'type': bool, 'default': True},
     'download_max_speed': {'type': float, 'default': None},
-    'upload_max_speed': {'type': float, 'default': None}
+    'upload_max_speed': {'type': float, 'default': None},
+
+    # These credentials are valid, but are intended for test purpose only.
+    # They can be revoked at any moment. If you want to develop your own
+    # client, either for distributing it or for your personal use, please
+    # contact us at <support-en@bajoo.fr> and we will be happy to provide you
+    # some credentials.
+    'client_id': {'type': str, 'default': '24e1aba5d72046dd8db4410176613698'},
+    'client_secret': {'type': str,
+                      'default': '4f2c73941fda45eaa5e72a0ade8e7b80'},
+    'identity_api_url': {'type': str, 'default': 'https://beta.bajoo.fr'},
+    'storage_api_url': {'type': str, 'default': 'https://storage.bajoo.fr/v1'},
 }
 
 # Actual config parser

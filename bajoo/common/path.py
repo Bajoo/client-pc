@@ -110,5 +110,6 @@ def main():
     print('')
     print('default Bajoo root folder: %s', default_root_folder())
 
+
 if __name__ == "__main__":
     main()

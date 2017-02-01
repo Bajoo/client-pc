@@ -1,19 +1,29 @@
 # -*- coding: utf-8 -*-
 
+import datetime
 from functools import partial
+import heapq
 import logging
 import os
 import threading
 
-from .api.sync import files_list_updater
 from . import filesync
-from .file_watcher import FileWatcher
-from .filesync.filepath import is_path_allowed
-from .network.errors import HTTPEntityTooLargeError
-from .encryption.errors import PassphraseAbortError
-from .common.i18n import _
+from .api.sync import files_list_updater
 from .app_status import AppStatus
-
+from .common.i18n import _
+from .common.strings import err2unicode
+from .encryption.errors import PassphraseAbortError
+from .filesync.added_local_files_task import AddedLocalFilesTask
+from .filesync.filepath import is_path_allowed
+from .filesync.moved_local_files_task import MovedLocalFilesTask
+from .filesync.sync_scheduler import SyncScheduler
+from .filesync.task_builder import TaskBuilder
+from .file_watcher import FileWatcher
+from .index.file_node import FileNode
+from .index.hint_builder import HintBuilder
+from .local_container import ContainerStatus
+from .network.errors import HTTPEntityTooLargeError
+from .promise import reduce_coroutine
 
 _logger = logging.getLogger(__name__)
 
@@ -21,85 +31,165 @@ _logger = logging.getLogger(__name__)
 class ContainerSyncPool(object):
     """Group all containers and manages sync operations.
 
+    It lists all LocalContainer instances, and start, pause, resume and stop
+    the synchronisation for one or all containers.
+    The class has a thread which read changes of containers, create tasks to
+    sync them, and pass the tasks to the filesync module.
+
+    Also, it updates container status and global status from the task's
+    results.
+
     When a container is added to the pool, the sync of its files will begin
     (unless there has been an error in LocalContainer initialization).
-    Local file changes and remote file changes will be detected and applied as
-    soon as possible by adding tasks to the bajoo.filesync module.
+    Local file changes and remote file changes will be detected and the
+    index tree of the container will be updated via the HintBuilder.
+    They will be "synced" later.
 
-    pause() and resume() allow to stop (and restart) sync for all containers
-    at once.
+    Events are converted in "hint" as soon as possible, but tasks are generated
+    and executed in order to not create them quicker than what the environment
+    can handle (network and encryption are slow).
 
-    When running, the pool updates the sync status of each container, as well
-    as the global app status.
     """
+
+    STATUS_STARTED = 'STARTED'
+    STATUS_STOPPING = 'STOPPING'
+    STATUS_STOPPED = 'STOPPED'
 
     QUOTA_TIMEOUT = 300.0
 
     def __init__(self, app_status, on_sync_error):
         """
         Args:
-            app_status (AppStatus): reference to the global application status.
-                The pool will update according to the sync state.
+            app_status (AppStatus): application status object. It will be
+                updated from container's sync progression.
             on_sync_error (callable): Called when an error occurs, with a str
                 message as argument.
         """
         self._local_containers = {}
         self._on_sync_error = on_sync_error
 
+        # Condition used for wake up the sync thread. It should be notified
+        # after an external event (local or remote), or when the status is set
+        # to STATUS_STOPPING
+        self._condition = threading.Condition()
+        # All following attributes must be protected by acquiring the
+        # Condition.
+
+        self._thread = None
+        self._scheduler = SyncScheduler()
+
+        self._ongoing_tasks = []
+
+        # _failed_node is a heap (it must be manipulated by heapq functions)
+        # Each tuple contains: (date of next try, nb of try already done,
+        # index_tree, node)
+        # type: List[Tuple[datetime.datetime, int, IndexTree, BaseNode]]
+        self._failed_node = []
+
         self._app_status = app_status
-        self._counter = 0
-        self._passphrase_needed = False
+        self._status = self.STATUS_STOPPED
 
-        self._inner_lock = threading.RLock()
+    def start(self):
+        with self._condition:
+            if self._status == self.STATUS_STARTED:
+                return
+            if self._status == self.STATUS_STOPPING:
+                # restart must be done only after the stop is done.
+                self._condition.release()
+                try:
+                    self.stop(join=True)
+                finally:
+                    self._condition.acquire()
 
+            for container, _updater, _watcher in self._local_containers:
+                container.index_tree.set_tree_not_sync()
+                self._scheduler.add_index_tree(container.index_tree)
+                self._update_container_status(container)
+                container.error_msg = None
+                _updater.start()
+                _watcher.start()
+
+            self._thread = threading.Thread(target=self._sync_thread,
+                                            name="Sync Pool Thread")
+            self._status = self.STATUS_STARTED
+            self._thread.start()
+
+    @reduce_coroutine()
     def add(self, local_container):
         """Add a container to sync.
 
         Either the container has been fetched at start of the dynamic container
         list, or it's a newly-added container.
 
+        All containers are unlocked at add. When the unlock fails (ie: error
+        network, no passphrase), the container is not added and the method
+        raise an Exception.
+
         Args:
             local_container (LocalContainer)
         """
         container = local_container.container
+        try:
+            yield local_container.unlock()
+        except Exception as err:
+            msg = _('Container %s not started: %s') % (
+                local_container.id, local_container.error_msg)
+            if isinstance(err, PassphraseAbortError):
+                _logger.info(msg)
+            else:
+                _logger.exception(msg)
+            self._on_sync_error(msg)
+            raise
+
         _logger.debug('Add container %s to sync list', container)
 
         last_remote_index = local_container.get_remote_index()
 
         updater = files_list_updater(
-            container, local_container.model.path,
-            partial(self._added_remote_file, container.id),
-            partial(self._modified_remote_files, container.id),
-            partial(self._removed_remote_files, container.id),
+            container, local_container.path,
+            partial(self._added_remote_files, local_container),
+            partial(self._modified_remote_files, local_container),
+            partial(self._removed_remote_files, local_container),
             None, last_remote_index)
 
-        watcher = FileWatcher(local_container.model,
-                              partial(self._added_local_file, container.id),
+        watcher = FileWatcher(local_container,
+                              partial(self._added_local_file, local_container),
                               partial(self._modified_local_files,
-                                      container.id),
-                              partial(self._moved_local_files, container.id),
-                              partial(self._removed_local_files, container.id))
+                                      local_container),
+                              partial(self._moved_local_files,
+                                      local_container),
+                              partial(self._removed_local_files,
+                                      local_container))
 
-        with self._inner_lock:
+        with self._condition:
             self._local_containers[container.id] = \
                 (local_container, updater, watcher,)
 
-            if self._app_status.value == AppStatus.SYNC_PAUSED:
-                local_container.status = local_container.STATUS_PAUSED
+            if self._status != self.STATUS_STARTED:
+                local_container.status = ContainerStatus.SYNC_PAUSE
                 return
 
-            if self._passphrase_needed and container.is_encrypted:
-                local_container.status = local_container.STATUS_WAIT_PASSPHRASE
-                local_container.error_msg = _(
-                    'No passphrase set.  Syncing is disabled')
-                return
+            if self._status == self.STATUS_STARTED:
+                self._start_container(container.id)
 
-            local_container.status = local_container.STATUS_STARTED
-            updater.start()
-            watcher.start()
-            self._create_task(filesync.sync_folder, container.id, u'.')
+    def _start_container(self, container_id):
+        """Start the sync of a container present in the pool.
 
-    def remove(self, container_id):
+        Its status and error message are both reset.
+
+        Args:
+            container_id: ID of the container to start
+        """
+        lc, updater, watcher = self._local_containers[container_id]
+        lc.index_tree.set_tree_not_sync()
+        lc.error_msg = None
+        self._update_container_status(lc)
+        self._scheduler.add_index_tree(lc.index_tree)
+        updater.start()
+        watcher.start()
+        self._condition.notify()
+
+    def remove(self, local_container):
         """Remove a container and stop its sync operations.
 
         Note: if a container has been removed when bajoo was not running, this
@@ -107,224 +197,263 @@ class ContainerSyncPool(object):
         with ``self.add()``.
 
         Args:
-            local_container (LocalContainer)
+            local_container (LocalContainer): container to remove
         """
-
-        with self._inner_lock:
+        # TODO: remove node in error
+        container_id = local_container.container.id
+        with self._condition:
             if container_id in list(self._local_containers):
-                lc, updater, watcher = self._local_containers[container_id]
+                self._stop_container(container_id)
+                _logger.debug('Remove container %s from sync pool',
+                              local_container)
 
-                lc.status = lc.STATUS_STOPPED
-                updater.stop()
-                watcher.stop()
-                lc.error_msg = None
-                lc.index_saver.stop()
+    def _stop_container(self, container_id):
+        """Stop the sync of a container.
 
-                del self._local_containers[container_id]
+        Args:
+            container_id: ID of the container to remove.
+        """
+        (local_container, updater,
+         watcher) = self._local_containers[container_id]
 
-                _logger.debug('Remove container %s from sync list', lc)
+        self._scheduler.remove_index_tree(local_container.index_tree)
+        updater.stop()
+        watcher.stop()
+        local_container.status = ContainerStatus.SYNC_STOP
+        local_container.error_msg = None
+        local_container.index_saver.stop()
 
-                return lc
-
-            return None
-
-    def _pause_if_need_the_passphrase(self):
-        with self._inner_lock:
-            if self._passphrase_needed:
-                _logger.debug('Local containers are already waiting for' +
-                              ' the passphrase')
-                return
-
-            self._passphrase_needed = True
-
-            self._on_sync_error(_('No passphrase set.  Cyphered containers' +
-                                  ' will be paused'))
-
-            if self._app_status.value == AppStatus.SYNC_PAUSED:
-                return
-
-            for lc, updater, watcher in self._local_containers.values():
-                if lc.status == lc.STATUS_PAUSED:
-                    continue
-
-                if not lc.container.is_encrypted:
-                    continue
-
-                lc.status = lc.STATUS_WAIT_PASSPHRASE
-                updater.stop()
-                watcher.stop()
-                lc.error_msg = _('No passphrase set.  Syncing is disabled')
-
-    def resume_if_wait_for_the_passphrase(self):
-        with self._inner_lock:
-            if not self._passphrase_needed:
-                _logger.debug('Local containers are already unpaused')
-                return
-
-            self._passphrase_needed = False
-
-            if self._app_status.value == AppStatus.SYNC_PAUSED:
-                return
-
-            for lc, updater, watcher in self._local_containers.values():
-                if lc.status != lc.STATUS_WAIT_PASSPHRASE:
-                    continue
-
-                lc.status = lc.STATUS_STARTED
-                lc.error_msg = None
-                updater.start()
-                watcher.start()
-                self._create_task(filesync.sync_folder, lc.model.id, u'.')
+        del self._local_containers[container_id]
 
     def pause(self):
         """Set all sync operations in pause."""
-        with self._inner_lock:
-            _logger.debug('Pause sync')
-            for lc, updater, watcher in self._local_containers.values():
-                lc.status = lc.STATUS_PAUSED
-                updater.stop()
-                watcher.stop()
-                lc.error_msg = None
-
-                self._app_status.value = AppStatus.SYNC_PAUSED
+        _logger.debug('Pause sync')
+        self.stop()  # TODO: we should not remove containers from the pool
+        with self._condition:
+            self._app_status.value = AppStatus.SYNC_PAUSED
 
     def resume(self):
         """Resume sync operations if they are paused."""
 
-        with self._inner_lock:
+        with self._condition:
             _logger.debug('Resume sync')
+            self._app_status.value = AppStatus.SYNC_IN_PROGRESS
+        self.start()
 
-            if self._counter == 0:
-                self._app_status.value = AppStatus.SYNC_DONE
-            else:
-                self._app_status.value = AppStatus.SYNC_IN_PROGRESS
+    def stop(self, join=False):
+        """Stop the sync thread. All ongoing operations will be stopped."""
+        with self._condition:
+            if self._status == self.STATUS_STARTED:
+                self._status = self.STATUS_STOPPING
+                _logger.debug('Stop all containers ...')
+                for local_container, __, __ in self._local_containers.values():
+                    self._stop_container(local_container.container.id)
+                _logger.info('Container Sync Pool stopping...')
+                self._condition.notify()
+            thread = self._thread
+        if thread and join:
+            thread.join()
 
-            for lc, updater, watcher in self._local_containers.values():
-                if self._passphrase_needed and lc.container.is_encrypted:
-                    lc.status = lc.STATUS_WAIT_PASSPHRASE
-                    lc.error_msg = _('No passphrase set.  Syncing is disabled')
-                else:
-                    lc.status = lc.STATUS_STARTED
-                    lc.error_msg = None
-                    updater.start()
-                    watcher.start()
-                    self._create_task(filesync.sync_folder, lc.model.id, u'.')
+    def _update_container_status(self, local_container):
+        """Update a started container status to DONE or PROGRESS.
 
-    def stop(self):
-        for container_id in list(self._local_containers):
-            self.remove(container_id)
+        Args:
+            local_container (LocalContainer)
+        """
+        if local_container.status == ContainerStatus.QUOTA_EXCEEDED:
+            return  # QUOTA_EXCEEDED status is more important
+        if local_container.is_up_to_date():
+            local_container.status = ContainerStatus.SYNC_DONE
+        else:
+            local_container.status = ContainerStatus.SYNC_PROGRESS
 
-    def _increment(self, _arg=None):
-        with self._inner_lock:
-            self._counter += 1
+    def _increment(self, task):
+        with self._condition:
+            self._ongoing_tasks.append(task)
             if self._app_status.value == AppStatus.SYNC_DONE:
                 self._app_status.value = AppStatus.SYNC_IN_PROGRESS
 
-    def _decrement(self, _arg=None):
-        with self._inner_lock:
-            self._counter -= 1
+    def _decrement(self, task, local_container):
+        with self._condition:
+            self._ongoing_tasks.remove(task)
             if self._app_status.value != AppStatus.SYNC_PAUSED:
-                if self._counter == 0:
+                if not self._ongoing_tasks:
                     self._app_status.value = AppStatus.SYNC_DONE
                 else:
                     self._app_status.value = AppStatus.SYNC_IN_PROGRESS
+                self._update_container_status(local_container)
 
-    def _added_remote_file(self, container_id, files):
-        _logger.info('Added (remote): %s files', len(files))
+    def _apply_event_then_notify(func):
+        def wrap(self, container, *args, **kwargs):
+            with self._condition:
+                if self._status != self.STATUS_STARTED:
+                    return
+                func(self, container, *args, **kwargs)
+                self._update_container_status(container)
+                self._condition.notify()
+        return wrap
+
+    @_apply_event_then_notify
+    def _added_remote_files(self, container, files):
         for f in files:
             if is_path_allowed(f['name']):
-                self._create_task(filesync.added_remote_files, container_id,
-                                  f['name'])
+                HintBuilder.apply_modified_event_from_path(
+                    container.index_tree,
+                    HintBuilder.SCOPE_REMOTE,
+                    f['name'], f['hash'],
+                    FileNode)
+        _logger.log(5, 'Added %s remote files in %s', len(files), container)
 
-    def _removed_remote_files(self, container_id, files):
-        _logger.info('Removed (remote): %s files', len(files))
+    @_apply_event_then_notify
+    def _removed_remote_files(self, container, files):
         for f in files:
             if is_path_allowed(f['name']):
-                self._create_task(filesync.removed_remote_files, container_id,
-                                  f['name'])
+                HintBuilder.apply_deleted_event_from_path(
+                    container.index_tree,
+                    HintBuilder.SCOPE_REMOTE,
+                    f['name'])
+        _logger.log(5, 'Removed %s remote files from %s', len(files),
+                    container)
 
-    def _modified_remote_files(self, container_id, files):
-        _logger.info('Modified (remote): %s files ', len(files))
+    @_apply_event_then_notify
+    def _modified_remote_files(self, container, files):
         for f in files:
             if is_path_allowed(f['name']):
-                self._create_task(filesync.changed_remote_files, container_id,
-                                  f['name'])
+                HintBuilder.apply_modified_event_from_path(
+                    container.index_tree,
+                    HintBuilder.SCOPE_REMOTE,
+                    f['name'], f['hash'],
+                    FileNode)
+        _logger.log(5, 'Modified %s remote files in %s', len(files), container)
 
-    def _added_local_file(self, container_id, file_path):
-        _logger.info('Added (local): %s files for %s', file_path, container_id)
-        local_container, u, w = self._local_containers[container_id]
-        filename = os.path.relpath(file_path, local_container.model.path)
+    @_apply_event_then_notify
+    def _added_local_file(self, container, file_path):
+        filename = os.path.relpath(file_path, container.path)
+        HintBuilder.apply_modified_event_from_path(
+            container.index_tree,
+            HintBuilder.SCOPE_LOCAL, filename,
+            None, FileNode)
+        _logger.log(5, 'Added local file "%s" in %s', filename, container)
 
-        self._create_task(filesync.added_local_files, container_id, filename)
+    @_apply_event_then_notify
+    def _removed_local_files(self, container, file_path):
+        filename = os.path.relpath(file_path, container.path)
+        HintBuilder.apply_deleted_event_from_path(container.index_tree,
+                                                  HintBuilder.SCOPE_LOCAL,
+                                                  filename)
+        _logger.log(5, 'Removed local file "%s" from %s', filename, container)
 
-    def _removed_local_files(self, container_id, file_path):
-        _logger.info('Removed (local): %s files for %s', file_path,
-                     container_id)
-        local_container, u, w = self._local_containers[container_id]
-        filename = os.path.relpath(file_path, local_container.model.path)
+    @_apply_event_then_notify
+    def _modified_local_files(self, container, file_path):
+        filename = os.path.relpath(file_path, container.path)
+        HintBuilder.apply_modified_event_from_path(container.index_tree,
+                                                   HintBuilder.SCOPE_LOCAL,
+                                                   filename,
+                                                   None, FileNode)
+        _logger.log(5, 'Modified local file "%s" in %s', filename, container)
 
-        self._create_task(filesync.removed_local_files, container_id, filename)
+    @_apply_event_then_notify
+    def _moved_local_files(self, container, src_path, dest_path):
+        src_filename = os.path.relpath(src_path, container.path)
+        dest_filename = os.path.relpath(dest_path, container.path)
+        HintBuilder.apply_move_event_from_path(container.index_tree,
+                                               HintBuilder.SCOPE_LOCAL,
+                                               src_filename,
+                                               dest_filename, FileNode)
+        _logger.log(5, 'Moved local file from "%s" to "%s" in %s',
+                    src_filename, dest_filename, container)
 
-    def _modified_local_files(self, container_id, file_path):
-        _logger.info('Modified (local): %s files for %s', file_path,
-                     container_id)
-        local_container, u, w = self._local_containers[container_id]
-        filename = os.path.relpath(file_path, local_container.model.path)
+    def _is_failed_node_available(self):
+        """Returns True when one (or more) failed node(s) can be retried."""
+        return bool(self._failed_node and
+                    self._failed_node[0][0] < datetime.datetime.now())
 
-        self._create_task(filesync.changed_local_files, container_id, filename)
+    def _get_next_node(self):
+        """Get the next node to sync
 
-    def _moved_local_files(self, container_id, src_path, dest_path):
-        _logger.info('Moved (local): %s -> %s', src_path, dest_path)
-        local_container, u, w = self._local_containers[container_id]
-        src_filename = os.path.relpath(src_path, local_container.model.path)
-        dest_filename = os.path.relpath(dest_path, local_container.model.path)
+        Returns:
+            Tuple[int, IndexTree, baseNode]: nb of previous try, index_tree
+                and node to sync. If none, returns (0, None, None).
+        """
+        # error nodes can have been removed from tree.
+        while self._is_failed_node_available():
+            __, nb_try, index_tree, node = heapq.heappop(
+                self._failed_node)
+            if not node.removed:
+                return nb_try, index_tree, node
 
-        self._create_task(filesync.moved_local_files, container_id,
-                          src_filename, dest_filename)
+        if len(self._ongoing_tasks) < 30:
+            index_tree, node = self._scheduler.get_node()
+        else:
+            index_tree, node = None, None
+        return 0, index_tree, node
 
-    def _create_task(self, task_factory, container_id, *args):
+    def _sync_thread(self):
+        with self._condition:
+            while self._status == self.STATUS_STARTED:
+
+                nb_try, index_tree, node = self._get_next_node()
+
+                while node:
+                    # Find the local container from the IndexTree.
+                    # TODO: remove need of LocalContainer from task_factory.
+                    local_container = next(
+                        lc for (lc, _u, _w) in self._local_containers.values()
+                        if lc.index_tree is index_tree)
+
+                    with index_tree.lock:
+                        self._create_task(local_container.container.id, node,
+                                          index_tree, nb_try)
+
+                    nb_try, index_tree, node = self._get_next_node()
+
+                if self._failed_node:
+                    time_to_wait = (self._failed_node[0][0] -
+                                    datetime.datetime.now()).total_seconds()
+                else:
+                    time_to_wait = None  # wait until explicit notify()
+
+                # wait for events which will produce new nodes to sync.
+                self._condition.wait(time_to_wait)
+
+            _logger.info('Stop sync thread')
+            self._status = self.STATUS_STOPPED
+
+    @reduce_coroutine(safeguard=True)
+    def _create_task(self, container_id, node, index_tree, nb_try):
         """Create the task using the factory, then manages counter and errors.
 
         Args:
-            task_factory (callable): function who generates a new task. it
-                must accept a container and a local_container as its 1rst and
-                2nd arguments, and a callback as named argument
-                'display_error_cb'.
             container_id (str): id of the container.
-            *args (...): supplementary args passed to the
-                task_factory.
+            node (BaseNode): node to sync.
         """
 
         local_container, u, w = self._local_containers[container_id]
 
-        if local_container.status in \
-            (local_container.STATUS_STOPPED,
-             local_container.STATUS_PAUSED,
-             local_container.STATUS_WAIT_PASSPHRASE,):
-            _logger.debug('Local container is not running, abort task.')
-            return
-
-        elif local_container.status == \
-            local_container.STATUS_QUOTA_EXCEEDED and \
-            (task_factory is filesync.added_local_files or
-             task_factory is filesync.moved_local_files):
+        task = TaskBuilder.build_from_node(local_container, node)
+        if (local_container.status == ContainerStatus.QUOTA_EXCEEDED and
+                isinstance(task, (AddedLocalFilesTask, MovedLocalFilesTask))):
             _logger.debug('Quota exceeded, abort task.')
             return
 
-        container = local_container.container
+        self._increment(task)
+        TaskBuilder.acquire_from_task(node, task)
 
-        self._increment()
-        f = task_factory(container, local_container, *args,
-                         display_error_cb=self._on_sync_error)
+        try:
+            # Note: due to async index_tree.lock is released during the yield.
+            yield filesync.add_task(task)
+        except Exception as err:
+            self._on_task_failed(node, task, err, index_tree, nb_try)
+        finally:
+            with self._condition:
+                self._condition.notify()
+            self._decrement(task, local_container)
 
-        if f:
-            f.then(self._on_task_success, self._on_task_failed).safeguard()
-        else:  # The task has been "merged" with another.
-            self._decrement()
+        local_container.index_saver.trigger_save()
 
     def _turn_delay_upload_off(self, local_container):
-        with self._inner_lock:
-            if local_container.status != local_container.STATUS_QUOTA_EXCEEDED:
+        with self._condition:
+            if local_container.status != ContainerStatus.QUOTA_EXCEEDED:
                 _logger.debug('Fail to resume upload, local container' +
                               ' is not in quota exceeded status')
                 return
@@ -333,14 +462,13 @@ class ContainerSyncPool(object):
                           local_container.container.name)
 
             # Restart local container
-            local_container.status = local_container.STATUS_STARTED
             local_container.error_msg = None
-            self._create_task(filesync.sync_folder,
-                              local_container.container.id, u'.')
+            local_container.index_tree.set_tree_not_sync()
+            self._update_container_status(local_container)
 
     def delay_upload(self, local_container):
-        with self._inner_lock:
-            if local_container.status == local_container.STATUS_QUOTA_EXCEEDED:
+        with self._condition:
+            if local_container.status == ContainerStatus.QUOTA_EXCEEDED:
                 _logger.debug('Quota limit has already been detected')
                 return
 
@@ -349,7 +477,7 @@ class ContainerSyncPool(object):
 
             self._on_sync_error(_("Quota limit reached"))
 
-            local_container.status = local_container.STATUS_QUOTA_EXCEEDED
+            local_container.status = ContainerStatus.QUOTA_EXCEEDED
             local_container.error_msg = _(
                 'Your quota has exceeded.' +
                 ' All upload operations are delayed in the next 5 minutes.')
@@ -357,77 +485,43 @@ class ContainerSyncPool(object):
                             [local_container]) \
                 .start()
 
-    def _on_task_success(self, errors):
-        """This method can be called in three different cases:
-        A) the task and its subtasks are successful
-        B) the task is successful but a subtask failed
-        C) the task failed but it is not a "container related" error
-
-        So if the root task is in the list, the kind or error to manage here is
-        normal or local behaviour.
-        But if there is a subtask in the list, it could be a
-        "container related" error or not...
-
-        In cas B) or C), the argument _arg will be populated with the
-        failing tasks
+    def _on_task_failed(self, node, task, error, index_tree, nb_try):
+        """A task has raised an error.
 
         Args:
-            errors (list(_Task)): the list of failing taks. Empty list if no
-                error occurred.
+            task (_Task): failed task
+            error (Exception): the exception raised during the task execution.
         """
+        nb_try2delta = {
+            0: 30,  # 30s
+            1: 5 * 60,  # 5m
+            2: 3600,  # 1h
+            3: 6 * 3600  # 6h
+        }
 
-        # TODO: If the task factory returns a list of failed tasks, the tasks
-        # should be retried and the concerned files should be excluded of
-        # the sync for a period of 24h if they keep failing.
+        delay = nb_try2delta.get(nb_try, 24 * 36 * 3600)  # default: 1 day
+        next_try = datetime.datetime.now() + datetime.timedelta(seconds=delay)
+        nb_try += 1
+        heapq.heappush(self._failed_node, (next_try, nb_try, index_tree, node))
 
-        upload_limit_reached = False
-        passphrase_not_set = False
+        with index_tree.lock:
+            node.error = error
+            # A node in error is marked "sync" to prevent other sync attempt.
+            node.sync = True
 
-        for task in errors:
-            if isinstance(task.error, HTTPEntityTooLargeError):
-                upload_limit_reached = True
+        # TODO: error messages should be grouped (over a period of 3-4 seconds)
+        # to avoid spamming the user.
+        # After 1st message, identical errors should not send new messages for
+        # at least 1 minute.
 
-            if isinstance(task.error, PassphraseAbortError):
-                passphrase_not_set = True
-
-            if hasattr(task.error, 'container_id'):
-                self._manage_container_error(task.error)
-
-        if upload_limit_reached:
+        if isinstance(error, HTTPEntityTooLargeError):
             local_container = task.local_container
             self.delay_upload(local_container)
-
-        if passphrase_not_set:
-            self._pause_if_need_the_passphrase()
-
-        self._decrement()
-
-    def _on_task_failed(self, error):
-        """A task has raised a "container related" error.
-
-        If this happens, it means the container itself is in an error state:
-        the container key is unusable. It can be either a network error or an
-        encryption error (bad .key, missing or wrong passphrase, ...).
-
-        Args:
-            error (Exception): the exception raised during the task execution
-
-        """
-
-        if hasattr(error, 'container_id'):
-            self._manage_container_error(error)
-
-        self._decrement()
-
-    def _manage_container_error(self, error):
-        # TODO only a failed download of the encryption key
-        # will trigger this statement, is it normal ?
-        # should it manage other container error ?
-
-        # TODO and once the local container is in error state
-        # what is it supposed to do ?
-
-        local_container = self.remove(error.container_id)
-        if local_container is not None:
-            local_container.status = local_container.STATUS_ERROR
-            local_container.error_msg = str(error)
+        else:
+            target_string = ', '.join(task.target_list)
+            self._on_sync_error(
+                _('Error during sync of the file(s) "%(filename)s" '
+                  'in the "%(name)s" container:\n%(error)s')
+                % {'filename': target_string,
+                   'name': task.container.name,
+                   'error': err2unicode(error)})

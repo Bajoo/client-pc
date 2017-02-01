@@ -18,15 +18,12 @@ def teardown_module(module):
     stop()
 
 
-def generate_task(tester, target, create_mode=False):
+def generate_task(tester, target):
+    tester.local_container.inject_empty_node(target)
     return AddedLocalFilesTask(
         tester.container,
-        (target,
-         ),
-        tester.local_container,
-        tester.error_append,
-        None,
-        create_mode)
+        (target,),
+        tester.local_container)
 
 
 class Test_Local_file_does_not_exist(TestTaskAbstract):
@@ -37,20 +34,14 @@ class Test_Local_file_does_not_exist(TestTaskAbstract):
         self.add_conflict_seed(self.path)
 
     def test_CreationMode(self):
-        self.execute_task(generate_task(self, self.path,
-                                        create_mode=True))
+        self.execute_task(generate_task(self, self.path))
         self.assert_no_error_on_task()
         self.check_action(downloaded=(self.path,))  # no action
         self.assert_conflict(count=0)
         self.assert_not_in_index(self.path)
 
     def test_UpdateMode(self):
-        task = self.execute_task(generate_task(self, target=self.path,
-                                               create_mode=False))
-
-        # task on error
-        self.assert_error_on_task(task)
-        assert "No such file or directory" in self.error_string
+        self.execute_task(generate_task(self, target=self.path))
 
         self.check_action(downloaded=(self.path,))  # no action
         self.assert_conflict(count=0)
@@ -127,9 +118,9 @@ class Test_Local_file_exists(TestTaskAbstract):
                                   self.local_file.local_hash,
                                   "plop")
 
-    def test_RemoteHashNotAvailableAndFileDoesNotExistOnServer(self):
+    def test_NoHashAvailableAndFileDoesNotExistOnServer(self):
         self.local_container.inject_hash(path=self.local_file.filename,
-                                         local_hash="toto",
+                                         local_hash=None,
                                          remote_hash=None)
 
         self.execute_task(generate_task(self, target=self.local_file.filename))
@@ -145,9 +136,9 @@ class Test_Local_file_exists(TestTaskAbstract):
             self.local_file.filename +
             "HASH_UPLOADED")
 
-    def test_RemoteHashNotAvailableAndFileExistsOnServerAndEqual(self):
+    def test_NoHashAvailableAndFileExistsOnServerAndEqual(self):
         self.local_container.inject_hash(path=self.local_file.filename,
-                                         local_hash="toto",
+                                         local_hash=None,
                                          remote_hash=None)
 
         self.container.inject_remote(path=self.local_file.filename,
@@ -192,28 +183,23 @@ class Test_Conflict(TestTaskAbstract):
         self.assert_conflict(count=1)
         conflict_filename = self.conflict_list[0]
 
-        downloaded = (self.local_file.filename, conflict_filename,)
-        uploaded = (conflict_filename, )
+        downloaded = (self.local_file.filename,)
         getinfo = (self.local_file.filename, )
         self.check_action(downloaded=downloaded,
-                          uploaded=uploaded,
                           getinfo=getinfo)
+        self.assert_node_exists_and_file_exists(conflict_filename)
 
         self.assert_hash_in_index(self.local_file.filename,
                                   remote_file.local_hash,
                                   remote_file.remote_hash)
 
-        self.assert_hash_in_index(conflict_filename,
-                                  self.local_file.local_hash,
-                                  conflict_filename + "HASH_UPLOADED")
-
         conflict_path = os.path.join(tempfile.gettempdir(), conflict_filename)
         assert_content(conflict_path, self.local_file.local_hash)
         assert_content(self.local_file.descr.name, remote_file.local_hash)
 
-    def test_RemoteHashNotAvailableAndFileExistsOnServerAndNotEqual(self):
+    def test_NoHashAvailableAndFileExistsOnServerAndNotEqual(self):
         self.local_container.inject_hash(path=self.local_file.filename,
-                                         local_hash="toto",
+                                         local_hash=None,
                                          remote_hash=None)
 
         remote_file = FakeFile()
@@ -229,18 +215,14 @@ class Test_Conflict(TestTaskAbstract):
         self.assert_conflict(count=1)
         conflict_filename = self.conflict_list[0]
 
-        downloaded = (self.local_file.filename, conflict_filename,)
-        uploaded = (conflict_filename, )
-        self.check_action(downloaded=downloaded,
-                          uploaded=uploaded)
+        downloaded = (self.local_file.filename,)
+        self.check_action(downloaded=downloaded)
+
+        self.assert_node_exists_and_file_exists(conflict_filename)
 
         self.assert_hash_in_index(self.local_file.filename,
                                   remote_file.local_hash,
                                   remote_file.remote_hash)
-
-        self.assert_hash_in_index(conflict_filename,
-                                  self.local_file.local_hash,
-                                  conflict_filename + "HASH_UPLOADED")
 
         conflict_path = os.path.join(tempfile.gettempdir(), conflict_filename)
         assert_content(conflict_path, self.local_file.local_hash)

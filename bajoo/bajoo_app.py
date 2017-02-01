@@ -1,27 +1,15 @@
 # -*- coding: utf-8 -*-
 
-
-import glob
-import locale
 import logging
-import os
-import platform
 import shutil
 import sys
-import tempfile
-import zipfile
-from datetime import datetime
-
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
 
 import wx
 
-from . import __version__
 from . import encryption
+from . import gtk_process
 from . import promise
+from .__version__ import __version__
 from .api import Container, Session, TeamShare
 from .app_status import AppStatus
 from .common import autorun, config
@@ -33,10 +21,10 @@ from .container_model import ContainerModel
 from .container_sync_pool import ContainerSyncPool
 from .dynamic_container_list import DynamicContainerList
 from .filesync import task_consumer
-from .gui.about_window import AboutBajooWindow
-from .gui.bug_report import BugReportWindow, EVT_BUG_REPORT
-from .gui.change_password_window import ChangePasswordWindow
+from .gui import AboutWindow, TaskBarIcon
+from .gui.windows import BugReportWindow
 from .gui.common.language_box import LanguageBox
+from .gui.enums import WindowDestination
 from .gui.event_promise import ensure_gui_thread
 from .gui.form.members_share_form import MembersShareForm
 from .gui.home_window import HomeWindow
@@ -50,9 +38,6 @@ from .gui.tab.advanced_settings_tab import AdvancedSettingsTab
 from .gui.tab.creation_share_tab import CreationShareTab
 from .gui.tab.details_share_tab import DetailsShareTab
 from .gui.tab.list_shares_tab import ListSharesTab
-from .gui.task_bar_icon import make_task_bar_icon, WindowDestination
-from .gui.task_bar_icon import ContainerStatus as ContainerStatusTBIcon
-from .local_container import LocalContainer
 from .network import set_proxy
 from .network.errors import NetworkError
 from .passphrase_manager import PassphraseManager
@@ -94,7 +79,11 @@ class BajooApp(wx.App):
 
     def __init__(self):
         self._checker = None
-        self._updater = SoftwareUpdater(self, "https://www.bajoo.fr/downloads/win32/updates")
+        if sys.platform == 'darwin':
+            update_url = "https://www.bajoo.fr/downloads/osx/updates"
+        else:
+            update_url = "https://www.bajoo.fr/downloads/win32/updates"
+        self._updater = SoftwareUpdater(self, update_url)
         self._home_window = None
         self._main_window = None
         self._about_window = None
@@ -107,6 +96,7 @@ class BajooApp(wx.App):
         self.app_status = AppStatus(AppStatus.NOT_CONNECTED)
         self._container_sync_pool = ContainerSyncPool(
             self.app_status, self._on_sync_error)
+        self._container_sync_pool.start()
         self._passphrase_manager = None
         self._exit_flag = False  # When True, the app is exiting.
 
@@ -136,6 +126,11 @@ class BajooApp(wx.App):
         autorun.set_autorun(config.get('autorun'))
 
         task_consumer.start()
+
+    @property
+    def version(self):
+        """getter of application version"""
+        return __version__
 
     def _ensures_single_instance_running(self):
         """Check that only one instance of Bajoo is running per user.
@@ -231,7 +226,7 @@ class BajooApp(wx.App):
         if getattr(self, attribute):
             return getattr(self, attribute)
 
-        _logger.debug('Creation of Window %s' % attribute)
+        _logger.debug('Creation of (wx) Window %s' % attribute)
         window = cls()
 
         # clean variable when destroyed.
@@ -241,6 +236,27 @@ class BajooApp(wx.App):
 
         self.Bind(wx.EVT_WINDOW_DESTROY, clean, source=window)
 
+        setattr(self, attribute, window)
+        return window
+
+    def _get_mvc_window(self, attribute, cls):
+        """Get a window, or create it if it's not instantiated yet.
+
+        the attribute used to store the Window is set to None
+        when the window is deleted.
+        Args:
+            attribute (str): attribute of this class, used to ref the window.
+            cls (Type[T]): Class of the Window.
+        Returns:
+            T: window
+        """
+        if getattr(self, attribute):
+            return getattr(self, attribute)
+
+        _logger.debug('Creation of (MVC) Window %s' % attribute)
+        window = cls(self)
+
+        window.destroyed.connect(lambda: setattr(self, attribute, None))
         setattr(self, attribute, window)
         return window
 
@@ -257,7 +273,7 @@ class BajooApp(wx.App):
             if not self._ensures_single_instance_running():
                 return False
 
-            self._task_bar_icon = make_task_bar_icon()
+            self._task_bar_icon = TaskBarIcon()
 
             self._notifier = MessageNotifier(self._task_bar_icon.view)
 
@@ -295,10 +311,7 @@ class BajooApp(wx.App):
                       self._move_synced_container)
             self.Bind(AccountTab.EVT_DATA_REQUEST,
                       self._on_request_account_info)
-            self.Bind(ChangePasswordWindow.EVT_CHANGE_PASSWORD_SUBMIT,
-                      self._on_request_change_password)
             self.Bind(AccountTab.EVT_DISCONNECT_REQUEST, self.disconnect)
-            self.Bind(EVT_BUG_REPORT, self.send_bug_report)
         except:
             # wxPython hides OnInit's exceptions without any message.
             # Bug always reproducible on Linux with wxPython Gtk2 (classic)
@@ -315,7 +328,7 @@ class BajooApp(wx.App):
         if destination == WindowDestination.HOME:
             self._show_home_window()
         elif destination == WindowDestination.ABOUT:
-            window = self.get_window('_about_window', AboutBajooWindow)
+            window = self._get_mvc_window('_about_window', AboutWindow)
         elif destination == WindowDestination.SUSPEND:
             pass  # TODO: open window
         elif destination == WindowDestination.INVITATION:
@@ -327,14 +340,18 @@ class BajooApp(wx.App):
             window = self.get_window('_main_window', MainWindow)
             window.show_list_shares_tab()
         elif destination == WindowDestination.DEV_CONTACT:
-            window = self.get_window('_contact_dev_window', BugReportWindow)
+            window = self._get_mvc_window('_contact_dev_window',
+                                          BugReportWindow)
         else:
             _logger.error('Unexpected "Navigation" destination: %s' %
                           destination)
 
         if window:
-            window.Show()
-            window.Raise()
+            try:
+                window.show()
+            except AttributeError:  # compatibility code for legacy wx GUI
+                window.Show()
+                window.Raise()
             macos_activate_app()
 
     def _show_home_window(self):
@@ -389,26 +406,9 @@ class BajooApp(wx.App):
                             'but the dynamic list is None')
             return
 
-        mapping = {
-            LocalContainer.STATUS_ERROR: ContainerStatusTBIcon.SYNC_ERROR,
-            LocalContainer.STATUS_PAUSED: ContainerStatusTBIcon.SYNC_PAUSE,
-            LocalContainer.STATUS_QUOTA_EXCEEDED:
-                ContainerStatusTBIcon.SYNC_ERROR,
-            LocalContainer.STATUS_WAIT_PASSPHRASE:
-                ContainerStatusTBIcon.SYNC_ERROR,
-            LocalContainer.STATUS_STOPPED: ContainerStatusTBIcon.SYNC_STOP,
-            LocalContainer.STATUS_UNKNOWN: ContainerStatusTBIcon.SYNC_PROGRESS
-        }
         containers_status = []
         for container in self._container_list.get_list():
-            if container.status == LocalContainer.STATUS_STARTED:
-                if container.is_up_to_date():
-                    status = ContainerStatusTBIcon.SYNC_DONE
-                else:
-                    status = ContainerStatusTBIcon.SYNC_PROGRESS
-            else:
-                status = mapping[container.status]
-            row = (container.model.name, container.model.path, status)
+            row = (container.name, container.path, container.status)
             containers_status.append(row)
 
         self._task_bar_icon.set_container_status_list(containers_status)
@@ -472,7 +472,7 @@ class BajooApp(wx.App):
                     share, email, permission,
                     N_("%(email)s has been given access to team "
                        "share \'%(name)s\'")
-                    % {"email": email, "name": share.model.name})
+                    % {"email": email, "name": share.name})
         else:
             if self._main_window:
                 self._main_window.on_share_member_added(
@@ -501,7 +501,7 @@ class BajooApp(wx.App):
                     share, email,
                     N_('%(email)s\'s access to team share \'%(name)s\' '
                        'has been removed.')
-                    % {"email": email, "name": share.model.name})
+                    % {"email": email, "name": share.name})
         else:
             if self._main_window:
                 self._main_window.on_share_member_removed(
@@ -514,6 +514,9 @@ class BajooApp(wx.App):
         """
         config.set('lang', event.lang)
         set_lang(event.lang)
+
+        gtk_process.remote_call('set_lang', 'bajoo.common.i18n', event.lang)
+
         self._notify_lang_change()
 
     @promise.reduce_coroutine(safeguard=True)
@@ -568,7 +571,7 @@ class BajooApp(wx.App):
         yield self._container_list.refresh()
 
         for container in self._container_list.get_list():
-            if container.model.id == share.id:
+            if container.id == share.id:
                 yield container.container.list_members()
                 break
 
@@ -587,14 +590,14 @@ class BajooApp(wx.App):
 
             # Check if selected folder exists
             new_path = container.get_not_existing_folder(new_path)
-            shutil.copytree(container.model.path, new_path)
-            shutil.rmtree(container.model.path)
+            shutil.copytree(container.path, new_path)
+            shutil.rmtree(container.path)
 
             container.model.path = new_path
         except (IOError, OSError):
             _logger.critical(
                 'Cannot move folder from %s to %s' % (
-                    container.model.path, new_path),
+                    container.path, new_path),
                 exc_info=True)
         finally:
             container.is_moving = False
@@ -634,7 +637,7 @@ class BajooApp(wx.App):
             self._notifier.send_message(
                 _('Error'),
                 _('An error occured when trying to quit team share %s.')
-                % share.model.name,
+                % share.name,
                 is_error=True
             )
             if self._main_window:
@@ -646,13 +649,13 @@ class BajooApp(wx.App):
         self._notifier.send_message(
             _('Quit team share'),
             _('You have no longer access to team share %s.'
-              % share.model.name))
+              % share.name))
 
         if self._main_window:
             self._main_window.load_shares(
                 self._container_list.get_list(),
                 _('You have no longer access to team share %s.'
-                  % share.model.name))
+                  % share.name))
             self._main_window.on_quit_or_delete_share(share)
 
     @promise.reduce_coroutine(safeguard=True)
@@ -667,15 +670,15 @@ class BajooApp(wx.App):
         error_msg = None
         try:
             # TODO: should we also delete the folder ?
-            self._container_list.remove_container(share.model.id)
+            self._container_list.remove_container(share.id)
             yield share.container.delete()
             success_msg = _('A team share has been successfully deleted '
                             'from server.')
         except:
             _logger.exception('Unable to delete teamshare %s' %
-                              share.model.name)
+                              share.name)
             error_msg = _('Team share %s cannot be '
-                          'deleted from server.') % share.model.name
+                          'deleted from server.') % share.name
 
         yield self._container_list.refresh()
         if self._main_window:
@@ -701,29 +704,6 @@ class BajooApp(wx.App):
                 'quota_used': used_quota  # 500MB
             })
 
-    @promise.reduce_coroutine(safeguard=True)
-    def _on_request_change_password(self, event):
-        _logger.debug('Change password request received %s:', event.data)
-
-        old_password = event.data[u'old_password']
-        new_password = event.data[u'new_password']
-
-        try:
-            yield self._user.change_password(old_password, new_password)
-        except:
-            _logger.warning('Change password failed', exc_info=True)
-            if self._main_window:
-                self._main_window.on_password_change_error(
-                    N_('Failure when attempting to change password.'))
-        else:
-            new_session = yield Session.from_user_credentials(self._user.name,
-                                                              new_password)
-            self._session.update(new_session.access_token,
-                                 new_password.refresh_token)
-
-            if self._main_window:
-                self._main_window.on_password_changed()
-
     @ensure_gui_thread(safeguard=True)
     def _exit(self):
         """Close all resources and quit the app."""
@@ -739,12 +719,16 @@ class BajooApp(wx.App):
             self._main_window.Destroy()
 
         if self._about_window:
-            self._about_window.Destroy()
+            self._about_window.destroy()
 
         if self._contact_dev_window:
-            self._contact_dev_window.Destroy()
+            self._contact_dev_window.destroy()
 
         self._task_bar_icon.destroy()
+        # TODO: this manual deletion is required because cross-process
+        # references are not handled by the garbage collector.
+        self._task_bar_icon.view = None
+        self._task_bar_icon = None
 
         if self._container_list:
             self._container_list.stop()
@@ -845,6 +829,7 @@ class BajooApp(wx.App):
         self.app_status.value = AppStatus.NOT_CONNECTED
         self._container_sync_pool = ContainerSyncPool(
             self.app_status, self._on_sync_error)
+        self._container_sync_pool.start()
         self._container_list.stop()
         self._container_list = None
 
@@ -857,102 +842,6 @@ class BajooApp(wx.App):
         _logger.debug('Now restart the connection process...')
         session_and_user = yield connect_or_register(self.create_home_window)
         yield self._on_connection(session_and_user)
-
-    @promise.reduce_coroutine(safeguard=True)
-    def send_bug_report(self, _evt):
-        _logger.debug("bug report creation")
-        tmpdir = tempfile.mkdtemp()
-
-        # identify where are last log files
-        glob_path = os.path.join(bajoo_path.get_log_dir(), '*.log')
-        newest = sorted(glob.iglob(glob_path),
-                        key=os.path.getmtime,
-                        reverse=True)
-
-        zip_path = os.path.join(tmpdir, "report.zip")
-
-        try:
-            with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
-                # grab the 5 last log files if exist
-                for index in range(0, min(5, len(newest))):
-                    zf.write(newest[index], os.path.basename(newest[index]))
-
-                # collect config file
-                config_path = os.path.join(bajoo_path.get_config_dir(),
-                                           'bajoo.ini')
-                try:
-                    zf.write(config_path, 'bajoo.ini')
-                except (IOError, OSError):
-                    pass
-
-                username = self._generate_report_file(zf, _evt.report,
-                                                      _evt.email)
-
-            server_path = "/logs/%s/bugreport%s.zip" % \
-                          (username,
-                           datetime.now().strftime("%Y%m%d-%H%M%S"))
-
-            if self._session:
-                log_session = self._session
-            else:
-                log_session = yield Session.from_client_credentials()
-
-            with open(zip_path, 'rb') as file_content:
-                yield log_session.upload_storage_file(
-                    'PUT', server_path, file_content)
-        except Exception as e:
-            if self._contact_dev_window:
-                try:
-                    message = str(e)
-                except:
-                    pass
-                if not message:
-                    message = _('An error happened! Consult the logs for more'
-                                ' details')
-                self._contact_dev_window.set_error_message(message)
-            raise e
-        else:
-            if self._contact_dev_window:
-                self._contact_dev_window.display_confirmation()
-        finally:
-            shutil.rmtree(tmpdir)
-
-    def _generate_report_file(self, zip_object, message, reply_email):
-        configfile = StringIO()
-        configfile.write("## Bajoo bug report ##\n\n")
-        configfile.write("Creation date: %s\n" % str(datetime.now()))
-        configfile.write("Bajoo version: %s\n" % __version__)
-        configfile.write("Python version: %s\n" % sys.version)
-        configfile.write("OS type: %s\n" % os.name)
-        configfile.write("Platform type: %s\n" % sys.platform)
-        configfile.write(
-            "Platform details: %s\n" % platform.platform())
-        configfile.write(
-            "System default encoding: %s\n" % sys.getdefaultencoding())
-        configfile.write(
-            "Filesystem encoding: %s\n" % sys.getfilesystemencoding())
-        configfile.write("Reply email: %s\n" % reply_email)
-
-        if self.user_profile is None:
-            username = "Unknown_user"
-            configfile.write("Connected: No\n")
-        else:
-            username = self.user_profile.email
-            configfile.write("Connected: Yes\n")
-            configfile.write(
-                "User account: %s\n" % self.user_profile.email)
-            configfile.write(
-                "User root directory: %s\n" %
-                self.user_profile._root_folder_path)
-
-        locales = ", ".join(locale.getdefaultlocale())
-        configfile.write("Default locales: %s\n" % locales)
-        configfile.write("Message: \n\n%s" % message)
-
-        zip_object.writestr("MESSAGE", configfile.getvalue().encode('utf-8'))
-        configfile.close()
-
-        return username
 
     def _restart_if_idle(self, evt):
         evt.Skip()
@@ -976,7 +865,13 @@ class BajooApp(wx.App):
         all_windows = (self._home_window, self._main_window,
                        self._about_window, self._contact_dev_window)
 
-        if any(w and w is not _window_being_destroyed and w.IsShown()
+        def is_in_use(w):  # Compatibility code between Wx and MVC windows
+            try:
+                return w.is_in_use()
+            except AttributeError:
+                return w.IsShown()
+
+        if any(w and w is not _window_being_destroyed and is_in_use(w)
                for w in all_windows):
             if not _already_bound:
                 self.Bind(wx.EVT_SHOW, self._restart_if_idle)
@@ -993,3 +888,6 @@ class BajooApp(wx.App):
         _logger.info('Restart Bajoo now.')
         self._updater.register_restart_on_exit()
         return self._exit()
+
+    def get_session(self):
+        return self._session

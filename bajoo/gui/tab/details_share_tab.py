@@ -8,7 +8,7 @@ from wx.lib.newevent import NewCommandEvent
 
 from ...api.team_share import permission as share_permission
 from ...api import TeamShare
-from ...local_container import LocalContainer
+from ...local_container import ContainerStatus
 from ...common.i18n import N_, _
 from ..base_view import BaseView
 from ..event_promise import ensure_gui_thread
@@ -76,19 +76,19 @@ class DetailsShareTab(BaseForm):
         self.IMG_OPEN_FOLDER = get_bitmap('open-folder.png', False)
 
         self.IMG_CONTAINER_STATUS = {
-            LocalContainer.STATUS_ERROR:
+            ContainerStatus.STATUS_ERROR:
                 get_bitmap('container_status/error.png'),
-            LocalContainer.STATUS_PAUSED:
+            ContainerStatus.SYNC_PAUSE:
                 get_bitmap('container_status/paused.png'),
-            LocalContainer.STATUS_STARTED:
+            ContainerStatus.SYNC_PROGRESS:
+                get_bitmap('container_status/progress.png'),
+            ContainerStatus.SYNC_DONE:
                 get_bitmap('container_status/synced.png'),
-            LocalContainer.STATUS_STOPPED:
+            ContainerStatus.SYNC_STOP:
                 get_bitmap('container_status/stopped.png'),
-            LocalContainer.STATUS_QUOTA_EXCEEDED:
+            ContainerStatus.QUOTA_EXCEEDED:
                 get_bitmap('container_status/error.png'),
-            LocalContainer.STATUS_WAIT_PASSPHRASE:
-                get_bitmap('container_status/error.png'),
-            LocalContainer.STATUS_UNKNOWN:
+            ContainerStatus.WAIT_PASSPHRASE:
                 get_bitmap('container_status/error.png')
         }
 
@@ -126,12 +126,12 @@ class DetailsShareTab(BaseForm):
 
         # Set the default value for the location
         if not do_not_sync:
-            if self._share.model.path is None:
+            if self._share.path is None:
                 btn_browse.SetValue(path.join(
                     wx.GetApp().user_profile.root_folder_path,
-                    _('Shares'), self._share.model.name))
+                    _('Shares'), self._share.name))
             else:
-                btn_browse.SetValue(self._share.model.path)
+                btn_browse.SetValue(self._share.path)
 
         self.set_options_buttons_status()
 
@@ -139,8 +139,7 @@ class DetailsShareTab(BaseForm):
         share_path = self.FindWindow('btn_browse_location').GetValue()
         lbl_folder_exist_error = self.FindWindow('lbl_folder_exist_error')
 
-        if share_path != self._share.model.path and \
-                path.exists(share_path):
+        if share_path != self._share.path and path.exists(share_path):
             self.FindWindow('btn_apply').Enable(False)
             lbl_folder_exist_error.Show()
 
@@ -154,7 +153,7 @@ class DetailsShareTab(BaseForm):
         do_not_sync = self.FindWindow('chk_exclusion').GetValue()
         share_path = self.FindWindow('btn_browse_location').GetValue()
 
-        if do_not_sync != self._share.model.do_not_sync:
+        if do_not_sync != self._share.do_not_sync:
             # User changes the sync status
             self._share.model.do_not_sync = do_not_sync
 
@@ -171,7 +170,7 @@ class DetailsShareTab(BaseForm):
 
             self.disable()
 
-        elif not do_not_sync and share_path != self._share.model.path:
+        elif not do_not_sync and share_path != self._share.path:
             # Always sync this container, but move its path
             event = self.RequestMoveContainer(self.GetId())
             event.container = self._share
@@ -185,11 +184,11 @@ class DetailsShareTab(BaseForm):
         Enable Apply/Cancel only if has changed
         """
         has_change = \
-            self._share.model.do_not_sync != self.FindWindow(
+            self._share.do_not_sync != self.FindWindow(
                 'chk_exclusion').GetValue() or \
-            (self._share.model.path != self.FindWindow(
+            (self._share.path != self.FindWindow(
                 'btn_browse_location').GetValue() and
-             not self._share.model.do_not_sync)
+             not self._share.do_not_sync)
 
         self.FindWindow('btn_apply').Enable(has_change)
         self.FindWindow('btn_cancel').Enable(has_change)
@@ -198,8 +197,8 @@ class DetailsShareTab(BaseForm):
         self.set_share_options_value(self._share)
 
     def set_share_options_value(self, share):
-        do_not_sync = share.model.do_not_sync
-        share_path = share.model.path
+        do_not_sync = share.do_not_sync
+        share_path = share.path
 
         self.FindWindow('chk_exclusion').SetValue(do_not_sync)
 
@@ -221,7 +220,7 @@ class DetailsShareTab(BaseForm):
         n_folders, n_files, folder_size = share.get_stats()
         friendly_folders_size = human_readable_bytes(folder_size)
 
-        self.FindWindow('lbl_share_name').SetLabel(share.model.name)
+        self.FindWindow('lbl_share_name').SetLabel(share.name)
         has_member_data = self._has_member_data()
         is_encrypted = share.container and share.container.is_encrypted
         share_type = N_('Team share') \
@@ -261,7 +260,7 @@ class DetailsShareTab(BaseForm):
         })
 
         self.FindWindow('img_share_status').SetBitmap(
-            self.IMG_CONTAINER_STATUS[share.get_status()])
+            self.IMG_CONTAINER_STATUS[share.status])
 
         # Cannot show members of/delete/quit MyBajoo folder
         show_share_options = \
@@ -270,8 +269,8 @@ class DetailsShareTab(BaseForm):
         self.FindWindow('lbl_share_nb_members').Show(
             show_share_options and has_member_data)
         self.FindWindow('btn_open_folder').Enable(
-            share.model.path is not None and
-            path.exists(share.model.path))
+            share.path is not None and
+            path.exists(share.path))
 
         if share.error_msg:
             self.show_error_message(share.error_msg)
@@ -284,7 +283,7 @@ class DetailsShareTab(BaseForm):
 
         self.set_share_options_value(self._share)
         self.FindWindow('btn_browse_location').set_share_name(
-            share.model.name, set_value_now=False)
+            share.name, set_value_now=False)
         self.set_options_buttons_status()
 
         lbl_options_success = self.FindWindow('lbl_options_success')
@@ -378,11 +377,11 @@ class DetailsShareTab(BaseForm):
     def _btn_open_folder_clicked(self, _event):
         self.hide_message()
 
-        if self._share and self._share.model.path:
+        if self._share and self._share.path:
             from ...common.util import open_folder
 
-            open_folder(self._share.model.path)
-            _logger.debug("Open directory %s", self._share.model.path)
+            open_folder(self._share.path)
+            _logger.debug("Open directory %s", self._share.path)
         else:
             _logger.debug("Unknown container or directory to open")
 
@@ -390,7 +389,7 @@ class DetailsShareTab(BaseForm):
         self.hide_message()
 
         if self._share:
-            if message_box.message_box_quit_share(self._share.model.name,
+            if message_box.message_box_quit_share(self._share.name,
                                                   self) \
                     == wx.ID_YES:
                 event = DetailsShareTab.RequestQuitShare(self.GetId())
@@ -403,7 +402,7 @@ class DetailsShareTab(BaseForm):
         self.hide_message()
 
         if self._share:
-            if message_box.message_box_delete_share(self._share.model.name,
+            if message_box.message_box_delete_share(self._share.name,
                                                     self) \
                     == wx.ID_YES:
                 event = DetailsShareTab.RequestDeleteShare(self.GetId())

@@ -9,7 +9,7 @@ from ...common.i18n import N_
 from ...common.util import human_readable_bytes
 from ..base_view import BaseView
 from ...common.util import open_folder
-from ..change_password_window import ChangePasswordWindow
+from ..windows.change_password_window import ChangePasswordWindow
 from ..translator import Translator
 
 _logger = logging.getLogger(__name__)
@@ -116,31 +116,24 @@ class AccountTab(wx.Panel, Translator):
         if self._change_password_window is not None:
             self._change_password_window.notify_lang_change()
 
-    def show_change_password_window(self, show=True):
-        if show:
-            if self._change_password_window is None:
-                self._change_password_window = ChangePasswordWindow(self)
+    def show_change_password_window(self):
+        if self._change_password_window is None:
+            self._change_password_window = ChangePasswordWindow(wx.GetApp(),
+                                                                self)
+            self._change_password_window.password_changed.connect(
+                self.on_password_change_success)
+            self._change_password_window.destroyed.connect(
+                self.on_change_password_window_destroyed)
 
-            self._change_password_window.ShowModal()
-        else:
-            if self._change_password_window is not None:
-                self._change_password_window.EndModal(0)
-                self._change_password_window = None
+        # Note: show_modal() is blocking (on wxPython)
+        self._change_password_window.show_modal()
 
-    def hide_change_password_window(self):
-        """
-        A shortcut to `show_change_password_window(show=False)`
-        """
-        self.show_change_password_window(show=False)
+    def on_change_password_window_destroyed(self):
+        self._change_password_window = None
 
     def on_password_change_success(self):
-        self.hide_change_password_window()
         self.FindWindow('lbl_message').Show()
         self.Layout()
-
-    def show_password_change_error(self, message):
-        if self._change_password_window is not None:
-            self._change_password_window.show_error(message)
 
 
 class AccountView(BaseView):
